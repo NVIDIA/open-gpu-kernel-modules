@@ -61,7 +61,10 @@ _ratsEventBufferAdd
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
 
     pRecord->seqNo = pBind->pEventBuffer->seqNo++;
-    pRecord->gspRmTrace.timeStamp += pTmr->sysTimerOffsetNs;
+    if (pRecord->recordClass == NV_RATS_RECORD_CLASS_GSP_RM_TRACE)
+        pRecord->gspRmTrace.timeStamp += pTmr->sysTimerOffsetNs;
+    else if (pRecord->recordClass == NV_RATS_RECORD_CLASS_LIBOS_TRACE)
+        pRecord->libosTrace.timeStamp += pTmr->sysTimerOffsetNs;
 
     portMemSet(&notifyEvent, 0, sizeof(notifyEvent));
     notifyEvent.pVardata = NV_PTR_TO_NvP64(NULL);
@@ -101,7 +104,7 @@ static void _ratsReadVgpuTracingBuffer(
         pVgpuGspTracingBuffer->read = (pVgpuGspTracingBuffer->read + 1) % pVgpuGspTracingBuffer->bufferSize;
     }
 
-    pVgpuGspTracingBuffer->lastReadTimestamp = osGetTimestamp();
+    pVgpuGspTracingBuffer->lastReadTimestampNs = osGetMonotonicTimeNs();
 }
 
 void gspRatsNotifyAllConsumers
@@ -121,7 +124,8 @@ void gspRatsNotifyAllConsumers
             if (IS_VIRTUAL(pGpu))
             {
                 NV_RATS_VGPU_GSP_TRACING_BUFFER *pVgpuGspTracingBuffer = (NV_RATS_VGPU_GSP_TRACING_BUFFER*)pBind->message_buffer;
-                if (osGetTimestamp() - pVgpuGspTracingBuffer->lastReadTimestamp > osGetTimestampFreq())
+                NvU64 nowNs = osGetMonotonicTimeNs();
+                if ((nowNs - pVgpuGspTracingBuffer->lastReadTimestampNs) > NSEC_PER_SEC)
                 {
                     // vGPU plugin has no 1 second callback to empty buffer, so if we haven't read traces in over a second,
                     // read from GSP plugin to keep buffer up to date.

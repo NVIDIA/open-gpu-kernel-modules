@@ -782,6 +782,36 @@ rmapiLockGetTimes(NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *pParams)
 }
 
 //
+// Bug 5785851 & 5867083: emit a no-op KeSetPriorityThread call on the calling thread.
+//
+// On WDDM in DC power mode DxgKrnl promotes "GPU worker threads" (threads that
+// service GPU work requests) to real-time priority 16 using an undocumented
+// heuristic that watches the frequency of KeSetPriorityThread calls on those
+// threads.
+// The API lock's WRITE path used to emit such calls (via API_LOCK_PRIORITY_BOOST) while servicing
+// NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT. Changing that control to use the API READ lock
+// removed them and suppressed the promotion, regressing performance.
+//
+// Setting the priority to the thread's current value has no scheduling effect
+// on the caller, as the call itself is the signal DxgKrnl observes. Gated on the
+// RmWar5785851 regkey and only emitted where the nvport priority helpers are
+// supported (Windows, non-MODS).
+//
+void
+rmapiDxgkrnlNudge(void)
+{
+#if PORT_IS_FUNC_SUPPORTED(portThreadExGetPriority)
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+
+    if (pSys->getProperty(pSys, PDB_PROP_SYS_DXGKRNL_NUDGE_BUG_5785851_WAR))
+    {
+        NvU64 threadId = portThreadGetCurrentThreadId();
+        portThreadExSetPriority(threadId, portThreadExGetPriority(threadId));
+    }
+#endif
+}
+
+//
 // Indicates current thread is in the RTD3 PM path (rm_transition_dynamic_power) which
 // means that certain locking asserts/checks must be skipped due to inability to acquire
 // the API lock in this path.

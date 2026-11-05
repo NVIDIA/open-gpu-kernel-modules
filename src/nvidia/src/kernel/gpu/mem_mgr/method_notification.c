@@ -40,7 +40,6 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "rmapi/mapping_list.h"
-#include "platform/sli/sli.h"
 
 //---------------------------------------------------------------------------
 //
@@ -93,8 +92,7 @@ static NV_STATUS notifyWriteNotifier
     // Fill in the notification structure.
     //
     status = ctxdmaGetKernelVA( NotifyXlate, Offset, sizeof(*pNotifyBuffer),
-        (void **)&(pNotifyBuffer),
-        gpumgrGetSubDeviceInstanceFromGpu(gpumgrGetParentGPU(pGpu)));
+        (void **)&(pNotifyBuffer));
 
     if (status != NV_OK)
     {
@@ -303,7 +301,6 @@ NV_STATUS notifyFillNotifierGPUVATimestamp
     NvBool                bFound;
     CLI_DMA_MAPPING_INFO *pDmaMappingInfo;
     NvU64                 offset;
-    NvU32                 subdeviceInstance;
     NOTIFICATION         *pNotifier;
 
     notifyGPUVA = NotifyGPUVABase + (Index * sizeof(NOTIFICATION));
@@ -313,7 +310,6 @@ NV_STATUS notifyFillNotifierGPUVATimestamp
                                   RES_GET_HANDLE(pDevice),
                                   hMemoryCtx,
                                   notifyGPUVA,
-                                  gpumgrGetDeviceGpuMask(pGpu->deviceInstance),
                                   &pDmaMappingInfo);
     if (!bFound)
     {
@@ -329,36 +325,17 @@ NV_STATUS notifyFillNotifierGPUVATimestamp
         return NV_ERR_INVALID_ADDRESS;
     }
 
-    //
-    // Set idx to default position in the dma mapped address array
-    //
-    subdeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(gpumgrGetParentGPU(pGpu));
-
-    SLI_LOOP_START(SLI_LOOP_FLAGS_NONE)
-
-    if (IsSLIEnabled(pGpu) &&
-        (memdescGetAddressSpace(pDmaMappingInfo->pMemDesc) == ADDR_FBMEM))
-    {
-        //
-        // If SLI and it is vidmem, replace idx with appropriate SLI index
-        // otherwise, this just stays the default value.
-        //
-        subdeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-    }
-
-    if (!pDmaMappingInfo->KernelVAddr[subdeviceInstance])
+    if (!pDmaMappingInfo->KernelVAddr)
     {
         NV_PRINTF(LEVEL_ERROR, "KernelVAddr==NULL; notifier not written\n");
     }
     else
     {
-        pNotifier = (PNOTIFICATION)((NvU8*)pDmaMappingInfo->KernelVAddr[subdeviceInstance] + offset);
+        pNotifier = (PNOTIFICATION)((NvU8*)pDmaMappingInfo->KernelVAddr + offset);
 
         notifyFillNOTIFICATION(pGpu, pNotifier, Info32, Info16,
                                CompletionStatus, NV_TRUE, Time);
     }
-
-    SLI_LOOP_END
 
     return NV_OK;
 }
@@ -554,7 +531,6 @@ NV_STATUS semaphoreFillGPUVATimestamp
     NvU64      SemaphoreGPUVABase,
     NvV32      ReleaseValue,
     NvU32      Index,
-    NvBool     bBroadcast,
     NvU64      Time
 )
 {
@@ -563,9 +539,7 @@ NV_STATUS semaphoreFillGPUVATimestamp
     CLI_DMA_MAPPING_INFO *pDmaMappingInfo;
     NvU64                 offset;
     NvU32                 timeHi, timeLo;
-    NvU32                 subdeviceInstance;
     NvGpuSemaphore       *pSemaphore;
-    NvBool                bBcState = gpumgrGetBcEnabledStatus(pGpu);
     NvBool                bFound;
 
     if (!portSafeMulU64((NvU64) Index,
@@ -582,7 +556,6 @@ NV_STATUS semaphoreFillGPUVATimestamp
                                   RES_GET_HANDLE(pDevice),
                                   hMemCtx,
                                   semaphoreGPUVA,
-                                  gpumgrGetDeviceGpuMask(pGpu->deviceInstance),
                                   &pDmaMappingInfo);
     if (!bFound)
     {
@@ -601,42 +574,21 @@ NV_STATUS semaphoreFillGPUVATimestamp
     timeLo = NvU64_LO32(Time);
     timeHi = NvU64_HI32(Time);
 
-    //
-    // Set idx to default position in the dma mapped address array
-    //
-    subdeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(gpumgrGetParentGPU(pGpu));
-
     osFlushCpuWriteCombineBuffer();
 
-    gpumgrSetBcEnabledStatus(pGpu, bBroadcast);
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-
-    if (IsSLIEnabled(pGpu) &&
-        (memdescGetAddressSpace(pDmaMappingInfo->pMemDesc) == ADDR_FBMEM))
-    {
-        //
-        // If SLI and it is vidmem, replace idx with appropriate SLI index
-        // otherwise, this just stays the default value.
-        //
-        subdeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-    }
-
-    if (!pDmaMappingInfo->KernelVAddr[subdeviceInstance])
+    if (!pDmaMappingInfo->KernelVAddr)
     {
         NV_PRINTF(LEVEL_ERROR, "KernelVAddr==NULL; semaphore not released\n");
     }
     else
     {
-        pSemaphore = (NvGpuSemaphore*)((NvU8*)pDmaMappingInfo->KernelVAddr[subdeviceInstance] + offset);
+        pSemaphore = (NvGpuSemaphore*)((NvU8*)pDmaMappingInfo->KernelVAddr + offset);
 
         MEM_WR32(&(pSemaphore->timeStamp.nanoseconds[0]), timeLo);
         MEM_WR32(&(pSemaphore->timeStamp.nanoseconds[1]), timeHi);
         MEM_WR32(&(pSemaphore->data[0]), ReleaseValue);
     }
 
-    SLI_LOOP_END
-
-    gpumgrSetBcEnabledStatus(pGpu, bBcState);
     osFlushCpuWriteCombineBuffer();
 
     return NV_OK;
@@ -665,8 +617,7 @@ NV_STATUS semaphoreFillGPUVA
     NvHandle   hMemCtx,
     NvU64      SemaphoreGPUVABase,
     NvV32      ReleaseValue,
-    NvU32      Index,
-    NvBool     bBroadcast
+    NvU32      Index
 )
 {
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
@@ -680,6 +631,5 @@ NV_STATUS semaphoreFillGPUVA
                                        SemaphoreGPUVABase,
                                        ReleaseValue,
                                        Index,
-                                       bBroadcast,
                                        Time);
 }

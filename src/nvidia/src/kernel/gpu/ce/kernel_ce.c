@@ -711,8 +711,6 @@ kceServiceNotificationInterrupt_IMPL
 
     MODS_ARCH_REPORT(NV_ARCH_EVENT_NONSTALL_CE, "%s", "processing CE nonstall interrupt\n");
 
-    kceNonstallIntrCheckAndClear_HAL(pGpu, pKCe, pParams->pThreadState);
-
     // Wake up channels waiting on this event
     engineNonStallIntrNotify(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID));
 

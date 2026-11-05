@@ -97,6 +97,10 @@
 *
 ****************************************************************************/
 
+#include <cpuopsys.h>
+
+#if NVCPU_IS_X86_64
+
 #define PRIM_OPS_NO_REDEFINE_ASM
 #include "x86emu/x86emui.h"
 
@@ -2653,3 +2657,4 @@ DB(     if (CHECK_SP_ACCESS())
     return res;
 }
 
+#endif /* NVCPU_IS_X86_64 */

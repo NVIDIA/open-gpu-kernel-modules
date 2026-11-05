@@ -35,7 +35,7 @@ nodevicememConstruct_IMPL
 )
 {
     NV_STATUS                    status;
-    MEMORY_DESCRIPTOR           *pMemDesc;
+    MEMORY_DESCRIPTOR           *pMemDesc = NULL;
     NV_MEMORY_ALLOCATION_PARAMS *pAllocParams = pParams->pAllocParams;
     Memory                      *pMemory = staticCast(pNoDeviceMemory, Memory);
     NvU32                        cpuCacheAttrib;
@@ -64,15 +64,14 @@ nodevicememConstruct_IMPL
             break;
     }
 
-    status = memdescCreate(&pMemory->pMemDesc, NULL, pAllocParams->size, 0, NV_MEMORY_CONTIGUOUS,
+    status = memdescCreate(&pMemDesc, NULL, pAllocParams->size, 0, NV_MEMORY_CONTIGUOUS,
                            ADDR_SYSMEM, cpuCacheAttrib, MEMDESC_FLAGS_CPU_ONLY);
     if (status != NV_OK)
         return status;
 
-    status = osAllocPages(pMemory->pMemDesc);
+    status = osAllocPages(pMemDesc);
     if (status != NV_OK)
         goto cleanup;
-    pMemDesc = pMemory->pMemDesc;
     pMemDesc->Allocated = 1;
 
     protection = DRF_VAL(OS32, _ATTR2, _PROTECTION_USER, pAllocParams->attr2);
@@ -83,55 +82,19 @@ nodevicememConstruct_IMPL
     NV_CHECK_OK_OR_GOTO(status, LEVEL_INFO,
         memSetGpuCacheSnoop(NULL, attr, pMemDesc), cleanup);
 
-    // initialize the memory description
-    pMemory->categoryClassId = pCallContext->pResourceRef->externalClassId;
-    pMemory->pMemDesc   = pMemDesc;
-    pMemory->Length     = pMemDesc->Size;
-    pMemory->RefCount   = 1;
-    pMemory->HeapOwner  = 0;
-    pMemory->pHeap      = NULL;
-    pMemory->Attr       = attr;
-    pMemory->Attr2      = attr2;
-    pMemory->Flags      = pAllocParams->flags;
-    pMemory->isMemDescOwner = NV_TRUE;
-
-    // Initialize the circular list item for tracking dup/sharing of pMemDesc
-    pMemory->dupListItem.pNext = pMemory->dupListItem.pPrev = pMemory;
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_INFO,
+        memConstructCommon(pMemory, pCallContext->pResourceRef->externalClassId, pAllocParams->flags, pMemDesc, 0,
+                           NULL, attr, attr2, 0, 0,
+                           0, NULL),
+        cleanup);
 
     return NV_OK;
 
 cleanup:
-    nodevicememDestruct_IMPL(pNoDeviceMemory);
+    if (!pMemory->bConstructed)
+    {
+        memdescFree(pMemDesc);
+        memdescDestroy(pMemDesc);
+    }
     return status;
-}
-
-void nodevicememDestruct_IMPL(NoDeviceMemory *pNoDeviceMemory)
-{
-    Memory *pMemory = staticCast(pNoDeviceMemory, Memory);
-
-    if (pMemory->KernelVAddr != NvP64_NULL)
-    {
-        memdescUnmap(pMemory->pMemDesc, NV_TRUE,
-                     pMemory->KernelVAddr, pMemory->KernelMapPriv);
-        pMemory->KernelVAddr = NvP64_NULL;
-        pMemory->KernelMapPriv = NvP64_NULL;
-    }
-
-    if (pMemory->pMemDesc)
-    {
-        memdescFree(pMemory->pMemDesc);
-        memdescDestroy(pMemory->pMemDesc);
-    }
-}
-
-NV_STATUS nodevicememGetMapAddrSpace_IMPL
-(
-    NoDeviceMemory *pNoDeviceMemory,
-    CALL_CONTEXT *pCallContext,
-    NvU32 mapFlags,
-    NV_ADDRESS_SPACE *pAddrSpace
-)
-{
-    *pAddrSpace = ADDR_SYSMEM;
-    return NV_OK;
 }

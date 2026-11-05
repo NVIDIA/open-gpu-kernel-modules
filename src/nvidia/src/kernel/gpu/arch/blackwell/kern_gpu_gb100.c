@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -85,6 +85,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB100[] =
     GPU_CHILD_PRESENT(OBJTMR, 1),
     GPU_CHILD_PRESENT(KernelMIGManager, 1),
     GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelVbios, 1),
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
@@ -113,6 +114,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB100[] =
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(KernelCcu, 1),
+    GPU_CHILD_PRESENT(TdispMgr, 1),
     GPU_CHILD_PRESENT(KernelOob, 1),
 };
 
@@ -142,6 +144,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB102[] =
     GPU_CHILD_PRESENT(OBJTMR, 1),
     GPU_CHILD_PRESENT(KernelMIGManager, 1),
     GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelVbios, 1),
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
@@ -170,6 +173,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB102[] =
     GPU_CHILD_PRESENT(Spdm, 1),
     GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelCcu, 1),
+    GPU_CHILD_PRESENT(TdispMgr, 1),
 };
 
 const GPUCHILDPRESENT *
@@ -1205,6 +1209,37 @@ gpuIsNvleModeEnabledInHw_GB100
     return FLD_TEST_DRF(_PMC_ZB, _SCRATCH_RESET_2_CC, _NVLE_MODE_ENABLED, _TRUE, val);
 }
 
+/*
+ * @brief Check if BMSAI bit has been set in the scratch register
+ *
+ * @param[in] pGpu GPU object pointer
+ */
+NvBool
+gpuIsBmsaiEnabledInHw_GB100
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 val = GPU_REG_RD32(pGpu, NV_PMC0_PRI_BASE + NV_PMC_ZB_SCRATCH_RESET_2_CC);
+    return FLD_TEST_DRF(_PMC_ZB, _SCRATCH_RESET_2_CC, _BMSAI_MODE_ENABLED, _TRUE, val);
+}
+
+/*
+ * @brief Check if the BMSAI-capable bit has been set in the scratch register
+ *
+ * @param[in] pGpu GPU object pointer
+ */
+NvBool
+gpuIsBmsaiCapableInHw_GB100
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 val = GPU_REG_RD32(pGpu, NV_PMC0_PRI_BASE + NV_PMC_ZB_SCRATCH_RESET_2_CC);
+    return FLD_TEST_DRF(_PMC_ZB, _SCRATCH_RESET_2_CC, _BMSAI_MODE_CAPABLE, _TRUE, val);
+}
+
+
 /*!
  * @brief Wait before receiving the next message from mailbox
  *
@@ -1782,6 +1817,21 @@ gpuReadPBusScratch_GB100
 )
 {
     return GPU_REG_RD32(pGpu, NV_PBUS0_PRI_BASE + NV_PBUS_ZB_SW_SCRATCH(idx));
+}
+
+/*!
+ *  @brief Get absolute BAR0 address of PMC_BOOT_0.
+ *
+ *  ZB layout: PMC has been relocated; the absolute address is the PMC0
+ *  region base plus the ZB-relative offset.
+ */
+NvU32
+gpuGetPmcBoot0Addr_GB100
+(
+    OBJGPU *pGpu
+)
+{
+    return NV_PMC0_PRI_BASE + NV_PMC_ZB_BOOT_0;
 }
 
 /*!

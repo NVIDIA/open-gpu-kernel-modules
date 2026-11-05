@@ -134,8 +134,12 @@ void uvm_hal_ampere_host_clear_faulted_channel_register(uvm_user_channel_t *user
     UVM_GPU_WRITE_ONCE(*user_channel->chram_channel_register, clear_type_value);
 
     wmb();
-
-    UVM_GPU_WRITE_ONCE(*user_channel->work_submission_offset, user_channel->work_submission_token);
+    {
+        NvU32 token = user_channel->work_submission_token;
+        if (user_channel->p_work_submission_token)
+            token = READ_ONCE(*user_channel->p_work_submission_token);
+        UVM_GPU_WRITE_ONCE(*user_channel->work_submission_offset, token);
+    }
 }
 
 static NvU32 instance_ptr_aperture_type_to_hw_value(uvm_aperture_t aperture)

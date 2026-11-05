@@ -131,23 +131,20 @@ krcInitRegistryOverridesDelayed_IMPL
 )
 {
     KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
-    KernelWatchdogState *pWatchdogState;
+    KernelWatchdogState *pWatchdogState = NULL;
     NvU32 dword = 0;
     (void) dword;
 
-    NV_ASSERT_OR_RETURN_VOID(GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL);
-    pWatchdogState = &GPU_GET_KERNEL_WATCHDOG(pGpu)->watchdogState;
+    if (GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL)
+    {
+        pWatchdogState = &GPU_GET_KERNEL_WATCHDOG(pGpu)->watchdogState;
+    }
 
     dword = 0;
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ROBUST_CHANNELS, &dword) !=
         NV_OK)
     {
-#if RMCFG_FEATURE_PLATFORM_WINDOWS || RMCFG_FEATURE_PLATFORM_GSP || \
-    RMCFG_FEATURE_PLATFORM_UNIX
         dword = NV_REG_STR_RM_ROBUST_CHANNELS_ENABLE;
-#else
-#error "unrecognized platform"
-#endif
     }
     pKernelRc->bRobustChannelsEnabled = (dword ==
                                          NV_REG_STR_RM_ROBUST_CHANNELS_ENABLE);
@@ -168,12 +165,13 @@ krcInitRegistryOverridesDelayed_IMPL
     // - When the system does not support CPU cache snooping (bugs 292461 and
     // 976485).
     //
-    if ((osReadRegistryDword(pGpu,
-                             NV_REG_STR_USE_UNCACHED_PCI_MAPPINGS,
-                             &dword) == NV_OK &&
-         dword != 0) ||
-        ((pKernelBif != NULL) &&
-         !kbifIsSnoopDmaCapable(pGpu, pKernelBif)))
+    if ((pWatchdogState != NULL) &&
+        ((osReadRegistryDword(pGpu,
+                              NV_REG_STR_USE_UNCACHED_PCI_MAPPINGS,
+                              &dword) == NV_OK &&
+          dword != 0) ||
+         ((pKernelBif != NULL) &&
+          !kbifIsSnoopDmaCapable(pGpu, pKernelBif))))
     {
         pWatchdogState->flags |= WATCHDOG_FLAGS_ALLOC_UNCACHED_PCI;
     }
@@ -222,10 +220,6 @@ _krcInitRegistryOverrides
         if (pKernelRc->bLogEvents)
         {
             NV_PRINTF(LEVEL_INFO, "RC Error Logging is enabled\n");
-#if defined(DEBUG)
-            // Don't print out the initialization log on a retail build
-            osErrorLog(pGpu, ROBUST_CHANNEL_RC_LOGGING_ENABLED, "");
-#endif
         }
     }
 
@@ -317,7 +311,6 @@ krcReportXid_IMPL
         NvU16          gpuPartitionId;
         NvU16          computeInstanceId;
         KernelChannel *pKernelChannel = krcGetChannelInError(pKernelRc);
-        char          *allocProcName = NULL;
         const char    *procName = NULL;
         char           pidStr[12] = "";
 
@@ -330,9 +323,7 @@ krcReportXid_IMPL
         //
         // When the channel context is available, use the allocating process'
         // PID/name, which were populated when the channel was allocated.
-        // For errors without a channel context, use the current process
-        // information, if there's a Resource Server CALL_CONTEXT present
-        // in TLS, indicating we're servicing an RMAPI request.
+        // Omit PID/name for Xid not attributable to channel context.
         //
         if (pKernelChannel != NULL)
         {
@@ -348,19 +339,6 @@ krcReportXid_IMPL
             RmClient *pRmClient = dynamicCast(pClient, RmClient);
             procName = pRmClient->name;
             nvDbgSnprintf(pidStr, sizeof(pidStr), "%u", pKernelChannel->ProcessID);
-        }
-        else if (resservGetTlsCallContext() != NULL)
-        {
-            NvU32 currentPid = osGetCurrentProcess();
-
-            nvDbgSnprintf(pidStr, sizeof(pidStr), "%u", currentPid);
-
-            allocProcName = portMemAllocNonPaged(NV_PROC_NAME_MAX_LENGTH);
-            if (allocProcName != NULL)
-            {
-                osGetCurrentProcessName(allocProcName, NV_PROC_NAME_MAX_LENGTH);
-                procName = allocProcName;
-            }
         }
 
         _krcLogUuidOnce(pGpu, pKernelRc);
@@ -421,42 +399,8 @@ krcReportXid_IMPL
         }
 
         #undef XID_PRINT_WITH_ATTR
-
-        portMemFree(allocProcName);
     }
 }
-
-// TODO: (Bug 4154640) should add pKernelWatchdog to argument interface
-NvBool
-krcTestAllowAlloc_IMPL
-(
-    OBJGPU   *pGpu,
-    KernelRc *pKernelRc,
-    NvU32     failMask
-)
-{
-    if (pKernelRc->bRobustChannelsEnabled && (GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL))
-    {
-        KernelWatchdogState *pWatchdogState = &GPU_GET_KERNEL_WATCHDOG(pGpu)->watchdogState;
-        if (pWatchdogState->allocFailMask & failMask)
-        {
-            OBJTMR   *pTmr = GPU_GET_TIMER(pGpu);
-            NvU64     time;
-            NV_STATUS status = tmrGetCurrentTime(pTmr, &time);
-
-            //
-            // randomly fail this alloc based on NV timer
-            // assuming here that we don't get allocations within 128ns of each
-            // other
-            //
-            if (status == NV_OK && ((time & 0xff) > (0xffu / 2)))
-                return NV_FALSE;
-        }
-    }
-
-    return NV_TRUE;
-}
-
 
 NV_STATUS
 krcCheckBusError_KERNEL
@@ -609,13 +553,12 @@ krcGetChannelInError_FWCLIENT
 static void
 _krcValidateAndDumpToKernelLog(NvU64 *lastXidTimestamp)
 {
-    NvU32 sec, usec;
+    NvU64 nowNs = osGetMonotonicTimeNs();
 
-    if (((osGetSystemTime(&sec, &usec) == NV_OK) &&
-       ((((sec * 1000000) + usec) - *lastXidTimestamp) > 1000000)))
+    if ((nowNs - *lastXidTimestamp) > NSEC_PER_SEC)
     {
         nvlogDumpToKernelLog(NV_TRUE);
-        *lastXidTimestamp = ((NvU64)sec * 1000000) + usec;
+        *lastXidTimestamp = nowNs;
     }
 }
 #endif //!(DEBUG || DEVELOP)

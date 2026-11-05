@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,36 +29,3 @@
 #include "published/blackwell/gb100/dev_pmc_zb.h"
 #include "published/blackwell/gb100/hwproject.h"
 
-/*!
- * @brief Returns the BAR0 offset and size of the PMC range.
- *
- * @param[in] pGpu
- * @param[in] pKernelMc
- * @param[out] pBar0MapOffset
- * @param[out] pBar0MapSize
- *
- * @return NV_STATUS
- */
-NV_STATUS
-kmcGetMcBar0MapInfo_GB100
-(
-    OBJGPU  *pGpu,
-    KernelMc  *pKernelMc,
-    NvU64   *pBar0MapOffset,
-    NvU32   *pBar0MapSize
-)
-{
-    *pBar0MapOffset = NV_PMC0_PRI_BASE;
-    *pBar0MapSize = DRF_SIZE(NV_PMC_ZB);
-    return NV_OK;
-}
-
-NvU32
-kmcReadPmcBoot0_GB100
-(
-    OBJGPU  *pGpu,
-    KernelMc  *pKernelMc
-)
-{
-    return GPU_REG_RD32(pGpu, NV_PMC0_PRI_BASE + NV_PMC_ZB_BOOT_0);
-}

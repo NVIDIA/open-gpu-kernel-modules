@@ -41,147 +41,12 @@
 #include "mem_mgr/fabric_vaspace.h"
 #include "mem_mgr/virt_mem_mgr.h"
 #include <os/os.h>
-#include "platform/sli/sli.h"
 
 #include "published/ampere/ga100/dev_nv_xve.h"
 #include "published/ampere/ga100/dev_ram.h"  // NV_RAMIN_ALLOC_SIZE
 #include "ctrl/ctrl2080/ctrl2080fla.h" // NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK
 
 #define NVLNK_FABRIC_ADDR_GRANULARITY                                      36
-
-/*!
- * @brief Sets up the Legacy FLA state for the GPU. This function will allocate a RM
- * client, which will allocate the FERMI_VASPACE_A object with LEGACY_FLA flag.
- *
- * @param[in]  base       VASpace base
- * @param[in]  size       VASpace size
- *
- * @return NV_OK if successful
- */
-NV_STATUS
-kbusAllocateLegacyFlaVaspace_GA100
-(
-    OBJGPU    *pGpu,
-    KernelBus *pKernelBus,
-    NvU64      base,
-    NvU64      size
-)
-{
-    NV0080_ALLOC_PARAMETERS nv0080AllocParams = {0};
-    NV2080_ALLOC_PARAMETERS nv2080AllocParams = {0};
-    NV_VASPACE_ALLOCATION_PARAMETERS vaParams = {0};
-    RM_API   *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NvBool    bAcquireLock = NV_FALSE;
-    RsClient *pClient;
-    NV_STATUS    status = NV_OK;
-
-    //Allocate the client in RM which owns the FLAVASpace
-    status = pRmApi->AllocWithHandle(pRmApi, NV01_NULL_OBJECT, NV01_NULL_OBJECT, NV01_NULL_OBJECT,
-                                     NV01_ROOT, &pKernelBus->flaInfo.hClient, sizeof(pKernelBus->flaInfo.hClient));
-    NV_ASSERT_OR_RETURN(status == NV_OK, status);
-
-    status = serverGetClientUnderLock(&g_resServ, pKernelBus->flaInfo.hClient, &pClient);
-    NV_ASSERT_OR_GOTO(status == NV_OK, free_client);
-
-    status = serverutilGenResourceHandle(pKernelBus->flaInfo.hClient, &pKernelBus->flaInfo.hDevice);
-    NV_ASSERT_OR_GOTO(status == NV_OK, free_client);
-
-    // Allocate a device handle
-    nv0080AllocParams.deviceId = gpuGetDeviceInstance(pGpu);
-    status = pRmApi->AllocWithHandle(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hClient,
-                                     pKernelBus->flaInfo.hDevice, NV01_DEVICE_0,
-                                     &nv0080AllocParams, sizeof(nv0080AllocParams));
-
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "failed creating device, status=0x%x\n", status);
-        goto free_client;
-    }
-
-
-    status = serverutilGenResourceHandle(pKernelBus->flaInfo.hClient, &pKernelBus->flaInfo.hSubDevice);
-    NV_ASSERT_OR_GOTO(status == NV_OK, free_client);
-
-    //Allocate a sub device handle
-    nv2080AllocParams.subDeviceId = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-
-    status = pRmApi->AllocWithHandle(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hDevice,
-                                     pKernelBus->flaInfo.hSubDevice, NV20_SUBDEVICE_0,
-                                     &nv2080AllocParams, sizeof(nv2080AllocParams));
-
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "failed creating sub-device, status=0x%x\n",
-                  status);
-        goto free_client;
-    }
-
-    // Allocate the FERMI_VASPACE_A FLA VASpace
-    vaParams.index  = NV_VASPACE_ALLOCATION_INDEX_GPU_NEW;
-    vaParams.vaBase = base;
-    vaParams.vaSize = size;
-    vaParams.flags  |= NV_VASPACE_ALLOCATION_FLAGS_IS_FLA;
-
-    // Generate a vaspace handle for FERMI_VASPACE_A object allocation
-    status = serverutilGenResourceHandle(pKernelBus->flaInfo.hClient, &pKernelBus->flaInfo.hFlaVASpace);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "failed generating vaspace handle, status=0x%x\n", status);
-        goto free_client;
-    }
-
-    if (rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
-    {
-        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
-        bAcquireLock = NV_TRUE;
-        pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
-    }
-
-    // Allocate a FERMI_VASPACE_A object and associate it with hFlaVASpace
-    status = pRmApi->AllocWithHandle(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hDevice,
-                                     pKernelBus->flaInfo.hFlaVASpace, FERMI_VASPACE_A,
-                                     &vaParams, sizeof(vaParams));
-    if (bAcquireLock)
-    {
-        NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
-                    rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_MEM_FLA));
-        bAcquireLock = NV_FALSE;
-        pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    }
-
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "failed allocating vaspace, status=0x%x\n",
-                  status);
-        goto free_client;
-    }
-
-    if (!(IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu)))
-    {
-        // Get the FLA VASpace associated with hFlaVASpace
-        status = vaspaceGetByHandleOrDeviceDefault(pClient,
-                                                   pKernelBus->flaInfo.hDevice,
-                                                   pKernelBus->flaInfo.hFlaVASpace,
-                                                   &pKernelBus->flaInfo.pFlaVAS);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                    "failed getting the vaspace from handle, status=0x%x\n",
-                    status);
-            goto free_client;
-        }
-    }
-    return NV_OK;
-
-free_client:
-    pRmApi->Free(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hClient);
-    portMemSet(&pKernelBus->flaInfo, 0, sizeof(pKernelBus->flaInfo));
-
-    NV_PRINTF(LEVEL_ERROR, "failed allocating FLA VASpace status=0x%x\n",
-              status);
-    return status;
-}
 
 /*!
  * @brief Sets up the Fabric FLA state for the GPU. This function will allocate fabric VASpace,
@@ -206,7 +71,7 @@ kbusAllocateFlaVaspace_GA100
     OBJVMM      *pVmm   = SYS_GET_VMM(SYS_GET_INSTANCE());
     KernelGmmu  *pKernelGmmu  = GPU_GET_KERNEL_GMMU(pGpu);
     INST_BLK_INIT_PARAMS pInstblkParams = {0};
-    RM_API   *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NvBool       bHostVasInitialized = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(size != 0, NV_ERR_INVALID_ARGUMENT);
@@ -227,10 +92,8 @@ kbusAllocateFlaVaspace_GA100
         }
     }
 
-    NV_ASSERT_OK_OR_RETURN(kbusAllocateLegacyFlaVaspace_HAL(pGpu, pKernelBus, base, size));
-
     // Allocate a FABRIC_VASPACE_A object
-    status = vmmCreateVaspace(pVmm, FABRIC_VASPACE_A, pGpu->gpuId, gpumgrGetGpuMask(pGpu),
+    status = vmmCreateVaspace(pVmm, FABRIC_VASPACE_A, pGpu->gpuId, pGpu,
                               base, base + size - 1, 0, 0, NULL, 0,
                               &pGpu->pFabricVAS);
 
@@ -248,12 +111,10 @@ kbusAllocateFlaVaspace_GA100
     if (IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
     {
         NV2080_CTRL_FLA_RANGE_PARAMS params = {0};
-        RsClient   *pClient;
         params.mode = NV2080_CTRL_FLA_RANGE_PARAMS_MODE_HOST_MANAGED_VAS_INITIALIZE;
         params.base = base;
         params.size = size;
-        params.hVASpace = pKernelBus->flaInfo.hFlaVASpace;
-        NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hSubDevice,
+        NV_RM_RPC_CONTROL(pGpu, pGpu->hInternalClient, pGpu->hInternalSubdevice,
                           NV2080_CTRL_CMD_FLA_RANGE,
                           &params, sizeof(params), status);
 
@@ -262,41 +123,23 @@ kbusAllocateFlaVaspace_GA100
             goto free_client;
         }
 
-        serverGetClientUnderLock(&g_resServ, pKernelBus->flaInfo.hClient, &pClient);
-
-        status = vaspaceGetByHandleOrDeviceDefault(pClient,
-                                                   pKernelBus->flaInfo.hDevice,
-                                                   pKernelBus->flaInfo.hFlaVASpace,
-                                                   &pKernelBus->flaInfo.pFlaVAS);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                    "failed getting the vaspace from handle, status=0x%x\n",
-                    status);
-            goto free_rpc;
-        }
+        //
+        // The host has now set up the host-managed FLA VAS. It must be torn
+        // down via HOST_MANAGED_VAS_DESTROY if any step below fails.
+        //
+        bHostVasInitialized = NV_TRUE;
     }
     else
     {
-        // Pin the VASPACE page directory for pFlaVAS before writing the instance block
-        status = vaspacePinRootPageDir(pKernelBus->flaInfo.pFlaVAS, pGpu);
+        FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+
+        // Pin the VASPACE page directory for the fabric VAS before writing the instance block
+        status = vaspacePinRootPageDir(pGpu->pFabricVAS, pGpu);
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "failed pinning down FLAVASpace, status=0x%x\n",
-                    status);
+            NV_PRINTF(LEVEL_ERROR, "failed pinning down fabric vaspace, status=0x%x\n",
+                      status);
             goto unpin_rootpagedir;
-        }
-
-        if (pGpu->pFabricVAS != NULL)
-        {
-            // Pin the VASPACE page directory for pFabricVAS before writing the instance block
-            status = vaspacePinRootPageDir(pGpu->pFabricVAS, pGpu);
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "failed pinning down fabric vaspace, status=0x%x\n",
-                          status);
-                goto unpin_rootpagedir;
-            }
         }
 
         // Construct instance block
@@ -309,10 +152,10 @@ kbusAllocateFlaVaspace_GA100
             goto free_instblk;
         }
 
-        // Instantiate Inst Blk for pFlaVAS
+        // Instantiate Inst Blk for the fabric VAS
         status = kgmmuInstBlkInit(pKernelGmmu,
                                  pKernelBus->flaInfo.pInstblkMemDesc,
-                                 pKernelBus->flaInfo.pFlaVAS, NULL,
+                                 pFabricVAS->pGVAS, NULL,
                                  FIFO_PDB_IDX_BASE,
                                  &pInstblkParams);
         if (status != NV_OK)
@@ -324,7 +167,6 @@ kbusAllocateFlaVaspace_GA100
         }
     }
     pKernelBus->flaInfo.bFlaAllocated    = NV_TRUE;
-    pKernelBus->flaInfo.bToggleBindPoint = NV_TRUE;
 
     if (pGpu->pFabricVAS != NULL)
     {
@@ -362,38 +204,43 @@ kbusAllocateFlaVaspace_GA100
     }
     return status;
 
-free_rpc:
-     {
-        NV2080_CTRL_FLA_RANGE_PARAMS params = {0};
-        params.mode = NV2080_CTRL_FLA_RANGE_PARAMS_MODE_HOST_MANAGED_VAS_DESTROY;
-        NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hSubDevice,
-                          NV2080_CTRL_CMD_FLA_RANGE,
-                          &params, sizeof(params), status);
-        goto free_client;
-     }
-
 free_instblk:
     kbusDestructFlaInstBlk_HAL(pGpu, pKernelBus);
 
 unpin_rootpagedir:
-    if (pKernelBus->flaInfo.pFlaVAS != NULL)
-    {
-        vaspaceUnpinRootPageDir(pKernelBus->flaInfo.pFlaVAS, pGpu);
-    }
-
     if (pGpu->pFabricVAS != NULL)
     {
         vaspaceUnpinRootPageDir(pGpu->pFabricVAS, pGpu);
     }
 
 free_client:
+    if (bHostVasInitialized)
+    {
+        //
+        // Tear down the host-managed FLA VAS that was set up above by the
+        // HOST_MANAGED_VAS_INITIALIZE RPC.
+        //
+        NV2080_CTRL_FLA_RANGE_PARAMS destroyParams = {0};
+        NV_STATUS                    destroyStatus = NV_OK;
+
+        destroyParams.mode = NV2080_CTRL_FLA_RANGE_PARAMS_MODE_HOST_MANAGED_VAS_DESTROY;
+        NV_RM_RPC_CONTROL(pGpu, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                          NV2080_CTRL_CMD_FLA_RANGE,
+                          &destroyParams, sizeof(destroyParams), destroyStatus);
+        if (destroyStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_WARNING,
+                      "Failed to destroy host-managed FLA VAS, status: 0x%x\n",
+                      destroyStatus);
+        }
+    }
+
     if (pGpu->pFabricVAS != NULL)
     {
         vmmDestroyVaspace(pVmm, pGpu->pFabricVAS);
         pGpu->pFabricVAS = NULL;
     }
 
-    pRmApi->Free(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hClient);
     pKernelBus->flaInfo.bFlaAllocated = NV_FALSE;
 
     NV_PRINTF(LEVEL_ERROR, "failed allocating FLA VASpace status=0x%x\n",
@@ -435,7 +282,7 @@ kbusAllocateHostManagedFlaVaspace_GA100
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
     OBJVMM     *pVmm        = SYS_GET_VMM(SYS_GET_INSTANCE());
     INST_BLK_INIT_PARAMS pInstblkParams = {0};
-    RsClient   *pClient;
+    FABRIC_VASPACE *pFabricVAS  = NULL;
     NV_STATUS   status;
 
     NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -444,26 +291,13 @@ kbusAllocateHostManagedFlaVaspace_GA100
     NV_ASSERT_OR_RETURN(hClient != NV01_NULL_OBJECT, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(hDevice != NV01_NULL_OBJECT, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(hSubdevice != NV01_NULL_OBJECT, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(hVASpace != NV01_NULL_OBJECT, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(!pKernelBus->flaInfo.bFlaAllocated, NV_ERR_INVALID_ARGUMENT);
 
     pKernelBus->flaInfo.base = base;
     pKernelBus->flaInfo.size = size;
-    pKernelBus->flaInfo.hClient = hClient;
-    pKernelBus->flaInfo.hDevice = hDevice;
-    pKernelBus->flaInfo.hSubDevice = hSubdevice;
-    pKernelBus->flaInfo.hFlaVASpace = hVASpace;
-
-    status = serverGetClientUnderLock(&g_resServ, pKernelBus->flaInfo.hClient, &pClient);
-    NV_ASSERT_OR_GOTO(status == NV_OK, cleanup);
-
-    status = vaspaceGetByHandleOrDeviceDefault(pClient,
-                                               pKernelBus->flaInfo.hDevice,
-                                               pKernelBus->flaInfo.hFlaVASpace,
-                                               &pKernelBus->flaInfo.pFlaVAS);
 
     // Allocate a FABRIC_VASPACE_A object
-    status = vmmCreateVaspace(pVmm, FABRIC_VASPACE_A, pGpu->gpuId, gpumgrGetGpuMask(pGpu),
+    status = vmmCreateVaspace(pVmm, FABRIC_VASPACE_A, pGpu->gpuId, pGpu,
                               base, base + size - 1, 0, 0, NULL, 0,
                               &pGpu->pFabricVAS);
     if (status != NV_OK)
@@ -472,6 +306,8 @@ kbusAllocateHostManagedFlaVaspace_GA100
                   status);
         goto cleanup;
     }
+
+    pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
 
     // Pin the VASPACE page directory for pFabricVAS before writing the instance block
     status = vaspacePinRootPageDir(pGpu->pFabricVAS, pGpu);
@@ -482,15 +318,6 @@ kbusAllocateHostManagedFlaVaspace_GA100
         goto cleanup;
     }
 
-    // Pin the VASPACE page directory for Legacy VAS  before writing the instance block
-    status = vaspacePinRootPageDir(pKernelBus->flaInfo.pFlaVAS, pGpu);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "failed pinning down legacy vaspace, status=0x%x\n",
-                    status);
-        goto unpin_fabric_page_dir;
-    }
-
     // Construct instance block
     status = kbusConstructFlaInstBlk_HAL(pGpu, pKernelBus, gfid);
     if (status != NV_OK)
@@ -498,13 +325,13 @@ kbusAllocateHostManagedFlaVaspace_GA100
         NV_PRINTF(LEVEL_ERROR,
                  "failed constructing instblk for FLA, status=0x%x\n",
                   status);
-        goto unpin_legacy_page_dir;
+        goto unpin_fabric_page_dir;
     }
 
-    // Instantiate Inst Blk for FLA
+    // Instantiate Inst Blk for the fabric VAS
     status = kgmmuInstBlkInit(pKernelGmmu,
                               pKernelBus->flaInfo.pInstblkMemDesc,
-                              pKernelBus->flaInfo.pFlaVAS, NULL,
+                              pFabricVAS->pGVAS, NULL,
                               FIFO_PDB_IDX_BASE,
                               &pInstblkParams);
     if (status != NV_OK)
@@ -516,7 +343,6 @@ kbusAllocateHostManagedFlaVaspace_GA100
     }
 
     pKernelBus->flaInfo.bFlaAllocated = NV_TRUE;
-    pKernelBus->flaInfo.bToggleBindPoint = NV_TRUE;
 
     if (pGpu->pFabricVAS != NULL)
     {
@@ -529,12 +355,6 @@ kbusAllocateHostManagedFlaVaspace_GA100
 
 free_instblk:
     kbusDestructFlaInstBlk_HAL(pGpu, pKernelBus);
-
-unpin_legacy_page_dir:
-    if (pKernelBus->flaInfo.pFlaVAS != NULL)
-    {
-        vaspaceUnpinRootPageDir(pKernelBus->flaInfo.pFlaVAS, pGpu);
-    }
 
 unpin_fabric_page_dir:
     if (pGpu->pFabricVAS != NULL)
@@ -579,14 +399,12 @@ kbusCheckFlaSupportedAndInit_GA100
     //  2. Disable FLA when MIG is enabled
     //     Currently MIG is persistent state, so GPU reboot will happpen, when MIG is being enabled/disabled
     //     so when the GPU reboot happens with a modified state, don't enable FLA. This is decent WAR for bug: 2568634
-    //   3. Disable FLA when SLI is enabled
-    //       Bug: 2985556, re-enable once we fix this bug.
     //
     if (((NULL != pKernelMIGManager) && !kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager)) ||
-        (IsSLIEnabled(pGpu)) || pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) ||
         pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM))
     {
-        NV_PRINTF(LEVEL_INFO, "FLA is disabled, gpu %x is in MIG/SLI mode \n", pGpu->gpuInstance);
+        NV_PRINTF(LEVEL_INFO, "FLA is disabled, gpu %x is in MIG mode or FB is not available \n", pGpu->gpuInstance);
         pKernelBus->bFlaSupported = NV_FALSE;
         return NV_OK;
     }
@@ -702,10 +520,9 @@ kbusDestroyFla_GA100
 {
     OBJSYS *pSys   = SYS_GET_INSTANCE();
     OBJVMM *pVmm   = SYS_GET_VMM(pSys);
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
     // TODO: if there are dangling resources, cleanup here
-    if ((pKernelBus->flaInfo.pFlaVAS != NULL) || (pGpu->pFabricVAS != NULL))
+    if (pGpu->pFabricVAS != NULL)
     {
         if (pKernelBus->flaInfo.bFlaBind)
         {
@@ -722,7 +539,7 @@ kbusDestroyFla_GA100
                 NV2080_CTRL_FLA_RANGE_PARAMS params = {0};
                 NV_STATUS status = NV_OK;
                 params.mode = NV2080_CTRL_FLA_RANGE_PARAMS_MODE_HOST_MANAGED_VAS_DESTROY;
-                NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hSubDevice,
+                NV_RM_RPC_CONTROL(pGpu, pGpu->hInternalClient, pGpu->hInternalSubdevice,
                                 NV2080_CTRL_CMD_FLA_RANGE,
                                 &params, sizeof(params), status);
 
@@ -741,16 +558,10 @@ kbusDestroyFla_GA100
                     pGpu->pFabricVAS = NULL;
                 }
 
-                pRmApi->Free(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hClient);
                 portMemSet(&pKernelBus->flaInfo, 0, sizeof(pKernelBus->flaInfo));
             }
             else
             {
-                if (pKernelBus->flaInfo.pFlaVAS != NULL)
-                {
-                    vaspaceUnpinRootPageDir(pKernelBus->flaInfo.pFlaVAS, pGpu);
-                }
-
                 if (pGpu->pFabricVAS != NULL)
                 {
                     vaspaceUnpinRootPageDir(pGpu->pFabricVAS, pGpu);
@@ -764,7 +575,6 @@ kbusDestroyFla_GA100
                     pGpu->pFabricVAS = NULL;
                 }
 
-                pRmApi->Free(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hClient);
                 portMemSet(&pKernelBus->flaInfo, 0, sizeof(pKernelBus->flaInfo));
             }
 
@@ -784,19 +594,12 @@ kbusDestroyHostManagedFlaVaspace_GA100
     OBJSYS *pSys   = SYS_GET_INSTANCE();
     OBJVMM *pVmm   = SYS_GET_VMM(pSys);
 
-    NV_PRINTF(LEVEL_INFO, "Freeing the FLA client: 0x%x FLAVASpace:%x, gpu:%x \n",
-             pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hFlaVASpace, pGpu->gpuInstance);
+    NV_PRINTF(LEVEL_INFO, "Freeing the FLA vaspace, gpu:%x \n",
+             pGpu->gpuInstance);
 
     if (pKernelBus->flaInfo.bFlaAllocated)
     {
         KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-
-        if (pKernelBus->flaInfo.pFlaVAS != NULL)
-        {
-            vaspaceUnpinRootPageDir(pKernelBus->flaInfo.pFlaVAS, pGpu);
-            pKernelBus->flaInfo.hFlaVASpace = NV01_NULL_OBJECT;
-            pKernelBus->flaInfo.pFlaVAS = NULL;
-        }
 
         if (pGpu->pFabricVAS != NULL)
         {
@@ -806,9 +609,6 @@ kbusDestroyHostManagedFlaVaspace_GA100
         }
 
         kbusDestructFlaInstBlk_HAL(pGpu, pKernelBus);
-        pKernelBus->flaInfo.hClient = NV01_NULL_OBJECT;
-        pKernelBus->flaInfo.hDevice = NV01_NULL_OBJECT;
-        pKernelBus->flaInfo.hSubDevice = NV01_NULL_OBJECT;
         pKernelBus->flaInfo.bFlaAllocated = NV_FALSE;
         if (pKernelNvlink == NULL || !knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
         {
@@ -817,72 +617,6 @@ kbusDestroyHostManagedFlaVaspace_GA100
             pKernelBus->flaInfo.size = 0;
         }
     }
-}
-
-/*!
- * @brief This function will return the OBJVASPACE for the FLA VAS.
- *
- * @param[in/out]  ppVAS    OBJVASPACE double pointer
- *
- * @return NV_ERR_NOT_SUPPORTED, if FLA is not supported,
- *         else NV_OK
- */
-NV_STATUS
-kbusGetFlaVaspace_GA100
-(
-    OBJGPU      *pGpu,
-    KernelBus   *pKernelBus,
-    OBJVASPACE **ppVAS
-)
-{
-    NV_STATUS         status  = NV_OK;
-    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-    KernelNvlink     *pKernelNvlink     = GPU_GET_KERNEL_NVLINK(pGpu);
-
-    *ppVAS = NULL;
-
-    // Return NV_ERR_NOT_SUPPORTED if nvlink is force disabled using cmd line args
-    if (!IS_VIRTUAL(pGpu) && pKernelNvlink == NULL)
-    {
-        NV_PRINTF(LEVEL_WARNING, "Nvlink is not supported in this GPU: %x \n", pGpu->gpuInstance);
-        return  NV_ERR_NOT_SUPPORTED;
-    }
-
-    // Return NV_ERR_NOT_SUPPORTED when we are in MIG mode
-    if ((pKernelMIGManager != NULL) && !kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager))
-    {
-        NV_PRINTF(LEVEL_WARNING, "FLA is not supported with MIG enabled, GPU: %x \n", pGpu->gpuInstance);
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    if (!kbusIsFlaSupported(pKernelBus))
-    {
-        NV_PRINTF(LEVEL_WARNING, "FLA is not supported, GPU: %x\n", pGpu->gpuInstance);
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    if (!IS_VIRTUAL(pGpu) && !kbusIsFlaEnabled(pKernelBus))
-    {
-        if (!gpuIsSriovEnabled(pGpu) && !IS_VIRTUAL(pGpu))
-        {
-            NV_PRINTF(LEVEL_WARNING, "FLA is not enabled, GPU: %x\n", pGpu->gpuInstance);
-            return NV_ERR_NOT_SUPPORTED;
-        }
-    }
-    //
-    // when FLA init moves to P2P object creation time, any client trying to get
-    // FLA VAS reference, needs to be returned NV_ERR_NOT_SUPPORTED. In that case, only
-    // way to determine is to check if links are trained in the system. Since we dont have an easy
-    // way to do the checks, currently we can assume that Nvlinks will not be disabled outside of MIG
-    //
-
-    *ppVAS = pKernelBus->flaInfo.pFlaVAS;
-
-    NV_PRINTF(LEVEL_INFO, "returning the vas: %p for GPU: %x start: 0x%llx, limit:0x%llx \n",
-              pKernelBus->flaInfo.pFlaVAS, pGpu->gpuInstance, pKernelBus->flaInfo.pFlaVAS->vasStart,
-              pKernelBus->flaInfo.pFlaVAS->vasLimit);
-
-    return status;
 }
 
 /*!
@@ -927,7 +661,7 @@ kbusConstructFlaInstBlk_GA100
 
     NV_ASSERT(status == NV_OK);
 
-    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_89, 
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_89,
                         pKernelBus->flaInfo.pInstblkMemDesc);
 
     NV_ASSERT(status == NV_OK);
@@ -1072,9 +806,10 @@ kbusGetNvlinkP2PPeerId_GA100
     // when client has not provided EGM peerId mask in forced config
     // tests.
     //
+    NVLINK_BIT_VECTOR *pPeerLinkMask = knvlinkGetPeerLinkMask(pGpu0, pKernelNvlink0, gpuGetInstance(pGpu1));
     if (!(knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
-          knvlinkAreLinksRegistryOverriden(pGpu0, pKernelNvlink0)) &&
-         (knvlinkGetPeerLinkMask(pGpu0, pKernelNvlink0, gpuGetInstance(pGpu1)) == 0))
+            knvlinkAreLinksRegistryOverriden(pGpu0, pKernelNvlink0)) &&
+            (pPeerLinkMask == NULL || bitVectorTestAllCleared(pPeerLinkMask)))
     {
         return NV_OK;
     }
@@ -1344,8 +1079,8 @@ kbusSetupBindFla_GA100
     }
     params.flaAction   = NV2080_CTRL_FLA_ACTION_BIND;
 
-    NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient,
-                        pKernelBus->flaInfo.hSubDevice,
+    NV_RM_RPC_CONTROL(pGpu, pGpu->hInternalClient,
+                        pGpu->hInternalSubdevice,
                         NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK,
                         &params, sizeof(params), status);
 
@@ -1382,8 +1117,8 @@ kbusSetupUnbindFla_GA100
 
     params.flaAction = NV2080_CTRL_FLA_ACTION_UNBIND;
 
-    NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient,
-                      pKernelBus->flaInfo.hSubDevice,
+    NV_RM_RPC_CONTROL(pGpu, pGpu->hInternalClient,
+                      pGpu->hInternalSubdevice,
                       NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK,
                       &params, sizeof(params), status);
 

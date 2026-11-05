@@ -157,31 +157,6 @@ tmrGetGpuAndCpuTimestampPair_GM107
 }
 
 /*!
- * @brief Gets GPU PTIMER offsets
- *
- */
-NV_STATUS
-tmrGetGpuPtimerOffset_GM107
-(
-    OBJGPU  *pGpu,
-    OBJTMR  *pTmr,
-    NvU32   *pGpuTimestampOffsetLo,
-    NvU32   *pGpuTimestampOffsetHi
-)
-{
-    if (pGpuTimestampOffsetLo)
-    {
-        *pGpuTimestampOffsetLo = NV_PTIMER_TIME_0;
-    }
-    if (pGpuTimestampOffsetHi)
-    {
-        *pGpuTimestampOffsetHi = NV_PTIMER_TIME_1;
-    }
-
-    return NV_OK;;
-}
-
-/*!
  * @brief Change GR Tick frequency to either default or max.
  *
  * @param[in]   OBJGPU    *GPU Object

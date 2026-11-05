@@ -29,6 +29,9 @@
 #include "gpu/gsp/kernel_gsp.h"
 #include "gpu/rc/kernel_rc.h"
 
+#include "events/gpu/ras/ras_events.h"
+#include "nvoc/event_bus.h"
+
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
 
 #include "published/rubin/gr100/dev_gsp.h"
@@ -209,12 +212,7 @@ kgspEccServiceUncorrErrorIndex_GR100
     // Notify of and log the error
     gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_ECC_DBE, NULL, 0, 1,
                             (NvU16)NV2080_CTRL_GPU_ECC_UNIT_GSP);
-    nvErrorLog_va((void *)pGpu, ROBUST_CHANNEL_GPU_ECC_DBE,
-                  "An uncorrectable ECC error has been detected on GPU in GSP-RISCV location %d",
-                  errorIdx);
-    nvErrorLog_va((void *)pGpu, UNCORRECTABLE_SRAM_ERROR,
-                  "GSP-RISCV, Uncorrectable SRAM Error in location %d",
-                  errorIdx);
+    eventEmit(GspUncorrectableError, pGpu, NV_TRUE, errorIdx);
 
     if (errorIdx == DRF_BASE(NV_PGSP_EC_ERRSLICE0_MISSIONERR_STATUS_ERR18))
     {

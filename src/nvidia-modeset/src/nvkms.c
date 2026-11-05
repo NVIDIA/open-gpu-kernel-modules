@@ -148,27 +148,27 @@ struct NvKmsPerOpenFrameLock {
 struct NvKmsPerOpenDisp {
     NVDispEvoPtr                 pDispEvo;
     NvKmsDispHandle              nvKmsApiHandle;
-    NvKmsFrameLockHandle         frameLockHandle;
-    NVEvoApiHandlesRec           connectorHandles;
-    struct NvKmsPerOpenConnector connector[NVKMS_MAX_CONNECTORS_PER_DISP];
-    NVEvoApiHandlesRec           vblankSyncObjectHandles[NVKMS_MAX_HEADS_PER_DISP];
-    NVEvoApiHandlesRec           vblankCallbackHandles[NVKMS_MAX_HEADS_PER_DISP];
-    NVEvoApiHandlesRec           vblankSemControlHandles;
-    NVEvoApiHandlesRec           vblankIntrCallbackHandles[NVKMS_MAX_HEADS_PER_DISP];
 };
 
 struct NvKmsPerOpenDev {
     NVDevEvoPtr                  pDevEvo;
     NvKmsDeviceHandle            nvKmsApiHandle;
     NVEvoApiHandlesRec           dispHandles;
+    NVEvoApiHandlesRec           connectorHandles;
     NVEvoApiHandlesRec           surfaceHandles;
+    NvKmsFrameLockHandle         frameLockHandle;
     struct NvKmsFlipPermissions  flipPermissions;
     struct NvKmsModesetPermissions modesetPermissions;
     struct NvKmsPerOpenDisp      disp[NVKMS_MAX_SUBDEVICES];
+    struct NvKmsPerOpenConnector connector[NVKMS_MAX_CONNECTORS_PER_DISP];
     NvBool                       isPrivileged;
     NVEvoApiHandlesRec           deferredRequestFifoHandles;
     NVEvoApiHandlesRec           swapGroupHandles;
     NvU32                        openedGpuId;
+    NVEvoApiHandlesRec           vblankSyncObjectHandles[NVKMS_MAX_HEADS_PER_DISP];
+    NVEvoApiHandlesRec           vblankCallbackHandles[NVKMS_MAX_HEADS_PER_DISP];
+    NVEvoApiHandlesRec           vblankSemControlHandles;
+    NVEvoApiHandlesRec           vblankIntrCallbackHandles[NVKMS_MAX_HEADS_PER_DISP];
 };
 
 struct NvKmsPerOpenEventListEntry {
@@ -221,7 +221,7 @@ struct NvKmsPerOpen {
 
                 struct {
                     NvKmsGenericHandle       hCallback;
-                    struct NvKmsPerOpenDisp *pOpenDisp;
+                    struct NvKmsPerOpenDev  *pOpenDev;
                     NvU32                    apiHead;
                 } vblankNotification;
             } e;
@@ -282,102 +282,57 @@ static struct NvKmsPerOpenDev *GetPerOpenDev(
 
 
 /*!
- * Get the NvKmsPerOpenDev and NvKmsPerOpenDisp described by
- * NvKmsPerOpen + deviceHandle + dispHandle.
+ * Get the NVDispEvoPtr described by NvKmsPerOpen + deviceHandle.
  */
-static NvBool GetPerOpenDevAndDisp(
+static NVDispEvoPtr GetDispEvo(
     const struct NvKmsPerOpen *pOpen,
-    const NvKmsDeviceHandle deviceHandle,
-    const NvKmsDispHandle dispHandle,
-    struct NvKmsPerOpenDev **ppOpenDev,
-    struct NvKmsPerOpenDisp **ppOpenDisp)
+    const NvKmsDeviceHandle deviceHandle)
 {
-    struct NvKmsPerOpenDev *pOpenDev;
-    struct NvKmsPerOpenDisp *pOpenDisp;
-
-    pOpenDev = GetPerOpenDev(pOpen, deviceHandle);
-
-    if (pOpenDev == NULL) {
-        return FALSE;
-    }
-
-    pOpenDisp = nvEvoGetPointerFromApiHandle(&pOpenDev->dispHandles,
-                                             dispHandle);
-
-    if (pOpenDisp == NULL) {
-        return FALSE;
-    }
-
-    *ppOpenDev = pOpenDev;
-    *ppOpenDisp = pOpenDisp;
-
-    return TRUE;
-}
-
-
-/*!
- * Get the NvKmsPerOpenDisp described by NvKmsPerOpen + deviceHandle +
- * dispHandle.
- */
-static struct NvKmsPerOpenDisp *GetPerOpenDisp(
-    const struct NvKmsPerOpen *pOpen,
-    const NvKmsDeviceHandle deviceHandle,
-    const NvKmsDispHandle dispHandle)
-{
-    struct NvKmsPerOpenDev *pOpenDev;
-
-    pOpenDev = GetPerOpenDev(pOpen, deviceHandle);
+    struct NvKmsPerOpenDev *pOpenDev = GetPerOpenDev(pOpen, deviceHandle);
 
     if (pOpenDev == NULL) {
         return NULL;
     }
 
-    return nvEvoGetPointerFromApiHandle(&pOpenDev->dispHandles, dispHandle);
+    return pOpenDev->pDevEvo->pDispEvo[0];
 }
-
 
 /*!
  * Get the NvKmsPerOpenConnector described by NvKmsPerOpen +
- * deviceHandle + dispHandle + connectorHandle.
+ * deviceHandle + connectorHandle.
  */
 static struct NvKmsPerOpenConnector *GetPerOpenConnector(
     const struct NvKmsPerOpen *pOpen,
     const NvKmsDeviceHandle deviceHandle,
-    const NvKmsDispHandle dispHandle,
     const NvKmsConnectorHandle connectorHandle)
 {
-    struct NvKmsPerOpenDisp *pOpenDisp;
+    struct NvKmsPerOpenDev *pOpenDev;
 
-    pOpenDisp = GetPerOpenDisp(pOpen, deviceHandle, dispHandle);
+    pOpenDev = GetPerOpenDev(pOpen, deviceHandle);
 
-    if (pOpenDisp == NULL) {
+    if (pOpenDev == NULL) {
         return NULL;
     }
 
-    return nvEvoGetPointerFromApiHandle(&pOpenDisp->connectorHandles,
+    return nvEvoGetPointerFromApiHandle(&pOpenDev->connectorHandles,
                                         connectorHandle);
 }
 
 
 /*!
- * Get the NVDpyEvoRec described by NvKmsPerOpen + deviceHandle +
- * dispHandle + dpyId.
+ * Get the NVDpyEvoRec described by NvKmsPerOpen + deviceHandle + dpyId.
  */
 static NVDpyEvoRec *GetPerOpenDpy(
     const struct NvKmsPerOpen *pOpen,
     const NvKmsDeviceHandle deviceHandle,
-    const NvKmsDispHandle dispHandle,
     const NVDpyId dpyId)
 {
-    struct NvKmsPerOpenDisp *pOpenDisp;
-
-    pOpenDisp = GetPerOpenDisp(pOpen, deviceHandle, dispHandle);
-
-    if (pOpenDisp == NULL) {
+    NVDispEvoPtr pDispEvo = GetDispEvo(pOpen, deviceHandle);
+    if (pDispEvo == NULL) {
         return NULL;
     }
 
-    return nvGetDpyEvoFromDispEvo(pOpenDisp->pDispEvo, dpyId);
+    return nvGetDpyEvoFromDispEvo(pDispEvo, dpyId);
 }
 
 
@@ -396,19 +351,19 @@ static struct NvKmsPerOpenFrameLock *GetPerOpenFrameLock(
 
 
 /*!
- * Free the NvKmsPerOpenFrameLock associated with this NvKmsPerOpenDisp.
+ * Free the NvKmsPerOpenFrameLock associated with this NvKmsPerOpenDev.
  *
- * Multiple disps can be assigned to the same framelock object, so
+ * Multiple devices can be assigned to the same framelock object, so
  * NvKmsPerOpenFrameLock is reference counted: the object is freed
- * once all NvKmsPerOpenDisps remove their reference to it.
+ * once all NvKmsPerOpenDevs remove their reference to it.
  *
  * \param[in,out]  pOpen      The per-open data, to which the
  *                            NvKmsPerOpenFrameLock is assigned.
- * \param[in,out]  pOpenDisp  The NvKmsPerOpenDisp whose corresponding
+ * \param[in,out]  pOpenDev   The NvKmsPerOpenDev whose corresponding
  *                            NvKmsPerOpenFrameLock should be freed.
  */
 static void FreePerOpenFrameLock(struct NvKmsPerOpen *pOpen,
-                                 struct NvKmsPerOpenDisp *pOpenDisp)
+                                 struct NvKmsPerOpenDev *pOpenDev)
 {
     struct NvKmsPerOpenFrameLock *pOpenFrameLock;
 
@@ -416,12 +371,12 @@ static void FreePerOpenFrameLock(struct NvKmsPerOpen *pOpen,
 
     pOpenFrameLock =
         nvEvoGetPointerFromApiHandle(&pOpen->ioctl.frameLockHandles,
-                                     pOpenDisp->frameLockHandle);
+                                     pOpenDev->frameLockHandle);
     if (pOpenFrameLock == NULL) {
         return;
     }
 
-    pOpenDisp->frameLockHandle = 0;
+    pOpenDev->frameLockHandle = 0;
 
     pOpenFrameLock->refCnt--;
 
@@ -438,26 +393,27 @@ static void FreePerOpenFrameLock(struct NvKmsPerOpen *pOpen,
 /*!
  * Allocate and initialize an NvKmsPerOpenFrameLock.
  *
- * If the disp described by the specified NvKmsPerOpenDisp has a
+ * If the device described by the specified NvKmsPerOpenDev has a
  * framelock object, allocate an NvKmsPerOpenFrameLock for it.
  *
- * Multiple disps can be assigned to the same framelock object, so
+ * Multiple devices can be assigned to the same framelock object, so
  * NvKmsPerOpenFrameLock is reference counted: we first look to see if
- * an NvKmsPerOpenFrameLock for this disp's framelock object already
+ * an NvKmsPerOpenFrameLock for this device's framelock object already
  * exists.  If so, we increment its reference count.  Otherwise, we
  * allocate a new NvKmsPerOpenFrameLock.
  *
  * \param[in,out]  pOpen      The per-open data, to which the
  *                            new NvKmsPerOpenFrameLock should be assigned.
- * \param[in,out]  pOpenDisp  The NvKmsPerOpenDisp whose corresponding
+ * \param[in,out]  pOpenDev   The NvKmsPerOpenDev whose corresponding
  *                            NvKmsPerOpenFrameLock should be allocated.
  */
 static NvBool AllocPerOpenFrameLock(
     struct NvKmsPerOpen *pOpen,
-    struct NvKmsPerOpenDisp *pOpenDisp)
+    struct NvKmsPerOpenDev *pOpenDev)
 {
     struct NvKmsPerOpenFrameLock *pOpenFrameLock;
-    NVDispEvoPtr pDispEvo = pOpenDisp->pDispEvo;
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
     NVFrameLockEvoPtr pFrameLockEvo = pDispEvo->pFrameLockEvo;
     NvKmsGenericHandle handle;
 
@@ -490,7 +446,7 @@ static NvBool AllocPerOpenFrameLock(
     }
 
 done:
-    pOpenDisp->frameLockHandle = pOpenFrameLock->nvKmsApiHandle;
+    pOpenDev->frameLockHandle = pOpenFrameLock->nvKmsApiHandle;
     pOpenFrameLock->refCnt++;
     return TRUE;
 }
@@ -498,25 +454,24 @@ done:
 
 /*!
  * Get the NvKmsConnectorHandle that corresponds to the given
- * NVConnectorEvoRec on the NvKmsPerOpen + deviceHandle + dispHandle.
+ * NVConnectorEvoRec on the NvKmsPerOpen + deviceHandle.
  */
 static NvKmsConnectorHandle ConnectorEvoToConnectorHandle(
     const struct NvKmsPerOpen *pOpen,
     const NvKmsDeviceHandle deviceHandle,
-    const NvKmsDispHandle dispHandle,
     const NVConnectorEvoRec *pConnectorEvo)
 {
-    struct NvKmsPerOpenDisp *pOpenDisp;
+    struct NvKmsPerOpenDev *pOpenDev;
     struct NvKmsPerOpenConnector *pOpenConnector;
     NvKmsGenericHandle connector;
 
-    pOpenDisp = GetPerOpenDisp(pOpen, deviceHandle, dispHandle);
+    pOpenDev = GetPerOpenDev(pOpen, deviceHandle);
 
-    if (pOpenDisp == NULL) {
+    if (pOpenDev == NULL) {
         return 0;
     }
 
-    FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDisp->connectorHandles,
+    FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->connectorHandles,
                                         pOpenConnector, connector) {
         if (pOpenConnector->pConnectorEvo == pConnectorEvo) {
             return pOpenConnector->nvKmsApiHandle;
@@ -528,14 +483,13 @@ static NvKmsConnectorHandle ConnectorEvoToConnectorHandle(
 
 
 /*!
- * Get the NvKmsDeviceHandle and NvKmsDispHandle that corresponds to
- * the given NVDispEvoRec on the NvKmsPerOpen.
+ * Get the NvKmsDeviceHandle that corresponds to the given NVDispEvoRec on the
+ * NvKmsPerOpen.
  */
-static NvBool DispEvoToDevAndDispHandles(
+static NvBool DispEvoToDevHandle(
     const struct NvKmsPerOpen *pOpen,
     const NVDispEvoRec *pDispEvo,
-    NvKmsDeviceHandle *pDeviceHandle,
-    NvKmsDispHandle *pDispHandle)
+    NvKmsDeviceHandle *pDeviceHandle)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     struct NvKmsPerOpenDev *pOpenDev;
@@ -546,24 +500,13 @@ static NvBool DispEvoToDevAndDispHandles(
     FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpen->ioctl.devHandles,
                                         pOpenDev, dev) {
 
-        struct NvKmsPerOpenDisp *pOpenDisp;
-        NvKmsGenericHandle disp;
-
         if (pOpenDev->pDevEvo != pDevEvo) {
             continue;
         }
 
-        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->dispHandles,
-                                            pOpenDisp, disp) {
-            if (pOpenDisp->pDispEvo != pDispEvo) {
-                continue;
-            }
+        *pDeviceHandle = pOpenDev->nvKmsApiHandle;
 
-            *pDeviceHandle = pOpenDev->nvKmsApiHandle;
-            *pDispHandle = pOpenDisp->nvKmsApiHandle;
-
-            return TRUE;
-        }
+        return TRUE;
     }
 
     return FALSE;
@@ -624,15 +567,15 @@ static NvBool FrameLockEvoToFrameLockHandle(
 /*!
  * Clear the specified NvKmsPerOpenConnector.
  *
- * \param[in,out]  pOpenDisp       The NvKmsPerOpenDisp to which the
+ * \param[in,out]  pOpenDev        The NvKmsPerOpenDev to which the
  *                                 NvKmsPerOpenConnector is assigned.
  * \param[in,out]  pOpenConnector  The NvKmsPerOpenConnector to be cleared.
  */
 static void ClearPerOpenConnector(
-    struct NvKmsPerOpenDisp *pOpenDisp,
+    struct NvKmsPerOpenDev *pOpenDev,
     struct NvKmsPerOpenConnector *pOpenConnector)
 {
-    nvEvoDestroyApiHandle(&pOpenDisp->connectorHandles,
+    nvEvoDestroyApiHandle(&pOpenDev->connectorHandles,
                           pOpenConnector->nvKmsApiHandle);
     nvkms_memset(pOpenConnector, 0, sizeof(*pOpenConnector));
 }
@@ -641,7 +584,7 @@ static void ClearPerOpenConnector(
 /*!
  * Initialize an NvKmsPerOpenConnector.
  *
- * \param[in,out]  pOpenDisp       The NvKmsPerOpenDisp to which the
+ * \param[in,out]  pOpenDev        The NvKmsPerOpenDev to which the
  *                                 NvKmsPerOpenConnector is assigned.
  * \param[in,out]  pOpenConnector  The NvKmsPerOpenConnector to initialize.
  * \param[in]      pConnectorEvo   The connector that the NvKmsPerOpenConnector
@@ -651,12 +594,12 @@ static void ClearPerOpenConnector(
  *          return TRUE.  Otherwise, return FALSE.
  */
 static NvBool InitPerOpenConnector(
-    struct NvKmsPerOpenDisp *pOpenDisp,
+    struct NvKmsPerOpenDev *pOpenDev,
     struct NvKmsPerOpenConnector *pOpenConnector,
     NVConnectorEvoPtr pConnectorEvo)
 {
     pOpenConnector->nvKmsApiHandle =
-        nvEvoCreateApiHandle(&pOpenDisp->connectorHandles, pOpenConnector);
+        nvEvoCreateApiHandle(&pOpenDev->connectorHandles, pOpenConnector);
 
     if (pOpenConnector->nvKmsApiHandle == 0) {
         goto fail;
@@ -667,7 +610,7 @@ static NvBool InitPerOpenConnector(
     return TRUE;
 
 fail:
-    ClearPerOpenConnector(pOpenDisp, pOpenConnector);
+    ClearPerOpenConnector(pOpenDev, pOpenConnector);
     return FALSE;
 }
 
@@ -683,43 +626,6 @@ static void ClearPerOpenDisp(
     struct NvKmsPerOpenDev *pOpenDev,
     struct NvKmsPerOpenDisp *pOpenDisp)
 {
-    struct NvKmsPerOpenConnector *pOpenConnector;
-    NvKmsGenericHandle connector;
-
-    NVVBlankCallbackPtr pCallbackData;
-    NvKmsGenericHandle callback;
-
-    FreePerOpenFrameLock(pOpen, pOpenDisp);
-
-    FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDisp->connectorHandles,
-                                        pOpenConnector, connector) {
-        ClearPerOpenConnector(pOpenDisp, pOpenConnector);
-    }
-
-    /* Destroy the API handle structures. */
-    nvEvoDestroyApiHandles(&pOpenDisp->connectorHandles);
-
-    for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
-        NVRgInterruptCallbackRec *pCallback;
-
-        nvEvoDestroyApiHandles(&pOpenDisp->vblankSyncObjectHandles[i]);
-
-        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDisp->vblankCallbackHandles[i],
-                                            pCallbackData, callback) {
-            nvRemoveUnicastEvent(pCallbackData->pUserData);
-        }
-        nvEvoDestroyApiHandles(&pOpenDisp->vblankCallbackHandles[i]);
-
-        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDisp->vblankIntrCallbackHandles[i],
-                                            pCallback, callback) {
-            nvApiHeadUnregisterRgInterruptCallback(pOpenDisp->pDispEvo,
-                                                   pCallback);
-        }
-        nvEvoDestroyApiHandles(&pOpenDisp->vblankIntrCallbackHandles[i]);
-    }
-
-    nvEvoDestroyApiHandles(&pOpenDisp->vblankSemControlHandles);
-
     nvEvoDestroyApiHandle(&pOpenDev->dispHandles, pOpenDisp->nvKmsApiHandle);
 
     nvkms_memset(pOpenDisp, 0, sizeof(*pOpenDisp));
@@ -743,9 +649,6 @@ static NvBool InitPerOpenDisp(
     struct NvKmsPerOpenDisp *pOpenDisp,
     NVDispEvoPtr pDispEvo)
 {
-    NVConnectorEvoPtr pConnectorEvo;
-    NvU32 connector;
-
     pOpenDisp->nvKmsApiHandle =
         nvEvoCreateApiHandle(&pOpenDev->dispHandles, pOpenDisp);
 
@@ -754,63 +657,6 @@ static NvBool InitPerOpenDisp(
     }
 
     pOpenDisp->pDispEvo = pDispEvo;
-
-    if (nvListCount(&pDispEvo->connectorList) >=
-        ARRAY_LEN(pOpenDisp->connector)) {
-        nvAssert(!"More connectors on this disp than NVKMS can handle.");
-        goto fail;
-    }
-
-    if (!nvEvoInitApiHandles(&pOpenDisp->connectorHandles,
-                             ARRAY_LEN(pOpenDisp->connector))) {
-        goto fail;
-    }
-
-    connector = 0;
-    FOR_ALL_EVO_CONNECTORS(pConnectorEvo, pDispEvo) {
-        if (!InitPerOpenConnector(pOpenDisp, &pOpenDisp->connector[connector],
-                                  pConnectorEvo)) {
-            goto fail;
-        }
-        connector++;
-    }
-
-    /* Initialize the vblankSyncObjectHandles for each head. */
-    for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
-        if (!nvEvoInitApiHandles(&pOpenDisp->vblankSyncObjectHandles[i],
-                                 NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
-            goto fail;
-        }
-    }
-
-    /* Initialize the vblankCallbackHandles for each head.
-     *
-     * The initial value of VBLANK_SYNC_OBJECTS_PER_HEAD doesn't really apply
-     * here, but we need something. */
-    for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
-        if (!nvEvoInitApiHandles(&pOpenDisp->vblankCallbackHandles[i],
-                                 NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
-            goto fail;
-        }
-
-        if (!nvEvoInitApiHandles(&pOpenDisp->vblankIntrCallbackHandles[i],
-                                 NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
-            goto fail;
-        }
-    }
-
-    /* Initialize the vblankSemControlHandles.
-     *
-     * The initial value of VBLANK_SYNC_OBJECTS_PER_HEAD doesn't really apply
-     * here, but we need something. */
-    if (!nvEvoInitApiHandles(&pOpenDisp->vblankSemControlHandles,
-                             NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
-        goto fail;
-    }
-
-    if (!AllocPerOpenFrameLock(pOpen, pOpenDisp)) {
-        goto fail;
-    }
 
     return TRUE;
 
@@ -1167,8 +1013,14 @@ static NvBool ReleaseModesetOwnership(struct NvKmsPerOpenDev *pOpenDev)
 void nvFreePerOpenDev(struct NvKmsPerOpen *pOpen,
                       struct NvKmsPerOpenDev *pOpenDev)
 {
+    struct NvKmsPerOpenConnector *pOpenConnector;
+    NvKmsGenericHandle connector;
+
     struct NvKmsPerOpenDisp *pOpenDisp;
     NvKmsGenericHandle disp;
+
+    NVVBlankCallbackPtr pCallbackData;
+    NvKmsGenericHandle callback;
 
     nvAssert(pOpen->type == NvKmsPerOpenTypeIoctl);
 
@@ -1182,10 +1034,41 @@ void nvFreePerOpenDev(struct NvKmsPerOpen *pOpen,
 
     nvEvoDestroyApiHandles(&pOpenDev->surfaceHandles);
 
+    FreePerOpenFrameLock(pOpen, pOpenDev);
+
+    for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
+        NVRgInterruptCallbackRec *pCallback;
+
+        nvEvoDestroyApiHandles(&pOpenDev->vblankSyncObjectHandles[i]);
+
+        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->vblankCallbackHandles[i],
+                                            pCallbackData, callback) {
+            nvRemoveUnicastEvent(pCallbackData->pUserData);
+        }
+        nvEvoDestroyApiHandles(&pOpenDev->vblankCallbackHandles[i]);
+
+        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->vblankIntrCallbackHandles[i],
+                                            pCallback, callback) {
+            nvApiHeadUnregisterRgInterruptCallback(pOpenDev->pDevEvo->pDispEvo[0],
+                                                   pCallback);
+        }
+        nvEvoDestroyApiHandles(&pOpenDev->vblankIntrCallbackHandles[i]);
+    }
+
+    nvEvoDestroyApiHandles(&pOpenDev->vblankSemControlHandles);
+
     FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->dispHandles,
                                         pOpenDisp, disp) {
         ClearPerOpenDisp(pOpen, pOpenDev, pOpenDisp);
     }
+
+    FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->connectorHandles,
+                                        pOpenConnector, connector) {
+        ClearPerOpenConnector(pOpenDev, pOpenConnector);
+    }
+
+    /* Destroy the API handle structures. */
+    nvEvoDestroyApiHandles(&pOpenDev->connectorHandles);
 
     nvEvoDestroyApiHandles(&pOpenDev->dispHandles);
 
@@ -1216,8 +1099,9 @@ struct NvKmsPerOpenDev *nvAllocPerOpenDev(struct NvKmsPerOpen *pOpen,
                                           NVDevEvoPtr pDevEvo, NvBool isPrivileged)
 {
     struct NvKmsPerOpenDev *pOpenDev = nvCalloc(1, sizeof(*pOpenDev));
-    NVDispEvoPtr pDispEvo;
-    NvU32 disp;
+    NVConnectorEvoPtr pConnectorEvo;
+    NvU32 connector;
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
 
     nvAssert(pOpen->type == NvKmsPerOpenTypeIoctl);
 
@@ -1245,10 +1129,65 @@ struct NvKmsPerOpenDev *nvAllocPerOpenDev(struct NvKmsPerOpen *pOpen,
         goto fail;
     }
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, disp, pDevEvo) {
-        if (!InitPerOpenDisp(pOpen, pOpenDev, &pOpenDev->disp[disp], pDispEvo)) {
+    if (nvListCount(&pDispEvo->connectorList) >=
+        ARRAY_LEN(pOpenDev->connector)) {
+        nvAssert(!"More connectors on this device than NVKMS can handle.");
+        goto fail;
+    }
+
+    if (!nvEvoInitApiHandles(&pOpenDev->connectorHandles,
+                             ARRAY_LEN(pOpenDev->connector))) {
+        goto fail;
+    }
+
+    connector = 0;
+    FOR_ALL_EVO_CONNECTORS(pConnectorEvo, pDispEvo) {
+        if (!InitPerOpenConnector(pOpenDev, &pOpenDev->connector[connector],
+                                  pConnectorEvo)) {
             goto fail;
         }
+        connector++;
+    }
+
+    /* Initialize the vblankSyncObjectHandles for each head. */
+    for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
+        if (!nvEvoInitApiHandles(&pOpenDev->vblankSyncObjectHandles[i],
+                                 NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
+            goto fail;
+        }
+    }
+
+    /* Initialize the vblankCallbackHandles for each head.
+     *
+     * The initial value of VBLANK_SYNC_OBJECTS_PER_HEAD doesn't really apply
+     * here, but we need something. */
+    for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
+        if (!nvEvoInitApiHandles(&pOpenDev->vblankCallbackHandles[i],
+                                 NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
+            goto fail;
+        }
+
+        if (!nvEvoInitApiHandles(&pOpenDev->vblankIntrCallbackHandles[i],
+                                 NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
+            goto fail;
+        }
+    }
+
+    /* Initialize the vblankSemControlHandles.
+     *
+     * The initial value of VBLANK_SYNC_OBJECTS_PER_HEAD doesn't really apply
+     * here, but we need something. */
+    if (!nvEvoInitApiHandles(&pOpenDev->vblankSemControlHandles,
+                             NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
+        goto fail;
+    }
+
+    if (!AllocPerOpenFrameLock(pOpen, pOpenDev)) {
+        goto fail;
+    }
+
+    if (!InitPerOpenDisp(pOpen, pOpenDev, &pOpenDev->disp[0], pDispEvo)) {
+        goto fail;
     }
 
     if (!nvEvoInitApiHandles(&pOpenDev->surfaceHandles, 32)) {
@@ -1425,8 +1364,6 @@ static NvBool AllocDevice(struct NvKmsPerOpen *pOpen,
     }
 
     pParams->reply.deviceHandle = pOpenDev->nvKmsApiHandle;
-    pParams->reply.subDeviceMask =
-        NV_TWO_N_MINUS_ONE(pDevEvo->numSubDevices);
     pParams->reply.numHeads = pDevEvo->numApiHeads;
     pParams->reply.numDisps = pDevEvo->nDispEvo;
 
@@ -1507,6 +1444,9 @@ static NvBool AllocDevice(struct NvKmsPerOpen *pOpen,
     pParams->reply.supportsGenericSharedInfoFrames =
         pDevEvo->caps.supportsGenericSharedInfoFrames;
 
+    pParams->reply.supportsVirtualRefreshRate =
+        pDevEvo->caps.supportsVirtualRefreshRate;
+
     if (pOpen->clientType == NVKMS_CLIENT_KERNEL_SPACE) {
         pParams->reply.vtFbBaseAddress = pDevEvo->vtFbInfo.baseAddress;
         pParams->reply.vtFbSize = pDevEvo->vtFbInfo.size;
@@ -1545,11 +1485,14 @@ static void DisableAndCleanVblankSyncObject(NVDispEvoRec *pDispEvo,
 static void DisableRemainingVblankSyncObjects(struct NvKmsPerOpen *pOpen,
                                               struct NvKmsPerOpenDev *pOpenDev)
 {
-    struct NvKmsPerOpenDisp *pOpenDisp;
-    NvKmsGenericHandle disp;
     NVVblankSyncObjectRec *pVblankSyncObject;
     NvKmsVblankSyncObjectHandle handle;
     NvU32 apiHead = 0;
+    /*
+     * A single update state can handle changes across multiple heads, so use a
+     * single update.
+     */
+    NVEvoUpdateState updateState = { };
 
     nvAssert(pOpen->type == NvKmsPerOpenTypeIoctl);
 
@@ -1557,42 +1500,34 @@ static void DisableRemainingVblankSyncObjects(struct NvKmsPerOpen *pOpen,
         return;
     }
 
-    /* For each pOpenDisp: */
-    FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->dispHandles,
-                                        pOpenDisp, disp) {
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
+
+    /* For each head: */
+    for (apiHead = 0; apiHead < ARRAY_LEN(pOpenDev->vblankSyncObjectHandles); apiHead++) {
+        NVEvoApiHandlesRec *pHandles =
+            &pOpenDev->vblankSyncObjectHandles[apiHead];
+
+        /* For each still-active vblank sync object: */
+        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(pHandles,
+                                            pVblankSyncObject, handle) {
+            DisableAndCleanVblankSyncObject(pDispEvo, apiHead,
+                                            pVblankSyncObject,
+                                            &updateState);
+            /* Remove the handle from the map. */
+            nvEvoDestroyApiHandle(pHandles, handle);
+        }
+    }
+
+    if (!nvIsUpdateStateEmpty(pDevEvo, &updateState)) {
         /*
-         * A single update state can handle changes across multiple heads on a
-         * given Disp.
+         * Instruct hardware to execute the staged commands from the
+         * ConfigureVblankSyncObject() calls (inherent in
+         * DisableAndCleanVblankSyncObject()) above. This will set up
+         * and wait for a notification that the hardware execution
+         * has completed.
          */
-        NVEvoUpdateState updateState = { };
-
-        /* For each head: */
-        for (apiHead = 0; apiHead < ARRAY_LEN(pOpenDisp->vblankSyncObjectHandles); apiHead++) {
-            NVEvoApiHandlesRec *pHandles =
-                &pOpenDisp->vblankSyncObjectHandles[apiHead];
-
-            /* For each still-active vblank sync object: */
-            FOR_ALL_POINTERS_IN_EVO_API_HANDLES(pHandles,
-                                                pVblankSyncObject, handle) {
-                DisableAndCleanVblankSyncObject(pOpenDisp->pDispEvo, apiHead,
-                                                pVblankSyncObject,
-                                                &updateState);
-                /* Remove the handle from the map. */
-                nvEvoDestroyApiHandle(pHandles, handle);
-            }
-        }
-
-        if (!nvIsUpdateStateEmpty(pOpenDisp->pDispEvo->pDevEvo, &updateState)) {
-            /*
-             * Instruct hardware to execute the staged commands from the
-             * ConfigureVblankSyncObject() calls (inherent in
-             * DisableAndCleanVblankSyncObject()) above. This will set up
-             * and wait for a notification that the hardware execution
-             * has completed.
-             */
-            nvEvoUpdateAndKickOff(pOpenDisp->pDispEvo, TRUE, &updateState,
-                                  TRUE);
-        }
+        nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState, TRUE);
     }
 }
 
@@ -1600,28 +1535,20 @@ static void DisableRemainingVblankSemControls(
     struct NvKmsPerOpen *pOpen,
     struct NvKmsPerOpenDev *pOpenDev)
 {
-    struct NvKmsPerOpenDisp *pOpenDisp;
-    NvKmsGenericHandle dispHandle;
     NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+    NVVblankSemControl *pVblankSemControl;
+    NvKmsGenericHandle vblankSemControlHandle;
 
     nvAssert(pOpen->type == NvKmsPerOpenTypeIoctl);
 
-    FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->dispHandles,
-                                        pOpenDisp,
-                                        dispHandle) {
+    FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->vblankSemControlHandles,
+                                        pVblankSemControl,
+                                        vblankSemControlHandle) {
 
-        NVVblankSemControl *pVblankSemControl;
-        NvKmsGenericHandle vblankSemControlHandle;
+        nvEvoDisableVblankSemControl(pDevEvo, pVblankSemControl);
 
-        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDisp->vblankSemControlHandles,
-                                            pVblankSemControl,
-                                            vblankSemControlHandle) {
-
-            nvEvoDisableVblankSemControl(pDevEvo, pVblankSemControl);
-
-            nvEvoDestroyApiHandle(&pOpenDisp->vblankSemControlHandles,
-                                  vblankSemControlHandle);
-        }
+        nvEvoDestroyApiHandle(&pOpenDev->vblankSemControlHandles,
+                              vblankSemControlHandle);
     }
 }
 
@@ -1689,21 +1616,19 @@ static NvBool QueryDisp(struct NvKmsPerOpen *pOpen,
                         void *pParamsVoid)
 {
     struct NvKmsQueryDispParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDisp *pOpenDisp;
     const NVEvoSubDeviceRec *pSubDevice;
-    NVDispEvoPtr pDispEvo;
     NvU32 connector;
 
-    pOpenDisp = GetPerOpenDisp(pOpen,
-                               pParams->request.deviceHandle,
-                               pParams->request.dispHandle);
-    if (pOpenDisp == NULL) {
+    struct NvKmsPerOpenDev *pOpenDev =
+        GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+    if (pOpenDev == NULL) {
         return FALSE;
     }
 
     nvkms_memset(&pParams->reply, 0, sizeof(pParams->reply));
 
-    pDispEvo = pOpenDisp->pDispEvo;
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
 
     // Don't include dynamic displays in validDpys.  The data returned here is
     // supposed to be static for the lifetime of the pDispEvo.
@@ -1712,19 +1637,19 @@ static NvBool QueryDisp(struct NvKmsPerOpen *pOpen,
                                   pDispEvo->dynamicDpyIds);
     pParams->reply.bootDpys        = pDispEvo->bootDisplays;
     pParams->reply.muxDpys         = pDispEvo->muxDisplays;
-    pParams->reply.frameLockHandle = pOpenDisp->frameLockHandle;
+    pParams->reply.frameLockHandle = pOpenDev->frameLockHandle;
     pParams->reply.numConnectors   = nvListCount(&pDispEvo->connectorList);
 
     ct_assert(ARRAY_LEN(pParams->reply.connectorHandles) ==
-              ARRAY_LEN(pOpenDisp->connector));
+              ARRAY_LEN(pOpenDev->connector));
 
     for (connector = 0; connector < ARRAY_LEN(pParams->reply.connectorHandles);
          connector++) {
         pParams->reply.connectorHandles[connector] =
-            pOpenDisp->connector[connector].nvKmsApiHandle;
+            pOpenDev->connector[connector].nvKmsApiHandle;
     }
 
-    pSubDevice = pDispEvo->pDevEvo->pSubDevices[pDispEvo->displayOwner];
+    pSubDevice = pDevEvo->pSubDevices[pDispEvo->displayOwner];
     if (pSubDevice != NULL) {
         ct_assert(sizeof(pParams->reply.gpuString) >=
                   sizeof(pSubDevice->gpuString));
@@ -1749,7 +1674,6 @@ static NvBool QueryConnectorStaticData(struct NvKmsPerOpen *pOpen,
 
     pOpenConnector = GetPerOpenConnector(pOpen,
                                          pParams->request.deviceHandle,
-                                         pParams->request.dispHandle,
                                          pParams->request.connectorHandle);
     if (pOpenConnector == NULL) {
         return FALSE;
@@ -1795,7 +1719,6 @@ static NvBool QueryConnectorDynamicData(struct NvKmsPerOpen *pOpen,
 
     pOpenConnector = GetPerOpenConnector(pOpen,
                                          pParams->request.deviceHandle,
-                                         pParams->request.dispHandle,
                                          pParams->request.connectorHandle);
     if (pOpenConnector == NULL) {
         return FALSE;
@@ -1838,7 +1761,6 @@ static NvBool QueryDpyStaticData(struct NvKmsPerOpen *pOpen,
 
     pDpyEvo = GetPerOpenDpy(pOpen,
                             pParams->request.deviceHandle,
-                            pParams->request.dispHandle,
                             pParams->request.dpyId);
     if (pDpyEvo == NULL) {
         return FALSE;
@@ -1849,7 +1771,6 @@ static NvBool QueryDpyStaticData(struct NvKmsPerOpen *pOpen,
     pParams->reply.connectorHandle =
         ConnectorEvoToConnectorHandle(pOpen,
                                       pParams->request.deviceHandle,
-                                      pParams->request.dispHandle,
                                       pDpyEvo->pConnectorEvo);
     /*
      * All pConnectorEvos should have corresponding pOpenConnectors,
@@ -1887,7 +1808,6 @@ static NvBool QueryDpyDynamicData(struct NvKmsPerOpen *pOpen,
 
     pDpyEvo = GetPerOpenDpy(pOpen,
                             pParams->request.deviceHandle,
-                            pParams->request.dispHandle,
                             pParams->request.dpyId);
     if (pDpyEvo == NULL) {
         return FALSE;
@@ -2017,7 +1937,6 @@ static NvBool ValidateModeIndex(struct NvKmsPerOpen *pOpen,
 
     pDpyEvo = GetPerOpenDpy(pOpen,
                             pParams->request.deviceHandle,
-                            pParams->request.dispHandle,
                             pParams->request.dpyId);
     if (pDpyEvo == NULL) {
         return FALSE;
@@ -2071,7 +1990,6 @@ static NvBool ValidateMode(struct NvKmsPerOpen *pOpen,
 
     pDpyEvo = GetPerOpenDpy(pOpen,
                             pParams->request.deviceHandle,
-                            pParams->request.dispHandle,
                             pParams->request.dpyId);
     if (pDpyEvo == NULL) {
         return FALSE;
@@ -2256,19 +2174,14 @@ static NvBool SetCursorImage(struct NvKmsPerOpen *pOpen,
                              void *pParamsVoid)
 {
     struct NvKmsSetCursorImageParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDev *pOpenDev;
-    struct NvKmsPerOpenDisp *pOpenDisp;
-    NVDispEvoPtr pDispEvo;
 
-    if (!GetPerOpenDevAndDisp(pOpen,
-                              pParams->request.deviceHandle,
-                              pParams->request.dispHandle,
-                              &pOpenDev,
-                              &pOpenDisp)) {
+    struct NvKmsPerOpenDev *pOpenDev =
+        GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+    if (pOpenDev == NULL) {
         return FALSE;
     }
 
-    pDispEvo = pOpenDisp->pDispEvo;
+    NVDispEvoPtr pDispEvo = pOpenDev->pDevEvo->pDispEvo[0];
 
     if (!nvApiHeadIsActive(pDispEvo, pParams->request.head)) {
         return FALSE;
@@ -2288,17 +2201,11 @@ static NvBool MoveCursor(struct NvKmsPerOpen *pOpen,
                          void *pParamsVoid)
 {
     struct NvKmsMoveCursorParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDisp *pOpenDisp;
-    NVDispEvoPtr pDispEvo;
 
-    pOpenDisp = GetPerOpenDisp(pOpen,
-                               pParams->request.deviceHandle,
-                               pParams->request.dispHandle);
-    if (pOpenDisp == NULL) {
+    NVDispEvoPtr pDispEvo = GetDispEvo(pOpen, pParams->request.deviceHandle);
+    if (pDispEvo == NULL) {
         return FALSE;
     }
-
-    pDispEvo = pOpenDisp->pDispEvo;
 
     if (!nvApiHeadIsActive(pDispEvo, pParams->request.head)) {
         return FALSE;
@@ -2352,28 +2259,22 @@ static NvBool SetLut(struct NvKmsPerOpen *pOpen,
                      void *pParamsVoid)
 {
     struct NvKmsSetLutParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDev *pOpenDev;
-    struct NvKmsPerOpenDisp *pOpenDisp;
-    NVDevEvoPtr pDevEvo;
-    NVDispEvoPtr pDispEvo;
     NvU8 allLayersMask;
 
-    if (!GetPerOpenDevAndDisp(pOpen,
-                              pParams->request.deviceHandle,
-                              pParams->request.dispHandle,
-                              &pOpenDev,
-                              &pOpenDisp)) {
+    struct NvKmsPerOpenDev *pOpenDev =
+        GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+    if (pOpenDev == NULL) {
         return FALSE;
     }
 
-    pDevEvo = pOpenDev->pDevEvo;
-    pDispEvo = pOpenDisp->pDispEvo;
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
 
     if (!nvApiHeadIsActive(pDispEvo, pParams->request.head)) {
         return FALSE;
     }
 
-    if (!nvValidateSetLutCommonParams(pDispEvo->pDevEvo,
+    if (!nvValidateSetLutCommonParams(pDevEvo,
                                       &pParams->request.common)) {
         return FALSE;
     }
@@ -2628,7 +2529,7 @@ static NvBool FlipDoneUser(
 
 /*!
  * For each entry in the array pointed to by 'pFlipHead', of length
- * 'numFlipHeads', verify that the sd and head values specified are within
+ * 'numFlipHeads', verify that the head values specified are within
  * bounds and that there are no duplicates.
  */
 static NvBool ValidateFlipHeads(
@@ -2638,22 +2539,18 @@ static NvBool ValidateFlipHeads(
 {
     NvU32 i;
     ct_assert(NVKMS_MAX_HEADS_PER_DISP <= 8);
-    NvU8 apiHeadsUsed[NVKMS_MAX_SUBDEVICES] = { };
+    NvU8 apiHeadsUsed = 0;
 
     for (i = 0; i < numFlipHeads; i++) {
-        const NvU32 sd = pFlipHead[i].sd;
         const NvU32 apiHead = pFlipHead[i].head;
 
-        if (sd >= pDevEvo->numSubDevices) {
-            return FALSE;
-        }
         if (apiHead >= pDevEvo->numApiHeads) {
             return FALSE;
         }
-        if ((apiHeadsUsed[sd] & (1 << apiHead)) != 0) {
+        if ((apiHeadsUsed & (1 << apiHead)) != 0) {
             return FALSE;
         }
-        apiHeadsUsed[sd] |= (1 << apiHead);
+        apiHeadsUsed |= (1 << apiHead);
     }
 
     return TRUE;
@@ -3070,7 +2967,6 @@ static NvBool SetDpyAttribute(struct NvKmsPerOpen *pOpen,
 
     pDpyEvo = GetPerOpenDpy(pOpen,
                             pParams->request.deviceHandle,
-                            pParams->request.dispHandle,
                             pParams->request.dpyId);
     if (pDpyEvo == NULL) {
         return FALSE;
@@ -3091,7 +2987,6 @@ static NvBool GetDpyAttribute(struct NvKmsPerOpen *pOpen,
 
     pDpyEvo = GetPerOpenDpy(pOpen,
                             pParams->request.deviceHandle,
-                            pParams->request.dispHandle,
                             pParams->request.dpyId);
     if (pDpyEvo == NULL) {
         return FALSE;
@@ -3112,7 +3007,6 @@ static NvBool GetDpyAttributeValidValues(struct NvKmsPerOpen *pOpen,
 
     pDpyEvo = GetPerOpenDpy(pOpen,
                             pParams->request.deviceHandle,
-                            pParams->request.dispHandle,
                             pParams->request.dpyId);
     if (pDpyEvo == NULL) {
         return FALSE;
@@ -3129,16 +3023,13 @@ static NvBool SetDispAttribute(struct NvKmsPerOpen *pOpen,
                                void *pParamsVoid)
 {
     struct NvKmsSetDispAttributeParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDisp *pOpenDisp;
 
-    pOpenDisp = GetPerOpenDisp(pOpen,
-                               pParams->request.deviceHandle,
-                               pParams->request.dispHandle);
-    if (pOpenDisp == NULL) {
+    NVDispEvoPtr pDispEvo = GetDispEvo(pOpen, pParams->request.deviceHandle);
+    if (pDispEvo == NULL) {
         return FALSE;
     }
 
-    return nvSetDispAttributeEvo(pOpenDisp->pDispEvo, pParams);
+    return nvSetDispAttributeEvo(pDispEvo, pParams);
 }
 
 
@@ -3149,16 +3040,13 @@ static NvBool GetDispAttribute(struct NvKmsPerOpen *pOpen,
                                void *pParamsVoid)
 {
     struct NvKmsGetDispAttributeParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDisp *pOpenDisp;
 
-    pOpenDisp = GetPerOpenDisp(pOpen,
-                               pParams->request.deviceHandle,
-                               pParams->request.dispHandle);
-    if (pOpenDisp == NULL) {
+    NVDispEvoPtr pDispEvo = GetDispEvo(pOpen, pParams->request.deviceHandle);
+    if (pDispEvo == NULL) {
         return FALSE;
     }
 
-    return nvGetDispAttributeEvo(pOpenDisp->pDispEvo, pParams);
+    return nvGetDispAttributeEvo(pDispEvo, pParams);
 }
 
 
@@ -3170,16 +3058,12 @@ static NvBool GetDispAttributeValidValues(struct NvKmsPerOpen *pOpen,
 {
     struct NvKmsGetDispAttributeValidValuesParams *pParams = pParamsVoid;
 
-    struct NvKmsPerOpenDisp *pOpenDisp;
-
-    pOpenDisp = GetPerOpenDisp(pOpen,
-                               pParams->request.deviceHandle,
-                               pParams->request.dispHandle);
-    if (pOpenDisp == NULL) {
+    NVDispEvoPtr pDispEvo = GetDispEvo(pOpen, pParams->request.deviceHandle);
+    if (pDispEvo == NULL) {
         return FALSE;
     }
 
-    return nvGetDispAttributeValidValuesEvo(pOpenDisp->pDispEvo, pParams);
+    return nvGetDispAttributeValidValuesEvo(pDispEvo, pParams);
 }
 
 
@@ -3814,25 +3698,20 @@ static NvBool QueryDpyCRC32(struct NvKmsPerOpen *pOpen,
                             void *pParamsVoid)
 {
     struct NvKmsQueryDpyCRC32Params *pParams = pParamsVoid;
-    struct NvKmsPerOpenDev *pOpenDev;
-    struct NvKmsPerOpenDisp *pOpenDisp;
-    NVDispEvoPtr pDispEvo;
     CRC32NotifierCrcOut crcOut;
 
-    if (!GetPerOpenDevAndDisp(pOpen,
-                              pParams->request.deviceHandle,
-                              pParams->request.dispHandle,
-                              &pOpenDev,
-                              &pOpenDisp)) {
+    struct NvKmsPerOpenDev *pOpenDev =
+        GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+    if (pOpenDev == NULL) {
         return FALSE;
     }
+
+    NVDispEvoPtr pDispEvo = pOpenDev->pDevEvo->pDispEvo[0];
 
     if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
         // Only a current owner can query CRC32 values.
         return FALSE;
     }
-
-    pDispEvo = pOpenDisp->pDispEvo;
 
     if (!nvApiHeadIsActive(pDispEvo, pParams->request.head)) {
         return FALSE;
@@ -4281,7 +4160,7 @@ static NvBool SwitchMux(
     struct NvKmsPerOpenDev *pOpenDev;
     NVDpyEvoPtr pDpyEvo;
 
-    pDpyEvo = GetPerOpenDpy(pOpen, r->deviceHandle, r->dispHandle, r->dpyId);
+    pDpyEvo = GetPerOpenDpy(pOpen, r->deviceHandle, r->dpyId);
     if (pDpyEvo == NULL) {
         return FALSE;
     }
@@ -4315,7 +4194,7 @@ static NvBool GetMuxState(
     const struct NvKmsGetMuxStateRequest *r = &pParams->request;
     NVDpyEvoPtr pDpyEvo;
 
-    pDpyEvo = GetPerOpenDpy(pOpen, r->deviceHandle, r->dispHandle, r->dpyId);
+    pDpyEvo = GetPerOpenDpy(pOpen, r->deviceHandle, r->dpyId);
     if (pDpyEvo == NULL) {
         return FALSE;
     }
@@ -4359,10 +4238,7 @@ static void EnableAndSetupVblankSyncObject(NVDispEvoRec *pDispEvo,
 
 static void EnableAndSetupVblankSyncObjectForAllOpens(NVDevEvoRec *pDevEvo)
 {
-    /*
-     * An NVEvoUpdateState has disp-scope, and we will only have
-     * one disp when programming syncpts.
-     */
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
     NVEvoUpdateState updateState = { };
     struct NvKmsPerOpen *pOpen;
 
@@ -4371,43 +4247,31 @@ static void EnableAndSetupVblankSyncObjectForAllOpens(NVDevEvoRec *pDevEvo)
         return;
     }
 
-    /* If Syncpts are supported, we're on Orin, which only has one display. */
-    nvAssert(pDevEvo->nDispEvo == 1);
-
     nvListForEachEntry(pOpen, &perOpenIoctlList, perOpenIoctlListEntry) {
         struct NvKmsPerOpenDev *pOpenDev = DevEvoToOpenDev(pOpen, pDevEvo);
-        struct NvKmsPerOpenDisp *pOpenDisp;
-        NvKmsGenericHandle disp;
 
         if (pOpenDev == NULL) {
             continue;
         }
 
-        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->dispHandles,
-                                            pOpenDisp, disp) {
+        for (NvU32 apiHead = 0; apiHead <
+                ARRAY_LEN(pOpenDev->vblankSyncObjectHandles); apiHead++) {
+            NVEvoApiHandlesRec *pHandles =
+                &pOpenDev->vblankSyncObjectHandles[apiHead];
+            NVVblankSyncObjectRec *pVblankSyncObject;
+            NvKmsVblankSyncObjectHandle handle;
 
-            nvAssert(pOpenDisp->pDispEvo == pDevEvo->pDispEvo[0]);
-
-            for (NvU32 apiHead = 0; apiHead <
-                    ARRAY_LEN(pOpenDisp->vblankSyncObjectHandles); apiHead++) {
-                NVEvoApiHandlesRec *pHandles =
-                    &pOpenDisp->vblankSyncObjectHandles[apiHead];
-                NVVblankSyncObjectRec *pVblankSyncObject;
-                NvKmsVblankSyncObjectHandle handle;
-
-                FOR_ALL_POINTERS_IN_EVO_API_HANDLES(pHandles,
-                                                    pVblankSyncObject, handle) {
-                    EnableAndSetupVblankSyncObject(pOpenDisp->pDispEvo, apiHead,
-                                                   pVblankSyncObject,
-                                                   &updateState);
-                }
+            FOR_ALL_POINTERS_IN_EVO_API_HANDLES(pHandles,
+                                                pVblankSyncObject, handle) {
+                EnableAndSetupVblankSyncObject(pDispEvo, apiHead,
+                                               pVblankSyncObject,
+                                               &updateState);
             }
         }
     }
 
     if (!nvIsUpdateStateEmpty(pDevEvo, &updateState)) {
-        nvEvoUpdateAndKickOff(pDevEvo->pDispEvo[0], TRUE, &updateState,
-                              TRUE);
+        nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState, TRUE);
     }
 }
 
@@ -4416,7 +4280,7 @@ static NvBool EnableVblankSyncObject(
     void *pParamsVoid)
 {
     struct NvKmsEnableVblankSyncObjectParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDisp* pOpenDisp = NULL;
+    struct NvKmsPerOpenDev* pOpenDev = NULL;
     NVDispApiHeadStateEvoRec *pApiHeadState = NULL;
     NVDevEvoPtr pDevEvo = NULL;
     NvKmsVblankSyncObjectHandle vblankHandle = 0;
@@ -4427,15 +4291,14 @@ static NvBool EnableVblankSyncObject(
     NVEvoUpdateState updateState = { };
 
     /* Obtain the Head State. */
-    pOpenDisp = GetPerOpenDisp(pOpen, pParams->request.deviceHandle,
-                               pParams->request.dispHandle);
-    if (pOpenDisp == NULL) {
-        nvEvoLogDebug(EVO_LOG_ERROR, "Unable to GetPerOpenDisp.");
+    pOpenDev = GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+    if (pOpenDev == NULL) {
+        nvEvoLogDebug(EVO_LOG_ERROR, "Unable to GetPerOpenDev.");
         return FALSE;
     }
 
-    pDispEvo = pOpenDisp->pDispEvo;
-    pDevEvo = pDispEvo->pDevEvo;
+    pDevEvo = pOpenDev->pDevEvo;
+    pDispEvo = pDevEvo->pDispEvo[0];
 
     /* Ensure Vblank Sync Object API is supported on this chip. */
     if (!pDevEvo->supportsSyncpts ||
@@ -4471,7 +4334,7 @@ static NvBool EnableVblankSyncObject(
 
     /* Save the created vblank handle if it is valid. */
     vblankHandle =
-        nvEvoCreateApiHandle(&pOpenDisp->vblankSyncObjectHandles[apiHead],
+        nvEvoCreateApiHandle(&pOpenDev->vblankSyncObjectHandles[apiHead],
                              &vblankSyncObjects[freeVblankSyncObjectIdx]);
     if (vblankHandle == 0) {
         nvEvoLogDebug(EVO_LOG_ERROR, "Unable to create vblank handle.");
@@ -4481,7 +4344,7 @@ static NvBool EnableVblankSyncObject(
     EnableAndSetupVblankSyncObject(pDispEvo, apiHead,
                                    &vblankSyncObjects[freeVblankSyncObjectIdx],
                                    &updateState);
-    if (!nvIsUpdateStateEmpty(pOpenDisp->pDispEvo->pDevEvo, &updateState)) {
+    if (!nvIsUpdateStateEmpty(pDevEvo, &updateState)) {
         nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState, TRUE);
     }
 
@@ -4529,10 +4392,7 @@ static void DisableAndCleanVblankSyncObject(NVDispEvoRec *pDispEvo,
 
 static void DisableAndCleanVblankSyncObjectForAllOpens(NVDevEvoRec *pDevEvo)
 {
-    /*
-     * An NVEvoUpdateState has disp-scope, and we will only have
-     * one disp when programming syncpts.
-     */
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
     NVEvoUpdateState updateState = { };
     struct NvKmsPerOpen *pOpen;
 
@@ -4546,37 +4406,29 @@ static void DisableAndCleanVblankSyncObjectForAllOpens(NVDevEvoRec *pDevEvo)
 
     nvListForEachEntry(pOpen, &perOpenIoctlList, perOpenIoctlListEntry) {
         struct NvKmsPerOpenDev *pOpenDev = DevEvoToOpenDev(pOpen, pDevEvo);
-        struct NvKmsPerOpenDisp *pOpenDisp;
-        NvKmsGenericHandle disp;
 
         if (pOpenDev == NULL) {
             continue;
         }
 
-        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->dispHandles,
-                                            pOpenDisp, disp) {
+        for (NvU32 apiHead = 0; apiHead <
+                ARRAY_LEN(pOpenDev->vblankSyncObjectHandles); apiHead++) {
+            NVEvoApiHandlesRec *pHandles =
+                &pOpenDev->vblankSyncObjectHandles[apiHead];
+            NVVblankSyncObjectRec *pVblankSyncObject;
+            NvKmsVblankSyncObjectHandle handle;
 
-            nvAssert(pOpenDisp->pDispEvo == pDevEvo->pDispEvo[0]);
-
-            for (NvU32 apiHead = 0; apiHead <
-                    ARRAY_LEN(pOpenDisp->vblankSyncObjectHandles); apiHead++) {
-                NVEvoApiHandlesRec *pHandles =
-                    &pOpenDisp->vblankSyncObjectHandles[apiHead];
-                NVVblankSyncObjectRec *pVblankSyncObject;
-                NvKmsVblankSyncObjectHandle handle;
-
-                FOR_ALL_POINTERS_IN_EVO_API_HANDLES(pHandles,
-                                                    pVblankSyncObject, handle) {
-                    DisableAndCleanVblankSyncObject(pOpenDisp->pDispEvo, apiHead,
-                                                    pVblankSyncObject,
-                                                    &updateState);
-                }
+            FOR_ALL_POINTERS_IN_EVO_API_HANDLES(pHandles,
+                                                pVblankSyncObject, handle) {
+                DisableAndCleanVblankSyncObject(pDispEvo, apiHead,
+                                                pVblankSyncObject,
+                                                &updateState);
             }
         }
     }
 
     if (!nvIsUpdateStateEmpty(pDevEvo, &updateState)) {
-        nvEvoUpdateAndKickOff(pDevEvo->pDispEvo[0], TRUE, &updateState,
+        nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState,
                               TRUE);
     }
 }
@@ -4586,20 +4438,21 @@ static NvBool DisableVblankSyncObject(
     void *pParamsVoid)
 {
     struct NvKmsDisableVblankSyncObjectParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDisp* pOpenDisp =
-        GetPerOpenDisp(pOpen, pParams->request.deviceHandle,
-                       pParams->request.dispHandle);
+    struct NvKmsPerOpenDev* pOpenDev =
+        GetPerOpenDev(pOpen, pParams->request.deviceHandle);
     NVVblankSyncObjectRec *pVblankSyncObject = NULL;
     NvU32 apiHead = pParams->request.head;
     NVDevEvoPtr pDevEvo = NULL;
+    NVDispEvoPtr pDispEvo = NULL;
     NVEvoUpdateState updateState = { };
 
-    if (pOpenDisp == NULL) {
-        nvEvoLogDebug(EVO_LOG_ERROR, "Unable to GetPerOpenDisp.");
+    if (pOpenDev == NULL) {
+        nvEvoLogDebug(EVO_LOG_ERROR, "Unable to GetPerOpenDev.");
         return FALSE;
     }
 
-    pDevEvo = pOpenDisp->pDispEvo->pDevEvo;
+    pDevEvo = pOpenDev->pDevEvo;
+    pDispEvo = pDevEvo->pDispEvo[0];
 
     /* Ensure Vblank Sync Object API is supported on this chip. */
     if (!pDevEvo->supportsSyncpts ||
@@ -4610,14 +4463,14 @@ static NvBool DisableVblankSyncObject(
     }
 
     /* Validate requested head because it comes from user input. */
-    if (apiHead >= ARRAY_LEN(pOpenDisp->pDispEvo->apiHeadState)) {
+    if (apiHead >= ARRAY_LEN(pDispEvo->apiHeadState)) {
         nvEvoLogDebug(EVO_LOG_ERROR, "Invalid head requested, head=%d.", apiHead);
         return FALSE;
     }
 
     /* Mark the indicated object as free. */
     pVblankSyncObject =
-        nvEvoGetPointerFromApiHandle(&pOpenDisp->vblankSyncObjectHandles[apiHead],
+        nvEvoGetPointerFromApiHandle(&pOpenDev->vblankSyncObjectHandles[apiHead],
                                      pParams->request.vblankHandle);
     if (pVblankSyncObject == NULL) {
         nvEvoLogDebug(EVO_LOG_ERROR, "unable to find object with provided "
@@ -4625,21 +4478,21 @@ static NvBool DisableVblankSyncObject(
         return FALSE;
     }
 
-    DisableAndCleanVblankSyncObject(pOpenDisp->pDispEvo, apiHead,
+    DisableAndCleanVblankSyncObject(pDispEvo, apiHead,
                                     pVblankSyncObject, &updateState);
 
-    if (!nvIsUpdateStateEmpty(pOpenDisp->pDispEvo->pDevEvo, &updateState)) {
+    if (!nvIsUpdateStateEmpty(pDevEvo, &updateState)) {
         /*
          * Instruct hardware to execute the staged commands from the
          * ConfigureVblankSyncObject() call inside of the
          * DisableAndCleanVblankSyncObject() call above. This will set up and
          * wait for a notification that the hardware execution has completed.
          */
-        nvEvoUpdateAndKickOff(pOpenDisp->pDispEvo, TRUE, &updateState, TRUE);
+        nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState, TRUE);
     }
 
     /* Remove the handle from the map. */
-    nvEvoDestroyApiHandle(&pOpenDisp->vblankSyncObjectHandles[apiHead],
+    nvEvoDestroyApiHandle(&pOpenDev->vblankSyncObjectHandles[apiHead],
                           pParams->request.vblankHandle);
 
     return TRUE;
@@ -4666,15 +4519,15 @@ static NvBool NotifyVblank(
     struct NvKmsNotifyVblankParams *pParams = pParamsVoid;
     struct NvKmsPerOpen *pEventOpenFd = NULL;
     NVVBlankCallbackPtr pCallbackData = NULL;
-    struct NvKmsPerOpenDisp* pOpenDisp =
-        GetPerOpenDisp(pOpen, pParams->request.deviceHandle,
-                       pParams->request.dispHandle);
+    struct NvKmsPerOpenDev* pOpenDev =
+        GetPerOpenDev(pOpen, pParams->request.deviceHandle);
 
-    if (pOpenDisp == NULL) {
+    if (pOpenDev == NULL) {
         return NV_FALSE;
     }
-    
+
     const NvU32 apiHead = pParams->request.head;
+    NVDispEvoPtr pDispEvo = pOpenDev->pDevEvo->pDispEvo[0];
 
     pEventOpenFd = nvkms_get_per_open_data(pParams->request.unicastEvent.fd);
 
@@ -4688,7 +4541,7 @@ static NvBool NotifyVblank(
 
     pEventOpenFd->type = NvKmsPerOpenTypeUnicastEvent;
 
-    pCallbackData = nvApiHeadRegisterVBlankCallback(pOpenDisp->pDispEvo,
+    pCallbackData = nvApiHeadRegisterVBlankCallback(pDispEvo,
                                                     apiHead,
                                                     NotifyVblankCallback,
                                                     pEventOpenFd,
@@ -4698,14 +4551,14 @@ static NvBool NotifyVblank(
     }
 
     pEventOpenFd->unicastEvent.type = NvKmsUnicastEventTypeVblankNotification;
-    pEventOpenFd->unicastEvent.e.vblankNotification.pOpenDisp = pOpenDisp;
+    pEventOpenFd->unicastEvent.e.vblankNotification.pOpenDev = pOpenDev;
     pEventOpenFd->unicastEvent.e.vblankNotification.apiHead = apiHead;
     pEventOpenFd->unicastEvent.e.vblankNotification.hCallback
-        = nvEvoCreateApiHandle(&pOpenDisp->vblankCallbackHandles[apiHead],
+        = nvEvoCreateApiHandle(&pOpenDev->vblankCallbackHandles[apiHead],
                                pCallbackData);
 
     if (pEventOpenFd->unicastEvent.e.vblankNotification.hCallback == 0) {
-        nvApiHeadUnregisterVBlankCallback(pOpenDisp->pDispEvo, pCallbackData);
+        nvApiHeadUnregisterVBlankCallback(pDispEvo, pCallbackData);
         return NV_FALSE;
     }
 
@@ -4801,24 +4654,18 @@ static NvBool EnableVblankSemControl(
     void *pParamsVoid)
 {
     struct NvKmsEnableVblankSemControlParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDev *pOpenDev;
-    struct NvKmsPerOpenDisp *pOpenDisp;
-    NVDevEvoPtr pDevEvo;
-    NVDispEvoRec *pDispEvo;
     NVSurfaceEvoPtr pSurfaceEvo;
     NVVblankSemControl *pVblankSemControl;
     NvKmsVblankSemControlHandle vblankSemControlHandle;
 
-    if (!GetPerOpenDevAndDisp(pOpen,
-                              pParams->request.deviceHandle,
-                              pParams->request.dispHandle,
-                              &pOpenDev,
-                              &pOpenDisp)) {
+    struct NvKmsPerOpenDev *pOpenDev =
+        GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+    if (pOpenDev == NULL) {
         return FALSE;
     }
 
-    pDevEvo = pOpenDev->pDevEvo;
-    pDispEvo = pOpenDisp->pDispEvo;
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
 
     pSurfaceEvo =
         nvEvoGetSurfaceFromHandleNoHWAccess(
@@ -4841,7 +4688,7 @@ static NvBool EnableVblankSemControl(
     }
 
     vblankSemControlHandle =
-        nvEvoCreateApiHandle(&pOpenDisp->vblankSemControlHandles,
+        nvEvoCreateApiHandle(&pOpenDev->vblankSemControlHandles,
                              pVblankSemControl);
 
     if (vblankSemControlHandle == 0) {
@@ -4859,23 +4706,18 @@ static NvBool DisableVblankSemControl(
     void *pParamsVoid)
 {
     const struct NvKmsDisableVblankSemControlParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDev *pOpenDev;
-    struct NvKmsPerOpenDisp *pOpenDisp;
-    NVDevEvoPtr pDevEvo;
     NVVblankSemControl *pVblankSemControl;
 
-    if (!GetPerOpenDevAndDisp(pOpen,
-                              pParams->request.deviceHandle,
-                              pParams->request.dispHandle,
-                              &pOpenDev,
-                              &pOpenDisp)) {
+    struct NvKmsPerOpenDev *pOpenDev =
+        GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+    if (pOpenDev == NULL) {
         return FALSE;
     }
 
-    pDevEvo = pOpenDev->pDevEvo;
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
 
     pVblankSemControl =
-        nvEvoGetPointerFromApiHandle(&pOpenDisp->vblankSemControlHandles,
+        nvEvoGetPointerFromApiHandle(&pOpenDev->vblankSemControlHandles,
                                      pParams->request.vblankSemControlHandle);
     if (pVblankSemControl == NULL) {
         return FALSE;
@@ -4883,7 +4725,7 @@ static NvBool DisableVblankSemControl(
 
     nvEvoDisableVblankSemControl(pDevEvo, pVblankSemControl);
 
-    nvEvoDestroyApiHandle(&pOpenDisp->vblankSemControlHandles,
+    nvEvoDestroyApiHandle(&pOpenDev->vblankSemControlHandles,
                           pParams->request.vblankSemControlHandle);
 
     return TRUE;
@@ -4894,25 +4736,19 @@ static NvBool AccelVblankSemControls(
     void *pParamsVoid)
 {
     const struct NvKmsAccelVblankSemControlsParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDev *pOpenDev;
-    struct NvKmsPerOpenDisp *pOpenDisp;
-    NVDevEvoPtr pDevEvo;
-    NVDispEvoRec *pDispEvo;
 
-    if (!GetPerOpenDevAndDisp(pOpen,
-                              pParams->request.deviceHandle,
-                              pParams->request.dispHandle,
-                              &pOpenDev,
-                              &pOpenDisp)) {
+    struct NvKmsPerOpenDev *pOpenDev =
+        GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+    if (pOpenDev == NULL) {
         return FALSE;
     }
+
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
 
     if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
         return FALSE;
     }
-
-    pDevEvo = pOpenDev->pDevEvo;
-    pDispEvo = pOpenDisp->pDispEvo;
 
     nvEvoAccelVblankSemControls(
         pDevEvo,
@@ -4951,13 +4787,14 @@ static NvBool RegisterVblankIntrCallback(struct NvKmsPerOpen *pOpen,
 {
     NvKmsVblankIntrCallbackHandle callbackHandle;
     struct NvKmsRegisterVblankIntrCallbackParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDisp* pOpenDisp =
-            GetPerOpenDisp(pOpen, pParams->request.deviceHandle,
-                           pParams->request.dispHandle);
+    struct NvKmsPerOpenDev* pOpenDev =
+            GetPerOpenDev(pOpen, pParams->request.deviceHandle);
 
-    if (pOpenDisp == NULL) {
+    if (pOpenDev == NULL) {
         return FALSE;
     }
+
+    NVDispEvoPtr pDispEvo = pOpenDev->pDevEvo->pDispEvo[0];
 
     /*
      * This IOCTL involves passing a kernel callback pointer as a parameter,
@@ -4969,7 +4806,7 @@ static NvBool RegisterVblankIntrCallback(struct NvKmsPerOpen *pOpen,
     }
 
     NVRgInterruptCallbackRec *pCallback =
-        nvApiHeadRegisterRgInterruptCallback(pOpenDisp->pDispEvo,
+        nvApiHeadRegisterRgInterruptCallback(pDispEvo,
                                              pParams->request.head,
                                              pParams->request.pCallback,
                                              pParams->request.param);
@@ -4979,11 +4816,10 @@ static NvBool RegisterVblankIntrCallback(struct NvKmsPerOpen *pOpen,
     }
 
     callbackHandle = nvEvoCreateApiHandle(
-        &pOpenDisp->vblankIntrCallbackHandles[pParams->request.head],
+        &pOpenDev->vblankIntrCallbackHandles[pParams->request.head],
         pCallback);
     if (callbackHandle == 0) {
-        nvApiHeadUnregisterRgInterruptCallback(pOpenDisp->pDispEvo,
-                                               pCallback);
+        nvApiHeadUnregisterRgInterruptCallback(pDispEvo, pCallback);
         return FALSE;
     }
 
@@ -4995,13 +4831,12 @@ static NvBool UnregisterVblankIntrCallback(struct NvKmsPerOpen *pOpen,
                                            void *pParamsVoid)
 {
     struct NvKmsUnregisterVblankIntrCallbackParams *pParams = pParamsVoid;
-    struct NvKmsPerOpenDisp* pOpenDisp =
-            GetPerOpenDisp(pOpen, pParams->request.deviceHandle,
-                           pParams->request.dispHandle);
+    struct NvKmsPerOpenDev* pOpenDev =
+            GetPerOpenDev(pOpen, pParams->request.deviceHandle);
     const NvU32 apiHead = pParams->request.head;
     NVRgInterruptCallbackRec *pCallback;
 
-    if (pOpenDisp == NULL) {
+    if (pOpenDev == NULL) {
         return FALSE;
     }
 
@@ -5013,20 +4848,20 @@ static NvBool UnregisterVblankIntrCallback(struct NvKmsPerOpen *pOpen,
         return FALSE;
     }
 
-    if (apiHead >= ARRAY_LEN(pOpenDisp->vblankIntrCallbackHandles)) {
+    if (apiHead >= ARRAY_LEN(pOpenDev->vblankIntrCallbackHandles)) {
         return FALSE;
     }
 
     pCallback = nvEvoGetPointerFromApiHandle(
-        &pOpenDisp->vblankIntrCallbackHandles[apiHead],
+        &pOpenDev->vblankIntrCallbackHandles[apiHead],
         pParams->request.callbackHandle);
     if (pCallback == NULL) {
         return FALSE;
     }
 
-    nvApiHeadUnregisterRgInterruptCallback(pOpenDisp->pDispEvo,
+    nvApiHeadUnregisterRgInterruptCallback(pOpenDev->pDevEvo->pDispEvo[0],
                                            pCallback);
-    nvEvoDestroyApiHandle(&pOpenDisp->vblankIntrCallbackHandles[apiHead],
+    nvEvoDestroyApiHandle(&pOpenDev->vblankIntrCallbackHandles[apiHead],
                           pParams->request.callbackHandle);
 
     return TRUE;
@@ -5627,8 +5462,6 @@ static void PrintSurface(
     const NVSurfaceEvoRec *pSurfaceEvo,
     const NVDevEvoRec *pDevEvo)
 {
-    NvU32 sd;
-
     nvEvoLogInfoString(pInfoString,
         "pSurfaceEvo                 : %p", pSurfaceEvo);
     nvEvoLogInfoString(pInfoString,
@@ -5666,12 +5499,10 @@ static void PrintSurface(
 
     PrintSurfaceClients(pInfoString, pSurfaceEvo, pDevEvo);
 
-    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-        if (pSurfaceEvo->cpuAddress[sd] != NULL) {
-            nvEvoLogInfoString(pInfoString,
-                "  cpuAddress[%02d]            : %p",
-                sd, pSurfaceEvo->cpuAddress[sd]);
-        }
+    if (pSurfaceEvo->cpuAddress[0] != NULL) {
+        nvEvoLogInfoString(pInfoString,
+            "  cpuAddress                : %p",
+            pSurfaceEvo->cpuAddress[0]);
     }
 
     nvEvoLogInfoString(pInfoString, "");
@@ -6081,6 +5912,20 @@ SignalFormatString(const enum nvKmsTimingsProtocol protocol)
     return "unknown";
 }
 
+static const char*
+DscString(enum NVDscInfoEvoType dscInfoType)
+{
+    switch (dscInfoType) {
+    case NV_DSC_INFO_EVO_TYPE_HDMI: /* fall through */
+    case NV_DSC_INFO_EVO_TYPE_DP:
+        return " (DSC)";
+    case NV_DSC_INFO_EVO_TYPE_DISABLED:
+        break;
+    }
+
+    return "";
+}
+
 static const char *
 PixelDepthString(enum nvKmsPixelDepth pixelDepth)
 {
@@ -6125,7 +5970,7 @@ PixelFormatString(enum nvKmsPixelDepth pixelDepth,
     return "";
 }
 
-static const char *VrrTypeToString(enum NvKmsDpyVRRType type)
+static const char *DpyVrrTypeToString(enum NvKmsDpyVRRType type)
 {
     switch (type) {
     case NVKMS_DPY_VRR_TYPE_NONE:
@@ -6137,6 +5982,20 @@ static const char *VrrTypeToString(enum NvKmsDpyVRRType type)
     case NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED:
     case NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED:
         return "AdaptiveSync";
+    }
+
+    return "Unknown";
+}
+
+static const char *CurrentVrrTypeToString(enum NvKmsCurrentVrrType vrrType)
+{
+    switch (vrrType) {
+        case NVKMS_VRR_TYPE_NONE:
+            return "None";
+        case NVKMS_VRR_TYPE_GAMING:
+            return "Gaming";
+        case NVKMS_VRR_TYPE_MEDIA:
+            return "Media";
     }
 
     return "Unknown";
@@ -6202,8 +6061,8 @@ ProcFsPrintHeads(
                             " head %d                      : inactive",
                             head);
                 } else {
-                    const NvU32 refreshRate10kHz =
-                        nvGetRefreshRate10kHz(pHwModeTimings);
+                    const NvU32 refreshRatex10K =
+                        nvGetRefreshRatex10K(pHwModeTimings);
                     const NVDpyEvoRec *pDpyEvo;
 
                     /* Find the dpy driven by this head.  Multiple heads may be
@@ -6224,15 +6083,16 @@ ProcFsPrintHeads(
                     }
 
                     nvEvoLogInfoString(&infoString,
-                            "  protocol                   : %s",
-                            SignalFormatString(pHwModeTimings->protocol));
+                            "  protocol                   : %s%s",
+                            SignalFormatString(pHwModeTimings->protocol),
+                            DscString(pHeadState->dscInfo.type));
 
                     nvEvoLogInfoString(&infoString,
                             "  mode                       : %u x %u @ %u.%04u Hz",
                             nvEvoVisibleWidth(pHwModeTimings),
                             nvEvoVisibleHeight(pHwModeTimings),
-                            refreshRate10kHz / 10000,
-                            refreshRate10kHz % 10000);
+                            refreshRatex10K / 10000,
+                            refreshRatex10K % 10000);
 
                     nvEvoLogInfoString(&infoString,
                             "  depth                      : %sbpp %s",
@@ -6242,7 +6102,7 @@ ProcFsPrintHeads(
 
                     nvEvoLogInfoString(&infoString,
                             "  vrr mode                   : %s",
-                            VrrTypeToString(pHwModeTimings->vrr.type));
+                            CurrentVrrTypeToString(pHwModeTimings->vrr.type));
                 }
                 outString(data, buffer);
             }
@@ -6309,7 +6169,7 @@ ProcFsPrintDpys(
                     if (pDpyEvo->vrr.type != NVKMS_DPY_VRR_TYPE_NONE) {
                         nvEvoLogInfoString(&infoString,
                                 "   vrr capability            : %s",
-                                VrrTypeToString(pDpyEvo->vrr.type));
+                                DpyVrrTypeToString(pDpyEvo->vrr.type));
                     }
 
                     if (pDpyEvo->edid.length) {
@@ -6509,10 +6369,8 @@ static void SendDpyEventEvo(const NVDpyEvoRec *pDpyEvo,
 
         struct NvKmsEvent event = { 0 };
         NvKmsDeviceHandle deviceHandle;
-        NvKmsDispHandle dispHandle;
 
-        if (!DispEvoToDevAndDispHandles(pOpen, pDispEvo,
-                                        &deviceHandle, &dispHandle)) {
+        if (!DispEvoToDevHandle(pOpen, pDispEvo, &deviceHandle)) {
             continue;
         }
 
@@ -6534,20 +6392,17 @@ static void SendDpyEventEvo(const NVDpyEvoRec *pDpyEvo,
 
         case NVKMS_EVENT_TYPE_DPY_CHANGED:
             event.u.dpyChanged.deviceHandle = deviceHandle;
-            event.u.dpyChanged.dispHandle = dispHandle;
             event.u.dpyChanged.dpyId = pDpyEvo->id;
             break;
 
         case NVKMS_EVENT_TYPE_DPY_CONTENT_PROTECTION_CHANGED:
             event.u.dpyCpChanged.deviceHandle = deviceHandle;
-            event.u.dpyCpChanged.dispHandle = dispHandle;
             event.u.dpyCpChanged.dpyId = pDpyEvo->id;
             event.u.dpyCpChanged.cp = (enum NvKmsContentProtection)(value);
             break;
 
         case NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED:
             event.u.dpyCpTopologyChanged.deviceHandle = deviceHandle;
-            event.u.dpyCpTopologyChanged.dispHandle = dispHandle;
             event.u.dpyCpTopologyChanged.dpyId = pDpyEvo->id;
             event.u.dpyCpTopologyChanged.topology = (const void*)(pDpyEvo->pConnectorEvo->cpTopology);
             if (clear) {
@@ -6559,19 +6414,16 @@ static void SendDpyEventEvo(const NVDpyEvoRec *pDpyEvo,
 
         case NVKMS_EVENT_TYPE_DYNAMIC_DPY_CONNECTED:
             event.u.dynamicDpyConnected.deviceHandle = deviceHandle;
-            event.u.dynamicDpyConnected.dispHandle = dispHandle;
             event.u.dynamicDpyConnected.dpyId = pDpyEvo->id;
             break;
 
         case NVKMS_EVENT_TYPE_DYNAMIC_DPY_DISCONNECTED:
             event.u.dynamicDpyDisconnected.deviceHandle = deviceHandle;
-            event.u.dynamicDpyDisconnected.dispHandle = dispHandle;
             event.u.dynamicDpyDisconnected.dpyId = pDpyEvo->id;
             break;
 
         case NVKMS_EVENT_TYPE_DPY_ATTRIBUTE_CHANGED:
             event.u.dpyAttributeChanged.deviceHandle = deviceHandle;
-            event.u.dpyAttributeChanged.dispHandle = dispHandle;
             event.u.dpyAttributeChanged.dpyId = pDpyEvo->id;
             event.u.dpyAttributeChanged.attribute = attribute;
             event.u.dpyAttributeChanged.value = value;
@@ -6684,7 +6536,6 @@ void nvSendFlipOccurredEventEvo(const NVDispEvoRec *pDispEvo,
 
         struct NvKmsEvent event = { 0 };
         NvKmsDeviceHandle deviceHandle;
-        NvKmsDispHandle dispHandle;
 
         struct NvKmsPerOpenDev *pOpenDev;
         const struct NvKmsFlipPermissions *pFlipPermissions;
@@ -6705,14 +6556,12 @@ void nvSendFlipOccurredEventEvo(const NVDispEvoRec *pDispEvo,
             continue;
         }
 
-        if (!DispEvoToDevAndDispHandles(pOpen, pDispEvo,
-                                        &deviceHandle, &dispHandle)) {
+        if (!DispEvoToDevHandle(pOpen, pDispEvo, &deviceHandle)) {
             continue;
         }
 
         event.eventType = eventType;
         event.u.flipOccurred.deviceHandle = deviceHandle;
-        event.u.flipOccurred.dispHandle = dispHandle;
         event.u.flipOccurred.head = apiHead;
         event.u.flipOccurred.layer = layer;
 
@@ -6737,7 +6586,7 @@ void nvRemoveUnicastEvent(struct NvKmsPerOpen *pOpen)
     NVDeferredRequestFifoPtr pDeferredRequestFifo;
     NvKmsGenericHandle callbackHandle;
     NVVBlankCallbackPtr pCallbackData;
-    struct NvKmsPerOpenDisp *pOpenDisp;
+    struct NvKmsPerOpenDev *pOpenDev;
     NvU32 apiHead;
 
     if (pOpen == NULL) {
@@ -6759,24 +6608,24 @@ void nvRemoveUnicastEvent(struct NvKmsPerOpen *pOpen)
             /* grab fields from the unicast fd */
             callbackHandle =
                 pOpen->unicastEvent.e.vblankNotification.hCallback;
-            pOpenDisp =
-                pOpen->unicastEvent.e.vblankNotification.pOpenDisp;
+            pOpenDev =
+                pOpen->unicastEvent.e.vblankNotification.pOpenDev;
             apiHead = pOpen->unicastEvent.e.vblankNotification.apiHead;
 
             /* Unregister the vblank callback */
             pCallbackData =
-                nvEvoGetPointerFromApiHandle(&pOpenDisp->vblankCallbackHandles[apiHead],
+                nvEvoGetPointerFromApiHandle(&pOpenDev->vblankCallbackHandles[apiHead],
                                              callbackHandle);
 
-            nvApiHeadUnregisterVBlankCallback(pOpenDisp->pDispEvo,
+            nvApiHeadUnregisterVBlankCallback(pOpenDev->pDevEvo->pDispEvo[0],
                                               pCallbackData);
 
-            nvEvoDestroyApiHandle(&pOpenDisp->vblankCallbackHandles[apiHead],
+            nvEvoDestroyApiHandle(&pOpenDev->vblankCallbackHandles[apiHead],
                                   callbackHandle);
 
             /* invalidate the pOpen data */
             pOpen->unicastEvent.e.vblankNotification.hCallback = 0;
-            pOpen->unicastEvent.e.vblankNotification.pOpenDisp = NULL;
+            pOpen->unicastEvent.e.vblankNotification.pOpenDev = NULL;
             pOpen->unicastEvent.e.vblankNotification.apiHead = NV_INVALID_HEAD;
             break;
         default:

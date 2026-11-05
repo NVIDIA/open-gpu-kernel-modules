@@ -407,8 +407,6 @@ p2papiConstruct_IMPL
 
     p2pCaps = pP2pCapsParams->p2pCaps;
 
-    portMemFreeStackOrHeap(pP2pCapsParams);
-
     if (REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_C2C_SUPPORTED, p2pCaps))
         p2pConnectionType = P2P_CONNECTIVITY_C2C;
     // It's impossible to detect P2P_CONNECTIVITY_NVLINK_INDIRECT connectivity.
@@ -423,8 +421,18 @@ p2papiConstruct_IMPL
     else
     {
         NV_PRINTF(LEVEL_ERROR, "Unknown connection type\n");
+        portMemFreeStackOrHeap(pP2pCapsParams);
         return NV_ERR_NOT_SUPPORTED;
     }
+
+    if ((p2pConnectionType == P2P_CONNECTIVITY_NVLINK) &&
+        pP2pCapsParams->p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_NVLINK] == NV0000_P2P_CAPS_STATUS_NOT_READY)
+    {
+        portMemFreeStackOrHeap(pP2pCapsParams);
+        return NV_ERR_NOT_READY;
+    }
+
+    portMemFreeStackOrHeap(pP2pCapsParams);
 
     //
     // Allocate P2P PCIE Mailbox areas if all of the following conditions occur:

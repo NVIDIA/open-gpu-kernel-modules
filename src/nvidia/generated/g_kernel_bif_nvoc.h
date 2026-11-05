@@ -242,10 +242,9 @@ typedef enum {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelBif;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__KernelBif;
 
 
 struct KernelBif {
@@ -264,9 +263,10 @@ struct KernelBif {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelBif *__nvoc_pbase_KernelBif;    // kbif
 
-    // Vtable with 74 per-object function pointers
+    // Vtable with 75 per-object function pointers
     NV_STATUS (*__kbifStatePostLoad__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32);  // virtual halified (2 hals) override (engstate) base (engstate) body
     void (*__kbifDestruct__)(struct KernelBif * /*this*/);  // halified (2 hals) override (engstate) base (engstate) body
+    NV_STATUS (*__kbifGetMsixPbaTableOffsets__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU64 *, NvU64 *, NvU64 *, NvU64 *);  // halified (2 hals) body
     void (*__kbifInitLtr__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__kbifGetLtrEnable__)(struct OBJGPU *, struct KernelBif * /*this*/, NvBool *);  // halified (4 hals) body
     NV_STATUS (*__kbifSetLtrEnable__)(struct OBJGPU *, struct KernelBif * /*this*/, NvBool);  // halified (4 hals) body
@@ -308,7 +308,7 @@ struct KernelBif {
     NV_STATUS (*__kbifConfigAccessWait__)(struct OBJGPU *, struct KernelBif * /*this*/, RMTIMEOUT *);  // halified (3 hals) body
     NV_STATUS (*__kbifCheckResetStatus__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kbifGetPciConfigSpacePriMirror__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32 *, NvU32 *);  // halified (4 hals) body
-    NV_STATUS (*__kbifGetBusOptionsAddr__)(struct OBJGPU *, struct KernelBif * /*this*/, BUS_OPTIONS, NvU32 *);  // halified (4 hals) body
+    NV_STATUS (*__kbifGetBusOptionsAddr__)(struct OBJGPU *, struct KernelBif * /*this*/, BUS_OPTIONS, NvU32 *);  // halified (7 hals) body
     NV_STATUS (*__kbifPreOsGlobalErotGrantRequest__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kbifStopSysMemRequests__)(struct OBJGPU *, struct KernelBif * /*this*/, NvBool);  // halified (5 hals) body
     NV_STATUS (*__kbifDisableSysmemAccess__)(struct OBJGPU *, struct KernelBif * /*this*/, NvBool);  // halified (2 hals) body
@@ -341,7 +341,6 @@ struct KernelBif {
     NV_STATUS (*__kbifDoCxlReset__)(struct OBJGPU *, struct KernelBif * /*this*/);  // halified (2 hals) body
 
     // 26 PDB properties
-//  NvBool PDB_PROP_KBIF_IS_MISSING inherited from OBJENGSTATE
     NvBool PDB_PROP_KBIF_CHECK_IF_GPU_EXISTS_DEF;
     NvBool PDB_PROP_KBIF_IS_MSI_ENABLED;
     NvBool PDB_PROP_KBIF_IS_MSI_CACHED;
@@ -367,6 +366,7 @@ struct KernelBif {
     NvBool PDB_PROP_KBIF_FORCE_PCIE_CONFIG_SAVE;
     NvBool PDB_PROP_KBIF_FLR_PRE_CONDITIONING_REQUIRED;
     NvBool PDB_PROP_KBIF_FLR_HANDLED_BY_OS;
+//  NvBool PDB_PROP_KBIF_IS_MISSING inherited from OBJENGSTATE
 
     // Data members
     NvU32 dmaCaps;
@@ -393,28 +393,10 @@ struct KernelBif {
 };
 
 
-// Vtable with 13 per-class function pointers
-struct NVOC_VTABLE__KernelBif {
-    NV_STATUS (*__kbifConstructEngine__)(struct OBJGPU *, struct KernelBif * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kbifStateInitLocked__)(struct OBJGPU *, struct KernelBif * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kbifStateLoad__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    NV_STATUS (*__kbifStateUnload__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    void (*__kbifInitMissing__)(struct OBJGPU *, struct KernelBif * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kbifStatePreInitLocked__)(struct OBJGPU *, struct KernelBif * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kbifStatePreInitUnlocked__)(struct OBJGPU *, struct KernelBif * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kbifStateInitUnlocked__)(struct OBJGPU *, struct KernelBif * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kbifStatePreLoad__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kbifStatePreUnload__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kbifStatePostUnload__)(struct OBJGPU *, struct KernelBif * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__kbifStateDestroy__)(struct OBJGPU *, struct KernelBif * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kbifIsPresent__)(struct OBJGPU *, struct KernelBif * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelBif {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__KernelBif vtable;
 };
 
 #ifndef __nvoc_class_id_KernelBif
@@ -436,8 +418,6 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelBif;
 #endif //__nvoc_kernel_bif_h_disabled
 
 // Property macros
-#define PDB_PROP_KBIF_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
-#define PDB_PROP_KBIF_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 #define PDB_PROP_KBIF_CHECK_IF_GPU_EXISTS_DEF_BASE_CAST
 #define PDB_PROP_KBIF_CHECK_IF_GPU_EXISTS_DEF_BASE_NAME PDB_PROP_KBIF_CHECK_IF_GPU_EXISTS_DEF
 #define PDB_PROP_KBIF_IS_MSI_ENABLED_BASE_CAST
@@ -488,6 +468,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelBif;
 #define PDB_PROP_KBIF_FLR_PRE_CONDITIONING_REQUIRED_BASE_NAME PDB_PROP_KBIF_FLR_PRE_CONDITIONING_REQUIRED
 #define PDB_PROP_KBIF_FLR_HANDLED_BY_OS_BASE_CAST
 #define PDB_PROP_KBIF_FLR_HANDLED_BY_OS_BASE_NAME PDB_PROP_KBIF_FLR_HANDLED_BY_OS
+#define PDB_PROP_KBIF_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
+#define PDB_PROP_KBIF_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 
 
 NV_STATUS __nvoc_objCreateDynamic_KernelBif(Dynamic**, Dynamic*, NvU32, va_list);
@@ -651,6 +633,24 @@ static inline NV_STATUS kbifControlGetPCIEInfo(struct OBJGPU *pGpu, struct Kerne
 #endif // __nvoc_kernel_bif_h_disabled
 
 #ifdef __nvoc_kernel_bif_h_disabled
+static inline NV_STATUS kbifGetAspmData(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NV2080_CTRL_BIF_GET_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_bif_h_disabled
+#define kbifGetAspmData(pGpu, pKernelBif, pParams) kbifGetAspmData_IMPL(pGpu, pKernelBif, pParams)
+#endif // __nvoc_kernel_bif_h_disabled
+
+#ifdef __nvoc_kernel_bif_h_disabled
+static inline NV_STATUS kbifGetLtrData(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NV2080_CTRL_BIF_GET_DATA_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_bif_h_disabled
+#define kbifGetLtrData(pGpu, pKernelBif, pParams) kbifGetLtrData_IMPL(pGpu, pKernelBif, pParams)
+#endif // __nvoc_kernel_bif_h_disabled
+
+#ifdef __nvoc_kernel_bif_h_disabled
 static inline NV_STATUS kbifGetConfigRegData(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NV2080_CTRL_BIF_GET_DATA_PARAMS *pParams) {
     NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
     return NV_ERR_NOT_SUPPORTED;
@@ -679,26 +679,31 @@ static inline NV_STATUS kbifResetFromTimeoutFullChip(struct OBJGPU *pGpu, struct
 
 
 // Wrapper macros for halified functions
-#define kbifConstructEngine_FNPTR(pKernelBif) pKernelBif->__nvoc_metadata_ptr->vtable.__kbifConstructEngine__
+#define kbifConstructEngine_FNPTR(pKernelBif) pKernelBif->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define kbifConstructEngine(pGpu, pKernelBif, arg3) kbifConstructEngine_DISPATCH(pGpu, pKernelBif, arg3)
-#define kbifStateInitLocked_FNPTR(pKernelBif) pKernelBif->__nvoc_metadata_ptr->vtable.__kbifStateInitLocked__
+#define kbifStateInitLocked_FNPTR(pKernelBif) pKernelBif->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__
 #define kbifStateInitLocked(pGpu, pKernelBif) kbifStateInitLocked_DISPATCH(pGpu, pKernelBif)
-#define kbifStateLoad_FNPTR(pKernelBif) pKernelBif->__nvoc_metadata_ptr->vtable.__kbifStateLoad__
+#define kbifStateLoad_FNPTR(pKernelBif) pKernelBif->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__
 #define kbifStateLoad(pGpu, pKernelBif, arg3) kbifStateLoad_DISPATCH(pGpu, pKernelBif, arg3)
 #define kbifStateLoad_HAL(pGpu, pKernelBif, arg3) kbifStateLoad_DISPATCH(pGpu, pKernelBif, arg3)
 #define kbifStatePostLoad_FNPTR(pKernelBif) pKernelBif->__kbifStatePostLoad__
 #define kbifStatePostLoad(pGpu, pKernelBif, arg3) kbifStatePostLoad_DISPATCH(pGpu, pKernelBif, arg3)
 #define kbifStatePostLoad_HAL(pGpu, pKernelBif, arg3) kbifStatePostLoad_DISPATCH(pGpu, pKernelBif, arg3)
-#define kbifStateUnload_FNPTR(pKernelBif) pKernelBif->__nvoc_metadata_ptr->vtable.__kbifStateUnload__
+#define kbifStateUnload_FNPTR(pKernelBif) pKernelBif->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__
 #define kbifStateUnload(pGpu, pKernelBif, arg3) kbifStateUnload_DISPATCH(pGpu, pKernelBif, arg3)
 #define kbifStateUnload_HAL(pGpu, pKernelBif, arg3) kbifStateUnload_DISPATCH(pGpu, pKernelBif, arg3)
 #define kbifDestruct_FNPTR(pKernelBif) pKernelBif->__kbifDestruct__
 #define __nvoc_kbifDestruct(pKernelBif) kbifDestruct_DISPATCH(pKernelBif)
+#define kbifGetMsixPbaTableOffsets_FNPTR(pKernelBif) pKernelBif->__kbifGetMsixPbaTableOffsets__
+#define kbifGetMsixPbaTableOffsets(pGpu, pKernelBif, pMsixStart, pMsixSize, pPbaStart, pPbaSize) kbifGetMsixPbaTableOffsets_DISPATCH(pGpu, pKernelBif, pMsixStart, pMsixSize, pPbaStart, pPbaSize)
+#define kbifGetMsixPbaTableOffsets_HAL(pGpu, pKernelBif, pMsixStart, pMsixSize, pPbaStart, pPbaSize) kbifGetMsixPbaTableOffsets_DISPATCH(pGpu, pKernelBif, pMsixStart, pMsixSize, pPbaStart, pPbaSize)
 #define kbifGetGpuLinkCapabilities_HAL(pGpu, pKernelBif) kbifGetGpuLinkCapabilities(pGpu, pKernelBif)
 #define kbifGetGpuLinkControlStatus_HAL(pGpu, pKernelBif) kbifGetGpuLinkControlStatus(pGpu, pKernelBif)
 #define kbifGetGpuDevControlStatus_HAL(pGpu, pKernelBif) kbifGetGpuDevControlStatus(pGpu, pKernelBif)
 #define kbifGetGpuDevControlStatus2_HAL(pGpu, pKernelBif) kbifGetGpuDevControlStatus2(pGpu, pKernelBif)
 #define kbifGetGpuL1PmSubstatesCtrl1_HAL(pGpu, pKernelBif) kbifGetGpuL1PmSubstatesCtrl1(pGpu, pKernelBif)
+#define kbifGetAspmData_HAL(pGpu, pKernelBif, pParams) kbifGetAspmData(pGpu, pKernelBif, pParams)
+#define kbifGetLtrData_HAL(pGpu, pKernelBif, pParams) kbifGetLtrData(pGpu, pKernelBif, pParams)
 #define kbifGetConfigRegData_HAL(pGpu, pKernelBif, pParams) kbifGetConfigRegData(pGpu, pKernelBif, pParams)
 #define kbifInitLtr_FNPTR(pKernelBif) pKernelBif->__kbifInitLtr__
 #define kbifInitLtr(pGpu, pKernelBif) kbifInitLtr_DISPATCH(pGpu, pKernelBif)
@@ -917,6 +922,10 @@ static inline NV_STATUS kbifResetFromTimeoutFullChip(struct OBJGPU *pGpu, struct
 #define kbifDoCxlReset_FNPTR(pKernelBif) pKernelBif->__kbifDoCxlReset__
 #define kbifDoCxlReset(pGpu, pKernelBif) kbifDoCxlReset_DISPATCH(pGpu, pKernelBif)
 #define kbifDoCxlReset_HAL(pGpu, pKernelBif) kbifDoCxlReset_DISPATCH(pGpu, pKernelBif)
+#define kbifConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define kbifConstructApertures(pGpu, pEngstate) kbifConstructApertures_DISPATCH(pGpu, pEngstate)
+#define kbifDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define kbifDestructApertures(pGpu, pEngstate) kbifDestructApertures_DISPATCH(pGpu, pEngstate)
 #define kbifInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define kbifInitMissing(pGpu, pEngstate) kbifInitMissing_DISPATCH(pGpu, pEngstate)
 #define kbifStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -938,15 +947,15 @@ static inline NV_STATUS kbifResetFromTimeoutFullChip(struct OBJGPU *pGpu, struct
 
 // Dispatch functions
 static inline NV_STATUS kbifConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, ENGDESCRIPTOR arg3) {
-    return pKernelBif->__nvoc_metadata_ptr->vtable.__kbifConstructEngine__(pGpu, pKernelBif, arg3);
+    return pKernelBif->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(pGpu, staticCast(pKernelBif, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kbifStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
-    return pKernelBif->__nvoc_metadata_ptr->vtable.__kbifStateInitLocked__(pGpu, pKernelBif);
+    return pKernelBif->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pKernelBif, OBJENGSTATE));
 }
 
 static inline NV_STATUS kbifStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 arg3) {
-    return pKernelBif->__nvoc_metadata_ptr->vtable.__kbifStateLoad__(pGpu, pKernelBif, arg3);
+    return pKernelBif->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__(pGpu, staticCast(pKernelBif, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kbifStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 arg3) {
@@ -954,11 +963,15 @@ static inline NV_STATUS kbifStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct K
 }
 
 static inline NV_STATUS kbifStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 arg3) {
-    return pKernelBif->__nvoc_metadata_ptr->vtable.__kbifStateUnload__(pGpu, pKernelBif, arg3);
+    return pKernelBif->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__(pGpu, staticCast(pKernelBif, OBJENGSTATE), arg3);
 }
 
 static inline void kbifDestruct_DISPATCH(struct KernelBif *pKernelBif) {
     pKernelBif->__kbifDestruct__(pKernelBif);
+}
+
+static inline NV_STATUS kbifGetMsixPbaTableOffsets_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU64 *pMsixStart, NvU64 *pMsixSize, NvU64 *pPbaStart, NvU64 *pPbaSize) {
+    return pKernelBif->__kbifGetMsixPbaTableOffsets__(pGpu, pKernelBif, pMsixStart, pMsixSize, pPbaStart, pPbaSize);
 }
 
 static inline void kbifInitLtr_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
@@ -1249,40 +1262,48 @@ static inline NV_STATUS kbifDoCxlReset_DISPATCH(struct OBJGPU *pGpu, struct Kern
     return pKernelBif->__kbifDoCxlReset__(pGpu, pKernelBif);
 }
 
+static inline NV_STATUS kbifConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
+static inline void kbifDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
 static inline void kbifInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__kbifInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kbifStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kbifStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kbifStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kbifStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kbifStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kbifStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kbifStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kbifStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kbifStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kbifStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kbifStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kbifStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline void kbifStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__kbifStateDestroy__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NvBool kbifIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kbifIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions
@@ -1300,6 +1321,8 @@ NV_STATUS kbifStateUnload_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif
 
 void kbifDestruct_GM107(struct KernelBif *pKernelBif);
 
+NV_STATUS kbifGetMsixPbaTableOffsets_GB100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU64 *pMsixStart, NvU64 *pMsixSize, NvU64 *pPbaStart, NvU64 *pPbaSize);
+
 NvU32 kbifGetGpuLinkCapabilities_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
 
 NvU32 kbifGetGpuLinkControlStatus_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
@@ -1309,6 +1332,10 @@ NvU32 kbifGetGpuDevControlStatus_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKe
 NvU32 kbifGetGpuDevControlStatus2_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
 
 NvU32 kbifGetGpuL1PmSubstatesCtrl1_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+NV_STATUS kbifGetAspmData_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NV2080_CTRL_BIF_GET_DATA_PARAMS *pParams);
+
+NV_STATUS kbifGetLtrData_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NV2080_CTRL_BIF_GET_DATA_PARAMS *pParams);
 
 NV_STATUS kbifGetConfigRegData_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NV2080_CTRL_BIF_GET_DATA_PARAMS *pParams);
 
@@ -1474,6 +1501,10 @@ NV_STATUS kbifGetPciConfigSpacePriMirror_GM107(struct OBJGPU *pGpu, struct Kerne
 
 NV_STATUS kbifGetPciConfigSpacePriMirror_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *pMirrorBase, NvU32 *pMirrorSize);
 
+NV_STATUS kbifGetBusOptionsAddr_GA100_VF(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, BUS_OPTIONS options, NvU32 *addrReg);
+
+NV_STATUS kbifGetBusOptionsAddr_GH100_VF(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, BUS_OPTIONS options, NvU32 *addrReg);
+
 NV_STATUS kbifGetBusOptionsAddr_GM107(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, BUS_OPTIONS options, NvU32 *addrReg);
 
 NV_STATUS kbifGetBusOptionsAddr_GB100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, BUS_OPTIONS options, NvU32 *addrReg);
@@ -1601,6 +1632,10 @@ static inline void kbifDestruct_d44104(struct KernelBif *pKernelBif){
     return;
 }
 
+static inline NV_STATUS kbifGetMsixPbaTableOffsets_395e98(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU64 *pMsixStart, NvU64 *pMsixSize, NvU64 *pPbaStart, NvU64 *pPbaSize){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
 static inline void kbifInitLtr_d44104(struct OBJGPU *pGpu, struct KernelBif *pKernelBif){
     return;
 }
@@ -1673,10 +1708,6 @@ static inline void kbifRearmMSI_d44104(struct OBJGPU *pGpu, struct KernelBif *pK
     return;
 }
 
-static inline void kbifRearmMSI_f2d351(struct OBJGPU *pGpu, struct KernelBif *pKernelBif){
-    NV_ASSERT_PRECOMP(0);
-}
-
 static inline NvBool kbifIsMSIEnabledInHW_d69453(struct OBJGPU *pGpu, struct KernelBif *pKernelBif){
     return NV_FALSE;
 }
@@ -1747,10 +1778,6 @@ static inline NV_STATUS kbifDoFunctionLevelReset_395e98(struct OBJGPU *pGpu, str
 
 static inline NV_STATUS kbifInitXveRegMap_395e98(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU8 arg3){
     return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NvU32 kbifGetMSIXTableVectorControlSize_b3787c(struct OBJGPU *pGpu, struct KernelBif *pKernelBif){
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0U);
 }
 
 static inline NV_STATUS kbifConfigAccessWait_395e98(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, RMTIMEOUT *pTimeout){

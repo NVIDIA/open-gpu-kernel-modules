@@ -28,13 +28,15 @@
 #include <linux/sched.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
+#include <linux/jiffies.h>
 #include <linux/ktime.h>
+#include <linux/timekeeping.h>
 
 #include <nvstatus.h>
 
 #define NV_MAX_ISR_DELAY_US           20000
 #define NV_MAX_ISR_DELAY_MS           (NV_MAX_ISR_DELAY_US / 1000)
-#define NV_NSECS_TO_JIFFIES(nsec)     ((nsec) * HZ / 1000000000)
+#define NV_MSEC_TO_JIFFIES_FLOOR(ms)  ((NvU64)(ms) * HZ / MSEC_PER_SEC)
 
 /*
  * in_hardirq() was added in v5.11-rc1 (2020-12-15) to replace in_irq().
@@ -49,96 +51,59 @@ static inline NvBool nv_in_hardirq(void)
 #endif
 }
 
-#if !defined(NV_KTIME_GET_RAW_TS64_PRESENT)
-static inline void ktime_get_raw_ts64(struct timespec64 *ts64)
+static inline ktime_t nv_ktime_get_raw(void)
 {
-    struct timespec ts;
-    getrawmonotonic(&ts);
-    ts64->tv_sec = ts.tv_sec;
-    ts64->tv_nsec = ts.tv_nsec;
-}
-#endif
-
-static NvBool nv_timer_less_than
-(
-    const struct timespec64 *a,
-    const struct timespec64 *b
-)
-{
-    return (a->tv_sec == b->tv_sec) ? (a->tv_nsec < b->tv_nsec)
-                                    : (a->tv_sec < b->tv_sec);
+    return ktime_get_raw();
 }
 
 static inline NvU64 nv_ktime_get_raw_ns(void)
 {
-    struct timespec64 ts;
-    ktime_get_raw_ts64(&ts);
-    return (NvU64)timespec64_to_ns(&ts);
+    return ktime_get_raw_ns();
 }
 
-// #define NV_CHECK_DELAY_ACCURACY 1
-
 /*
- * It is generally a bad idea to use udelay() to wait for more than
- * a few milliseconds. Since the caller is most likely not aware of
- * this, we use mdelay() for any full millisecond to be safe.
+ * udelay() may overflow the counter on some platforms. mdelay() is a safe
+ * wrapper to use.
  */
-static inline NV_STATUS nv_sleep_us(unsigned int us)
+static inline void __nv_delay_usec(unsigned int usec)
 {
+    unsigned long msec = usec / USEC_PER_MSEC;
 
-    unsigned long mdelay_safe_msec;
-    unsigned long usec;
+    usec %= USEC_PER_MSEC;
 
-#ifdef NV_CHECK_DELAY_ACCURACY
-    struct timespec64 tm1, tm2, tm_diff;
+    if (msec)
+        mdelay(msec);
 
-    ktime_get_raw_ts64(&tm1);
-#endif
+    if (usec)
+        udelay(usec);
+}
 
+static inline NV_STATUS nv_delay_us(unsigned int us)
+{
     if (nv_in_hardirq() && (us > NV_MAX_ISR_DELAY_US))
         return NV_ERR_GENERIC;
 
-    mdelay_safe_msec = us / 1000;
-    if (mdelay_safe_msec)
-        mdelay(mdelay_safe_msec);
+    __nv_delay_usec(us);
 
-    usec = us % 1000;
-    if (usec)
-        udelay(usec);
-
-#ifdef NV_CHECK_DELAY_ACCURACY
-    ktime_get_raw_ts64(&tm2);
-    tm_diff = timespec64_sub(tm2, tm1);
-    pr_info("NVRM: delay of %d usec results in actual delay of 0x%llu nsec\n",
-             us, timespec64_to_ns(&tm_diff));
-#endif
     return NV_OK;
 }
 
 /*
  * Sleep for specified milliseconds. Yields the CPU to scheduler.
  *
- * On Linux, a jiffie represents the time passed in between two timer
- * interrupts. The number of jiffies per second (HZ) varies across the
- * supported platforms. On i386, where HZ is 100, a timer interrupt is
- * generated every 10ms. NV_MSECS_TO_JIFFIES should be accurate independent of
- * the actual value of HZ; any partial jiffies will be 'floor'ed, the
- * remainder will be accounted for with mdelay().
+ * On Linux, a jiffy represents the time passed between two timer interrupts.
+ * The number of jiffies per second (HZ) varies across the supported
+ * platforms.
+ *
+ * In atomic context it's just a busy-loop with mdelay(). In non-atomic context,
+ * it may sleep with schedule_timeout().
  */
 static inline NV_STATUS nv_sleep_ms(unsigned int ms)
 {
-    NvU64 ns;
-    unsigned long jiffies;
-    unsigned long mdelay_safe_msec;
-    struct timespec64 tm_end, tm_aux;
-#ifdef NV_CHECK_DELAY_ACCURACY
-    struct timespec64 tm_start;
-#endif
+    long jiffies_timeout;
+    ktime_t end, delta;
 
-    ktime_get_raw_ts64(&tm_aux);
-#ifdef NV_CHECK_DELAY_ACCURACY
-    tm_start = tm_aux;
-#endif
+    end = ktime_add_ms(nv_ktime_get_raw(), ms);
 
     if (nv_in_hardirq() && (ms > NV_MAX_ISR_DELAY_MS))
     {
@@ -151,53 +116,26 @@ static inline NV_STATUS nv_sleep_ms(unsigned int ms)
         return NV_OK;
     }
 
-    ns = ms * (NvU64) NSEC_PER_MSEC;
-    tm_end.tv_nsec = ns;
-    tm_end.tv_sec = 0;
-    tm_end = timespec64_add(tm_aux, tm_end);
-
-    /* do we have a full jiffie to wait? */
-    jiffies = NV_NSECS_TO_JIFFIES(ns);
-
-    if (jiffies)
+    /* Do we have a full jiffy to wait? */
+    jiffies_timeout = NV_MSEC_TO_JIFFIES_FLOOR(ms);
+    while (jiffies_timeout)
     {
-        //
-        // If we have at least one full jiffy to wait, give up
-        // up the CPU; since we may be rescheduled before
-        // the requested timeout has expired, loop until less
-        // than a jiffie of the desired delay remains.
-        //
         set_current_state(TASK_INTERRUPTIBLE);
-        do
-        {
-            schedule_timeout(jiffies);
-            ktime_get_raw_ts64(&tm_aux);
-            if (nv_timer_less_than(&tm_aux, &tm_end))
-            {
-                tm_aux = timespec64_sub(tm_end, tm_aux);
-                ns = (NvU64) timespec64_to_ns(&tm_aux);
-            }
-            else
-                ns = 0;
-        } while ((jiffies = NV_NSECS_TO_JIFFIES(ns)) != 0);
+        jiffies_timeout = schedule_timeout(jiffies_timeout);
+        if (ktime_after(nv_ktime_get_raw(), end))
+            return NV_OK;
     }
 
-    if (ns > (NvU64) NSEC_PER_MSEC)
-    {
-        mdelay_safe_msec = ns / (NvU64) NSEC_PER_MSEC;
-        mdelay(mdelay_safe_msec);
-        ns %= (NvU64) NSEC_PER_MSEC;
-    }
-    if (ns)
-    {
-        ndelay(ns);
-    }
-#ifdef NV_CHECK_DELAY_ACCURACY
-    ktime_get_raw_ts64(&tm_aux);
-    tm_aux = timespec64_sub(tm_aux, tm_start);
-    pr_info("NVRM: delay of %d msec results in actual delay of %lld.%09ld sec\n",
-             ms, tm_aux.tv_sec, tm_aux.tv_nsec);
-#endif
+    delta = ktime_sub(end, nv_ktime_get_raw());
+    if (ktime_to_ns(delta) <= 0)
+        return NV_OK;
+    __nv_delay_usec(ktime_to_us(delta));
+
+    delta = ktime_sub(end, nv_ktime_get_raw());
+    if (ktime_to_ns(delta) <= 0)
+        return NV_OK;
+    ndelay(ktime_to_ns(delta));
+
     return NV_OK;
 }
 

@@ -139,7 +139,11 @@ typedef struct CONF_COMPUTE_CAPS
     NvBool bAcceptClientRequest;
     NvBool bMultiGpuProtectedPcieModeEnabled;
     NvBool bMultiGpuNvleModeEnabled;
+    NvBool bBmsaiCapable;
+    NvBool bBmsaiFeatureEnabled;
     NvBool bFatalFailure;
+    NvBool bTdispFeatureCapable;
+    NvBool bTdispFeatureEnabled;
 } CONF_COMPUTE_CAPS;
 
 typedef struct NVLE_CAPS
@@ -206,6 +210,8 @@ typedef struct NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO
     PORT_ATOMIC NvU32 active;
     PORT_ATOMIC NvU32 rcCompleted;
     PORT_ATOMIC NvU32 recoveryReady;
+    // With NVLE pause recovery completion until keys are re-programmed (BMSAI)
+    PORT_ATOMIC NvU32 nvleRekeyHold;
 } NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO;
 
 #define NVLINK_QUIESCE_TRAFFIC_INFO_STATE 31:0
@@ -238,12 +244,14 @@ typedef struct NVLINK_QUIESCE_TRAFFIC_INFO
  * _DRAINP2P_WORKITEM_LAUNCHED: drainP2P workitem is already launched
  * _IDLE: UVM is idled
  * _RESUMEP2P_WORKITEM_LAUNCHED: resumeP2P workitem is already launched
+ * _RESUMEP2P_WORKITEM_DONE: UVM resumed; the recovery poller must finalize
 */
 #define NVLINK_RESILIENCY_INFO_UVM_IDLE                                 31:0
 #define NVLINK_RESILIENCY_INFO_UVM_IDLE_NOT_SET                         BIT(0U)
 #define NVLINK_RESILIENCY_INFO_UVM_IDLE_DRAINP2P_WORKITEM_LAUNCHED      BIT(1U)
 #define NVLINK_RESILIENCY_INFO_UVM_IDLE_IDLE                            BIT(2U)
 #define NVLINK_RESILIENCY_INFO_UVM_IDLE_RESUMEP2P_WORKITEM_LAUNCHED     BIT(3U)
+#define NVLINK_RESILIENCY_INFO_UVM_IDLE_RESUMEP2P_WORKITEM_DONE         BIT(4U)
 
 typedef struct NVLINK_RESILIENCY_INFO
 {
@@ -263,6 +271,10 @@ typedef struct NVLINK_RESILIENCY_INFO
    NvU64 startTime;
    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO uncontainedErrorRecovery;
    NVLINK_QUIESCE_TRAFFIC_INFO            quiesceTraffic;
+   PORT_ATOMIC NvU32 pendingUncontained;
+   NvU64 pendingUncontainedStartTime;
+   // A lockless UVM completion must not restart recovery after an abort.
+   PORT_ATOMIC NvU32 aborted;
 } NVLINK_RESILIENCY_INFO;
 
 typedef struct
@@ -379,6 +391,16 @@ typedef struct ALID_CLID_TABLE
     NvU32         numEntries;
 } ALID_CLID_TABLE;
 
+//
+// Nvlink global PTC state
+// Tracks the primary query GPU and whether it has been initialized
+//
+typedef struct NVLINK_GLOBAL_PTC_STATE
+{
+    NvU32  primaryQueryGpuId;
+    NvBool bPrimaryQueryGpuPtcInitialized;
+} NVLINK_GLOBAL_PTC_STATE;
+
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
 // the matching C source file, but causes diagnostics to be issued if another
@@ -443,6 +465,7 @@ struct OBJGPUMGR {
     pcieP2PCapsInfoList pcieP2PCapsInfoCache;
     void *pcieP2PCapsInfoLock;
     GPUMGR_CURRENT_GPU_INSTANCE currentGpuInstances[8];
+    NVLINK_GLOBAL_PTC_STATE nvlinkGlobalPtcState;
 };
 
 
@@ -739,6 +762,10 @@ NvBool      gpumgrIsDeviceMsixAllowed(RmPhysAddr bar0BaseAddr, NvU32 pmcBoot1, N
 NvBool      gpumgrWaitForBarFirewall(NvU32 domain, NvU8 bus, NvU8 device, NvU8 function, NvU16 devId, NvU16 subsystemId);
 NvBool      gpuMgrIsNvleAlidPresent(struct OBJGPUMGR *pGpuMgr, NvU32 alid, NvU32 *pClid);
 NvBool      gpuMgrCacheNvleAlidClid(struct OBJGPUMGR *pGpuMgr, NvU32 alid, NvU32 clid);
+NvBool      gpumgrGetNvlinkPrimaryQueryGpuPtcInitialized(struct OBJGPUMGR *pGpuMgr);
+void        gpumgrSetNvlinkPrimaryQueryGpuPtcInitialized(struct OBJGPUMGR *pGpuMgr, NvBool);
+NV_STATUS   gpumgrGetNvlinkPrimaryQueryGpuId(struct OBJGPUMGR *pGpuMgr, NvU32 *pGpuId);
+NV_STATUS   gpumgrSetNvlinkPrimaryQueryGpuId(struct OBJGPUMGR *pGpuMgr, NvU32 gpuId);
 
 //
 // gpumgrIsSubDeviceCountOne

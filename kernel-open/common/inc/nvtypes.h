@@ -285,13 +285,20 @@ typedef NvU8 NvTristate;
 
 /* Macros to extract the low and high parts of a 64-bit unsigned integer */
 /* Also designed to work if someone happens to pass in a 32-bit integer */
+#ifndef NvU64_HI32
 #ifdef NV_MISRA_COMPLIANCE_REQUIRED
 #define NvU64_HI32(n)     ((NvU32)((((NvU64)(n)) >> 32) & 0xffffffffU))
-#define NvU64_LO32(n)     ((NvU32)(( (NvU64)(n))        & 0xffffffffU))
 #else
 #define NvU64_HI32(n)     ((NvU32)((((NvU64)(n)) >> 32) & 0xffffffff))
+#endif
+#endif /* NvU64_HI32 */
+#ifndef NvU64_LO32
+#ifdef NV_MISRA_COMPLIANCE_REQUIRED
+#define NvU64_LO32(n)     ((NvU32)(( (NvU64)(n))        & 0xffffffffU))
+#else
 #define NvU64_LO32(n)     ((NvU32)(( (NvU64)(n))        & 0xffffffff))
 #endif
+#endif /* NvU64_LO32 */
 #define NvU40_HI32(n)     ((NvU32)((((NvU64)(n)) >>  8) & 0xffffffffU))
 #define NvU40_HI24of32(n) ((NvU32)(  (NvU64)(n)         & 0xffffff00U))
 
@@ -401,12 +408,12 @@ do {                                                                           \
  */
 #define NvU64_ALIGN32_ADD(pDst, pSrc1, pSrc2)                                 \
 do {                                                                          \
-    NvU64 __dst, __src1, __scr2;                                              \
+    NvU64 nvDst, nvSrc1, nvSrc2;                                              \
                                                                               \
-    NvU64_ALIGN32_UNPACK(&__src1, (pSrc1));                                   \
-    NvU64_ALIGN32_UNPACK(&__scr2, (pSrc2));                                   \
-    __dst = __src1 + __scr2;                                                  \
-    NvU64_ALIGN32_PACK((pDst), &__dst);                                       \
+    NvU64_ALIGN32_UNPACK(&nvSrc1, (pSrc1));                                   \
+    NvU64_ALIGN32_UNPACK(&nvSrc2, (pSrc2));                                   \
+    nvDst = nvSrc1 + nvSrc2;                                                  \
+    NvU64_ALIGN32_PACK((pDst), &nvDst);                                       \
 } while (NV_FALSE)
 
 /*!
@@ -418,12 +425,12 @@ do {                                                                          \
  */
 #define NvU64_ALIGN32_SUB(pDst, pSrc1, pSrc2)                                  \
 do {                                                                           \
-    NvU64 __dst, __src1, __scr2;                                               \
+    NvU64 nvDst, nvSrc1, nvSrc2;                                               \
                                                                                \
-    NvU64_ALIGN32_UNPACK(&__src1, (pSrc1));                                    \
-    NvU64_ALIGN32_UNPACK(&__scr2, (pSrc2));                                    \
-    __dst = __src1 - __scr2;                                                   \
-    NvU64_ALIGN32_PACK((pDst), &__dst);                                        \
+    NvU64_ALIGN32_UNPACK(&nvSrc1, (pSrc1));                                    \
+    NvU64_ALIGN32_UNPACK(&nvSrc2, (pSrc2));                                    \
+    nvDst = nvSrc1 - nvSrc2;                                                   \
+    NvU64_ALIGN32_PACK((pDst), &nvDst);                                        \
 } while (NV_FALSE)
 
 /*!

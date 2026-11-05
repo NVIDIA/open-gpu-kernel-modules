@@ -110,6 +110,10 @@
 #include <soc/tegra/bpmp-abi.h>
 #endif
 
+#ifndef PCI_EXP_DEVCAP_TEE
+#define PCI_EXP_DEVCAP_TEE 0x40000000
+#endif
+
 #define RM_THRESHOLD_TOTAL_IRQ_COUNT     100000
 #define RM_THRESHOLD_UNAHNDLED_IRQ_COUNT 99900
 #define RM_UNHANDLED_TIMEOUT_US          100000
@@ -367,6 +371,15 @@ void nv_detect_conf_compute_platform(
 #if defined(NV_CC_PLATFORM_PRESENT)
 #if defined(NVCPU_AARCH64)
     os_cc_enabled = cc_platform_has(CC_ATTR_MEM_ENCRYPT);
+
+    //
+    // TDISP is a platform-level decision: an active CoCo guest (os_cc_enabled) on a
+    // kernel with the TSM guest framework available. No per-device probing required.
+    //
+    if (os_cc_enabled && IS_ENABLED(CONFIG_TSM_GUEST))
+    {
+        os_tdisp_enabled = NV_TRUE;
+    }
 #else
     os_cc_enabled = cc_platform_has(CC_ATTR_GUEST_MEM_ENCRYPT);
 
@@ -1180,10 +1193,6 @@ static void nv_free_file_private(nv_linux_file_private_t *nvlfp)
     {
         nv_alloc_mapping_list_node_t *pNode = nvlfp->file_mapping_list;
         nvlfp->file_mapping_list = pNode->pNext;
-        if (pNode->context.page_array != NULL)
-        {
-            os_free_mem(pNode->context.page_array);
-        }
         if (pNode->context.memArea.pRanges != NULL)
         {
             os_free_mem(pNode->context.memArea.pRanges);
@@ -1393,19 +1402,28 @@ static int validate_numa_start_state(nv_linux_state_t *nvl)
 {
     int rc = 0;
     int numa_status = nv_get_numa_status(nvl);
+    NvU64 memblock_size = nv_ctl_device.numa_memblock_size;
 
     if (numa_status != NV_IOCTL_NUMA_STATUS_DISABLED)
     {
-        if (nv_ctl_device.numa_memblock_size == 0)
+        if (memblock_size == 0)
         {
-            nv_printf(NV_DBG_ERRORS, "NVRM: numa memblock size of zero "
-                      "found during device start");
-            rc = -EINVAL;
+            if ((os_numa_memblock_size(&memblock_size) != NV_OK) ||
+                (memblock_size == 0))
+            {
+                nv_printf(NV_DBG_ERRORS, "NVRM: failed to get numa memblock "
+                          "size during device start");
+                rc = -EINVAL;
+            }
+            else
+            {
+                nv_ctl_device.numa_memblock_size = memblock_size;
+            }
         }
-        else
+
+        if (rc == 0)
         {
-            /* Keep the individual devices consistent with the control device */
-            nvl->numa_memblock_size = nv_ctl_device.numa_memblock_size;
+            nvl->numa_memblock_size = memblock_size;
         }
     }
 
@@ -1476,7 +1494,7 @@ void nv_set_init_on_probe(nv_state_t *nv)
             {
                 auto_disable_reason = "Tegra PCI iGPU";
             }
-            else if (dev_is_pci(nvl->dev) && nv_platform_supports_numa(nvl))
+            else if (dev_is_pci(nvl->dev) && (NVreg_EnableNUMA))
             {
                 auto_disable_reason = "NUMA platform";
             }
@@ -2131,6 +2149,11 @@ failed:
     {
         if (nvlfp != NULL)
         {
+            if (nvlfp->sp != NULL)
+            {
+                nv_kmem_cache_free_stack(nvlfp->sp);
+                nvlfp->sp = NULL;
+            }
             nv_free_file_private(nvlfp);
             NV_SET_FILE_PRIVATE(file, NULL);
         }
@@ -2345,7 +2368,7 @@ nvidia_close_callback(
     down(&nvl->ldata_lock);
     nv_close_device(nv, sp);
 
-    bRemove = (!NV_IS_DEVICE_IN_SURPRISE_REMOVAL(nv)) &&
+    bRemove = (!NV_IS_DEVICE_INACCESSIBLE(nv)) &&
               (atomic64_read(&nvl->usage_count) == 0) &&
               rm_get_device_remove_flag(sp, nv->gpu_id);
 
@@ -2564,7 +2587,7 @@ out:
     return rc;
 }
 
-static NV_STATUS nv_validate_ioctl_data(unsigned int arg_cmd, size_t arg_size)
+static NV_STATUS nv_validate_ioctl_data(nvidia_stack_t *sp, unsigned int arg_cmd, size_t arg_size)
 {
     int i;
     NV_STATUS status;
@@ -2589,7 +2612,7 @@ static NV_STATUS nv_validate_ioctl_data(unsigned int arg_cmd, size_t arg_size)
         _NV_IOCTL_ENTRY(NV_ESC_SET_NUMA_STATUS, nv_ioctl_set_numa_status_t, NV_FALSE),
     };
 
-    status = rm_validate_ioctls(arg_cmd, arg_size);
+    status = rm_validate_ioctls(sp, arg_cmd, arg_size);
     if (status != NV_ERR_INVALID_COMMAND) 
     {
         return status;
@@ -2618,9 +2641,9 @@ static NV_STATUS nv_validate_ioctl_data(unsigned int arg_cmd, size_t arg_size)
     return NV_ERR_INVALID_ARGUMENT;
 }
 
-static NV_STATUS nv_validate_ioctls(unsigned int cmd)
+static NV_STATUS nv_validate_ioctls(nvidia_stack_t *sp, unsigned int cmd)
 {
-    return nv_validate_ioctl_data(_IOC_NR(cmd), _IOC_SIZE(cmd));
+    return nv_validate_ioctl_data(sp, _IOC_NR(cmd), _IOC_SIZE(cmd));
 }
 
 int
@@ -2642,9 +2665,17 @@ nvidia_ioctl(
     size_t arg_size = 0;
     int arg_cmd;
 
-    if (nv_validate_ioctls(cmd) != NV_OK)
+    status = nv_kmem_cache_alloc_stack(&sp);
+    if (status != 0)
     {
-        return -EINVAL;
+        nv_printf(NV_DBG_ERRORS, "NVRM: Unable to allocate altstack for ioctl\n");
+        goto done_no_stack;
+    }
+
+    if (nv_validate_ioctls(sp, cmd) != NV_OK)
+    {
+        status = -EINVAL;
+        goto done_early;
     }
 
     nv_printf(NV_DBG_INFO, "NVRM: ioctl(0x%x, 0x%x, 0x%x)\n",
@@ -2681,7 +2712,7 @@ nvidia_ioctl(
             goto done_early;
         }
 
-        if (nv_validate_ioctl_data(arg_cmd, arg_size) != NV_OK)
+        if (nv_validate_ioctl_data(sp, arg_cmd, arg_size) != NV_OK)
         {
             status = -EINVAL;
             goto done_early;
@@ -2729,13 +2760,6 @@ nvidia_ioctl(
     if (status < 0)
     {
         goto done_early;
-    }
-
-    status = nv_kmem_cache_alloc_stack(&sp);
-    if (status != 0)
-    {
-        nv_printf(NV_DBG_ERRORS, "NVRM: Unable to allocate altstack for ioctl\n");
-        goto done_pm_unlock;
     }
 
     rmStatus = nv_check_gpu_state(nv);
@@ -2985,12 +3009,12 @@ unlock:
     }
 
 done:
-    nv_kmem_cache_free_stack(sp);
-
-done_pm_unlock:
     up_read(&nv_system_pm_lock);
 
 done_early:
+    nv_kmem_cache_free_stack(sp);
+
+done_no_stack:
     if (arg_copy != NULL)
     {
         if (status != -EFAULT)
@@ -3341,20 +3365,6 @@ nvidia_ctl_close(
     up(&nvl->ldata_lock);
 
     rm_cleanup_file_private(sp, nv, &nvlfp->nvfp);
-
-    // Populate free list from file nodes
-    {
-        nv_alloc_mapping_list_node_t *pNode = nvlfp->file_mapping_list;
-        while (pNode != NULL)
-        {
-            if (pNode->context.alloc != NULL)
-            {
-                nv_alloc_t *at = pNode->context.alloc;
-                nv_alloc_release(nvlfp, at);
-            }
-            pNode = pNode->pNext;
-        }
-    }
 
     if (nvlfp->free_list != NULL)
     {
@@ -4028,6 +4038,27 @@ void NV_API_CALL nv_free_kernel_mapping(
     }
 }
 
+void NV_API_CALL nv_inc_alloc_refcount
+(
+    void *pAllocPrivate
+)
+{
+    nv_alloc_t *at = (nv_alloc_t *) pAllocPrivate;
+    atomic64_inc(&at->usage_count);
+}
+
+void NV_API_CALL nv_dec_alloc_refcount
+(
+    nv_state_t *nv,
+    void *pAllocPrivate
+)
+{
+    nv_alloc_t *at = (nv_alloc_t *) pAllocPrivate;
+
+    // Cannot reach zero here: RM still owns the allocation and has not freed it.
+    atomic64_dec(&at->usage_count);
+}
+
 NV_STATUS NV_API_CALL nv_alloc_pages(
     nv_state_t *nv,
     NvU32       page_count,
@@ -4063,9 +4094,6 @@ NV_STATUS NV_API_CALL nv_alloc_pages(
        dev = nvl->dev;
     }
 
-    if (nv_encode_caching(NULL, cache_type, NV_MEMORY_TYPE_SYSTEM))
-        return NV_ERR_NOT_SUPPORTED;
-
     at = nvos_create_alloc(dev, page_count);
     if (at == NULL)
         return NV_ERR_NO_MEMORY;
@@ -4085,6 +4113,11 @@ NV_STATUS NV_API_CALL nv_alloc_pages(
 
     if (node_id != NUMA_NO_NODE)
     {
+        if (!nv_numa_node_has_memory(node_id))
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto failed;
+        }
         at->flags.node = NV_TRUE;
         at->node_id = node_id;
     }
@@ -4308,13 +4341,14 @@ void NV_API_CALL nv_put_firmware(
 
 nv_file_private_t* NV_API_CALL nv_get_file_private(
     NvS32 fd,
-    NvBool ctl,
     void **os_private
 )
 {
     struct file *filp = NULL;
     nv_linux_file_private_t *nvlfp = NULL;
     dev_t rdev = 0;
+    NvBool found = NV_FALSE;
+    int i;
 
     filp = fget(fd);
 
@@ -4330,16 +4364,12 @@ nv_file_private_t* NV_API_CALL nv_get_file_private(
         goto fail;
     }
 
-    if (ctl)
+    if (MINOR(rdev) == NV_MINOR_DEVICE_NUMBER_CONTROL_DEVICE)
     {
-        if (MINOR(rdev) != NV_MINOR_DEVICE_NUMBER_CONTROL_DEVICE)
-            goto fail;
+        found = NV_TRUE;
     }
     else
     {
-        NvBool found = NV_FALSE;
-        int i;
-
         for (i = 0; i <= NV_MINOR_DEVICE_NUMBER_REGULAR_MAX; i++)
         {
             if (test_bit(i, nv_linux_minor_bitmap) && (MINOR(rdev) == i))
@@ -4348,10 +4378,10 @@ nv_file_private_t* NV_API_CALL nv_get_file_private(
                 break;
             }
         }
-
-        if (!found)
-            goto fail;
     }
+
+    if (!found)
+        goto fail;
 
     nvlfp = NV_GET_LINUX_FILE_PRIVATE(filp);
 
@@ -4367,6 +4397,22 @@ fail:
     }
 
     return NULL;
+}
+
+nv_state_t* NV_API_CALL nv_get_state_ptr_from_nvfp(
+    nv_file_private_t *nvfp
+)
+{
+    nv_linux_file_private_t *nvlfp;
+
+    if (nvfp == NULL)
+        return NULL;
+
+    nvlfp = nv_get_nvlfp_from_nvfp(nvfp);
+    if (nvlfp->nvptr == NULL)
+        return NULL;
+
+    return NV_STATE_PTR(nvlfp->nvptr);
 }
 
 void NV_API_CALL nv_put_file_private(
@@ -5284,13 +5330,24 @@ int nv_pmops_runtime_suspend(
     nv_state_t *nv = NV_STATE_PTR(nvl);
 
 #if defined(CONFIG_PM_DEVFREQ)
-    if (nvl->devfreq_suspend != NULL)
+    int (*suspend_devfreq_cb)(struct device *dev);
+    int (*resume_devfreq_cb)(struct device *dev);
+    //
+    // Tracks whether the platform devfreq suspend callback completed so the
+    // runtime-suspend error path can call the matching resume callback.
+    //
+    NvBool resume_devfreq_on_error = NV_FALSE;
+
+    resume_devfreq_cb = READ_ONCE(nvl->resume_devfreq_cb);
+    suspend_devfreq_cb = READ_ONCE(nvl->suspend_devfreq_cb);
+    if (suspend_devfreq_cb != NULL)
     {
-        err = nvl->devfreq_suspend(dev);
+        err = suspend_devfreq_cb(dev);
         if (err)
         {
             return err;
         }
+        resume_devfreq_on_error = NV_TRUE;
     }
 
     nv_pci_tegra_boost_clocks(dev);
@@ -5314,9 +5371,9 @@ int nv_pmops_runtime_suspend(
 
 nv_pmops_runtime_suspend_exit:
 #if defined(CONFIG_PM_DEVFREQ)
-    if (nvl->devfreq_resume != NULL)
+    if (resume_devfreq_on_error && (resume_devfreq_cb != NULL))
     {
-        nvl->devfreq_resume(dev);
+        resume_devfreq_cb(dev);
     }
 #endif
     return err;
@@ -5330,6 +5387,7 @@ int nv_pmops_runtime_resume(
 #if defined(CONFIG_PM_DEVFREQ)
     struct pci_dev *pci_dev = to_pci_dev(dev);
     nv_linux_state_t *nvl = pci_get_drvdata(pci_dev);
+    int (*resume_devfreq_cb)(struct device *dev);
 
     nv_pci_tegra_boost_clocks(dev);
 #endif
@@ -5341,9 +5399,10 @@ int nv_pmops_runtime_resume(
     }
 
 #if defined(CONFIG_PM_DEVFREQ)
-    if (nvl->devfreq_resume != NULL)
+    resume_devfreq_cb = READ_ONCE(nvl->resume_devfreq_cb);
+    if (resume_devfreq_cb != NULL)
     {
-        err = nvl->devfreq_resume(dev);
+        err = resume_devfreq_cb(dev);
         if (err)
         {
             goto nv_pmops_runtime_resume_exit;
@@ -5415,7 +5474,7 @@ NvBool NV_API_CALL nv_requires_dma_remap(
 {
     NvBool dma_remap = NV_FALSE;
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
-    dma_remap = !nv_dma_maps_swiotlb(nvl->dev);
+    dma_remap = !nv_dma_maps_swiotlb(nvl);
     return dma_remap;
 }
 
@@ -5650,6 +5709,11 @@ NV_STATUS NV_API_CALL nv_get_device_memory_config(
 
 #if defined(NVCPU_AARCH64)
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+
+    if (!nvl->coherent_link_info.gpu_mem_info_discovery_attempted)
+    {
+        nv_init_coherent_gpu_info(nv);
+    }
 
     if (node_id != NULL)
     {

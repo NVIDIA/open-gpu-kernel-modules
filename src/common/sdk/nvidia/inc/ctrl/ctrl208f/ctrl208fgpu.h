@@ -33,65 +33,6 @@
 #include "ctrl/ctrl2080/ctrl2080gr.h"        /* 208F is partially derivative of 2080 */
 #include "ctrl/ctrl208f/ctrl208fbase.h"
 
-/*
- * NV208F_CTRL_CMD_GPU_GET_RAM_SVOP_VALUES
- *
- * This command can be used to get the RAM SVOP values.
- *
- *    sp
- *     This field outputs RAM_SVOP_SP
- *    rg
- *     This field outputs RAM_SVOP_REG
- *    pdp
- *     This field outputs RAM_SVOP_PDP
- *    dp
- *     This field outputs RAM_SVOP_DP
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_PARAM_STRUCT
- *   NV_ERR_INVALID_ARGUMENT
- */
-
-#define NV208F_CTRL_CMD_GPU_GET_RAM_SVOP_VALUES (0x208f1101) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GPU_INTERFACE_ID << 8) | NV208F_CTRL_GPU_GET_RAM_SVOP_VALUES_PARAMS_MESSAGE_ID" */
-
-typedef struct NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS {
-    NvU32 sp;
-    NvU32 rg;
-    NvU32 pdp;
-    NvU32 dp;
-} NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS;
-
-#define NV208F_CTRL_GPU_GET_RAM_SVOP_VALUES_PARAMS_MESSAGE_ID (0x1U)
-
-typedef NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS NV208F_CTRL_GPU_GET_RAM_SVOP_VALUES_PARAMS;
-
-/*
- * NV208F_CTRL_CMD_GPU_SET_RAM_SVOP_VALUES
- *
- * This command can be used to set the RAM SVOP values.
- *
- *    sp
- *     Input for RAM_SVOP_SP
- *    rg
- *     Input for RAM_SVOP_REG
- *    pdp
- *     Input for RAM_SVOP_PDP
- *    dp
- *     Input for RAM_SVOP_DP
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_PARAM_STRUCT
- *   NV_ERR_INVALID_ARGUMENT
- */
-
-#define NV208F_CTRL_CMD_GPU_SET_RAM_SVOP_VALUES (0x208f1102) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GPU_INTERFACE_ID << 8) | NV208F_CTRL_GPU_SET_RAM_SVOP_VALUES_PARAMS_MESSAGE_ID" */
-
-#define NV208F_CTRL_GPU_SET_RAM_SVOP_VALUES_PARAMS_MESSAGE_ID (0x2U)
-
-typedef NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS NV208F_CTRL_GPU_SET_RAM_SVOP_VALUES_PARAMS;
-
 
 
 /*

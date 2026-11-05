@@ -53,10 +53,32 @@
 
 #include "nvlimits.h"
 
+#include "diagnostics/nocat_event_list.h"
+
 #include "lib/protobuf/prb_util.h"
 #include "g_all_dcl_pb.h"
 #include "g_nvdebug_pb.h"
 #include "nv_ref.h"
+
+#include "kernel/gpu/gsp/kernel_gsp.h"
+
+// to force use of the SDK (overriding the config) uncomment the line below.
+// DO NOT CHECK IN with this active!!
+// #define FORCE_SDK 0
+
+#if defined(FORCE_SDK)
+#define USE_NOCAT_SDK (RMCFG_FEATURE_PLATFORM_WINDOWS)
+#pragma message ("OVERRIDING NOCAT USE OF SDK!!")
+#pragma message ("REMOVE OVERRIDE BEFORE CHECKING IN!!")
+#else
+#define USE_NOCAT_SDK (RMCFG_FEATURE_PLATFORM_WINDOWS && RMCFG_FEATURE_GR3901_UPDATE_RM_TO_USE_THE_NOCAT_SDK)
+#endif
+
+#pragma message("NOCAT using legacy implementation")
+static NV_STATUS _rcdbGetNocatJournalRecord(OBJRCDB* pRcdb,
+    NvU32 id, NvBool bExactMatch,
+    RmRCCommonJournal_RECORD** ppReturnedCommon, RM_NOCAT_JOURNAL_ENTRY** ppReturnedJournal);
+static NV_STATUS _rcdbReleaseNocatJournalRecord(RM_NOCAT_JOURNAL_ENTRY* pReturnedJournal);
 
 #define NOCAT_UNKNOWN_STR                       "*** unknown ***"
 #define NOCAT_NA_STR                            "N/A"
@@ -92,10 +114,6 @@ static NvU32 _rcdbGetOcaRecordSize(Journal *pRcDB, RMCD_RECORD_TYPE type);
 static PORT_ATOMIC NvS32 concurrentRingBufferAccess = 0;
 static PORT_ATOMIC NvS32 assertListRecursion = 0;
 static void rcdbFindRingBufferForType(Journal *pRcDB, RMCD_RECORD_TYPE recType, RING_BUFFER_LOG **ppRingBuffer);
-static NV_STATUS _rcdbGetNocatJournalRecord(OBJRCDB* pRcdb,
-    NvU32 id, NvBool bExactMatch,
-    RmRCCommonJournal_RECORD** ppReturnedCommon, RM_NOCAT_JOURNAL_ENTRY** ppReturnedJournal);
-static NV_STATUS _rcdbReleaseNocatJournalRecord(RM_NOCAT_JOURNAL_ENTRY* pReturnedJournal);
 static NV_STATUS _rcdbNocatReportAssert(OBJGPU* pGpu, RmRCCommonAssert_RECORD* pAssert);
 
 // Global flag to make sure we never re-enter the nvLog code.
@@ -148,6 +166,7 @@ rcdbDestruct_IMPL(Journal *pRcDB)
 
     portMemFree(pRcDB->previousDriverBranch);
     pRcDB->previousDriverBranch = NULL;
+
 }
 
 static void
@@ -1219,6 +1238,9 @@ rcdbDumpComponent_IMPL
     NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR,
         prbEncUnwindNesting(&encoder, startingDepth));
 
+    // Only forward to GSP if the Kernel-side dump succeeded. A Kernel-side
+    // failure must propagate, not be masked by the preserve-buffer swallow below.
+    if (status == NV_OK)
     {
         NvU32   gpu;
         OBJGPU *pGpu;
@@ -1229,11 +1251,38 @@ rcdbDumpComponent_IMPL
 
             if ((pGpu != NULL) && IS_GSP_CLIENT(pGpu))
             {
-                NV_RM_RPC_DUMP_PROTOBUF_COMPONENT(pGpu, status, &encoder,
+                NvDebugDump *pNvd = GPU_GET_NVD(pGpu);
+                NV_STATUS rpcStatus = NV_OK;
+
+                NV_RM_RPC_DUMP_PROTOBUF_COMPONENT(pGpu, rpcStatus, &encoder,
                     pNvDumpState, component);
 
                 NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR,
                     prbEncUnwindNesting(&encoder, startingDepth));
+
+                /* On the fatal-timeout path GSP is hung and
+                 * DUMP_PROTOBUF_COMPONENT returns NV_ERR_RESET_REQUIRED. The
+                 * caller forwards `status` to nvidia-debugdump, which drops
+                 * the entire encoded buffer on any non-NV_OK, so swallow the
+                 * RPC failure here to keep the Kernel-side data the user came
+                 * to collect. */
+                if (rpcStatus != NV_OK)
+                {
+                    if ((pNvd != NULL) && pNvd->bBestEffort)
+                    {
+                        NV_PRINTF(LEVEL_ERROR,
+                                  "DUMP_PROTOBUF_COMPONENT GSP RPC failed for "
+                                  "component %u (status = 0x%x); preserving "
+                                  "Kernel-side encoded buffer (expected on "
+                                  "fatal-timeout dump path where GSP is hung)\n",
+                                  component, rpcStatus);
+                    }
+                    else
+                    {
+                        NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR,
+                            rpcStatus);
+                    }
+                }
             }
         }
     }
@@ -1381,7 +1430,336 @@ out:
     return nvStatus;
 }
 
+static void
+_rcdbAddOomAllocatorStats
+(
+    PRB_ENCODER                          *pPrbEnc,
+    const GSP_OOM_REPORT_ALLOCATOR_STATS *pStats
+)
+{
+    prbEncAddUInt32(pPrbEnc,
+        NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_NUM_ALLOCATIONS,
+        pStats->numAllocations);
+    prbEncAddUInt64(pPrbEnc,
+        NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_ALLOCATED_SIZE,
+        pStats->allocatedSize);
+    prbEncAddUInt64(pPrbEnc,
+        NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_USEFUL_SIZE,
+        pStats->usefulSize);
+    prbEncAddUInt64(pPrbEnc,
+        NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_META_SIZE,
+        pStats->metaSize);
+}
+
+static NV_STATUS
+_rcdbAddOomReport
+(
+    PRB_ENCODER                 *pPrbEnc,
+    const PRB_FIELD_DESC        *pFieldDesc,
+    const GSP_OOM_REPORT_SHARED *pOom
+)
+{
+    NV_STATUS              nvStatus      = NV_OK;
+    NvU8                   startingDepth = prbEncNestingLevel(pPrbEnc);
+    const GSP_OOM_REPORT_MALLOC_HEAP_STATS *pHeap;
+    const GSP_OOM_REPORT_LIBOS_HEAP_STATS  *pLibos;
+    NvU32                  poolCount;
+    NvU32                  j;
+    NvU64                  totalPoolUsed = 0U;
+
+    NV_ASSERT_OR_RETURN(pOom != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pHeap  = &pOom->mallocHeap;
+    pLibos = &pOom->libosHeap;
+    poolCount = pLibos->poolCount;
+    if (poolCount > GSP_OOM_REPORT_MAX_LIBOS_POOLS)
+        poolCount = GSP_OOM_REPORT_MAX_LIBOS_POOLS;
+
+    NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+        prbEncNestedStart(pPrbEnc, pFieldDesc), out);
+
+    prbEncAddUInt32(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_OOM_COUNT,          pOom->oomCount);
+    prbEncAddUInt64(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_OOM_REQUESTED_SIZE, pOom->requestedSize);
+
+    NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+        prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOC_HEAP), out);
+    prbEncAddUInt64(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_HEAP_SIZE,          pHeap->heapSize);
+    prbEncAddUInt64(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_FREE_SIZE,          pHeap->freeSize);
+    prbEncAddUInt64(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_LARGEST_FREE_CHUNK, pHeap->largestFreeChunk);
+    prbEncAddUInt32(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_FRAG_PCT,           pHeap->fragPct);
+
+    NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+        prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ACTIVE), out);
+    _rcdbAddOomAllocatorStats(pPrbEnc, &pHeap->active);
+    prbEncNestedEnd(pPrbEnc);
+
+    NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+        prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_TOTAL), out);
+    _rcdbAddOomAllocatorStats(pPrbEnc, &pHeap->total);
+    prbEncNestedEnd(pPrbEnc);
+
+    NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+        prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_PEAK), out);
+    _rcdbAddOomAllocatorStats(pPrbEnc, &pHeap->peak);
+    prbEncNestedEnd(pPrbEnc);
+
+    prbEncNestedEnd(pPrbEnc);
+
+    // LibOS-2 builds return no pools.
+    if (poolCount > 0U)
+    {
+        NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+            prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOS_HEAP), out);
+        prbEncAddUInt64(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_TOTAL_SIZE, pLibos->totalHeapSize);
+        prbEncAddUInt32(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_POOL_COUNT, poolCount);
+
+        for (j = 0U; j < poolCount; j++)
+        {
+            NvU64 poolUsed = (NvU64)pLibos->pools[j].allocations * pLibos->pools[j].objectSize;
+            totalPoolUsed += poolUsed;
+
+            NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+                prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_POOL), out);
+            prbEncAddUInt32(pPrbEnc, NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_POOL_INDEX,       j);
+            prbEncAddUInt32(pPrbEnc,
+                NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_ALLOCATIONS,
+                pLibos->pools[j].allocations);
+            prbEncAddUInt32(pPrbEnc,
+                NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_PEAK_ALLOCATIONS,
+                pLibos->pools[j].peakAllocations);
+            prbEncAddUInt64(pPrbEnc,
+                NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_OBJECT_SIZE,
+                pLibos->pools[j].objectSize);
+            prbEncAddUInt64(pPrbEnc,
+                NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_USED_BYTES,
+                poolUsed);
+            prbEncNestedEnd(pPrbEnc);
+        }
+
+        prbEncAddUInt64(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_TOTAL_POOL_USED,
+            totalPoolUsed);
+        prbEncNestedEnd(pPrbEnc);
+    }
+
+    prbEncNestedEnd(pPrbEnc);
+
+out:
+    NV_CHECK_OK(nvStatus, LEVEL_ERROR,
+        prbEncUnwindNesting(pPrbEnc, startingDepth));
+
+    return nvStatus;
+}
+
+static NV_STATUS
+_rcdbAddOomResservStats
+(
+    PRB_ENCODER                        *pPrbEnc,
+    const GSP_OOM_REPORT_RESSERV_STATS *pStats
+)
+{
+    NV_STATUS nvStatus = NV_OK;
+    NvU32     classCount;
+    NvU32     pidCount;
+    NvU32     i;
+
+    NV_ASSERT_OR_RETURN(pStats != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    classCount = pStats->classCount;
+    if (classCount > GSP_OOM_REPORT_MAX_CLASS_ENTRIES)
+        classCount = GSP_OOM_REPORT_MAX_CLASS_ENTRIES;
+
+    pidCount = pStats->pidCount;
+    if (pidCount > GSP_OOM_REPORT_MAX_PID_ENTRIES)
+        pidCount = GSP_OOM_REPORT_MAX_PID_ENTRIES;
+
+    prbEncAddUInt32(pPrbEnc,
+        NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_CLIENTS,
+        pStats->numClients);
+    prbEncAddUInt64(pPrbEnc,
+        NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_RESOURCES,
+        pStats->numResources);
+
+    for (i = 0U; i < classCount; i++)
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASS_HISTOGRAM));
+        prbEncAddUInt32(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASSHISTENTRY_CLASS_ID,
+            pStats->classHist[i].classId);
+        prbEncAddUInt32(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASSHISTENTRY_COUNT,
+            pStats->classHist[i].count);
+        NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(nvStatus, LEVEL_ERROR,
+            prbEncNestedEnd(pPrbEnc));
+    }
+
+    for (i = 0U; i < pidCount; i++)
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_RESOURCESERVER_PID_SUMMARY));
+        prbEncAddUInt32(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY_PID,
+            pStats->pidSummary[i].pid);
+        prbEncAddUInt32(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY_CLIENTS,
+            pStats->pidSummary[i].clients);
+        prbEncAddUInt32(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY_RESOURCES,
+            pStats->pidSummary[i].resources);
+        NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(nvStatus, LEVEL_ERROR,
+            prbEncNestedEnd(pPrbEnc));
+    }
+
+    return nvStatus;
+}
+
 static const char * GPU_NA_UUID = "N/A";
+
+static NV_STATUS
+_rcdbAddGspOomGpuInfo
+(
+    PRB_ENCODER *pPrbEnc,
+    OBJGPU      *pGpu
+)
+{
+    const NvU32 gidFlags =
+        DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _FORMAT, _BINARY) |
+        DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1);
+    NvU8     *pGidString = NULL;
+    NvU32     gidStrlen  = 0;
+    NV_STATUS gidStatus;
+
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_GPU_INFO));
+
+    prbEncAddUInt32(pPrbEnc, NVDEBUG_SYSTEMINFO_GPUINFO_NUM_GPUS, 1U);
+    prbEncAddUInt32(pPrbEnc, NVDEBUG_SYSTEMINFO_GPUINFO_GPU_ID, pGpu->gpuId);
+
+    gidStatus = gpuGetGidInfo(pGpu, &pGidString, &gidStrlen, gidFlags);
+    if (gidStatus == NV_OK)
+    {
+        prbEncAddBytes(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_GPUINFO_GPU_UUID,
+            pGidString, gidStrlen);
+        portMemFree(pGidString);
+    }
+    else if (pGpu->gpuUuid.isInitialized)
+    {
+        prbEncAddBytes(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_GPUINFO_GPU_UUID,
+            pGpu->gpuUuid.uuid, sizeof(pGpu->gpuUuid.uuid));
+    }
+    else
+    {
+        prbEncAddString(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_GPUINFO_GPU_UUID,
+            GPU_NA_UUID);
+    }
+
+    prbEncAddUInt32(pPrbEnc,
+        NVDEBUG_SYSTEMINFO_GPUINFO_DEVICE_ID,
+        pGpu->idInfo.PCIDeviceID);
+    prbEncAddUInt32(pPrbEnc,
+        NVDEBUG_SYSTEMINFO_GPUINFO_PMCBOOT0,
+        pGpu->chipId0);
+    prbEncAddUInt32(pPrbEnc,
+        NVDEBUG_SYSTEMINFO_GPUINFO_SUBDEV_ID,
+        pGpu->idInfo.PCISubDeviceID);
+
+    return prbEncNestedEnd(pPrbEnc);
+}
+
+static NV_STATUS
+_rcdbAddGspOomSystemInfo
+(
+    PRB_ENCODER                 *pPrbEnc,
+    NVD_STATE                   *pNvDumpState,
+    OBJGPU                      *pGpu,
+    const GSP_OOM_REPORT_SHARED *pOom
+)
+{
+    NV_STATUS nvStatus      = NV_OK;
+    NvU8      startingDepth = prbEncNestingLevel(pPrbEnc);
+
+    NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+        prbEncNestedStart(pPrbEnc, NVDEBUG_NVDUMP_SYSTEM_INFO_GSPRM),
+        out);
+
+    NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+        _rcdbAddGspOomGpuInfo(pPrbEnc, pGpu),
+        out);
+    NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+        _rcdbGetTimeInfo(pPrbEnc, pNvDumpState, NVDEBUG_SYSTEMINFO_TIME_INFO),
+        out);
+    NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+        _rcdbAddOomReport(pPrbEnc, NVDEBUG_SYSTEMINFO_OOM_REPORT, pOom),
+        out);
+
+    if ((pOom->resservStats.numClients != 0U) ||
+        (pOom->resservStats.numResources != 0U))
+    {
+        NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+            prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_RESSERV_INFO),
+            out);
+        NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+            _rcdbAddOomResservStats(pPrbEnc, &pOom->resservStats),
+            out);
+        prbEncNestedEnd(pPrbEnc);
+    }
+
+out:
+    NV_CHECK_OK(nvStatus, LEVEL_ERROR,
+        prbEncUnwindNesting(pPrbEnc, startingDepth));
+    return nvStatus;
+}
+
+static NV_STATUS
+_rcdbDumpGspOomReports
+(
+    PRB_ENCODER *pPrbEnc,
+    NVD_STATE   *pNvDumpState
+)
+{
+    GSP_OOM_REPORT_SHARED *pOom;
+    NV_STATUS              nvStatus = NV_OK;
+    NvU32                  gpuIdx;
+
+    pOom = portMemAllocNonPaged(sizeof(*pOom));
+    if (pOom == NULL)
+        return NV_OK;
+
+    for (gpuIdx = 0U; gpuIdx < NV_MAX_DEVICES; gpuIdx++)
+    {
+        OBJGPU    *pGpu = gpumgrGetGpu(gpuIdx);
+        KernelGsp *pKernelGsp;
+        NV_STATUS  status;
+
+        if ((pGpu == NULL) || !IS_GSP_CLIENT(pGpu))
+            continue;
+
+        pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+        if (pKernelGsp == NULL)
+            continue;
+
+        status = kgspGetOomReport(pGpu, pKernelGsp, pOom);
+        if (status == NV_ERR_NOT_READY)
+            continue;
+
+        NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(nvStatus, LEVEL_ERROR, status);
+        if (status != NV_OK)
+            continue;
+
+        NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(nvStatus, LEVEL_ERROR,
+            _rcdbAddGspOomSystemInfo(pPrbEnc, pNvDumpState, pGpu, pOom));
+    }
+
+    portMemFree(pOom);
+
+    return nvStatus;
+}
 
 NV_STATUS
 rcdbDumpSystemInfo_IMPL
@@ -1675,6 +2053,15 @@ rcdbDumpSystemInfo_IMPL
     // prbEncNestedEnd for NVDEBUG_SYSTEMINFO_ERROR_STATE and
     // NVDEBUG_NVDUMP_SYSTEM_INFO are handled by prbEncUnwindNesting.
     //
+
+    NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(nvStatus, LEVEL_ERROR,
+        prbEncUnwindNesting(pPrbEnc, startingDepth));
+    if (nvStatus == NV_OK)
+    {
+        NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(nvStatus, LEVEL_ERROR,
+            _rcdbDumpGspOomReports(pPrbEnc, pNvDumpState));
+    }
+    return nvStatus;
 
 External_Cleanup:
     // Unwind the protobuf to the correct depth.
@@ -2089,7 +2476,14 @@ rcdbDumpJournal_IMPL
     // It is OK to dump the journal entries without the RM lock.
     // No need to check pRcDB->nvDumpState.bNoRMLock;
 
-    recSize = pJournal->BufferSize - pJournal->BufferRemaining;
+    if (pJournalBuff == NULL)
+    {
+        recSize = 0;
+    }
+    else
+    {
+        recSize = pJournal->BufferSize - pJournal->BufferRemaining;
+    }
 
     // init the list to an empty state
     portMemSet(&List, 0x00, sizeof(List));
@@ -2906,6 +3300,87 @@ NvU32 rcdbGetOcaRecordSizeWithHeader_IMPL(Journal *pRcDB, RMCD_RECORD_TYPE type)
     return NV_ALIGN_UP(recSz, 8);
 }
 
+//
+// Append a pre-encoded protobuf dump to pSysErrorInfo->pErrorList.
+//
+// Shared by rcdbAddRmGpuDump (GPU-lost path, RmLogGpuCrash flow) and
+// hangDebugDumpCapture. Both produce an encoded protobuf buffer.
+// Serializes the list mutation via the InUse CAS lock declared on
+// SYS_ERROR_INFO to prevent latent race under concurrent multi-GPU writes.
+//
+NV_STATUS
+rcdbAddProtobufDump
+(
+    OBJGPU *pGpu,
+    NvU8   *pBuf,
+    NvU32   bufLen
+)
+{
+    NV_STATUS status = NV_OK;
+    OBJSYS               *pSys          = SYS_GET_INSTANCE();
+    Journal              *pRcDB         = SYS_GET_RCDB(pSys);
+    SYS_ERROR_INFO       *pSysErrorInfo = &pRcDB->ErrorInfo;
+    RMPRBERRORELEMENT_V2 *pElem         = NULL;
+    RMCD_ERROR_BLOCK     *pBlock        = NULL;
+
+    if (pBuf == NULL || bufLen == 0)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    pElem  = portMemAllocNonPaged(sizeof(*pElem));
+    pBlock = portMemAllocNonPaged(sizeof(*pBlock));
+    if (pElem == NULL || pBlock == NULL)
+    {
+        status = NV_ERR_NO_MEMORY;
+        goto cleanup;
+    }
+
+    portMemSet(pElem, 0, sizeof(*pElem));
+    pElem->RmPrbErrorData.common.Header.cRecordGroup = RmGroup;
+    pElem->RmPrbErrorData.common.Header.cRecordType  = RmPrbFullDump_V2;
+    pElem->RmPrbErrorData.common.Header.wRecordSize  = sizeof(*pElem);
+    rcdbSetCommonJournalRecord(pGpu, &pElem->RmPrbErrorData.common);
+
+    portMemSet(pBlock, 0, sizeof(*pBlock));
+    pBlock->pBlock    = pBuf;
+    pBlock->blockSize = bufLen;
+    pBlock->pNext     = NULL;
+    pElem->ErrorHeader.pErrorBlock = pBlock;
+
+    // Pointer chases only. Spin is fine.
+    while (!portAtomicCompareAndSwapU32(&pSysErrorInfo->InUse, 1U, 0U))
+    {
+        if (!portSyncExSafeToSleep())
+        {
+            status = NV_ERR_INVALID_STATE;
+            goto cleanup;
+        }
+        portUtilSpin();
+    }
+
+    if (pSysErrorInfo->pErrorList != NULL)
+    {
+        RMPRBERRORELEMENT_V2 *pTail = (RMPRBERRORELEMENT_V2 *)pSysErrorInfo->pErrorList;
+        while (pTail->ErrorHeader.pNextError != NULL)
+        {
+            pTail = (RMPRBERRORELEMENT_V2 *)pTail->ErrorHeader.pNextError;
+        }
+        pTail->ErrorHeader.pNextError = (RMFIFOERRORELEMENT_V3 *)pElem;
+    }
+    else
+    {
+        pSysErrorInfo->pErrorList = pElem;
+    }
+    pSysErrorInfo->ErrorCount++;
+
+    portAtomicSetU32(&pSysErrorInfo->InUse, 0);
+    return NV_OK;
+
+cleanup:
+    portMemFree(pElem);
+    portMemFree(pBlock);
+    return status;
+}
+
 NV_STATUS
 rcdbAddRmGpuDump
 (
@@ -2917,11 +3392,6 @@ rcdbAddRmGpuDump
     Journal            *pRcDB              = SYS_GET_RCDB(pSys);
     NvDebugDump        *pNvd               = GPU_GET_NVD(pGpu);
     NVD_STATE          *pNvDumpState       = &pRcDB->nvDumpState;
-    SYS_ERROR_INFO     *pSysErrorInfo      = &pRcDB->ErrorInfo;
-    RMPRBERRORELEMENT_V2 *pPrbErrorInfo    = NULL;
-    RMPRBERRORELEMENT_V2 *pErrorList       = NULL;
-    RMCD_ERROR_BLOCK   *pNewErrorBlock     = NULL;
-    RMERRORHEADER      *pErrorHeader       = NULL;
     PRB_ENCODER         prbEnc;
     NvU32               bufferUsed;
     NvU8               *pBuf               = NULL;
@@ -3034,65 +3504,19 @@ rcdbAddRmGpuDump
         goto done;
     }
 
-    // Allocate and initialize the error element
-    pPrbErrorInfo = portMemAllocNonPaged(sizeof(RMPRBERRORELEMENT_V2));
-    if (pPrbErrorInfo == NULL)
+    // Journal the encoded buffer via the shared chokepoint. On NV_OK,
+    // ownership of pBuf transfers to the journal element; on error,
+    // pBuf is still ours and we free it below.
+    status = rcdbAddProtobufDump(pGpu, pBuf, bufferUsed);
+    if (status == NV_OK)
     {
-        status = NV_ERR_NO_MEMORY;
-        goto done;
+        pBuf = NULL;  // ownership transferred
     }
-
-    portMemSet(pPrbErrorInfo, 0, sizeof(RMPRBERRORELEMENT_V2));
-    pPrbErrorInfo->RmPrbErrorData.common.Header.cRecordGroup = RmGroup;
-    pPrbErrorInfo->RmPrbErrorData.common.Header.cRecordType  = RmPrbFullDump_V2;
-    pPrbErrorInfo->RmPrbErrorData.common.Header.wRecordSize  = sizeof(RMPRBERRORELEMENT_V2);
-    rcdbSetCommonJournalRecord(pGpu, &(pPrbErrorInfo->RmPrbErrorData.common));
-    pErrorHeader = &pPrbErrorInfo->ErrorHeader;
-    pErrorHeader->pErrorBlock = NULL;
-
-    //
-    // Allocate and initialize the error "block" associated with this protobuf
-    // dump
-    //
-    pNewErrorBlock = portMemAllocNonPaged(sizeof(RMCD_ERROR_BLOCK));
-    if (pNewErrorBlock == NULL)
-    {
-        status = NV_ERR_NO_MEMORY;
-        goto done;
-    }
-
-    portMemSet(pNewErrorBlock, 0, sizeof(RMCD_ERROR_BLOCK));
-    pNewErrorBlock->pBlock = pBuf;
-    pNewErrorBlock->blockSize = bufferUsed;
-    pNewErrorBlock->pNext = NULL;
-    pErrorHeader->pErrorBlock = pNewErrorBlock;
-
-    // Add the error element to the Journal list
-    if (pSysErrorInfo->pErrorList != NULL)
-    {
-        pErrorList = (RMPRBERRORELEMENT_V2*)pSysErrorInfo->pErrorList;
-        while (pErrorList->ErrorHeader.pNextError != NULL)
-        {
-            pErrorList = (RMPRBERRORELEMENT_V2*)pErrorList->ErrorHeader.pNextError;
-        }
-
-        pErrorList->ErrorHeader.pNextError = (RMFIFOERRORELEMENT_V3*)pPrbErrorInfo;
-    }
-    else
-    {
-        pSysErrorInfo->pErrorList = pPrbErrorInfo;
-    }
-
-    pSysErrorInfo->ErrorCount++;
 
 done:
-    if (status != NV_OK)
+    if (pBuf != NULL)
     {
-        if (pBuf != NULL)
-        {
-            portMemFree(pPrbErrorInfo);
-            portMemFree(pBuf);
-        }
+        portMemFree(pBuf);
     }
 
     pNvDumpState->bDumpInProcess = NV_FALSE;
@@ -3353,6 +3777,7 @@ void _rcdbSetTdrReason
         pTmpStr, portStringLength(pTmpStr) + 1);
 }
 
+// take out functions that are not used by the NOCAT SDK implemenation
 /*
 ** _rcdbAllocNocatJournalRecord allocates a buffer entry from the Journal ring buffer
 **  for the specified type
@@ -3634,6 +4059,66 @@ _rcdbGetNewestNocatJournalRecordForType
 }
 
 /*
+** _rcdbSendNocatJournalNotification sends an ETW Notification that a NOCAT Journal record has been posted.
+**
+**  parameters:
+**      pGpu -- a pointer to the GPU object associated with teh new entry
+**              (may be NULL)
+**      pRcdb -- a pointer to the Journal object NOCAT is using.
+**      posted -- the number of records posted since the last record that was retrieved.
+**      pCommon -- a pointer to the common record header associated with the record.
+**      type -- the record type
+**
+**  returns:
+**      NV_OK -- the call to post the record was made.
+**          note that the call to post the record does not return a status,
+**          so we do not know if the call was successful.
+**      NV_ERR_INVALID_ARGUMENT -- one of the required pointers is NULL
+**
+*/
+NV_STATUS
+_rcdbSendNocatJournalNotification
+(
+    OBJGPU* pGpu,
+    Journal* pRcdb,
+    NvU32    posted,
+    NvU64    timeStamp,
+    NvU32 type
+)
+{
+    if (pRcdb == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+    if (pRcdb->nvDumpState.bDumpInProcess)
+    {
+        // we can't reliably do an ETW when we are in the process of collecting data for a dump.
+        // (it can throw an exception)
+        // so bail w/o sending the notification.
+        pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_NOTIFICATION_FAIL_IDX]++;
+        return NV_OK;
+    }
+
+    if (pRcdb->getProperty(pRcdb, PDB_PROP_RCDB_NOCAT_EVTBUF_SUPPORTED))
+    {
+        /* On non-Windows, use EventBuffer notification for NOCAT */
+        nocatEventBufferAddNotify(pGpu, posted, type, timeStamp);
+    }
+    else
+    {
+        RMTRACE_NOCAT(_REPORT_PENDING, (pGpu ? pGpu->gpuId : RMTRACE_UNKNOWN_GPUID),
+            RmNocatReport,
+            posted,
+            type,
+            rcdbGetNocatOutstandingCount(pRcdb),
+            timeStamp);
+    }
+
+    // count the number of notifications.
+    pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_NOTIFICATIONS_IDX]++;
+    return NV_OK;
+}
+/*
 ** rcdbReportNextNocatJournalEntry fills in the provided Nocat Journal record with the next record
 ** to be reported, then updates the last reported id.
 **
@@ -3759,66 +4244,6 @@ rcdbGetNocatOutstandingCount(Journal *pRcdb)
         portAtomicDecrementS32(&concurrentRingBufferAccess);
     }
     return count;
-}
-
-/*
-** _rcdbSendNocatJournalNotification sends an ETW Notification that a NOCAT Journal record has been posted.
-**
-**  parameters:
-**      pGpu -- a pointer to the GPU object associated with teh new entry
-**              (may be NULL)
-**      pRcdb -- a pointer to the Journal object NOCAT is using.
-**      posted -- the number of records posted since the last record that was retrieved.
-**      pCommon -- a pointer to the common record header associated with the record.
-**      type -- the record type
-**
-**  returns:
-**      NV_OK -- the call to post the record was made.
-**          note that the call to post the record does not return a status,
-**          so we do not know if the call was successful.
-**      NV_ERR_INVALID_ARGUMENT -- one of the required pointers is NULL
-**
-*/
-NV_STATUS
-_rcdbSendNocatJournalNotification
-(
-    OBJGPU *pGpu,
-    Journal *pRcdb,
-    NvU32    posted,
-    NvU64    timeStamp,
-    NvU32 type
-)
-{
-    if (pRcdb == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-    if (pRcdb->nvDumpState.bDumpInProcess)
-    {
-        // we can't reliably do an ETW when we are in the process of collecting data for a dump.
-        // (it can throw an exception)
-        // so bail w/o sending the notification.
-        pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_NOTIFICATION_FAIL_IDX]++;
-        return NV_OK;
-    }
-
-    if (pRcdb->getProperty(pRcdb, PDB_PROP_RCDB_NOCAT_EVTBUF_SUPPORTED))
-    {
-        /* On non-Windows, use EventBuffer notification for NOCAT */
-    }
-    else 
-    {
-        RMTRACE_NOCAT(_REPORT_PENDING, (pGpu ? pGpu->gpuId : RMTRACE_UNKNOWN_GPUID),
-        RmNocatReport,
-        posted,
-        type,
-        rcdbGetNocatOutstandingCount(pRcdb),
-        timeStamp);
-    }
-
-    // count the number of notifications.
-    pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_NOTIFICATIONS_IDX]++;
-    return NV_OK;
 }
 
 /*
@@ -3950,7 +4375,7 @@ rcdbNocatInsertNocatError(
     // validate inputs.
     if (pRcdb == NULL)
     {
-        return NV_ERR_INVALID_ARGUMENT;
+        return NV_ERR_INVALID_STATE;
     }
     pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_COLLECT_REQ_IDX]++;
     if (pNewEntry == NULL)
@@ -4318,8 +4743,8 @@ _rcdbNocatReportAssert
     Journal                *pRcdb = SYS_GET_RCDB(pSys);
     NOCAT_JOURNAL_PARAMS    newEntry;
     RM_NOCAT_ASSERT_DIAG_BUFFER    diagBuffer;
-    RM_NOCAT_ASSERT_DIAG_BUFFER   *pDiagData;
     NvU32                   idx;
+    RM_NOCAT_ASSERT_DIAG_BUFFER* pDiagData;
     RM_NOCAT_JOURNAL_ENTRY *pNocatEntry = NULL;
     NvU32                   gpuCnt= 0;
     OBJGPU                  *pTmpGpu = gpumgrGetGpu(0);
@@ -4459,12 +4884,17 @@ NV_STATUS rcdbSetNocatTdrReason
     NV2080CtrlNocatJournalDataTdrReason *pReasonData
 )
 {
-    OBJSYS             *pSys = SYS_GET_INSTANCE();
-    Journal            *pRcdb = SYS_GET_RCDB(pSys);
+    if (pReasonData == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     RM_NOCAT_JOURNAL_ENTRY* pNocatEntry = NULL;
+    OBJSYS* pSys = SYS_GET_INSTANCE();
+    Journal* pRcdb = SYS_GET_RCDB(pSys);
 
     // validate inputs.
-    if ((pRcdb == NULL) || (pReasonData == NULL))
+    if (pRcdb == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }

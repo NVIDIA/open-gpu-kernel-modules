@@ -265,6 +265,8 @@ struct nv_drm_lut_surface {
 
 void nv_free_drm_lut_surface_pool(struct nv_drm_device *nv_dev);
 
+#define NV_DRM_TMO_SAT_CORR_ENABLE_DEFAULT false
+
 struct nv_drm_plane_state {
     struct drm_plane_state base;
     s32 __user *fd_user_ptr;
@@ -287,6 +289,7 @@ struct nv_drm_plane_state {
 
     struct drm_property_blob *tmo_lut;
     struct nv_drm_lut_surface *tmo_drm_lut_surface;
+    NvBool tmo_sat_corr_enable;
     NvBool tmo_changed;
 
     NvBool precomp_color_passthrough;

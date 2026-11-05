@@ -61,10 +61,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__VgpuApi;
 struct NVOC_METADATA__GpuResource;
-struct NVOC_VTABLE__VgpuApi;
 
 
 struct VgpuApi {
@@ -93,40 +92,10 @@ struct VgpuApi {
 };
 
 
-// Vtable with 25 per-class function pointers
-struct NVOC_VTABLE__VgpuApi {
-    NV_STATUS (*__vgpuapiControl__)(struct VgpuApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__vgpuapiMap__)(struct VgpuApi * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__vgpuapiUnmap__)(struct VgpuApi * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__vgpuapiShareCallback__)(struct VgpuApi * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__vgpuapiGetRegBaseOffsetAndSize__)(struct VgpuApi * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__vgpuapiGetMapAddrSpace__)(struct VgpuApi * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__vgpuapiInternalControlForward__)(struct VgpuApi * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__vgpuapiGetInternalObjectHandle__)(struct VgpuApi * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__vgpuapiAccessCallback__)(struct VgpuApi * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__vgpuapiGetMemInterMapParams__)(struct VgpuApi * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__vgpuapiCheckMemInterUnmap__)(struct VgpuApi * /*this*/, NvBool);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__vgpuapiGetMemoryMappingDescriptor__)(struct VgpuApi * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__vgpuapiControlSerialization_Prologue__)(struct VgpuApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__vgpuapiControlSerialization_Epilogue__)(struct VgpuApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__vgpuapiControl_Prologue__)(struct VgpuApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__vgpuapiControl_Epilogue__)(struct VgpuApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NvBool (*__vgpuapiCanCopy__)(struct VgpuApi * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__vgpuapiIsDuplicate__)(struct VgpuApi * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__vgpuapiPreDestruct__)(struct VgpuApi * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__vgpuapiControlFilter__)(struct VgpuApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (gpures)
-    NvBool (*__vgpuapiIsPartialUnmapSupported__)(struct VgpuApi * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__vgpuapiMapTo__)(struct VgpuApi * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__vgpuapiUnmapFrom__)(struct VgpuApi * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__vgpuapiGetRefCount__)(struct VgpuApi * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__vgpuapiAddAdditionalDependants__)(struct RsClient *, struct VgpuApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__VgpuApi {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResource metadata__GpuResource;
-    const struct NVOC_VTABLE__VgpuApi vtable;
 };
 
 #ifndef __nvoc_class_id_VgpuApi
@@ -193,13 +162,13 @@ static inline NV_STATUS vgpuapiCtrlCmdVGpuGetConfig(struct VgpuApi *pVgpuApi, NV
 
 
 // Wrapper macros for halified functions
-#define vgpuapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define vgpuapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define vgpuapiControl(pGpuResource, pCallContext, pParams) vgpuapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define vgpuapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
+#define vgpuapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define vgpuapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) vgpuapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define vgpuapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
+#define vgpuapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define vgpuapiUnmap(pGpuResource, pCallContext, pCpuMapping) vgpuapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define vgpuapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define vgpuapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define vgpuapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) vgpuapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define vgpuapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define vgpuapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) vgpuapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -209,7 +178,7 @@ static inline NV_STATUS vgpuapiCtrlCmdVGpuGetConfig(struct VgpuApi *pVgpuApi, NV
 #define vgpuapiInternalControlForward(pGpuResource, command, pParams, size) vgpuapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define vgpuapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define vgpuapiGetInternalObjectHandle(pGpuResource) vgpuapiGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define vgpuapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define vgpuapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define vgpuapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) vgpuapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define vgpuapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define vgpuapiGetMemInterMapParams(pRmResource, pParams) vgpuapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -217,13 +186,13 @@ static inline NV_STATUS vgpuapiCtrlCmdVGpuGetConfig(struct VgpuApi *pVgpuApi, NV
 #define vgpuapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) vgpuapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define vgpuapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define vgpuapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) vgpuapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define vgpuapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define vgpuapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define vgpuapiControlSerialization_Prologue(pResource, pCallContext, pParams) vgpuapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define vgpuapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define vgpuapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define vgpuapiControlSerialization_Epilogue(pResource, pCallContext, pParams) vgpuapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define vgpuapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define vgpuapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define vgpuapiControl_Prologue(pResource, pCallContext, pParams) vgpuapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define vgpuapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define vgpuapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define vgpuapiControl_Epilogue(pResource, pCallContext, pParams) vgpuapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define vgpuapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define vgpuapiCanCopy(pResource) vgpuapiCanCopy_DISPATCH(pResource)
@@ -246,103 +215,103 @@ static inline NV_STATUS vgpuapiCtrlCmdVGpuGetConfig(struct VgpuApi *pVgpuApi, NV
 
 // Dispatch functions
 static inline NV_STATUS vgpuapiControl_DISPATCH(struct VgpuApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__vgpuapiControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS vgpuapiMap_DISPATCH(struct VgpuApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__vgpuapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pGpuResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS vgpuapiUnmap_DISPATCH(struct VgpuApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__vgpuapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pGpuResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool vgpuapiShareCallback_DISPATCH(struct VgpuApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__vgpuapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS vgpuapiGetRegBaseOffsetAndSize_DISPATCH(struct VgpuApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__vgpuapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS vgpuapiGetMapAddrSpace_DISPATCH(struct VgpuApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__vgpuapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pGpuResource, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS vgpuapiInternalControlForward_DISPATCH(struct VgpuApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__vgpuapiInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle vgpuapiGetInternalObjectHandle_DISPATCH(struct VgpuApi *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__vgpuapiGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool vgpuapiAccessCallback_DISPATCH(struct VgpuApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vgpuapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS vgpuapiGetMemInterMapParams_DISPATCH(struct VgpuApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__vgpuapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS vgpuapiCheckMemInterUnmap_DISPATCH(struct VgpuApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__vgpuapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS vgpuapiGetMemoryMappingDescriptor_DISPATCH(struct VgpuApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__vgpuapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS vgpuapiControlSerialization_Prologue_DISPATCH(struct VgpuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vgpuapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void vgpuapiControlSerialization_Epilogue_DISPATCH(struct VgpuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__vgpuapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS vgpuapiControl_Prologue_DISPATCH(struct VgpuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vgpuapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void vgpuapiControl_Epilogue_DISPATCH(struct VgpuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__vgpuapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool vgpuapiCanCopy_DISPATCH(struct VgpuApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vgpuapiCanCopy__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS vgpuapiIsDuplicate_DISPATCH(struct VgpuApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vgpuapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void vgpuapiPreDestruct_DISPATCH(struct VgpuApi *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__vgpuapiPreDestruct__(pResource);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS vgpuapiControlFilter_DISPATCH(struct VgpuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vgpuapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool vgpuapiIsPartialUnmapSupported_DISPATCH(struct VgpuApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vgpuapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS vgpuapiMapTo_DISPATCH(struct VgpuApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vgpuapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS vgpuapiUnmapFrom_DISPATCH(struct VgpuApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vgpuapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 vgpuapiGetRefCount_DISPATCH(struct VgpuApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vgpuapiGetRefCount__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void vgpuapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct VgpuApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__vgpuapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

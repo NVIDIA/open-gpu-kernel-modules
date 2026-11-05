@@ -678,7 +678,9 @@ nvswitch_device_release
 
     mutex_lock(&nvswitch.driver_mutex);
 
+    mutex_lock(&nvswitch_dev->device_mutex);
     nvswitch_lib_remove_client_events(nvswitch_dev->lib_device, (void *)private);
+    mutex_unlock(&nvswitch_dev->device_mutex);
 
     //
     // If there are no outstanding references and the device is marked
@@ -690,7 +692,7 @@ nvswitch_device_release
         kfree(nvswitch_dev);
     }
 
-    if (private->capability_fds.fabric_mgmt > 0)
+    if (private->capability_fds.fabric_mgmt >= 0)
     {
         nvlink_cap_release(private->capability_fds.fabric_mgmt);
         private->capability_fds.fabric_mgmt = -1;
@@ -1899,19 +1901,13 @@ nvswitch_exit
 }
 
 //
-// Get current time in seconds.nanoseconds
+// Get current time in nanoseconds.
 // In this implementation, the time is monotonic time
 //
 NvU64
-nvswitch_os_get_platform_time
-(
-    void
-)
+nvswitch_os_get_platform_time(void)
 {
-    struct timespec64 ts;
-
-    ktime_get_raw_ts64(&ts);
-    return (NvU64) timespec64_to_ns(&ts);
+    return nv_ktime_get_raw_ns();
 }
 
 //
@@ -2669,6 +2665,11 @@ nvswitch_os_acquire_fabric_mgmt_cap
         return -NVL_BAD_ARGS;
     }
 
+    if (private_data->capability_fds.fabric_mgmt >= 0)
+    {
+        return -NVL_ERR_STATE_IN_USE;
+    }
+
     dup_fd = nvlink_cap_acquire((int)capDescriptor,
                                 NVLINK_CAP_FABRIC_MANAGEMENT);
     if (dup_fd < 0)
@@ -2690,6 +2691,13 @@ nvswitch_os_is_fabric_manager
 
     if ((private_data == NULL) ||
         (private_data->capability_fds.fabric_mgmt < 0))
+    {
+        return 0;
+    }
+
+    /* Make sure that fabric mgmt capability fd is still valid. */
+    if (nvlink_cap_validate(private_data->capability_fds.fabric_mgmt,
+                            NVLINK_CAP_FABRIC_MANAGEMENT) < 0)
     {
         return 0;
     }

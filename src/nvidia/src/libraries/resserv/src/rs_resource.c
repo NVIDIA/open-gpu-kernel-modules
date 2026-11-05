@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -447,11 +447,10 @@ refFindChildOfType
 {
     if (bExactMatch)
     {
-        RsIndexIter it = indexRefIter(&pParentRef->childRefMap, internalClassId);
-        if (indexRefIterNext(&it))
-        {
-            RsResourceRef *pResourceRef = *it.pValue;
+        RsResourceRef *pResourceRef = childRefFindClass(pParentRef, internalClassId);
 
+        if (pResourceRef != NULL)
+        {
             if (ppResourceRef != NULL)
                 *ppResourceRef = pResourceRef;
 
@@ -460,25 +459,32 @@ refFindChildOfType
     }
     else
     {
-        RsIndexSupermapIter it = multimapSubmapIterAll(&pParentRef->childRefMap);
-        while (multimapSubmapIterNext(&it))
+        RsResourceRef *pResourceRef;
+        NvU32 classId = 0;
+
+        //
+        // Walk every class ID since it's possible the object derives from internalClassId
+        // and might not match exactly.
+        //
+        while (NULL != (pResourceRef = mapFindGEQ(RES_CHILD_MAP(pParentRef),
+                                                  RES_CHILD_KEY_FIRST(classId))))
         {
-            RsIndexSubmap *pSubmap = it.pValue;
-            RsIndexIter subIt = multimapSubmapIterItems(&pParentRef->childRefMap, pSubmap);
-            if (multimapItemIterNext(&subIt))
+            classId = pResourceRef->internalClassId;
+
+            if (objDynamicCastById(pResourceRef->pResource, internalClassId) != NULL)
             {
-                RsResourceRef *pResourceRef = *subIt.pValue;
-
-                if (objDynamicCastById(pResourceRef->pResource, internalClassId) == NULL)
-                    continue;
-
                 if (ppResourceRef != NULL)
                     *ppResourceRef = pResourceRef;
 
                 return NV_OK;
             }
-        }
 
+            // classId is an NvU32; stop rather than wrapping to 0 and looping.
+            if (classId == NV_U32_MAX)
+                break;
+
+            classId++;
+        }
     }
 
     return NV_ERR_OBJECT_NOT_FOUND;
@@ -498,7 +504,7 @@ refFindAncestorOfType
     {
         if (pAncestorRef->internalClassId == internalClassId)
         {
-            if(pAncestorRef->bInvalidated)
+            if (pAncestorRef->flags & RS_RESOURCE_REF_INVALIDATED)
                 return NV_ERR_OBJECT_NOT_FOUND;
 
             if (ppAncestorRef != NULL)
@@ -533,6 +539,18 @@ refHasAncestor
     return NV_FALSE;
 }
 
+static NvBool
+refShouldTrackMappingBackRef
+(
+    RsResourceRef *pResourceRef,
+    RsResourceRef *pContextRef
+)
+{
+    return (pContextRef != NULL) &&
+           (pContextRef != pResourceRef) &&
+           !refHasAncestor(pResourceRef, pContextRef);
+}
+
 NV_STATUS
 refAddMapping
 (
@@ -554,9 +572,7 @@ refAddMapping
         return status;
     }
 
-    if ((pContextRef != NULL) &&
-        (pContextRef != pResourceRef) &&
-        !refHasAncestor(pResourceRef, pContextRef))
+    if (refShouldTrackMappingBackRef(pResourceRef, pContextRef))
     {
         listAppendExisting(&pContextRef->backRefs, pCpuMapping);
     }
@@ -580,9 +596,7 @@ refRemoveMapping
     RsCpuMapping *pCpuMapping
 )
 {
-    if ((pCpuMapping->pContextRef != NULL) &&
-        (pCpuMapping->pContextRef != pResourceRef) &&
-        !refHasAncestor(pResourceRef, pCpuMapping->pContextRef))
+    if (refShouldTrackMappingBackRef(pResourceRef, pCpuMapping->pContextRef))
     {
         listRemove(&pCpuMapping->pContextRef->backRefs, pCpuMapping);
     }
@@ -614,6 +628,7 @@ refFreeCpuMappingPrivate
 NV_STATUS
 refCreateInterMapping
 (
+    RsServer        *pServer,
     RsResourceRef   *pMapperRef,
     RsInterMapping **ppInterMapping
 )
@@ -622,9 +637,9 @@ refCreateInterMapping
 
     NV_ASSERT_OR_RETURN(pMapperRef != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(ppInterMapping != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pMapperRef->pAllocator != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN((pServer != NULL) && (pServer->pAllocator != NULL), NV_ERR_INVALID_STATE);
 
-    pInterMapping = (RsInterMapping *)PORT_ALLOC(pMapperRef->pAllocator, sizeof(*pInterMapping));
+    pInterMapping = (RsInterMapping *)PORT_ALLOC(pServer->pAllocator, sizeof(*pInterMapping));
     if (pInterMapping == NULL)
     {
         *ppInterMapping = NULL;
@@ -641,15 +656,16 @@ refCreateInterMapping
 NV_STATUS
 refDestroyInterMapping
 (
+    RsServer       *pServer,
     RsResourceRef  *pMapperRef,
     RsInterMapping *pInterMapping
 )
 {
     NV_ASSERT_OR_RETURN(pMapperRef != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pInterMapping != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pMapperRef->pAllocator != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN((pServer != NULL) && (pServer->pAllocator != NULL), NV_ERR_INVALID_STATE);
 
-    PORT_FREE(pMapperRef->pAllocator, pInterMapping);
+    PORT_FREE(pServer->pAllocator, pInterMapping);
 
     return NV_OK;
 }
@@ -676,8 +692,8 @@ refAddInterMapping
     if (pInterMappings == NULL)
     {
         pInterMappings = mapInsertNew(&pMapperRef->interMappingContextMap, pContextRef->hResource);
-        mapInitIntrusive(pInterMappings);
         NV_ASSERT_OR_RETURN(pInterMappings != NULL, NV_ERR_NO_MEMORY);
+        mapInitIntrusive(pInterMappings);
     }
 
     if (!mapInsertExisting(pInterMappings, dmaOffset, pInterMapping))
@@ -752,45 +768,56 @@ refRemoveInterMapping
 }
 
 NV_STATUS
-refCacheRef
-(
-    RsResourceRef *pParentRef,
-    RsResourceRef *pResourceRef
-)
-{
-    return indexAdd(&pParentRef->cachedRefMap, pResourceRef->internalClassId, pResourceRef);
-}
-
-NV_STATUS
-refUncacheRef
-(
-    RsResourceRef *pParentRef,
-    RsResourceRef *pResourceRef
-)
-{
-    return indexRemove(&pParentRef->cachedRefMap, pResourceRef->internalClassId, pResourceRef);
-}
-
-NV_STATUS
 refAddDependant
 (
     RsResourceRef *pResourceRef,
     RsResourceRef *pDependantRef
 )
 {
-    NV_STATUS status;
+    RsDependencyEdge *pDependencyEdge;
+    RsRefDependencyListIter iter;
 
     // dependencies are implicit between a parent resource reference and child resource reference
     if (refHasAncestor(pDependantRef, pResourceRef))
         return NV_OK;
 
-    status = indexAdd(&pDependantRef->depBackRefMap, pResourceRef->internalClassId, pResourceRef);
-    if (status != NV_OK)
-        return status;
+    // check for an existing edge before adding another
+    iter = listIterAll(&pDependantRef->depBackRefList);
+    while (listIterNext(&iter))
+    {
+        if (iter.pValue->pDependencyRef == pResourceRef)
+        {
+            return NV_OK;
+        }
+    }
 
-    status = indexAdd(&pResourceRef->depRefMap, pDependantRef->internalClassId, pDependantRef);
+    pDependencyEdge = PORT_ALLOC(pResourceRef->pClient->pAllocator, sizeof(RsDependencyEdge));
+    if (pDependencyEdge == NULL)
+    {
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+    pDependencyEdge->pDependencyRef = pResourceRef;
+    pDependencyEdge->pDependentRef = pDependantRef;
 
-    return status;
+    listAppendExisting(&pDependantRef->depBackRefList, pDependencyEdge);
+    listAppendExisting(&pResourceRef->depRefList, pDependencyEdge);
+
+    return NV_OK;
+}
+
+void
+refRemoveDependencyEdge
+(
+    RsDependencyEdge *pDependencyEdge,
+    PORT_MEM_ALLOCATOR *pAllocator
+)
+{
+    RsResourceRef *pDependencyRef = pDependencyEdge->pDependencyRef;
+    RsResourceRef *pDependentRef = pDependencyEdge->pDependentRef;
+
+    listRemove(&pDependentRef->depBackRefList, pDependencyEdge);
+    listRemove(&pDependencyRef->depRefList, pDependencyEdge);
+    PORT_FREE(pAllocator, pDependencyEdge);
 }
 
 void
@@ -800,8 +827,17 @@ refRemoveDependant
     RsResourceRef *pDependantRef
 )
 {
-    indexRemove(&pDependantRef->depBackRefMap, pResourceRef->internalClassId, pResourceRef);
-    indexRemove(&pResourceRef->depRefMap, pDependantRef->internalClassId, pDependantRef);
+    RsRefDependencyListIter iter;
+
+    iter = listIterAll(&pDependantRef->depBackRefList);
+    while (listIterNext(&iter))
+    {
+        if (iter.pValue->pDependencyRef == pResourceRef)
+        {
+            refRemoveDependencyEdge(iter.pValue, pResourceRef->pClient->pAllocator);
+            return;
+        }
+    }
 }
 
 NvBool

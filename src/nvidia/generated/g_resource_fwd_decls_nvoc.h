@@ -234,6 +234,13 @@ struct ImexSessionApi;
 typedef struct ImexSessionApi ImexSessionApi;
 #endif /* __nvoc_class_id_ImexSessionApi */
 
+struct MnccSession;
+
+#ifndef __nvoc_class_id_MnccSession
+#define __nvoc_class_id_MnccSession 0x50aee7u
+typedef struct MnccSession MnccSession;
+#endif /* __nvoc_class_id_MnccSession */
+
 struct GpuManagementApi;
 
 #ifndef __nvoc_class_id_GpuManagementApi
@@ -898,6 +905,7 @@ struct NVOCFwdDeclHack {
     struct MpsApi *PRIVATE_FIELD(MpsApi_MPS_COMPUTE);
     struct FmSessionApi *PRIVATE_FIELD(FmSessionApi_FABRIC_MANAGER_SESSION);
     struct ImexSessionApi *PRIVATE_FIELD(ImexSessionApi_NV_IMEX_SESSION);
+    struct MnccSession *PRIVATE_FIELD(MnccSession_NV_MNCC_SESSION);
     struct GpuManagementApi *PRIVATE_FIELD(GpuManagementApi_NV0020_GPU_MANAGEMENT);
     struct EventBuffer *PRIVATE_FIELD(EventBuffer_NV_EVENT_BUFFER);
     struct OpEventBufferBind *PRIVATE_FIELD(OpEventBufferBind_NV_OPERATIONAL_EVENT_BUFFER_BIND);

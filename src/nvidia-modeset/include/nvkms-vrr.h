@@ -24,6 +24,7 @@
 #ifndef __NVKMS_VRR_H__
 #define __NVKMS_VRR_H__
 
+#include "nvkms-flip-workarea.h"
 #include "nvkms-types.h"
 
 #ifdef __cplusplus
@@ -38,21 +39,22 @@ nvGetAllowedDpyVrrType(const NVDpyEvoRec *pDpyEvo,
                        const enum NvKmsAllowAdaptiveSync allowAdaptiveSync);
 void nvAdjustHwModeTimingsForVrrEvo(
     const NVDpyEvoRec *pDpyEvo,
-    const enum NvKmsDpyVRRType vrrType,
+    const enum NvKmsRequestedVrrType vrrType,
     const NvU32 vrrOverrideMinRefreshRate,
     NVHwModeTimingsEvoPtr pTimings);
 
-void nvDisableVrr(NVDevEvoPtr pDevEvo);
-void nvEnableVrr(NVDevEvoPtr pDevEvo);
+NvBool nvAnyActiveVrrHeads(const NVDevEvoRec *pDevEvo);
+void nvDisableVrr(NVDispEvoRec *pDispEvo, NVEvoUpdateState *updateState);
+void nvEnableVrr(NVDispEvoRec *pDispEvo, NVEvoUpdateState *updateState);
 void nvCancelVrrFrameReleaseTimers(NVDevEvoPtr pDevEvo,
                                    const NvU32 applyAllowVrrApiHeadMask);
-void nvSetVrrActive(NVDevEvoPtr pDevEvo,
+void nvSetVrrActive(NVDispEvoRec *pDispEvo,
+                    struct NvKmsFlipWorkArea *pWorkArea,
                     const NvU32 applyAllowVrrApiHeadMask,
                     const NvU32 vrrActiveApiHeadMask);
 void nvApplyVrrBaseFlipOverrides(const NVDispEvoRec *pDispEvo, NvU32 head,
                                  const NVFlipChannelEvoHwState *pOld,
                                  NVFlipChannelEvoHwState *pNew);
-enum NvKmsVrrFlipType nvGetActiveVrrType(const NVDevEvoRec *pDevEvo);
 void nvTriggerVrrUnstallMoveCursor(NVDispEvoPtr pDispEvo);
 void nvTriggerVrrUnstallSetCursorImage(NVDispEvoPtr pDispEvo,
                                        NvBool elvReleased);

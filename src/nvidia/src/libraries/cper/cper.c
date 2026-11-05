@@ -416,6 +416,11 @@ NV_STATUS cperInit
         return NV_ERR_INVALID_ARGUMENT;
     }
 
+    if ((pParams->recordFlags & ~NV_CPER_RECORD_FLAG_VALID_MASK) != 0)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     // Calculate required size including pre-allocated section descriptors
     requiredSize = NV_CPER_RECORD_HEADER_SIZE +
                    (pParams->sectionCount * NV_CPER_SECTION_DESCRIPTOR_SIZE);
@@ -437,7 +442,7 @@ NV_STATUS cperInit
     pHeader->errorSeverity = (NvU32)NV_CPER_SEVERITY_INFORMATIONAL;
     pHeader->recordLength = requiredSize;
     pHeader->recordId = (pParams->recordId != 0) ? pParams->recordId : cperGenerateRecordId();
-    pHeader->flags = 0;
+    pHeader->flags = pParams->recordFlags;
     pHeader->persistenceInfo = 0;
 
     // Populate timestamp from caller-supplied or current wall clock.

@@ -25,6 +25,8 @@
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/bus/kern_bus.h"
 
+#include "gpu/tdisp/tdisp_mgr.h"
+
 #include "class/clc661.h" // HOPPER_USERMODE_A
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
 #include "class/cl003f.h" // NV01_MEMORY_LOCAL_PRIVILEGED
@@ -46,6 +48,7 @@ usrmodeConstruct_IMPL
     NvBool                       bPrivMapping   = NV_FALSE;
     MEMORY_DESCRIPTOR           *pMemDesc       = pKernelFifo->pRegVF;
     NvU32                        memClassId     = NV01_MEMORY_LOCAL_PRIVILEGED;
+    TdispMgr                    *pTdispMgr      = GPU_GET_TDISP_MGR(pGpu);
 
     // Copy-construction has already been done by the base Memory class
     if (RS_IS_COPY_CTOR(pParams))
@@ -64,7 +67,13 @@ usrmodeConstruct_IMPL
         bPrivMapping = pAllocParams->bPriv;
     }
 
-    // In TDISP mode, force BAR0 doorbell if IDE traffic is disabled
+    // Force BAR0 doorbell when TDISP cannot rely on BAR1 mappings.
+    if (tdispmgrIsTdispIdeTrafficDisabled(pGpu, pTdispMgr) ||
+        tdispmgrIsTdispBar1ValidationSkipped(pGpu, pTdispMgr))
+    {
+        bBar1Mapping = NV_FALSE;
+        bPrivMapping = NV_FALSE;
+    }
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
         !bPrivMapping || bBar1Mapping,

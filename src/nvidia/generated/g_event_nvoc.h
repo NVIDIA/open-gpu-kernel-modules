@@ -259,47 +259,85 @@ static inline void eventMarkDispatched(struct Event *pEvent){
 #define _EVENT_PP_CALL(func, ...) _EVENT_PP_EXPAND(func _EVENT_PP_EXPAND() (__VA_ARGS__))
 
 //
-// Common implementation behind eventEmit / eventEmitAssociated. Creates the
-// new event via objCreate and forwards to either eventbusEventPublish (when
-// pExistingEvent is NULL: new single-event group) or
-// eventbusEventPublishAssociated (when non-NULL: add to the existing event's
-// group). Both publish functions return NV_STATUS and validate their own
-// inputs (NULL bus, mismatched bus on associated path, etc.); on any
-// non-NV_OK return the macro destroys pEvent, so the macros stay free of
-// validation logic.
+// Common implementation behind the eventEmit family, including associated and
+// simulated variants. It creates the new event via objCreate, then publishes
+// through eventbusEventPublishWithAttributes when pExistingEvent is NULL (a
+// new single-event group stamped with grpAttr; zero is a no-op identical to a
+// plain publish), or through eventbusEventPublishAssociated when non-NULL (add
+// to the existing event's group, inheriting its attributes). Both publish
+// functions validate their own inputs (NULL bus, mismatched bus on the
+// associated path, etc.) and return NV_STATUS. On any non-NV_OK return, the
+// macro destroys pEvent, keeping the emission wrappers free of validation
+// logic.
 //
-#define _eventEmitImpl(eventType, pExistingEvent, pSource, flags, ...)         \
+// grpAttr is a group-level attribute byte (see OPERATIONAL_EVENT_GROUP_ATTR_*).
+// It is honored only on the new-group path: an associated event inherits its
+// target group's attributes, so a group is homogeneous by construction. There
+// is deliberately no associated-simulated emit for this reason.
+//
+#define _eventEmitImplWithStatus(emitStatus, eventType, pExistingEvent,        \
+                                 pSource, flags, grpAttr, ...)                  \
     do {                                                                       \
         eventType *pEvent;                                                     \
-        NV_STATUS _eventEmitStatus;                                            \
         EventBus *pBus = objEventBus(pSource);                                 \
-        NV_ASSERT_OK_OR_ELSE(_eventEmitStatus,                                 \
-            _EVENT_PP_CALL(objCreate, &pEvent, pSource, eventType,             \
-                           pBus, ##__VA_ARGS__),                               \
-            break);                                                            \
-        _eventEmitStatus = ((pExistingEvent) == NULL)                          \
-            ? _EVENT_PP_CALL(eventbusEventPublish,                             \
-                             pBus, staticCast(pEvent, Event))                  \
+        (emitStatus) = _EVENT_PP_CALL(objCreate, &pEvent, pSource, eventType,   \
+                                      pBus, ##__VA_ARGS__);                    \
+        if ((emitStatus) != NV_OK)                                             \
+        {                                                                      \
+            NV_ASSERT_OK(emitStatus);                                          \
+            break;                                                             \
+        }                                                                      \
+        (emitStatus) = ((pExistingEvent) == NULL)                              \
+            ? _EVENT_PP_CALL(eventbusEventPublishWithAttributes,              \
+                             pBus, staticCast(pEvent, Event), (grpAttr))       \
             : _EVENT_PP_CALL(eventbusEventPublishAssociated,                   \
                              pBus, (pExistingEvent),                           \
                              staticCast(pEvent, Event));                       \
-        if (_eventEmitStatus != NV_OK)                                         \
+        if ((emitStatus) != NV_OK)                                             \
             objDelete(pEvent);                                                 \
     } while (0)
 
+#define _eventEmitImpl(eventType, pExistingEvent, pSource, flags, grpAttr, ...) \
+    do {                                                                       \
+        NV_STATUS _eventEmitStatus;                                            \
+        _eventEmitImplWithStatus(_eventEmitStatus, eventType, pExistingEvent,  \
+                                 pSource, flags, grpAttr, ##__VA_ARGS__);       \
+    } while (0)
+
 #define eventEmitWithFlags(eventType, pSource, flags, ...) \
-    _eventEmitImpl(eventType, NULL, pSource, flags, ##__VA_ARGS__)
+    _eventEmitImpl(eventType, NULL, pSource, flags, 0, ##__VA_ARGS__)
 
 #define eventEmit(eventType, pSource, ...) \
     eventEmitWithFlags(eventType, pSource, NVOC_OBJ_CREATE_FLAGS_NONE, ##__VA_ARGS__)
 
 #define eventEmitAssociatedWithFlags(eventType, pExistingEvent, pSource, flags, ...) \
-    _eventEmitImpl(eventType, pExistingEvent, pSource, flags, ##__VA_ARGS__)
+    _eventEmitImpl(eventType, pExistingEvent, pSource, flags, 0, ##__VA_ARGS__)
 
 #define eventEmitAssociated(eventType, pExistingEvent, pSource, ...)       \
     eventEmitAssociatedWithFlags(eventType, pExistingEvent, pSource,       \
                                  NVOC_OBJ_CREATE_FLAGS_NONE,               \
                                  ##__VA_ARGS__)
+
+//
+// Emit a new event flagged as simulated/injected (OPERATIONAL_EVENT_GROUP_ATTR_
+// SIMULATED). Always starts a fresh group; see _eventEmitImpl for why there is
+// no associated variant.
+//
+#define eventEmitSimulated(eventType, pSource, ...)                            \
+    _eventEmitImpl(eventType, NULL, pSource, NVOC_OBJ_CREATE_FLAGS_NONE,        \
+                   (NvU8)REF_DEF(OPERATIONAL_EVENT_GROUP_ATTR_SIMULATED, _TRUE), \
+                   ##__VA_ARGS__)
+
+//
+// Try to emit a simulated event for callers such as injection controls that
+// must distinguish a successfully queued event from create/publish failure.
+// emitStatus must be an NV_STATUS lvalue and is assigned on every path.
+//
+#define eventTryEmitSimulated(eventType, pSource, emitStatus, ...)              \
+    _eventEmitImplWithStatus(emitStatus, eventType, NULL, pSource,              \
+        NVOC_OBJ_CREATE_FLAGS_NONE,                                             \
+        (NvU8)REF_DEF(OPERATIONAL_EVENT_GROUP_ATTR_SIMULATED, _TRUE),           \
+        ##__VA_ARGS__)
 
 #endif
 

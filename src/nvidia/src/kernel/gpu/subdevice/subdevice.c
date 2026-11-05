@@ -44,6 +44,8 @@
 
 #include "gpu/timer/objtmr.h"
 #include "kernel/gpu/rc/kernel_rc.h"
+#include "kernel/gpu/gr/kernel_graphics_manager.h"
+#include "ctrl/ctrl2080/ctrl2080internal.h"
 #include "gpu/bus/p2p_api.h"
 #include "gpu/mig_mgr/kernel_mig_manager.h"
 
@@ -108,10 +110,10 @@ subdeviceConstruct_IMPL
         // If using thwap to generate an allocation failure here, fail the alloc
         // right away
         //
-        KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pPrimaryGpu);
-        if (pKernelRc != NULL &&
-            !krcTestAllowAlloc(pPrimaryGpu, pKernelRc,
-                               NV_ROBUST_CHANNEL_ALLOCFAIL_SUBDEVICE))
+        KernelWatchdog *pKernelWatchdog = gpuGetKernelWatchdogFromDevice(pPrimaryGpu, GPU_RES_GET_DEVICE(pSubdevice));
+        if (pKernelWatchdog != NULL &&
+            !kwdtTestAllowAlloc(pPrimaryGpu, pKernelWatchdog,
+                                NV_ROBUST_CHANNEL_ALLOCFAIL_SUBDEVICE))
         {
             return NV_ERR_GENERIC;
         }
@@ -507,15 +509,43 @@ subdeviceRestoreWatchdog_IMPL
     Subdevice *pSubdevice
 )
 {
-    OBJGPU   *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
     KernelRc *pKernelRc;
 
     GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
+
+    //
+    // Restore of RC watchdog test mode if this Subdevice owns it.
+    // This path is to take care unclean teardown (e.g. process death), so
+    // failures from the physical ctrl are tolerated and the CPU-side
+    // bookkeeping is cleared unconditionally to free the slot for a future
+    // client.
+    //
+    if (pKernelGraphicsManager != NULL &&
+        kgrmgrGetRcWatchdogTestMode(pGpu, pKernelGraphicsManager) &&
+        kgrmgrGetRcWatchdogTestClient(pGpu, pKernelGraphicsManager) == RES_GET_CLIENT_HANDLE(pSubdevice) &&
+        kgrmgrGetRcWatchdogTestSubdevice(pGpu, pKernelGraphicsManager) == RES_GET_HANDLE(pSubdevice))
+    {
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        NV2080_CTRL_INTERNAL_RC_WATCHDOG_SET_TEST_MODE_PARAMS params = {0};
+
+        params.bEnable = NV_FALSE;
+        pRmApi->Control(pRmApi,
+                        RES_GET_CLIENT_HANDLE(pSubdevice),
+                        RES_GET_HANDLE(pSubdevice),
+                        NV2080_CTRL_CMD_INTERNAL_RC_WATCHDOG_SET_TEST_MODE,
+                        &params, sizeof(params));
+
+        kgrmgrSetRcWatchdogTestMode(pGpu, pKernelGraphicsManager, NV_FALSE);
+        kgrmgrSetRcWatchdogTestClient(pGpu, pKernelGraphicsManager, NV01_NULL_OBJECT);
+        kgrmgrSetRcWatchdogTestSubdevice(pGpu, pKernelGraphicsManager, NV01_NULL_OBJECT);
+    }
 
     pKernelRc = GPU_GET_KERNEL_RC(pGpu);
     NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, pKernelRc != NULL);
     // TODO: (Bug 4154640) To be updated to support KernelWatchdog under MIG mode
     NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL);
-    krcWatchdogChangeState(pKernelRc, GPU_GET_KERNEL_WATCHDOG(pGpu), pSubdevice, RM_CLIENT_DESTRUCTION);
+    kwdtWatchdogChangeState(GPU_GET_KERNEL_WATCHDOG(pGpu), pSubdevice, RM_CLIENT_DESTRUCTION);
 }
 

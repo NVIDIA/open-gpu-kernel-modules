@@ -1,5 +1,5 @@
     /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -158,6 +158,37 @@ NV_FORCERESULTCHECK void *portMemAllocNonPaged(NvLength lengthBytes);
 #else
 #define portMemAllocStackOrHeap(size) portMemAllocNonPaged(size)
 #define portMemFreeStackOrHeap(pData) portMemFree(pData)
+#endif
+
+//
+// PORT_ALLOC_LARGE_STRUCTURE / PORT_FREE_LARGE_STRUCTURE provide a
+// platform-adaptive strategy for allocating large structures that would
+// otherwise put excessive pressure on the kernel stack.  Usage:
+//
+//   PORT_ALLOC_LARGE_STRUCTURE(MyType, pVar, { status = NV_ERR_NO_MEMORY; goto done; });
+//   portMemSet(pVar, 0, sizeof(*pVar));
+//   ...
+//   PORT_FREE_LARGE_STRUCTURE(pVar);
+//
+// Allocation strategy per build type:
+//   - Kernel builds (non-LibOS, non-altstack): heap via portMemAllocNonPaged() / portMemFree()
+//   - LibOS / GCC with alloca support: portMemExAllocStack() (no explicit free needed)
+//   - Everything else (incl. altstack builds): plain stack object (no explicit free needed)
+//
+#if PORT_IS_KERNEL_BUILD && !defined(__use_altstack__) && !NVOS_IS_LIBOS
+#define PORT_ALLOC_LARGE_STRUCTURE(type, varname, onfail)       \
+    type *varname = portMemAllocNonPaged(sizeof(type));         \
+    do { if (varname == NULL) { onfail; } } while(0)
+#define PORT_FREE_LARGE_STRUCTURE(varname) portMemFree(varname)
+#elif portMemExAllocStack_SUPPORTED
+#define PORT_ALLOC_LARGE_STRUCTURE(type, varname, onfail)       \
+    type *varname = portMemExAllocStack(sizeof(type))
+#define PORT_FREE_LARGE_STRUCTURE(varname)
+#else
+#define PORT_ALLOC_LARGE_STRUCTURE(type, varname, onfail)       \
+    type varname ## _OBJ;                                       \
+    type *varname = &varname ## _OBJ
+#define PORT_FREE_LARGE_STRUCTURE(varname)
 #endif
 
 /**
@@ -555,11 +586,52 @@ void portMemPrintTrackingInfo(const PORT_MEM_ALLOCATOR_TRACKING *pTracking, NvBo
  */
 void portMemPrintAllTrackingInfo(NvBool bReportLeaks);
 
+typedef enum
+{
+    PORT_MEM_OOM_REASON_UNKNOWN          = 0,
+    PORT_MEM_OOM_REASON_GSP_RM_HEAP_OOM = 1,
+    PORT_MEM_OOM_REASON_LIBOS_HEAP_OOM  = 2,
+    PORT_MEM_OOM_REASON_COUNT
+} PORT_MEM_OOM_REASON;
+
+typedef struct
+{
+    NvU32    numAllocations;
+    NvLength allocatedSize;
+    NvLength usefulSize;
+    NvLength metaSize;
+} PORT_MEM_ALLOCATOR_SNAPSHOT;
+
+typedef struct
+{
+    NvLength heapSize;
+    NvLength freeSize;
+    NvLength largestFreeChunk;
+    NvU32    fragPct;
+    PORT_MEM_ALLOCATOR_SNAPSHOT active;
+    PORT_MEM_ALLOCATOR_SNAPSHOT total;
+    PORT_MEM_ALLOCATOR_SNAPSHOT peak;
+} PORT_MEM_HEAP_SNAPSHOT;
+
+void portMemGetMallocHeapStats(PORT_MEM_HEAP_SNAPSHOT *pOut);
+
+typedef struct
+{
+    NvBool                 bValid;
+    // Per-reason OOM count.
+    NvU32                  oomCount;
+    PORT_MEM_OOM_REASON    reason;
+    NvLength               requestedSize;
+    PORT_MEM_HEAP_SNAPSHOT heap;
+} PORT_MEM_OOM_SNAPSHOT;
+
 /**
  * @brief Function type invoked by portMemReportOom to collect extended stats
  * from RM (e.g. LibOS pool stats, active RM client counts).
+ *
+ * The snapshot describes the rate-limited OOM event currently being reported.
  */
-typedef void (*PORT_MEM_OOM_REPORT_CB)(void);
+typedef void (*PORT_MEM_OOM_REPORT_CB)(const PORT_MEM_OOM_SNAPSHOT *pSnapshot);
 
 /**
  * @brief Registers a report function invoked when an OOM condition occurs.
@@ -577,8 +649,12 @@ void portMemRegisterOomReportCb(PORT_MEM_OOM_REPORT_CB pReportCb);
  * stats (LibOS pool stats, client counts). Rate-limited to avoid flooding.
  *
  * @param[in] requestedSize The allocation size that triggered OOM.
+ * @param[in] reason        The OOM source.
  */
-void portMemReportOom(NvLength requestedSize);
+void portMemReportOom(NvLength requestedSize, PORT_MEM_OOM_REASON reason);
+
+// Sticky snapshot captured on the first portMemReportOom invocation.
+void portMemGetOomSnapshot(PORT_MEM_OOM_SNAPSHOT *pOut);
 
 // @} End core functions
 

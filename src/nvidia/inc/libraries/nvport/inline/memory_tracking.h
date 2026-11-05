@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -186,6 +186,17 @@ PORT_MEM_ALLOCATOR *portMemExAllocatorCreateLockedOnExistingBlock_CallerInfo(voi
 #endif // CALLERINFO
 
 
+//
+// Store the exact allocation size next to the GFID
+// so limit tracking needs only one 8-byte header slot.
+//
+#if NVOS_IS_LIBOS && PORT_MEM_TRACK_USE_LIMIT && defined(NV_64_BITS)
+#include "nvctassert.h"
+#define PORT_MEM_HEADER_USE_COMPACT_LIMIT_FIELDS 1
+#else
+#define PORT_MEM_HEADER_USE_COMPACT_LIMIT_FIELDS 0
+#endif
+
 #if PORT_MEM_TRACK_USE_FENCEPOSTS || PORT_MEM_TRACK_USE_ALLOCLIST || PORT_MEM_TRACK_USE_CALLERINFO || PORT_MEM_TRACK_USE_LIMIT
 
 //
@@ -197,7 +208,10 @@ PORT_MEM_ALLOCATOR *portMemExAllocatorCreateLockedOnExistingBlock_CallerInfo(voi
 
 typedef struct PORT_MEM_HEADER
 {
-#if PORT_MEM_HEADER_HAS_BLOCK_SIZE
+#if PORT_MEM_HEADER_USE_COMPACT_LIMIT_FIELDS
+                                    NvU32 blockSize;
+                                    NvU32 gfid;
+#elif PORT_MEM_HEADER_HAS_BLOCK_SIZE
                                     NvLength blockSize;
 #endif
 #if PORT_MEM_TRACK_USE_CALLERINFO
@@ -209,7 +223,7 @@ typedef struct PORT_MEM_HEADER
 #if PORT_MEM_TRACK_USE_FENCEPOSTS
                                     PORT_MEM_FENCE_HEAD fence;
 #endif
-#if PORT_MEM_TRACK_USE_LIMIT
+#if PORT_MEM_TRACK_USE_LIMIT && !PORT_MEM_HEADER_USE_COMPACT_LIMIT_FIELDS
                                     NV_DECLARE_ALIGNED(NvU32 gfid, 8);
 #endif
 } PORT_MEM_HEADER;
@@ -268,6 +282,17 @@ struct PORT_MEM_ALLOCATOR_TRACKING
 #define NVIDIA_UNDEF_LEGACY_BIT_MACROS
 #endif
 #include "nvmisc.h"
+
+#if PORT_MEM_HEADER_USE_COMPACT_LIMIT_FIELDS
+//
+// Keep blockSize and gfid in one contiguous 8-byte region, and ensure advancing
+// past the header preserves 8-byte alignment of the caller-visible pointer.
+//
+ct_assert((sizeof(PORT_MEM_HEADER) % sizeof(NvU64)) == 0);
+ct_assert(sizeof(((PORT_MEM_HEADER *)0)->blockSize) == sizeof(NvU32));
+ct_assert(sizeof(((PORT_MEM_HEADER *)0)->gfid) == sizeof(NvU32));
+ct_assert(NV_OFFSETOF(PORT_MEM_HEADER, gfid) == sizeof(NvU32));
+#endif
 
 //
 // Internal bitvector structures for allocators over existing blocks

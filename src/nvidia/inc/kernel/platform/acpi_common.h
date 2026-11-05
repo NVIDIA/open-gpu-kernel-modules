@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -85,7 +85,7 @@ NV_STATUS getLicenseKey(OBJGPU *, NvU32, NvU32 *, NvU16 *);
 #define ACPI_NOTIFY_ZERO_BRIGHTNESS_HOTKEY  0x88
 #define ACPI_NOTIFY_VIDEO_WAKEUP            0x90
 
-#define ACPI_NOTIFY_GPS_STATUS_CHANGE       0xC0
+#define ACPI_NOTIFY_PRH_STATUS_CHANGE       0xC0
 
 #define ACPI_NOTIFY_BACKLIGHT_OFF           0xC1
 #define ACPI_NOTIFY_BACKLIGHT_ON            0xC2

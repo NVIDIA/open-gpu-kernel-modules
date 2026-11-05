@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -69,7 +69,7 @@ kbusVerifyBar2_GB202
     NvU32             testData         = 0;
     NvU32             temp             = 0;
     NV_ADDRESS_SPACE  testAddrSpace    = ADDR_FBMEM;
-    NvBool            bIsStandaloneTest;
+    NvBool            bIsStandaloneTest = NV_FALSE;
     const NvU32       SAMPLEDATA       = 0xabcdabcd;
     const NvU32       FBSIZETESTED     = 0x10;
     NvU64             bar0TestAddr     = 0;
@@ -116,7 +116,6 @@ kbusVerifyBar2_GB202
             DBG_BREAKPOINT();
             return NV_ERR_INVALID_ARGUMENT;
         }
-        bIsStandaloneTest = NV_FALSE;
         pOffset = pCpuPtrIn;
         pMemDesc = pMemDescIn;
     }
@@ -133,6 +132,9 @@ kbusVerifyBar2_GB202
         {
             memdescCreateExisting(&memDesc, pGpu, size, ADDR_FBMEM, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE);
         }
+        bIsStandaloneTest = NV_TRUE;
+        pMemDesc = &memDesc;
+
         memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_43,
                     (&memDesc));
         if (status != NV_OK)
@@ -140,17 +142,18 @@ kbusVerifyBar2_GB202
             NV_PRINTF(LEVEL_ERROR,
                       "Could not allocate vidmem to test bar2 with\n");
             DBG_BREAKPOINT();
-            return NV_ERR_INSUFFICIENT_RESOURCES;
+            status = NV_ERR_INSUFFICIENT_RESOURCES;
+            memdescFree(pMemDesc);
+            memdescDestroy(pMemDesc);
+            return status;
         }
 
-        bIsStandaloneTest = NV_TRUE;
         pOffset = kbusMapRmAperture_HAL(pGpu, &memDesc);
         if (pOffset == NULL)
         {
             status = NV_ERR_INSUFFICIENT_RESOURCES;
             goto kbusVerifyBar2_failed;
         }
-        pMemDesc = &memDesc;
     }
     testMemoryOffset = memdescGetPhysAddr(pMemDesc, AT_GPU, 0) + offset;
     testMemorySize   = NvU64_LO32(size);

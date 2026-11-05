@@ -150,13 +150,17 @@ bool ConnectorImpl2x::getValidLowestLinkConfig
         if ((this->allPossibleLinkCfgs[i].lanes     != highestAssessedLC.lanes) ||
             (this->allPossibleLinkCfgs[i].peakRate  != highestAssessedLC.peakRate))
         {
-            // Get next entry.
-            lowestSelected = this->allPossibleLinkCfgs[i+1];
-            // Update enhancedFraming/bDisableDownspread/bEnableFEC for target config
-            lowestSelected.enhancedFraming = lConfig.enhancedFraming;
-            lowestSelected.bDisableDownspread = lConfig.bDisableDownspread;
-            lowestSelected.enableFEC(lConfig.bEnableFEC);
+            if (i + 1 < numPossibleLnkCfg)
+            {
+                // Get next entry.
+                lowestSelected = this->allPossibleLinkCfgs[i+1];
+                // Update enhancedFraming/bDisableDownspread/bEnableFEC for target config
+                lowestSelected.enhancedFraming = lConfig.enhancedFraming;
+                lowestSelected.bDisableDownspread = lConfig.bDisableDownspread;
+                lowestSelected.enableFEC(lConfig.bEnableFEC);
+            }
         }
+        break;
     }
     return bIsModeSupported;
 }
@@ -808,6 +812,7 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
     bool       bApplyStuffDummySymbolsWAR    = this->bApplyStuffDummySymbolsWAR;
     bool       bStuffDummySymbolsFor128b132b = this->bStuffDummySymbolsFor128b132b;
     bool       bStuffDummySymbolsFor8b10b    = this->bStuffDummySymbolsFor8b10b;
+    Address    devAddress;
 
     if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
     {
@@ -815,7 +820,6 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
         return false;
     }
 
-    // Skip gating modeset on HPD for DDS panels
     if(!previousPlugged && !bClientForcedConnected && !main->isInternalPanelDynamicMuxCapable())
     {
         DP_PRINTF(DP_ERROR, "DP2xCONN> notifyAttachBegin called when Plugged State is false!");
@@ -862,10 +866,13 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
 
     for (Device * dev = target->enumDevices(0); dev; dev = target->enumDevices(dev))
     {
-        Address::StringBuffer buffer;
-        DP_USED(buffer);
-        DP_PRINTF(DP_NOTICE, "DP2xCONN>   | %s (%s) |", dev->getTopologyAddress().toString(buffer),
-                  dev->isVideoSink() ? "VIDEO" : "BRANCH");
+        devAddress = dev->getTopologyAddress();
+        NvU64 packedAddr = (devAddress).pack();
+        DP_USED(packedAddr);
+        if (dev->isVideoSink())
+            DP_PRINTF(DP_NOTICE, "DP2xCONN>   | " DP_ADDR_FMT " (VIDEO) |", DP_ADDR_ARGS(packedAddr));
+        else
+            DP_PRINTF(DP_NOTICE, "DP2xCONN>   | " DP_ADDR_FMT " (BRANCH) |", DP_ADDR_ARGS(packedAddr));
 
         //
         // Note: This makes an assumption that all devices in the group have the same values for
@@ -885,7 +892,10 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
 
     if (bEnableDsc)
     {
-        DP_PRINTF(DP_NOTICE, "DP2xCONN> DSC Mode = %s", (modesetParams.modesetInfo.mode == DSC_SINGLE) ? "SINGLE" : "DUAL");
+        if (modesetParams.modesetInfo.mode == DSC_SINGLE)
+            DP_PRINTF(DP_NOTICE, "DP2xCONN> DSC Mode = SINGLE");
+        else
+            DP_PRINTF(DP_NOTICE, "DP2xCONN> DSC Mode = DUAL");
         targetImpl->dscModeRequest = modesetParams.modesetInfo.mode;
     }
 
@@ -1111,7 +1121,6 @@ void ConnectorImpl2x::notifyAttachEnd(bool modesetCancelled)
         return;
     }
 
-    // Skip gating modeset on HPD for DDS panels
     if(!previousPlugged && !bClientForcedConnected && !main->isInternalPanelDynamicMuxCapable())
     {
         DP_PRINTF(DP_ERROR, "DP2xCONN> notifyAttachEnd called when Plugged State is false!");
@@ -1135,9 +1144,72 @@ void ConnectorImpl2x::notifyAttachEnd(bool modesetCancelled)
 
     currentModesetDeviceGroup = intransitionGroups.pop();
 
-    if (modesetCancelled)
+    //
+    // modesetCancelled: DD aborted the modeset after NAB failure.
+    // Undo NAB side-effects, and leave status quo so the next HPD/assessLink
+    // can train. Do not run the attach-success path (setHeadAttached(true),
+    // afterAddStream, HDCP re-auth).
+    // Unwind only when the head is already down. NAB can fail while the
+    // panel is still scanning out, since DD skips disableHead() whenever
+    // isHeadShutDownNeeded() returned false. Detaching a live head would
+    // strand it with no active stream, so fall through and keep it attached.
+    //
+    if (modesetCancelled && !currentModesetDeviceGroup->isHeadAttached())
     {
+        DP_PRINTF(DP_NOTICE, "DP2xCONN> Notify Attach End - modeset cancelled, restoring status quo");
+
+        //
+        // Always undo timeslot/payload state here. Unlike 1x (MST-only),
+        // allocateTimeslice sets timeslotAllocated for 128b/132b SST too
+        // (all 64 slots). Non-128b paths already returned to ConnectorImpl
+        // above, so this block only runs for 128b/132b.
+        //
+        if (addStreamMSTIntransitionGroups.contains(currentModesetDeviceGroup))
+        {
+            addStreamMSTIntransitionGroups.remove(currentModesetDeviceGroup);
+        }
+        if (currentModesetDeviceGroup->timeslot.count)
+        {
+            freeTimeslice(currentModesetDeviceGroup);
+        }
+        currentModesetDeviceGroup->bDeferredPayloadAlloc = false;
+        currentModesetDeviceGroup->setTimeslotAllocated(false);
+        currentModesetDeviceGroup->bWaitForDeAllocACT = false;
+
+        if (!(bHdcpStrmEncrEnblOnlyOnDemand) &&
+            hdcpEnableTransitionGroups.contains(currentModesetDeviceGroup))
+        {
+            hdcpEnableTransitionGroups.remove(currentModesetDeviceGroup);
+        }
+
+        currentModesetDeviceGroup->dscModeRequest = DSC_MODE_NONE;
+        currentModesetDeviceGroup->dscModeActive = DSC_MODE_NONE;
+        dpMemZero(&currentModesetDeviceGroup->lastModesetInfo, sizeof(ModesetInfo));
         currentModesetDeviceGroup->setHeadAttached(false);
+        currentModesetDeviceGroup->headInFirmware = false;
+        currentModesetDeviceGroup->bIsHeadShutdownNeeded = false;
+        currentModesetDeviceGroup->cancelHdcpCallbacks();
+
+        if (activeGroups.contains(currentModesetDeviceGroup))
+        {
+            activeGroups.remove(currentModesetDeviceGroup);
+        }
+        if (!inactiveGroups.contains(currentModesetDeviceGroup))
+        {
+            inactiveGroups.insertBack(currentModesetDeviceGroup);
+        }
+
+        //
+        // Head is detached, so isZombie() is false. Clear force-zombie flag and
+        // flush pending events (lost/new/cableOk/HDCPCapDone/unzombie) now that
+        // intransitionGroups is empty. fireEventsInternal handles unzombie via
+        // isPendingZombie() (respects plugged / policyModesetOrderMitigation /
+        // complianceDeviceEdidReadTest).
+        //
+        bMitigateZombie = false;
+        fireEvents();
+
+        return;
     }
 
     // set dscModeActive to what was requested in NAB and clear dscModeRequest
@@ -1190,7 +1262,8 @@ void ConnectorImpl2x::notifyAttachEnd(bool modesetCancelled)
             if (isDP12AuthCap && !isHopLimitExceeded && !isHDCPReAuthPending)
             {
                 isHDCPReAuthPending = true;
-                timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN_HPD);
+                timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN_HPD,
+                                     false /* not allowed in sleep */);
             }
         }
     }
@@ -1203,7 +1276,8 @@ void ConnectorImpl2x::notifyAttachEnd(bool modesetCancelled)
         !bHdcpAuthOnlyOnDemand)
     {
         isHDCPReAuthPending = true;
-        timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN_HPD);
+        timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN_HPD,
+                             false /* not allowed in sleep */);
     }
 
     hdcpCapsRetries = 0U;
@@ -1708,10 +1782,8 @@ void ConnectorImpl2x::notifyDetachEnd(bool bKeepOdAlive, bool bKeepLinkOn)
             // lost device not yet detached. Avoid to powerdown for the case for following
             // device discovery hdcp probe.
             //
-            if (!bIsDiscoveryDetectActive && !bMstTimeslotBug4968411)
-            {
+            if (!bIsDiscoveryDetectActive)
                 powerdownLink(!main->skipPowerdownEdpPanelWhenHeadDetach() && !bKeepOdAlive);
-            }
         }
         if (this->policyModesetOrderMitigation && this->modesetOrderMitigation)
             this->modesetOrderMitigation = false;
@@ -1749,7 +1821,9 @@ bool ConnectorImpl2x::enableFlush()
 
         if (activeGroup && !activeGroup->isHeadAttached() && intransitionGroups.isEmpty())
         {
-            DP_PRINTF(DP_ERROR, "DP2xCONN> SST-Flush mode should not be called when head is not attached. Returning early without enabling flush");
+            DP_PRINTF(DP_NOTICE,
+                      "DP2xCONN> SST flush skipped: no head attached (head=%u stream=%u); returning without enabling flush",
+                      activeGroup->headIndex, activeGroup->streamIndex);
             bFlushSkipped = true;
             return true;
         }
@@ -1768,7 +1842,8 @@ bool ConnectorImpl2x::enableFlush()
 
         if (!bHeadAttached)
         {
-            DP_PRINTF(DP_ERROR, "DP2xCONN> MST-Flush mode should not be called when head is not attached. Returning early without enabling flush");
+            DP_PRINTF(DP_NOTICE,
+                      "DP2xCONN> MST flush skipped: no head attached on any active group; returning without enabling flush");
             bFlushSkipped = true;
             return true;
         }
@@ -2132,9 +2207,19 @@ void ConnectorImpl2x::discoveryNewDevice(const DiscoveryManager::Device & device
             processNewDevice({device, Edid(), DisplayID2x(), false, DISPLAY_PORT, RESERVED});
             return;
         }
-        // Only read DID2x if the device is version 1.4 or higher and native DisplayID2x support is enabled
+        //
+        // Only read DID2x if the device is version 1.4 or higher, native DisplayID2x
+        // support is enabled, and the Receiver advertises the interface through
+        // LOCAL_NATIVE_DISPLAYID_PRESENT - which the VESA SCR "DPCD Capability for
+        // Native DisplayID support at 0xA4/0xA5" requires a Source to consume before
+        // touching DDC A4h/A5h. DiscoveryManager::readNativeDisplayIdCap() has already
+        // fetched it into the Device by the time we get here. Skipping the DDC probe
+        // for Receivers that do not advertise it is what avoids the 4 second sideband
+        // timeout per link partner that a blind REMOTE_I2C_READ of 0xA4 leaves wedged.
+        //
         bReadDID2x = !bDisableNativeDisplayId2xSupport &&
-                     (device.dpcdRevisionMajor > 1 || device.dpcdRevisionMinor >= 4);
+                     (device.dpcdRevisionMajor > 1 || device.dpcdRevisionMinor >= 4) &&
+                     (device.bLocalNativeDisplayIdPresent || bForceNativeDisplayId2xRead);
         if (bReadDID2x)
         {
             pendingDid2Reads.insertBack(new DevicePendingDID2Read(this, messageManager, device));
@@ -2153,10 +2238,10 @@ void ConnectorImpl2x::discoveryNewDevice(const DiscoveryManager::Device & device
 
 void DisplayPort::DevicePendingDID2Read::mstDid2Completed(DID2ReadMultistream * from)
 {
-    Address::StringBuffer sb;
-    DP_USED(sb);
-    DP_PRINTF(DP_NOTICE, "DP-CONN> DID2 read complete: %s",
-              from->topologyAddress.toString(sb));
+    NvU64 packedAddr = (from->topologyAddress).pack();
+    DP_PRINTF(DP_NOTICE, "DP-CONN> DID2 read complete: " DP_ADDR_FMT,
+              DP_ADDR_ARGS(packedAddr));
+    DP_USED(packedAddr);
 
     ConnectorImpl2x * connector = parent;
     if (connector->displayId2MSTPolicy == DISPLAYID2_MST_POLICY_DID2X_ONLY)
@@ -2175,10 +2260,10 @@ void DisplayPort::DevicePendingDID2Read::mstDid2Completed(DID2ReadMultistream * 
 
 void DisplayPort::DevicePendingDID2Read::mstDid2ReadFailed(DID2ReadMultistream * from)
 {
-    Address::StringBuffer sb;
-    DP_USED(sb);
-    DP_PRINTF(DP_ERROR, "DP-CONN> DID2 read failed: %s - read EDID instead",
-              from->topologyAddress.toString(sb));
+    NvU64 packedAddr = (from->topologyAddress).pack();
+    DP_PRINTF(DP_ERROR, "DP-CONN> DID2 read failed: " DP_ADDR_FMT " - read EDID instead",
+              DP_ADDR_ARGS(packedAddr));
+    DP_USED(packedAddr);
     ConnectorImpl2x * connector = parent;
 
     connector->pendingEdidReads.insertBack(new DevicePendingEDIDRead(connector, connector->messageManager, device));
@@ -2283,3 +2368,4 @@ bool ConnectorImpl2x::avoidHeadShutdownForLinkConfig(const LinkConfiguration &ta
               bInternalDpTunneling, bAvoidShutdown);
     return bAvoidShutdown;
 }
+

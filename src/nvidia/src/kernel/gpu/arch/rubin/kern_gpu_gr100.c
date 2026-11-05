@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #include "published/rubin/gr100/dev_vm.h"
 #include "published/rubin/gr100/dev_pcfg_pf0.h"
 #include "published/rubin/gr100/dev_pmc_zb.h"
+#include "published/rubin/gr100/dev_pmc_zb_addendum.h"
 #include "published/rubin/gr100/hwproject.h"
 
 /*!
@@ -161,6 +162,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GR100[] =
     GPU_CHILD_PRESENT(OBJTMR, 1),
     GPU_CHILD_PRESENT(KernelMIGManager, 1),
     GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelVbios, 1),
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
@@ -189,6 +191,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GR100[] =
     GPU_CHILD_PRESENT(Spdm, 1),
     GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelCcu, 1),
+    GPU_CHILD_PRESENT(TdispMgr, 1),
     GPU_CHILD_PRESENT(KernelOob, 1),
 };
 
@@ -220,6 +223,23 @@ gpuGenGidData_GR100
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, nvGenerateGpuUuid(chipId, pdi64, (NvUuid*)(pGidData)));
 
     return NV_OK;
+}
+
+/*!
+ * @brief Check if the VR-BM licensing bit has been set in the scratch register
+ *
+ * @param[in] pGpu GPU object pointer
+ */
+NvBool
+gpuIsBmLicenseEnabledInHw_GR100
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 scratchCcState = GPU_REG_RD32(pGpu, NV_PMC0_PRI_BASE + NV_PMC_ZB_SCRATCH_RESET_2_CC);
+
+    return FLD_TEST_DRF(_PMC_ZB, _SCRATCH_RESET_2_CC, _BM_LICENSE_ENABLE, _TRUE,
+                        scratchCcState);
 }
 
 /*!

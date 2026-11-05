@@ -445,6 +445,15 @@ struct RsServer
      * there.
      */
     RsLockedClientList        lockedClientList;
+
+    /**
+     * When true, per-client lock allocation is skipped, and a single global client lock is used instead.
+     * Useful for saving memory on single-threaded configs.
+     */
+    NvBool                    bPerClientLockDisabled;
+    PORT_RWLOCK              *pGlobalClientLock;
+    NvU64                     globalClientLockOwnerTid;
+    NvU32                     globalClientLockDepth;
 };
 
 /**

@@ -57,99 +57,6 @@
 //
 static NV_STATUS memmgrComputeAndSetVgaDisplayMemoryBase_GM107(OBJGPU *, NvU64);
 
-NvU32
-memmgrChooseKindCompressC_GM107
-(
-    OBJGPU                 *pGpu,
-    MemoryManager          *pMemoryManager,
-    FB_ALLOC_PAGE_FORMAT   *pFbAllocPageFormat)
-{
-    NvU32  kind         = NV_MMU_PTE_KIND_PITCH;
-    NvU32  attrdepth    = DRF_VAL(OS32, _ATTR, _DEPTH, pFbAllocPageFormat->attr);
-    NvU32  aasamples    = DRF_VAL(OS32, _ATTR, _AA_SAMPLES, pFbAllocPageFormat->attr);
-    NvBool prefer_zbc   = !FLD_TEST_DRF(OS32, _ATTR2, _ZBC, _PREFER_NO_ZBC, pFbAllocPageFormat->attr2);
-
-    switch (attrdepth)
-    {
-        case NVOS32_ATTR_DEPTH_UNKNOWN:
-        case NVOS32_ATTR_DEPTH_8:
-        case NVOS32_ATTR_DEPTH_16:
-            kind = NV_MMU_PTE_KIND_GENERIC_16BX2;
-            break;
-        case NVOS32_ATTR_DEPTH_32:
-            switch (aasamples)
-            {
-                case NVOS32_ATTR_AA_SAMPLES_1:
-                    kind = NV_MMU_PTE_KIND_C32_2CRA;
-                    break;
-                case NVOS32_ATTR_AA_SAMPLES_2:
-                    kind = memmgrChooseKindCompressCForMS2_HAL(pGpu, pMemoryManager, attrdepth);
-                    break;
-                case NVOS32_ATTR_AA_SAMPLES_4:
-                case NVOS32_ATTR_AA_SAMPLES_4_ROTATED:
-                case NVOS32_ATTR_AA_SAMPLES_4_VIRTUAL_8:
-                case NVOS32_ATTR_AA_SAMPLES_4_VIRTUAL_16:
-                    kind = prefer_zbc? NV_MMU_PTE_KIND_C32_MS4_2CBR : NV_MMU_PTE_KIND_C32_MS4_2BRA;
-                    break;
-                case NVOS32_ATTR_AA_SAMPLES_8:
-                case NVOS32_ATTR_AA_SAMPLES_16:
-                case NVOS32_ATTR_AA_SAMPLES_8_VIRTUAL_16:
-                case NVOS32_ATTR_AA_SAMPLES_8_VIRTUAL_32:
-                    kind = NV_MMU_PTE_KIND_C32_MS8_MS16_2CRA;
-                    break;
-            }
-            break;
-        case NVOS32_ATTR_DEPTH_64:
-            switch (aasamples)
-            {
-                case NVOS32_ATTR_AA_SAMPLES_1:
-                    kind = NV_MMU_PTE_KIND_C64_2CRA;
-                    break;
-                case NVOS32_ATTR_AA_SAMPLES_2:
-                    kind = memmgrChooseKindCompressCForMS2_HAL(pGpu, pMemoryManager, attrdepth);
-                    break;
-                case NVOS32_ATTR_AA_SAMPLES_4:
-                case NVOS32_ATTR_AA_SAMPLES_4_ROTATED:
-                case NVOS32_ATTR_AA_SAMPLES_4_VIRTUAL_8:
-                case NVOS32_ATTR_AA_SAMPLES_4_VIRTUAL_16:
-                    kind = prefer_zbc? NV_MMU_PTE_KIND_C64_MS4_2CBR : NV_MMU_PTE_KIND_C64_MS4_2BRA;
-                    break;
-                case NVOS32_ATTR_AA_SAMPLES_8:
-                case NVOS32_ATTR_AA_SAMPLES_16:
-                case NVOS32_ATTR_AA_SAMPLES_8_VIRTUAL_16:
-                case NVOS32_ATTR_AA_SAMPLES_8_VIRTUAL_32:
-                    kind = NV_MMU_PTE_KIND_C64_MS8_MS16_2CRA;
-                    break;
-            }
-            break;
-        case NVOS32_ATTR_DEPTH_128:
-            switch (aasamples)
-            {
-                case NVOS32_ATTR_AA_SAMPLES_1:
-                    kind = NV_MMU_PTE_KIND_C128_2CR;
-                    break;
-                case NVOS32_ATTR_AA_SAMPLES_2:
-                    kind = NV_MMU_PTE_KIND_C128_MS2_2CR;
-                    break;
-                case NVOS32_ATTR_AA_SAMPLES_4:
-                case NVOS32_ATTR_AA_SAMPLES_4_ROTATED:
-                case NVOS32_ATTR_AA_SAMPLES_4_VIRTUAL_8:
-                case NVOS32_ATTR_AA_SAMPLES_4_VIRTUAL_16:
-                    kind = NV_MMU_PTE_KIND_C128_MS4_2CR;
-                    break;
-                case NVOS32_ATTR_AA_SAMPLES_8:
-                case NVOS32_ATTR_AA_SAMPLES_16:
-                case NVOS32_ATTR_AA_SAMPLES_8_VIRTUAL_16:
-                case NVOS32_ATTR_AA_SAMPLES_8_VIRTUAL_32:
-                    kind = NV_MMU_PTE_KIND_C128_MS8_MS16_2CR;
-                    break;
-            }
-            break;
-    }
-
-    return kind;
-}
-
 NV_STATUS
 memmgrAllocDetermineAlignment_GM107
 (
@@ -956,7 +863,7 @@ memmgrInitReservedMemory_GM107
     NvU64                  tmpAddr          = 0;
     NvU64                  rsvdTopOfMem     = 0;
     NvU64                  rsvdAlignment    = RM_PAGE_SIZE_64K;
-    NvBool                 bMemoryProtectionEnabled = NV_FALSE;
+    NvBool                 bCprMemEnabled = NV_FALSE;
     PFB_REGION_DESCRIPTOR  pRsvdRegion      = NULL;
 
     if (!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu))
@@ -969,7 +876,9 @@ memmgrInitReservedMemory_GM107
         }
     }
 
-    bMemoryProtectionEnabled = gpuIsCCFeatureEnabled(pGpu);
+    bCprMemEnabled = gpuIsCCFeatureEnabled(pGpu);
+    bCprMemEnabled =
+        bCprMemEnabled || gpuIsTdispFeatureEnabled(pGpu);
 
     memmgrStateInitReservedMemory(pGpu, pMemoryManager);
 
@@ -1009,7 +918,7 @@ memmgrInitReservedMemory_GM107
             // data should always be in unprotected video memory.
             //
             pRsvdRegion = memmgrGetLastUsableFbRegion(pGpu, pMemoryManager,
-                                                      &bMemoryProtectionEnabled);
+                                                      &bCprMemEnabled, NV_FALSE);
         }
 
         NV_ASSERT_OR_RETURN(pRsvdRegion != NULL, NV_ERR_INVALID_STATE);
@@ -1066,7 +975,7 @@ memmgrInitReservedMemory_GM107
             rsvdFbRegion.bSupportCompressed = NV_FALSE;
             rsvdFbRegion.bSupportISO = NV_FALSE;
             rsvdFbRegion.rsvdSize = pMemoryManager->rsvdMemorySize;
-            rsvdFbRegion.bProtected = bMemoryProtectionEnabled;
+            rsvdFbRegion.bProtected = bCprMemEnabled;
             rsvdFbRegion.bInternalHeap = NV_TRUE;
             rsvdFbRegion.regionTag = (RMCFG_FEATURE_PLATFORM_GSP)?
                                       NV2080_FB_REGION_TAG_GSP_RM_RESERVED :
@@ -1991,6 +1900,17 @@ memmgrCalcReservedFbSpaceHal_GM107
     {
         *rsvdFastSize = *rsvdFastSize + *rsvdSlowSize;
         *rsvdSlowSize = 0;
+    }
+
+    if (pMemoryManager->rsvdHeapSizeOverride != 0)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "Internal heap size set by regkey: computed 0x%llx bytes, regkey override 0x%llx bytes\n",
+                  *rsvdFastSize + *rsvdSlowSize + *rsvdISOSize, pMemoryManager->rsvdHeapSizeOverride);
+
+        *rsvdFastSize = pMemoryManager->rsvdHeapSizeOverride;
+        *rsvdSlowSize = 0;
+        *rsvdISOSize  = 0;
     }
 
     //

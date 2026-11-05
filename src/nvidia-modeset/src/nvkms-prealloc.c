@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,6 +58,8 @@ static size_t GetSizeForType(NVDevEvoPtr pDevEvo, enum NVPreallocType type)
         return sizeof(NVDscInfoEvoRec);
     case PREALLOC_TYPE_HS_PATCHED_MODESET_REQUEST:
         return sizeof(struct NvKmsSetModeRequest);
+    case PREALLOC_TYPE_HS_DOWNGRADE_ONE_HEAD_MODESET_REQUEST:
+        return sizeof(struct NvKmsSetModeOneHeadRequest);
     case PREALLOC_TYPE_MODE_SET_REPLY_TMP_USAGE_BOUNDS:
         return sizeof(struct NvKmsUsageBounds);
     case PREALLOC_TYPE_VALIDATE_MODE_IMP_OUT_HW_MODE_TIMINGS:

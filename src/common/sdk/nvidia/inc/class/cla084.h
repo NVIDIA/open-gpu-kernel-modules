@@ -56,7 +56,6 @@
  * numGuestFbHandles -> number of guest memory handles, the client handle is hPluginClient
  * guestFbHandleList -> handle list to guest memory
  * hPluginHeapMemory -> plugin heap memory handle, the client handle is hPluginClient
- * hMigRmHeapMemory -> MIG-RM heap memory handle
  * bDeviceProfilingEnabled -> If set to true, profiling is allowed
  * bGpupLiveMigrationEnabled -> True if GPUP LM is supported
  */

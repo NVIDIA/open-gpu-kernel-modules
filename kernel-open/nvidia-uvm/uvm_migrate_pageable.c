@@ -829,8 +829,14 @@ retry_p2p:
     // If reserving a p2p channel slot failed with NV_ERR_BUSY_RETRY, nvlink
     // is currently suspended. Retry the copy using cLinks instead of gLinks.
     if (status == NV_ERR_BUSY_RETRY && UVM_ID_IS_GPU(src_id) && UVM_ID_IS_GPU(dst_id) && !use_clinks_for_p2p) {
-        UVM_ASSERT_MSG(!src_has_dma_mappings, "Copy %d -> %d should not have src dma mappings\n", src_id, dst_id);
-        UVM_ASSERT_MSG(!dst_has_dma_mappings, "Copy %d -> %d should not have dst dma mappings\n", src_id, dst_id);
+        UVM_ASSERT_MSG(!src_has_dma_mappings,
+                       "Copy %d -> %d should not have src dma mappings\n",
+                       uvm_id_value(src_id),
+                       uvm_id_value(dst_id));
+        UVM_ASSERT_MSG(!dst_has_dma_mappings,
+                       "Copy %d -> %d should not have dst dma mappings\n",
+                       uvm_id_value(src_id),
+                       uvm_id_value(dst_id));
         UVM_ASSERT(uvm_id_equal(copying_gpu->id, src_id));
         UVM_ASSERT(channel_type == UVM_CHANNEL_TYPE_GPU_TO_GPU);
 

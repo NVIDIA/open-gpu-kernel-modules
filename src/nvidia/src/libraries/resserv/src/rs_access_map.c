@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -439,7 +439,7 @@ rsAccessGetActiveShareList
     // Search up the tree for a resource with an edited share list
     while (pSearchRef != NULL)
     {
-        if (pSearchRef->bSharePolicyListModified)
+        if (pSearchRef->flags & RS_RESOURCE_REF_SHARE_POLICY_LIST_MODIFIED)
             return &pSearchRef->sharePolicyList;
 
         pSearchRef = pSearchRef->pParentRef;

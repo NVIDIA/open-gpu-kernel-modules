@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -476,8 +476,7 @@ _memMulticastFabricDescriptorEnqueueWait
 
     if (pOsEvent != NULL)
     {
-        status = osUserHandleToKernelPtr(hClient, pOsEvent,
-                                         &pValidatedOsEvent);
+        status = osGetAndRefEventFromUserHandle(hClient, pOsEvent, &pValidatedOsEvent);
         if (status != NV_OK)
             return status;
     }
@@ -1561,7 +1560,8 @@ _memMulticastFabricAttachGpuPostProcessor
     NV_STATUS                        mcTeamStatus,
     NvU64                            mcTeamHandle,
     NvU64                            mcAddressBase,
-    NvU64                            mcAddressSize
+    NvU64                            mcAddressSize,
+    NvU16                            numUnitsAllocated
 )
 {
     NV_STATUS status = mcTeamStatus;
@@ -1663,7 +1663,8 @@ _memorymulticastfabricProcessTeamSetupResponse
     NV_STATUS  mcTeamStatus,
     NvU64      mcTeamHandle,
     NvU64      mcAddressBase,
-    NvU64      mcAddressSize
+    NvU64      mcAddressSize,
+    NvU16      numUnitsAllocated
 )
 {
     Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
@@ -1705,7 +1706,8 @@ _memorymulticastfabricProcessTeamSetupResponse
                                                       mcTeamStatus,
                                                       mcTeamHandle,
                                                       mcAddressBase,
-                                                      mcAddressSize);
+                                                      mcAddressSize,
+                                                      numUnitsAllocated);
 
             pMulticastFabricDesc->bResponseReceived = !pMulticastFabricDesc->bInbandReqInProgress;
         }
@@ -1757,6 +1759,7 @@ memorymulticastfabricTeamSetupResponseCallback
     NvU64 mcTeamHandle = 0;
     NvU64 mcAddressBase = 0;
     NvU64 mcAddressSize = 0;
+    NvU16 numUnitsAllocated = 0;
     OBJGPU *pGpu;
 
     NV_ASSERT(pInbandRcvParams != NULL);
@@ -1796,7 +1799,8 @@ memorymulticastfabricTeamSetupResponseCallback
 
     _memorymulticastfabricProcessTeamSetupResponse(
                pGpu, requestId, mcTeamStatus,
-               mcTeamHandle, mcAddressBase, mcAddressSize);
+               mcTeamHandle, mcAddressBase, mcAddressSize,
+               numUnitsAllocated);
 
     return NV_OK;
 }
@@ -1841,7 +1845,7 @@ _memorymulticastfabricErrorAllInFlightRequests
     {
         _memorymulticastfabricProcessTeamSetupResponse(
             pGpu, pRequestIds[i],
-            NV_ERR_FABRIC_MANAGER_NOT_PRESENT, 0, 0, 0);
+            NV_ERR_FABRIC_MANAGER_NOT_PRESENT, 0, 0, 0, 0);
     }
 
     portMemFree(pRequestIds);
@@ -2652,7 +2656,7 @@ _memorymulticastfabricCtrlDetachMem
         RsInterMapping *pInterMapping = pAttachMemInfoNode->pInterMapping;
 
         refRemoveInterMapping(pMemoryMulticastFabricRef, pInterMapping, NV_FALSE);
-        refDestroyInterMapping(pMemoryMulticastFabricRef, pInterMapping);
+        refDestroyInterMapping(&g_resServ, pMemoryMulticastFabricRef, pInterMapping);
     }
 
     btreeUnlink(pNode, &pGpuInfo->pAttachMemInfoTree);
@@ -2812,7 +2816,7 @@ _memorymulticastfabricCtrlAttachMem
 
     NV_ASSERT_OR_RETURN(pGpuInfo->bMcflaAlloc, NV_ERR_INVALID_STATE);
 
-    NV_ASSERT_OK_OR_RETURN(refCreateInterMapping(pMemoryMulticastFabricRef, &pInterMapping));
+    NV_ASSERT_OK_OR_RETURN(refCreateInterMapping(&g_resServ, pMemoryMulticastFabricRef, &pInterMapping));
 
     // No partial unmap supported
     pInterMapping->size = 0;
@@ -2825,7 +2829,7 @@ _memorymulticastfabricCtrlAttachMem
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to setup inter mapping\n");
-        refDestroyInterMapping(pMemoryMulticastFabricRef, pInterMapping);
+        refDestroyInterMapping(&g_resServ, pMemoryMulticastFabricRef, pInterMapping);
         return status;
     }
 
@@ -2899,7 +2903,7 @@ freeOffset:
 
 removeIntermap:
     refRemoveInterMapping(pMemoryMulticastFabricRef, pInterMapping, NV_FALSE);
-    refDestroyInterMapping(pMemoryMulticastFabricRef, pInterMapping);
+    refDestroyInterMapping(&g_resServ, pMemoryMulticastFabricRef, pInterMapping);
 
     return status;
 }

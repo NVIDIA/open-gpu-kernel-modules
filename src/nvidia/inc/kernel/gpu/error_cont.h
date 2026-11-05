@@ -120,6 +120,18 @@ typedef struct _NV_ERROR_CONT_LOCATION_DRAM
 } NV_ERROR_CONT_LOCATION_DRAM;
 
 /*!
+ * Struct for CBC location
+ */
+typedef struct _NV_ERROR_CONT_LOCATION_CBC
+{
+    NvU32 ltcPart;
+    NvU32 slice;
+    NvU32 fbpaPart;
+    NvU32 fbpaSubloc;
+    NvU64 physicalAddress;
+} NV_ERROR_CONT_LOCATION_CBC;
+
+/*!
  * Struct for Engine id
  */
 typedef struct _NV_ERROR_CONT_LOCATION_ENG_ID
@@ -149,7 +161,8 @@ typedef enum _NV_ERROR_CONT_LOCATION_TYPE
     NV_ERROR_CONT_LOCATION_TYPE_LTC    = 2, // LTC location
     NV_ERROR_CONT_LOCATION_TYPE_ENGINE = 3, // Engine location
     NV_ERROR_CONT_LOCATION_TYPE_VF     = 4, // VF location
-    NV_ERROR_CONT_LOCATION_TYPE_SYSLTC = 5  // SYSLTC location
+    NV_ERROR_CONT_LOCATION_TYPE_SYSLTC = 5, // SYSLTC location
+    NV_ERROR_CONT_LOCATION_TYPE_CBC    = 6  // CBC location
 } NV_ERROR_CONT_LOCATION_TYPE;
 
 /*!
@@ -158,6 +171,7 @@ typedef enum _NV_ERROR_CONT_LOCATION_TYPE
 typedef union _NV_ERROR_CONT_LOCATION_INFO
 {
     NV_ERROR_CONT_LOCATION_DRAM   dramLoc;   // DRAM location
+    NV_ERROR_CONT_LOCATION_CBC    cbcLoc;    // CBC location
     NV_ERROR_CONT_LOCATION_LTC    ltcLoc;    // LTC location
     NV_ERROR_CONT_LOCATION_ENG_ID engineLoc; // Engine location
     NvU32                         vfGfid;    // VF location

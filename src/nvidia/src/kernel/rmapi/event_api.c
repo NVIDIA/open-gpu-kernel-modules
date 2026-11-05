@@ -176,9 +176,9 @@ eventapiConstruct_IMPL
             // convert a user event handle to its kernel equivalent.
             if (privLevel <= RS_PRIV_LEVEL_USER_ROOT)
             {
-                rmStatus = osUserHandleToKernelPtr(pRsClient->hClient,
-                                                   pNv0050AllocParams->data,
-                                                   &pNv0050AllocParams->data);
+                rmStatus = osGetAndRefEventFromUserHandle(pRsClient->hClient,
+                                                           pNv0050AllocParams->data,
+                                                           &pNv0050AllocParams->data);
                 if (rmStatus == NV_OK)
                     bUserOsEventHandle = NV_TRUE;
             }
@@ -379,6 +379,12 @@ eventapiInit_IMPL
         if (rmStatus != NV_OK)
             return rmStatus;
 
+        if (pResourceRef->externalClassId == NV01_EVENT_OS_EVENT)
+        {
+            rmStatus = clientValidate(pNotifierClient, &pCallContext->secInfo);
+            if (rmStatus != NV_OK)
+                return rmStatus;
+        }
     }
     else
     {
@@ -400,6 +406,8 @@ eventapiInit_IMPL
     rmStatus = inotifyGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, &pNotifierShare);
     if (rmStatus != NV_OK)
         return rmStatus;
+    if (pNotifierShare->pNotifier == NULL)
+        return NV_ERR_INVALID_OBJECT;
 
     *pppEventNotification = inotifyGetNotificationListPtr(pNotifierShare->pNotifier);
 

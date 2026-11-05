@@ -67,10 +67,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelGsplite;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__KernelGsplite;
 
 
 struct KernelGsplite {
@@ -104,29 +103,10 @@ struct KernelGsplite {
 };
 
 
-// Vtable with 14 per-class function pointers
-struct NVOC_VTABLE__KernelGsplite {
-    NV_STATUS (*__kgspliteConstructEngine__)(struct OBJGPU *, struct KernelGsplite * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgspliteStateInitUnlocked__)(struct OBJGPU *, struct KernelGsplite * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgspliteStateInitLocked__)(struct OBJGPU *, struct KernelGsplite * /*this*/);  // virtual override (engstate) base (engstate)
-    void (*__kgspliteInitMissing__)(struct OBJGPU *, struct KernelGsplite * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgspliteStatePreInitLocked__)(struct OBJGPU *, struct KernelGsplite * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgspliteStatePreInitUnlocked__)(struct OBJGPU *, struct KernelGsplite * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgspliteStatePreLoad__)(struct OBJGPU *, struct KernelGsplite * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgspliteStateLoad__)(struct OBJGPU *, struct KernelGsplite * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgspliteStatePostLoad__)(struct OBJGPU *, struct KernelGsplite * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgspliteStatePreUnload__)(struct OBJGPU *, struct KernelGsplite * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgspliteStateUnload__)(struct OBJGPU *, struct KernelGsplite * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgspliteStatePostUnload__)(struct OBJGPU *, struct KernelGsplite * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__kgspliteStateDestroy__)(struct OBJGPU *, struct KernelGsplite * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kgspliteIsPresent__)(struct OBJGPU *, struct KernelGsplite * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelGsplite {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__KernelGsplite vtable;
 };
 
 #ifndef __nvoc_class_id_KernelGsplite
@@ -205,12 +185,16 @@ static inline void kgspliteDumpLibosLogs(struct OBJGPU *pGpu, struct KernelGspli
 
 
 // Wrapper macros for halified functions
-#define kgspliteConstructEngine_FNPTR(pKernelGsplite) pKernelGsplite->__nvoc_metadata_ptr->vtable.__kgspliteConstructEngine__
+#define kgspliteConstructEngine_FNPTR(pKernelGsplite) pKernelGsplite->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define kgspliteConstructEngine(pGpu, pKernelGsplite, engDesc) kgspliteConstructEngine_DISPATCH(pGpu, pKernelGsplite, engDesc)
-#define kgspliteStateInitUnlocked_FNPTR(pKernelGsplite) pKernelGsplite->__nvoc_metadata_ptr->vtable.__kgspliteStateInitUnlocked__
+#define kgspliteStateInitUnlocked_FNPTR(pKernelGsplite) pKernelGsplite->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__
 #define kgspliteStateInitUnlocked(pGpu, pKernelGsplite) kgspliteStateInitUnlocked_DISPATCH(pGpu, pKernelGsplite)
-#define kgspliteStateInitLocked_FNPTR(pKernelGsplite) pKernelGsplite->__nvoc_metadata_ptr->vtable.__kgspliteStateInitLocked__
+#define kgspliteStateInitLocked_FNPTR(pKernelGsplite) pKernelGsplite->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__
 #define kgspliteStateInitLocked(pGpu, pKernelGsplite) kgspliteStateInitLocked_DISPATCH(pGpu, pKernelGsplite)
+#define kgspliteConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define kgspliteConstructApertures(pGpu, pEngstate) kgspliteConstructApertures_DISPATCH(pGpu, pEngstate)
+#define kgspliteDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define kgspliteDestructApertures(pGpu, pEngstate) kgspliteDestructApertures_DISPATCH(pGpu, pEngstate)
 #define kgspliteInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define kgspliteInitMissing(pGpu, pEngstate) kgspliteInitMissing_DISPATCH(pGpu, pEngstate)
 #define kgspliteStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -236,59 +220,67 @@ static inline void kgspliteDumpLibosLogs(struct OBJGPU *pGpu, struct KernelGspli
 
 // Dispatch functions
 static inline NV_STATUS kgspliteConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pKernelGsplite, ENGDESCRIPTOR engDesc) {
-    return pKernelGsplite->__nvoc_metadata_ptr->vtable.__kgspliteConstructEngine__(pGpu, pKernelGsplite, engDesc);
+    return pKernelGsplite->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(pGpu, staticCast(pKernelGsplite, OBJENGSTATE), engDesc);
 }
 
 static inline NV_STATUS kgspliteStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pKernelGsplite) {
-    return pKernelGsplite->__nvoc_metadata_ptr->vtable.__kgspliteStateInitUnlocked__(pGpu, pKernelGsplite);
+    return pKernelGsplite->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pKernelGsplite, OBJENGSTATE));
 }
 
 static inline NV_STATUS kgspliteStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pKernelGsplite) {
-    return pKernelGsplite->__nvoc_metadata_ptr->vtable.__kgspliteStateInitLocked__(pGpu, pKernelGsplite);
+    return pKernelGsplite->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pKernelGsplite, OBJENGSTATE));
+}
+
+static inline NV_STATUS kgspliteConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
+static inline void kgspliteDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline void kgspliteInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kgspliteStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kgspliteStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kgspliteStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kgspliteStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kgspliteStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kgspliteStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kgspliteStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kgspliteStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline void kgspliteStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteStateDestroy__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NvBool kgspliteIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgspliteIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions

@@ -326,6 +326,9 @@ NVT_STATUS DSC_GeneratePPS(const DSC_INFO *pDscInfo,
  *                                  The data can be send to SetDscPpsData* methods directly.
  * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
  * @param[out]  pSliceCountMask     Mask of all slice counts supported by the mode.
+ * @param[out]  pNormalBitsPerPixelX16  Normal bits per pixel, i.e. the compression
+ *                                  ratio encoded into the returned PPS, multiplied
+ *                                  by 16.
  *
  * @returns NVT_STATUS_SUCCESS if successful;
  *          NVT_STATUS_ERR if unsuccessful;
@@ -340,7 +343,12 @@ DSC_GeneratePPSWithSliceCountMask
     NvU64 availableBandwidthBitsPerSecond,
     NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
     NvU32 *pBitsPerPixelX16,
-    NvU32 *sliceCountMask
+    NvU32 *sliceCountMask,
+#ifdef __cplusplus
+    NvU32 *pNormalBitsPerPixelX16 = NULL
+#else
+    NvU32 *pNormalBitsPerPixelX16
+#endif
 );
 
 NVT_STATUS DSC_ValidatePPSData(DSCPPSDATA *pPps);

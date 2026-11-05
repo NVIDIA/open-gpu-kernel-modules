@@ -1,5 +1,5 @@
 /*
-* SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+* SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 * SPDX-License-Identifier: MIT
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,7 +45,21 @@
 #include <linux/autoconf.h>
 #endif
 #endif
+
+// GHASH_ARM64_CE and AES_NI_INTEL each provide accelerated AES-GCM on their
+// own, so they substitute for the generic AES + GCM pair.
 #if \
+    (defined(CONFIG_ARM64) && \
+     (defined(CONFIG_CRYPTO_GHASH_ARM64_CE) || defined(CONFIG_CRYPTO_GHASH_ARM64_CE_MODULE))) || \
+    (defined(CONFIG_X86_64) && \
+     (defined(CONFIG_CRYPTO_AES_NI_INTEL) || defined(CONFIG_CRYPTO_AES_NI_INTEL_MODULE))) || \
+    ((defined(CONFIG_CRYPTO_AES) || defined(CONFIG_CRYPTO_AES_MODULE)) && \
+     (defined(CONFIG_CRYPTO_GCM) || defined(CONFIG_CRYPTO_GCM_MODULE)))
+#define NV_HAS_AES_GCM 1
+#endif
+
+#if \
+    (defined(NV_HAS_AES_GCM) && (NV_HAS_AES_GCM == 1)) && \
     (defined(CONFIG_CRYPTO_AEAD) || defined(CONFIG_CRYPTO_AEAD_MODULE)) && \
     (defined(CONFIG_CRYPTO_AKCIPHER) || defined(CONFIG_CRYPTO_AKCIPHER_MODULE)) && \
     (defined(CONFIG_CRYPTO_SKCIPHER) || defined(CONFIG_CRYPTO_SKCIPHER_MODULE)) && \
@@ -54,6 +68,7 @@
     (defined(CONFIG_CRYPTO_ECDH) || defined(CONFIG_CRYPTO_ECDH_MODULE)) && \
     (defined(CONFIG_CRYPTO_ECDSA) || defined(CONFIG_CRYPTO_ECDSA_MODULE)) && \
     (defined(CONFIG_CRYPTO_RSA) || defined(CONFIG_CRYPTO_RSA_MODULE)) && \
+    (defined(CONFIG_CRYPTO_DRBG) || defined(CONFIG_CRYPTO_DRBG_MODULE)) && \
     (defined(CONFIG_X509_CERTIFICATE_PARSER) || defined(CONFIG_X509_CERTIFICATE_PARSER_MODULE))
 #define NV_CONFIG_CRYPTO_PRESENT 1
 #endif

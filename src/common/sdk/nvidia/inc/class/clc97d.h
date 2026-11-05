@@ -1370,6 +1370,72 @@ extern "C" {
 #define NVC97D_HEAD_SW_RESERVED_VALUE                                           31:0
 #define NVC97D_HEAD_SET_RG_REL_SEMAPHORE_VALUE_HI(a,b)                          (0x00002380 + (a)*0x00000800 + (b)*0x00000004)
 #define NVC97D_HEAD_SET_RG_REL_SEMAPHORE_VALUE_HI_VALUE                         31:0
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL(a)                                       (0x000023A4 + (a)*0x00000800)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_MODE                                     1:0
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_MODE_DISABLE                             (0x00000000)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_MODE_EMP_VTEM_QMS                        (0x00000001)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_MODE_EMP_OTHERS                          (0x00000002)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_FREQUENCY                                12:12
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_FREQUENCY_EVERY_FRAME                    (0x00000000)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_FREQUENCY_ONCE                           (0x00000001)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_LOCATION                                 5:4
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_LOCATION_VBLANK                          (0x00000000)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_LOCATION_VSYNC                           (0x00000001)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_LOCATION_LINE                            (0x00000002)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_LINE_ID                                  30:16
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_LINE_ID_REVERSED                         31:31
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_LINE_ID_REVERSED_DISABLE                 (0x00000000)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_LINE_ID_REVERSED_ENABLE                  (0x00000001)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_MTD_STATE_CTRL                           14:14
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_MTD_STATE_CTRL_ACTIVE                    (0x00000000)
+#define NVC97D_HEAD_SET_INFOFRAME_CTRL_MTD_STATE_CTRL_ARM                       (0x00000001)
+#define NVC97D_HEAD_SET_INFOFRAME_HEADER(a)                                     (0x000023A8 + (a)*0x00000800)
+#define NVC97D_HEAD_SET_INFOFRAME_HEADER_HB0                                    7:0
+#define NVC97D_HEAD_SET_INFOFRAME_HEADER_HB1                                    15:8
+#define NVC97D_HEAD_SET_INFOFRAME_HEADER_HB2                                    23:16
+#define NVC97D_HEAD_SET_INFOFRAME_HEADER_HB3                                    31:24
+#define NVC97D_HEAD_SET_INFOFRAME_DATA0(a)                                      (0x000023AC + (a)*0x00000800)
+#define NVC97D_HEAD_SET_INFOFRAME_DATA0_DB0                                     7:0
+#define NVC97D_HEAD_SET_INFOFRAME_DATA0_DB1                                     15:8
+#define NVC97D_HEAD_SET_INFOFRAME_DATA0_DB2                                     23:16
+#define NVC97D_HEAD_SET_INFOFRAME_DATA0_DB3                                     31:24
+#define NVC97D_HEAD_SET_INFOFRAME_DATA1(a)                                      (0x000023B0 + (a)*0x00000800)
+#define NVC97D_HEAD_SET_INFOFRAME_DATA1_DB4                                     7:0
+#define NVC97D_HEAD_SET_INFOFRAME_DATA1_DB5                                     15:8
+#define NVC97D_HEAD_SET_INFOFRAME_DATA1_DB6                                     23:16
+#define NVC97D_HEAD_SET_INFOFRAME_DATA1_DB7                                     31:24
+#define NVC97D_HEAD_SET_INFOFRAME_DATA2(a)                                      (0x000023B4 + (a)*0x00000800)
+#define NVC97D_HEAD_SET_INFOFRAME_DATA2_DB8                                     7:0
+#define NVC97D_HEAD_SET_INFOFRAME_DATA2_DB9                                     15:8
+#define NVC97D_HEAD_SET_INFOFRAME_DATA2_DB10                                    23:16
+#define NVC97D_HEAD_SET_INFOFRAME_DATA2_DB11                                    31:24
+#define NVC97D_HEAD_SET_INFOFRAME_DATA3(a)                                      (0x000023B8 + (a)*0x00000800)
+#define NVC97D_HEAD_SET_INFOFRAME_DATA3_DB12                                    7:0
+#define NVC97D_HEAD_SET_INFOFRAME_DATA3_DB13                                    15:8
+#define NVC97D_HEAD_SET_INFOFRAME_DATA3_DB14                                    23:16
+#define NVC97D_HEAD_SET_INFOFRAME_DATA3_DB15                                    31:24
+#define NVC97D_HEAD_SET_INFOFRAME_DATA4(a)                                      (0x000023BC + (a)*0x00000800)
+#define NVC97D_HEAD_SET_INFOFRAME_DATA4_DB16                                    7:0
+#define NVC97D_HEAD_SET_INFOFRAME_DATA4_DB17                                    15:8
+#define NVC97D_HEAD_SET_INFOFRAME_DATA4_DB18                                    23:16
+#define NVC97D_HEAD_SET_INFOFRAME_DATA4_DB19                                    31:24
+#define NVC97D_HEAD_SET_INFOFRAME_DATA5(a)                                      (0x000023C0 + (a)*0x00000800)
+#define NVC97D_HEAD_SET_INFOFRAME_DATA5_DB20                                    7:0
+#define NVC97D_HEAD_SET_INFOFRAME_DATA5_DB21                                    15:8
+#define NVC97D_HEAD_SET_INFOFRAME_DATA5_DB22                                    23:16
+#define NVC97D_HEAD_SET_INFOFRAME_DATA5_DB23                                    31:24
+#define NVC97D_HEAD_SET_INFOFRAME_DATA6(a)                                      (0x000023C4 + (a)*0x00000800)
+#define NVC97D_HEAD_SET_INFOFRAME_DATA6_DB24                                    7:0
+#define NVC97D_HEAD_SET_INFOFRAME_DATA6_DB25                                    15:8
+#define NVC97D_HEAD_SET_INFOFRAME_DATA6_DB26                                    23:16
+#define NVC97D_HEAD_SET_INFOFRAME_DATA6_DB27                                    31:24
+#define NVC97D_HEAD_SET_INFOFRAME_DATA7(a)                                      (0x000023C8 + (a)*0x00000800)
+#define NVC97D_HEAD_SET_INFOFRAME_DATA7_DB28                                    7:0
+#define NVC97D_HEAD_SET_INFOFRAME_DATA7_DB29                                    15:8
+#define NVC97D_HEAD_SET_INFOFRAME_DATA7_DB30                                    23:16
+#define NVC97D_HEAD_SET_INFOFRAME_DATA7_DB31                                    31:24
+#define NVC97D_HEAD_SET_RASTER_SIZE_FRACTION(a)                                 (0x000023CC + (a)*0x00000800)
+#define NVC97D_HEAD_SET_RASTER_SIZE_FRACTION_HEIGHT                             15:0
 
 #ifdef __cplusplus
 };     /* extern "C" */

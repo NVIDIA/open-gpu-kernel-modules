@@ -34,6 +34,7 @@
 #include "virtualization/hypervisor/hypervisor.h"
 
 static void _gpuInitGlobalSurfaceOverride(OBJGPU *pGpu);
+static void _gpuHackSetDefaultNvlinkSwitchSystemTypeRegkey(OBJGPU *pGpu);
 
 /*!
  * @brief Read out any overrides and settings from the registry
@@ -90,6 +91,8 @@ gpuInitRegistryOverrides_KERNEL
     // Check to see if we have any ThreadState registry overrides
     threadStateInitRegistryOverrides(pGpu);
 
+    _gpuHackSetDefaultNvlinkSwitchSystemTypeRegkey(pGpu);
+
     // Check whether surprise removal support is enabled
     // Surprise removal support is enabled by default
     // Disable if the regkey is set to NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_DISABLE
@@ -98,6 +101,18 @@ gpuInitRegistryOverrides_KERNEL
                             NV_REG_STR_RM_GPU_SURPRISE_REMOVAL, &data32) == NV_OK)
     {
         pGpu->bSurpriseRemovalSupported = (data32 == NV_REG_STR_RM_GPU_SURPRISE_REMOVAL_ENABLE);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_SEC2_SPDM_HEARTBEAT_FORCE_DISABLE, &data32) == NV_OK)
+    {
+        if (data32 == NV_REG_STR_RM_SEC2_SPDM_HEARTBEAT_FORCE_DISABLE_YES)
+        {
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_SPDM_HEARTBEAT_FORCE_DISABLED, NV_TRUE);
+        }
+        else if (data32 == NV_REG_STR_RM_SEC2_SPDM_HEARTBEAT_FORCE_DISABLE_NO)
+        {
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_SPDM_HEARTBEAT_FORCE_DISABLED, NV_FALSE);
+        }
     }
 
     if (pGpu->bSriovCapable)
@@ -221,17 +236,10 @@ gpuInitRegistryOverrides_KERNEL
     }
     else
     {
-        if (RMCFG_FEATURE_PLATFORM_WINDOWS && IS_GSP_CLIENT(pGpu))
-        {
-            pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_WINDOWS_GSP;
-        }
-        else
-        {
-            pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_DEFAULT;
-        }
+        pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_DEFAULT;
         pGpu->userSharedData.bPollIntervalOverridden = NV_FALSE;
     }
-    
+
     if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_INIT_MEM_REUSE, &data32) == NV_OK) &&
         (data32 == NV_REG_STR_RM_INIT_MEM_REUSE_DISABLE))
     {
@@ -261,17 +269,22 @@ gpuInitInstLocOverrides_IMPL
 )
 {
     NvU32 data32 = 0;
-    NvBool bRegKeyCCEnabled = 
+    NvBool bRegKeyCCEnabled =
         ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CONFIDENTIAL_COMPUTE, &data32) == NV_OK) &&
           FLD_TEST_DRF(_REG_STR, _RM_CONFIDENTIAL_COMPUTE, _ENABLED, _YES, data32));
 
+    NvBool bTdispEnabled = osTdispIsEnabled(pGpu);
+
     //
     // If Hopper CC mode or protected pcie or CC-NVLE mode is enabled, move all except few buffers to FB
-    // Exception: when TDISP mode is enabled.
+    // Exception: when TDISP or BMSAI is enabled.
+    // Detecting HW states because CC PDB properties aren't available yet.
     //
     if ((bRegKeyCCEnabled ||
          gpuIsCCEnabledInHw_HAL(pGpu) ||
          gpuIsCCMultiGpuNvleModeEnabled(pGpu))
+        && !bTdispEnabled
+        && !gpuIsBmsaiEnabledInHw_HAL(pGpu)
         )
     {
         pGpu->instLocOverrides  = NV_REG_STR_RM_INST_LOC_ALL_VID;
@@ -382,6 +395,35 @@ gpuInitInstLocOverrides_IMPL
     }
 
     return NV_OK;
+}
+
+static void
+_gpuHackSetDefaultNvlinkSwitchSystemTypeRegkey
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 data32;
+
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_NEEDS_NVLINK_SWITCH_SYSTEM_TYPE_REGKEY_HACK))
+    {
+        return;
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_NVLINK_FORCE_SWITCH_SYSTEM_TYPE, &data32) == NV_OK)
+    {
+        return;
+    }
+
+#if NVCPU_IS_X86_64
+    data32 = NV_REG_STR_RM_NVLINK_FORCE_SWITCH_SYSTEM_TYPE_FRACTAL;
+#elif NVCPU_IS_AARCH64
+    data32 = NV_REG_STR_RM_NVLINK_FORCE_SWITCH_SYSTEM_TYPE_STRATA;
+#else
+    return;
+#endif
+
+    osWriteRegistryDword(pGpu, NV_REG_STR_RM_NVLINK_FORCE_SWITCH_SYSTEM_TYPE, data32);
 }
 
 #define GP100_BYPASS_47BIT_PA_WAR 4

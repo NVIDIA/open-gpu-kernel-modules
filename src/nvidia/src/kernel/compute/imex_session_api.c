@@ -275,8 +275,7 @@ imexsessionapiConstruct_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    status = osUserHandleToKernelPtr(hClient, pUserParams->pOsEvent,
-                                     &pImexOsEvent);
+    status = osGetAndRefEventFromUserHandle(hClient, pUserParams->pOsEvent, &pImexOsEvent);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Invalid event handle: 0x%x\n", status);

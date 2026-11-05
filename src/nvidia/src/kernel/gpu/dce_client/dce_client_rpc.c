@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -77,6 +77,7 @@ dceclientInitRpcInfra_IMPL
     }
 
     pDceClient->pRpc->maxRpcSize = DCE_MAX_RPC_MSG_SIZE;
+    pDceClient->pRpc->largeRpcSize = DCE_MAX_RPC_MSG_SIZE;
 
     pDceClient->pRpc->message_buffer = portMemAllocNonPaged(DCE_MAX_RPC_MSG_SIZE);
     if (pDceClient->pRpc->message_buffer == NULL)
@@ -124,6 +125,21 @@ done:
 }
 
 NV_STATUS
+dceclientSendRmInitRpc_IMPL
+(
+    OBJGPU *pGpu,
+    DceClient *pDceClient,
+    NvBool bInit,
+    NvBool bFromResume
+)
+{
+    NV_STATUS nvStatus = NV_OK;
+
+    NV_RM_RPC_DCE_RM_INIT(pGpu, bInit, bFromResume, nvStatus);
+    return nvStatus;
+}
+
+NV_STATUS
 dceclientDceRmInit_IMPL
 (
     OBJGPU *pGpu,
@@ -142,7 +158,8 @@ dceclientDceRmInit_IMPL
             done);
     }
 
-    NV_RM_RPC_DCE_RM_INIT(pGpu, bInit, nvStatus);
+    /* Normal init/shutdown path — bFromResume is NV_FALSE */
+    nvStatus = dceclientSendRmInitRpc(pGpu, pDceClient, bInit, NV_FALSE);
 
 done:
     if (gpusLockedMask != 0)
@@ -435,16 +452,9 @@ NV_STATUS rpcRmApiControl_dce
     }
 
     status = _dceRpcGetRpcResult(pRpc);
-    if (status != NV_OK)
-    {
-        NV_PRINTF_COND(status != NV_ERR_NOT_SUPPORTED, LEVEL_ERROR, LEVEL_INFO,
-                       "NVRM_RPC_DCE: Failed RM ctrl call cmd:0x%x result 0x%x: %s\n",
-                       cmd, status, nvstatusToString(status));
-    }
-    else
-    {
-        NV_PRINTF(LEVEL_INFO, "NVRM_RPC_DCE: RPC for GSP RM Control Successful\n");
-    }
+
+    NV_PRINTF(LEVEL_INFO, "NVRM_RPC_DCE: RM ctrl call cmd:0x%x result 0x%x: %s\n",
+              cmd, status, nvstatusToString(status));
 
     portMemCopy(pParamStructPtr, paramsSize, rpc_params->params, paramsSize);
 
@@ -645,7 +655,8 @@ NV_STATUS
 rpcDceRmInit_dce
 (
     RM_API *pRmApi,
-    NvBool bInit
+    NvBool bInit,
+    NvBool bFromResume
 )
 {
     OBJGPU *pGpu = (OBJGPU*)pRmApi->pPrivateContext;
@@ -686,6 +697,7 @@ rpcDceRmInit_dce
     }
 
     rpc_params->bInit                      = bInit;
+    rpc_params->bFromResume                = bFromResume;
     rpc_params->maxDispClkRateDisppll      = maxDispClkRateDisppll;
     rpc_params->maxDispClkRateSppllClkouta = maxDispClkRateSppllClkouta;
     rpc_params->maxHubClkRateSppllClkoutb  = maxHubClkRateSppllClkoutb;

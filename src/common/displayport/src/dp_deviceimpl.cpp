@@ -110,6 +110,7 @@ DeviceImpl::DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * pa
     shadow.hdcpCapDone = false;
     shadow.highestAssessedLC = connector->highestAssessedLC;
     dpMemZero(rawDscCaps, sizeof(rawDscCaps));
+    dpMemZero(&dscCaps, sizeof(dscCaps));
     panelFwSwRevision       = 0;
     bPanelFwSwRevisionValid = false;
 }
@@ -279,7 +280,7 @@ bool DeviceImpl::getI2cData(unsigned offset, NvU8 * buffer, unsigned sizeRequest
 
         if (status != AuxBus::success)
         {
-            DP_PRINTF(DP_ERROR, "DPDEV> %s: Failed read transaction", __FUNCTION__);
+            DP_PRINTF(DP_ERROR, "DPDEV> Failed read transaction");
             break;
         }
 
@@ -325,7 +326,7 @@ bool DeviceImpl::setI2cData(unsigned offset, NvU8 * buffer, unsigned sizeRequest
 
         if (status != AuxBus::success)
         {
-            DP_PRINTF(DP_ERROR, "DPDEV> %s: Failed write transaction", __FUNCTION__);
+            DP_PRINTF(DP_ERROR, "DPDEV> Failed write transaction");
             return false;
         }
         *sizeCompleted = dataCompleted;
@@ -594,6 +595,9 @@ AuxBus::status DeviceImpl::transaction(Action action, Type type, int address,
                 DP_PRINTF(DP_ERROR, "DPDEV> DPCD Read return more data than requested.  Clamping buffer to requested size!");
                 *sizeCompleted = sizeRequested;
             }
+            if (*sizeCompleted > REMOTE_READ_BUFFER_SIZE) {
+                *sizeCompleted = REMOTE_READ_BUFFER_SIZE;
+            }
 
             dpMemCopy(buffer, read.replyGetData(), *sizeCompleted);
 
@@ -640,8 +644,11 @@ AuxBus::status DeviceImpl::transaction(Action action, Type type, int address,
                 DP_PRINTF(DP_ERROR, "DPDEV> I2C Read return more data than requested.  Clamping buffer to requested size!");
                 *sizeCompleted = sizeRequested;
             }
+            if (*sizeCompleted > REMOTE_READ_BUFFER_SIZE) {
+                *sizeCompleted = REMOTE_READ_BUFFER_SIZE;
+            }
 
-            dpMemCopy(buffer, remoteI2cRead.replyGetI2CData(sizeCompleted), *sizeCompleted);
+            dpMemCopy(buffer, remoteI2cRead.replyGetData(), *sizeCompleted);
 
             return AuxBus::success;
         }
@@ -713,7 +720,7 @@ unsigned DeviceImpl::transactionSize()
     //  Remote (DP 1.2) sinks can read much larger chunks at once due to messaging.
     //
     if (this->address.size() >= 2)
-        return 255;
+        return REMOTE_READ_BUFFER_SIZE;
     else
         return this->connector->auxBus->transactionSize();
 }
@@ -1196,31 +1203,23 @@ bool DeviceImpl::getPanelFwRevision(NvU16 *revision)
 
     *revision = 0;
 
-    if (!connector->bEnablePanelFwRevisionCache)
+    //
+    // Return the value cached on the first successful read 
+    // instead of reading DPCD 0x040A/0x040B on every VRR enable
+    //
+    if (bPanelFwSwRevisionValid)
     {
-        // Regkey not set: read DPCD directly on every call (legacy behavior).
-        if (readPanelFwSwRevision())
-        {
-            *revision = panelFwSwRevision;
-            return true;
-        }
+        *revision = panelFwSwRevision;
+        return true;
     }
     else
     {
-        if (bPanelFwSwRevisionValid)
+        // In case read during discovery was not successful, re-reading here
+        if (readPanelFwSwRevision())
         {
             *revision = panelFwSwRevision;
+            bPanelFwSwRevisionValid = true;
             return true;
-        }
-        else
-        {
-            // In case read during discovery was not successful, re-reading here
-            if (readPanelFwSwRevision())
-            {
-                *revision = panelFwSwRevision;
-                bPanelFwSwRevisionValid = true;
-                return true;
-            }
         }
     }
 
@@ -1775,8 +1774,6 @@ NvBool DeviceImpl::getDSCSupport()
     NvU8 byte          = 0;
     unsigned size      = 0;
     unsigned nakReason = NakUndefined;
-    Address::StringBuffer sb;
-    DP_USED(sb);
 
     dscCaps.bDSCSupported = false;
 
@@ -1795,7 +1792,9 @@ NvBool DeviceImpl::getDSCSupport()
 
     else
     {
-        DP_PRINTF(DP_ERROR, "DP-DEV> DSC Support AUX READ failed for %s!", address.toString(sb));
+        NvU64 packedAddr = (address).pack();
+        DP_PRINTF(DP_ERROR, "DP-DEV> DSC Support AUX READ failed for " DP_ADDR_FMT "!", DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
     }
 
     if (dscCaps.bDSCDecompressionSupported || dscCaps.bDSCPassThroughSupported)
@@ -2691,13 +2690,13 @@ bool DeviceImpl::readAndParseDSCCaps()
 
     unsigned sizeCompleted  = 0;
     unsigned nakReason      = NakUndefined;
-    Address::StringBuffer sb;
-    DP_USED(sb);
 
     if(AuxBus::success != this->getDpcdData(NV_DPCD14_DSC_SUPPORT,
         &rawDscCaps[0], sizeof(rawDscCaps), &sizeCompleted, &nakReason))
     {
-        DP_PRINTF(DP_ERROR, "DP-DEV> Error querying DSC Caps on %s!", this->address.toString(sb));
+        NvU64 packedAddr = (this->address).pack();
+        DP_PRINTF(DP_ERROR, "DP-DEV> Error querying DSC Caps on " DP_ADDR_FMT "!", DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
         return false;
     }
 
@@ -2725,8 +2724,6 @@ void DeviceImpl::queryGUID2()
 {
     unsigned sizeCompleted  = 0;
     unsigned nakReason      = NakUndefined;
-    Address::StringBuffer sb;
-    DP_USED(sb);
 
     if(AuxBus::success == this->getDpcdData(NV_DPCD14_GUID_2, &this->guid2.data[0],
                                             DPCD_GUID_SIZE, &sizeCompleted, &nakReason))
@@ -2738,7 +2735,9 @@ void DeviceImpl::queryGUID2()
     }
     else
     {
-        DP_PRINTF(DP_ERROR, "DP-DEV> Error querying GUID2 on %s!", this->address.toString(sb));
+        NvU64 packedAddr = (this->address).pack();
+        DP_PRINTF(DP_ERROR, "DP-DEV> Error querying GUID2 on " DP_ADDR_FMT "!", DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
     }
 }
 
@@ -2895,8 +2894,6 @@ bool DeviceImpl::setDscEnable(bool enable)
     bool bDscPassThrough = false;
     AuxBus::status dscEnableStatus      = AuxBus::success;
     AuxBus::status dscPassThroughStatus = AuxBus::success;
-    Address::StringBuffer buffer;
-    DP_USED(buffer);
 
     if (!this->isDSCPossible() || !this->devDoingDscDecompression ||
         !this->devDoingDscDecompression->plugged)
@@ -2933,20 +2930,26 @@ bool DeviceImpl::setDscEnable(bool enable)
         if(bDscPassThrough)
         {
             dscPassthroughByte = FLD_SET_DRF(_DPCD20, _DSC_ENABLE, _PASS_THROUGH, _YES, dscPassthroughByte);
-            DP_PRINTF(DP_NOTICE, "DP-DEV> Enabling DSC Pass through on branch device - %s",
-                      this->parent->getTopologyAddress().toString(buffer));
+            NvU64 packedAddr = (this->parent->getTopologyAddress()).pack();
+            DP_PRINTF(DP_NOTICE, "DP-DEV> Enabling DSC Pass through on branch device - " DP_ADDR_FMT,
+                      DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
         }
 
         if (!bCurrDscEnable)
         {
             dscEnableByte = FLD_SET_DRF(_DPCD14, _DSC_ENABLE, _DECOMPRESSION, _YES, dscEnableByte);
-            DP_PRINTF(DP_NOTICE, "DP-DEV> Enabling DSC decompression on device - %s",
-                      this->devDoingDscDecompression->getTopologyAddress().toString(buffer));
+            NvU64 packedAddr = (this->devDoingDscDecompression->getTopologyAddress()).pack();
+            DP_PRINTF(DP_NOTICE, "DP-DEV> Enabling DSC decompression on device - " DP_ADDR_FMT,
+                      DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
         }
         else
         {
-            DP_PRINTF(DP_NOTICE, "DP-DEV> DSC decompression is already enabled on device - %s",
-                      this->devDoingDscDecompression->getTopologyAddress().toString(buffer));
+            NvU64 packedAddr = (this->devDoingDscDecompression->getTopologyAddress()).pack();
+            DP_PRINTF(DP_NOTICE, "DP-DEV> DSC decompression is already enabled on device - " DP_ADDR_FMT,
+                      DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
         }
     }
     else
@@ -2954,20 +2957,26 @@ bool DeviceImpl::setDscEnable(bool enable)
         if(bDscPassThrough)
         {
             dscPassthroughByte = FLD_SET_DRF(_DPCD20, _DSC_ENABLE, _PASS_THROUGH, _NO, dscPassthroughByte);
-            DP_PRINTF(DP_NOTICE, "DP-DEV> Disabling DSC Pass through on branch device - %s",
-                      this->parent->getTopologyAddress().toString(buffer));
+            NvU64 packedAddr = (this->parent->getTopologyAddress()).pack();
+            DP_PRINTF(DP_NOTICE, "DP-DEV> Disabling DSC Pass through on branch device - " DP_ADDR_FMT,
+                      DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
         }
 
         if (bCurrDscEnable)
         {
             dscEnableByte = FLD_SET_DRF(_DPCD14, _DSC_ENABLE, _DECOMPRESSION, _NO, dscEnableByte);
-            DP_PRINTF(DP_NOTICE, "DP-DEV> Disabling DSC decompression on device - %s",
-                      this->devDoingDscDecompression->getTopologyAddress().toString(buffer));
+            NvU64 packedAddr = (this->devDoingDscDecompression->getTopologyAddress()).pack();
+            DP_PRINTF(DP_NOTICE, "DP-DEV> Disabling DSC decompression on device - " DP_ADDR_FMT,
+                      DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
         }
         else
         {
-            DP_PRINTF(DP_NOTICE, "DP-DEV> DSC decompression is already disabled on device - %s",
-                      this->devDoingDscDecompression->getTopologyAddress().toString(buffer));
+            NvU64 packedAddr = (this->devDoingDscDecompression->getTopologyAddress()).pack();
+            DP_PRINTF(DP_NOTICE, "DP-DEV> DSC decompression is already disabled on device - " DP_ADDR_FMT,
+                      DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
         }
     }
 
@@ -2977,8 +2986,10 @@ bool DeviceImpl::setDscEnable(bool enable)
                                    &dscPassthroughByte, sizeof dscPassthroughByte, &size, &nakReason);
         if (dscPassThroughStatus != AuxBus::success)
         {
-            DP_PRINTF(DP_ERROR, "DP-DEV> Setting DSC Passthrough on parent branch %s failed",
-                      this->parent->getTopologyAddress().toString(buffer));
+            NvU64 packedAddr = (this->parent->getTopologyAddress()).pack();
+        DP_PRINTF(DP_ERROR, "DP-DEV> Setting DSC Passthrough on parent branch " DP_ADDR_FMT " failed",
+                      DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
         }
     }
 
@@ -2988,8 +2999,10 @@ bool DeviceImpl::setDscEnable(bool enable)
                               &dscEnableByte, sizeof dscEnableByte, &size, &nakReason);
         if (dscEnableStatus != AuxBus::success)
         {
-            DP_PRINTF(DP_ERROR, "DP-DEV> Setting DSC Enable on sink %s failed",
-                      this->devDoingDscDecompression->getTopologyAddress().toString(buffer));
+            NvU64 packedAddr = (this->devDoingDscDecompression->getTopologyAddress()).pack();
+            DP_PRINTF(DP_ERROR, "DP-DEV> Setting DSC Enable on sink " DP_ADDR_FMT " failed",
+                      DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
 
         }
     }
@@ -3012,13 +3025,13 @@ bool DeviceImpl::setDscEnableDPToHDMIPCON(bool bDscEnable, bool bEnablePassThrou
     unsigned size                   = 0;
     unsigned nakReason              = NakUndefined;
     AuxBus::status dscEnableStatus  = AuxBus::success;
-    Address::StringBuffer buffer;
-    DP_USED(buffer);
 
     if (!this->isDSCPossible())
     {
-        DP_PRINTF(DP_ERROR, "DP-DEV> DSC is not supported on DP to HDMI PCON - %s",
-                  this->getTopologyAddress().toString(buffer));
+        NvU64 packedAddr = (this->getTopologyAddress()).pack();
+        DP_PRINTF(DP_ERROR, "DP-DEV> DSC is not supported on DP to HDMI PCON - " DP_ADDR_FMT,
+                  DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
         return false;
     }
 
@@ -3027,14 +3040,18 @@ bool DeviceImpl::setDscEnableDPToHDMIPCON(bool bDscEnable, bool bEnablePassThrou
         if(bEnablePassThroughForPCON)
         {
             dscEnableByte = FLD_SET_DRF(_DPCD20, _DSC_ENABLE, _PASS_THROUGH, _YES, dscEnableByte);
-            DP_PRINTF(DP_NOTICE, "DP-DEV> Enabling DSC Pass through on DP to HDMI PCON device - %s",
-                      this->getTopologyAddress().toString(buffer));
+            NvU64 packedAddr = (this->getTopologyAddress()).pack();
+            DP_PRINTF(DP_NOTICE, "DP-DEV> Enabling DSC Pass through on DP to HDMI PCON device - " DP_ADDR_FMT,
+                      DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
         }
         else
         {
             dscEnableByte = FLD_SET_DRF(_DPCD14, _DSC_ENABLE, _DECOMPRESSION, _YES, dscEnableByte);
-            DP_PRINTF(DP_NOTICE, "DP-DEV> Enabling DSC decompression on DP to HDMI PCON device - %s",
-                      this->getTopologyAddress().toString(buffer));
+            NvU64 packedAddr = (this->getTopologyAddress()).pack();
+            DP_PRINTF(DP_NOTICE, "DP-DEV> Enabling DSC decompression on DP to HDMI PCON device - " DP_ADDR_FMT,
+                      DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
         }
 
     }
@@ -3044,8 +3061,10 @@ bool DeviceImpl::setDscEnableDPToHDMIPCON(bool bDscEnable, bool bEnablePassThrou
 
     if (dscEnableStatus != AuxBus::success)
     {
-        DP_PRINTF(DP_ERROR, "DP-DEV> Setting DSC Enable on DP to HDMI PCON %s failed",
-                  this->getTopologyAddress().toString(buffer));
+        NvU64 packedAddr = (this->getTopologyAddress()).pack();
+        DP_PRINTF(DP_ERROR, "DP-DEV> Setting DSC Enable on DP to HDMI PCON " DP_ADDR_FMT " failed",
+                  DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
         return false;
 
     }
@@ -3718,16 +3737,16 @@ DeviceHDCPDetection::handleRemoteDpcdReadDownReply
     NvU8 i2cBcaps;
     unsigned dataCompleted;
     unsigned defaultReason;
-    Address::StringBuffer sb;
-    DP_USED(sb);
 
     if (from == &remote22BCapsReadMessage)
     {
         bCapsReadCompleted = true;
         bBCapsReadMessagePending = false;
-        DP_PRINTF(DP_NOTICE, "DP-QM> REMOTE_DPCD_READ(22BCaps) {%p} at '%s' completed",
+        NvU64 packedAddr = (parent->address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-QM> REMOTE_DPCD_READ(22BCaps) {%p} at '" DP_ADDR_FMT "' completed",
             (MessageManager::Message *)&remote22BCapsReadMessage,
-            parent->address.toString(sb));
+            DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
 
         if (remote22BCapsReadMessage.replyNumOfBytesReadDPCD() != HDCP22_BCAPS_SIZE)
         {
@@ -3761,8 +3780,10 @@ DeviceHDCPDetection::handleRemoteDpcdReadDownReply
             isBCapsHDCP = isValidBKSV = true;
             parent->isHdcp2XCap = True;
 
-            DP_PRINTF(DP_NOTICE, "DP-QM> Device at '%s' is with valid 22BCAPS : %x",
-                parent->address.toString(sb), *remote22BCapsReadMessage.replyGetData());
+            NvU64 packedAddr = (parent->address).pack();
+            DP_PRINTF(DP_NOTICE, "DP-QM> Device at '" DP_ADDR_FMT "' is with valid 22BCAPS : %x",
+                DP_ADDR_ARGS(packedAddr), *remote22BCapsReadMessage.replyGetData());
+            DP_USED(packedAddr);
         }
         else
         {
@@ -3773,9 +3794,11 @@ DeviceHDCPDetection::handleRemoteDpcdReadDownReply
     {
         bksvReadCompleted = true;
         bBKSVReadMessagePending = false;
-        DP_PRINTF(DP_NOTICE, "DP-QM> REMOTE_DPCD_READ(BKSV) {%p} at '%s' completed",
+        NvU64 packedAddr = (parent->address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-QM> REMOTE_DPCD_READ(BKSV) {%p} at '" DP_ADDR_FMT "' completed",
                   (MessageManager::Message *)&remoteBKSVReadMessage,
-                  parent->address.toString(sb));
+                  DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
 
         if (remoteBKSVReadMessage.replyNumOfBytesReadDPCD() != HDCP_KSV_SIZE)
         {
@@ -3797,17 +3820,21 @@ DeviceHDCPDetection::handleRemoteDpcdReadDownReply
             for (unsigned i=0; i<HDCP_KSV_SIZE; i++)
                 parent->BKSV[i] = (remoteBKSVReadMessage.replyGetData())[i];
 
-            DP_PRINTF(DP_NOTICE, "DP-QM> Device at '%s' is with valid BKSV.",
-                  parent->address.toString(sb));
+            NvU64 packedAddr = (parent->address).pack();
+            DP_PRINTF(DP_NOTICE, "DP-QM> Device at '" DP_ADDR_FMT "' is with valid BKSV.",
+                  DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
         }
     }
     else if (from == &remoteBCapsReadMessage)
     {
         bCapsReadCompleted = true;
         bBCapsReadMessagePending = false;
-        DP_PRINTF(DP_NOTICE, "DP-QM> REMOTE_DPCD_READ(BCaps) {%p} at '%s' completed",
+        NvU64 packedAddr = (parent->address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-QM> REMOTE_DPCD_READ(BCaps) {%p} at '" DP_ADDR_FMT "' completed",
                   (MessageManager::Message *)&remoteBCapsReadMessage,
-                  parent->address.toString(sb));
+                  DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
 
         if (remoteBCapsReadMessage.replyNumOfBytesReadDPCD() != HDCP_BCAPS_SIZE)
         {
@@ -3828,15 +3855,19 @@ DeviceHDCPDetection::handleRemoteDpcdReadDownReply
             *(parent->nvBCaps) = *(parent->BCAPS) = *remoteBCapsReadMessage.replyGetData();
             isBCapsHDCP = true;
 
-            DP_PRINTF(DP_NOTICE, "DP-QM> Device at '%s' is with valid BCAPS : %x",
-                  parent->address.toString(sb), *remoteBCapsReadMessage.replyGetData());
+            NvU64 packedAddr = (parent->address).pack();
+            DP_PRINTF(DP_NOTICE, "DP-QM> Device at '" DP_ADDR_FMT "' is with valid BCAPS : %x",
+                  DP_ADDR_ARGS(packedAddr), *remoteBCapsReadMessage.replyGetData());
+            DP_USED(packedAddr);
         }
         else
         {
             if (isValidBKSV)
             {
-                DP_PRINTF(DP_WARNING, "DP-QM> Device at '%s' is with valid BKSV but Invalid BCAPS : %x",
-                      parent->address.toString(sb), *remoteBCapsReadMessage.replyGetData());
+                NvU64 packedAddr = (parent->address).pack();
+                DP_PRINTF(DP_WARNING, "DP-QM> Device at '" DP_ADDR_FMT "' is with valid BKSV but Invalid BCAPS : %x",
+                      DP_ADDR_ARGS(packedAddr), *remoteBCapsReadMessage.replyGetData());
+                DP_USED(packedAddr);
 
                 // Read the BCAPS DDC offset
                 parent->transaction(AuxBus::read, AuxBus::i2cMot, HDCP_I2C_CLIENT_ADDR, &i2cBcaps,
@@ -3846,8 +3877,12 @@ DeviceHDCPDetection::handleRemoteDpcdReadDownReply
                 {
                     return;
                 }
-                DP_PRINTF(DP_NOTICE, "DP-QM> Device at '%s' is with DDC BACPS: %x",
-                      parent->address.toString(sb), i2cBcaps);
+
+                NvU64 packedAddr2 = (parent->address).pack();
+                DP_PRINTF(DP_NOTICE, "DP-QM> Device at '" DP_ADDR_FMT "' is with DDC BACPS: %x",
+                      DP_ADDR_ARGS(packedAddr2), i2cBcaps);
+                DP_USED(packedAddr2);
+
 
                 // If the Reserved Bit is SET, Device supports HDCP
                 if (i2cBcaps & HDCP_BCAPS_DDC_EN_BIT)
@@ -3989,10 +4024,10 @@ DeviceHDCPDetection::messageFailed
             // then reset the bBCapsReadMessagePending flag and try to read HDCP1X
             // capability
             //
-            Address::StringBuffer sb;
-            DP_USED(sb);
-            DP_PRINTF(DP_ERROR, "DP-QM> Message REMOTE_DPC_READ(22BCaps) {%p} at '%s' failed.",
-              from, parent->address.toString(sb));
+            NvU64 packedAddr = (parent->address).pack();
+            DP_PRINTF(DP_ERROR, "DP-QM> Message REMOTE_DPC_READ(22BCaps) {%p} at '" DP_ADDR_FMT "' failed.",
+              from, DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
             bBCapsReadMessagePending = false;
             tryRemote1XCaps = true;
             timer->queueCallback(this, "22BCaps-Try1X", DPCD_REMOTE_DPCD_READ_MESSAGE_COOLDOWN_BKSV);
@@ -4001,13 +4036,34 @@ DeviceHDCPDetection::messageFailed
     }
 
     parent->isHDCPCap = False;
-    Address::StringBuffer sb;
-    DP_USED(sb);
-    DP_PRINTF(DP_ERROR, "DP-QM> Message %s {%p} at '%s' failed. Device marked as not HDCP support.",
-              from == &remoteBKSVReadMessage ? "REMOTE_DPCD_READ(BKSV)" :
-              from == &remoteBCapsReadMessage ? "REMOTE_DPC_READ(BCaps)" :
-              from == &remote22BCapsReadMessage ? "REMOTE_DPC_READ(22BCaps)" : "???",
-              from, parent->address.toString(sb));
+    if (from == &remoteBKSVReadMessage)
+    {
+        NvU64 packedAddr = (parent->address).pack();
+        DP_PRINTF(DP_ERROR, "DP-QM> Message REMOTE_DPCD_READ(BKSV) {%p} at '" DP_ADDR_FMT "' failed. Device marked as not HDCP support.",
+                  from, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
+    }
+    else if (from == &remoteBCapsReadMessage)
+    {
+        NvU64 packedAddr = (parent->address).pack();
+        DP_PRINTF(DP_ERROR, "DP-QM> Message REMOTE_DPC_READ(BCaps) {%p} at '" DP_ADDR_FMT "' failed. Device marked as not HDCP support.",
+                  from, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
+    }
+    else if (from == &remote22BCapsReadMessage)
+    {
+        NvU64 packedAddr = (parent->address).pack();
+        DP_PRINTF(DP_ERROR, "DP-QM> Message REMOTE_DPC_READ(22BCaps) {%p} at '" DP_ADDR_FMT "' failed. Device marked as not HDCP support.",
+                  from, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
+    }
+    else
+    {
+        NvU64 packedAddr = (parent->address).pack();
+        DP_PRINTF(DP_ERROR, "DP-QM> Message ??? {%p} at '" DP_ADDR_FMT "' failed. Device marked as not HDCP support.",
+                  from, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
+    }
 
     // Destruct only when no message is pending
     if (!(bBKSVReadMessagePending || bBCapsReadMessagePending))
@@ -4074,13 +4130,15 @@ DeviceHDCPDetection::expired
     {
         Address parentAddress = parent->address.parent();
 
-        Address::StringBuffer sb;
-        DP_USED(sb);
-        DP_PRINTF(DP_NOTICE, "DP-QM> Requeing REMOTE_DPCD_READ_MESSAGE(BKSV) to %s", parentAddress.toString(sb));
+        NvU64 packedAddr = (parentAddress).pack();
+        DP_PRINTF(DP_NOTICE, "DP-QM> Requeing REMOTE_DPCD_READ_MESSAGE(BKSV) to " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
 
         retryRemoteBKSVReadMessage = false;
         remoteBKSVReadMessage.set(parentAddress, parent->address.tail(), NV_DPCD_HDCP_BKSV_OFFSET, HDCP_KSV_SIZE);
-        DP_PRINTF(DP_NOTICE, "DP-QM> Get BKSV (remotely) for '%s' sent REMOTE_DPCD_READ {%p}", parent->address.toString(sb), &remoteBKSVReadMessage);
+        NvU64 packedAddr2 = (parent->address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-QM> Get BKSV (remotely) for '" DP_ADDR_FMT "' sent REMOTE_DPCD_READ {%p}", DP_ADDR_ARGS(packedAddr2), &remoteBKSVReadMessage);
+        DP_USED(packedAddr2);
 
         bBKSVReadMessagePending = true;
         messageManager->post(&remoteBKSVReadMessage, this);
@@ -4090,13 +4148,15 @@ DeviceHDCPDetection::expired
     {
         Address parentAddress = parent->address.parent();
 
-        Address::StringBuffer sb;
-        DP_USED(sb);
-        DP_PRINTF(DP_NOTICE, "DP-QM> Requeing REMOTE_DPCD_READ_MESSAGE(BCAPS) to %s", parentAddress.toString(sb));
+        NvU64 packedAddr = (parentAddress).pack();
+        DP_PRINTF(DP_NOTICE, "DP-QM> Requeing REMOTE_DPCD_READ_MESSAGE(BCAPS) to " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
 
         retryRemoteBCapsReadMessage = false;
         remoteBCapsReadMessage.set(parentAddress, parent->address.tail(), NV_DPCD_HDCP_BCAPS_OFFSET, HDCP_BCAPS_SIZE);
-        DP_PRINTF(DP_NOTICE, "DP-QM> Get BCaps (remotely) for '%s' sent REMOTE_DPCD_READ {%p}", parent->address.toString(sb), &remoteBCapsReadMessage);
+        NvU64 packedAddr2 = (parent->address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-QM> Get BCaps (remotely) for '" DP_ADDR_FMT "' sent REMOTE_DPCD_READ {%p}", DP_ADDR_ARGS(packedAddr2), &remoteBCapsReadMessage);
+        DP_USED(packedAddr2);
 
         bBCapsReadMessagePending = true;
         messageManager->post(&remoteBCapsReadMessage, this);
@@ -4106,13 +4166,15 @@ DeviceHDCPDetection::expired
     {
         Address parentAddress = parent->address.parent();
 
-        Address::StringBuffer sb;
-        DP_USED(sb);
-        DP_PRINTF(DP_NOTICE, "DP-QM> Requeing REMOTE_DPCD_READ_MESSAGE(22BCAPS) to %s", parentAddress.toString(sb));
+        NvU64 packedAddr = (parentAddress).pack();
+        DP_PRINTF(DP_NOTICE, "DP-QM> Requeing REMOTE_DPCD_READ_MESSAGE(22BCAPS) to " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
 
         retryRemote22BCapsReadMessage = false;
         remote22BCapsReadMessage.set(parentAddress, parent->address.tail(), NV_DPCD_HDCP22_BCAPS_OFFSET, HDCP22_BCAPS_SIZE);
-        DP_PRINTF(DP_NOTICE, "DP-QM> Get 22BCaps (remotely) for '%s' sent REMOTE_DPCD_READ {%p}", parent->address.toString(sb), &remote22BCapsReadMessage);
+        NvU64 packedAddr2 = (parent->address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-QM> Get 22BCaps (remotely) for '" DP_ADDR_FMT "' sent REMOTE_DPCD_READ {%p}", DP_ADDR_ARGS(packedAddr2), &remote22BCapsReadMessage);
+        DP_USED(packedAddr2);
 
         bBCapsReadMessagePending = true;
         messageManager->post(&remote22BCapsReadMessage, this);
@@ -4147,6 +4209,9 @@ DeviceHDCPDetection::~DeviceHDCPDetection()
         this->messageManager->cancelAll(&remoteBKSVReadMessage);
         this->messageManager->cancelAll(&remoteBCapsReadMessage);
         this->messageManager->cancelAll(&remote22BCapsReadMessage);
+        this->messageManager->clearSink(&remoteBKSVReadMessage);
+        this->messageManager->clearSink(&remoteBCapsReadMessage);
+        this->messageManager->clearSink(&remote22BCapsReadMessage);
     }
 }
 

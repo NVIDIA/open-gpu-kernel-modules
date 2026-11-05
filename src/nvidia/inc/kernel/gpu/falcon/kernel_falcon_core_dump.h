@@ -24,9 +24,13 @@
 #ifndef KERNEL_FALCON_CORE_DUMP_H
 #define KERNEL_FALCON_CORE_DUMP_H
 
-#include "gpu/falcon/kernel_falcon.h"
-#define __RISCV_MAX_UNWIND_DEPTH 32
+#include "nvtypes.h"
+
 #define __RISCV_MAX_TRACE_ENTRIES 64
+#define KERNEL_FALCON_RISCV_NUM_RSTAT_REGS 8
+#define KERNEL_FALCON_RISCV_NUM_CORE_REGS 32
+#define __RISCV_MAX_UNWIND_DEPTH 32
+#define KERNEL_FALCON_RISCV_MAX_CSR_DUMP_ENTRIES 8
 
 typedef struct CoreDumpRegs
 {
@@ -53,5 +57,29 @@ typedef struct CoreDumpRegs
     NvU32 tracePCEntries;
     NvU64 tracePC[__RISCV_MAX_TRACE_ENTRIES];
 } CoreDumpRegs;
+
+typedef struct DestructiveCoreDumpRegs
+{
+    NvBool bCoreBooted;
+    NvU32 rstatSuccessCount;
+    NvU32 rstatSuccessMask;
+    NvU64 rstat[KERNEL_FALCON_RISCV_NUM_RSTAT_REGS];
+    NvBool bHaltSucceeded;
+    NvBool bPcValid;
+    NvBool bPcFallback;
+    NvU64 pc;
+    NvU32 gprValidMask;
+    NvU64 gpr[KERNEL_FALCON_RISCV_NUM_CORE_REGS];
+    NvU32 csrReadCount;
+    NvBool bCsrTruncated;
+    NvU32 csrCount;
+    struct
+    {
+        NvU32 index;
+        NvU64 value;
+    } csr[KERNEL_FALCON_RISCV_MAX_CSR_DUMP_ENTRIES];
+    NvU32 unwindDepth;
+    NvU64 unwindPC[__RISCV_MAX_UNWIND_DEPTH];
+} DestructiveCoreDumpRegs;
 
 #endif

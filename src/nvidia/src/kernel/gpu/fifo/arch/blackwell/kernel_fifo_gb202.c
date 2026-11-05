@@ -26,6 +26,7 @@
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/gsplite/kernel_gsplite.h"
+#include "kernel/gpu/intr/intr.h"
 #include "utils/nvassert.h"
 #include "gpu/gpu.h"
 #include "gpu/ce/kernel_ce.h"
@@ -38,6 +39,7 @@
 #include "published/blackwell/gb202/dev_ram.h"
 #include "published/blackwell/gb202/dev_runlist.h"
 #include "published/blackwell/gb202/dev_esched_pbdma.h"
+
 
 /*!
  * @brief Construct the worksubmit token. Caller cannot make assumption about this handle.
@@ -563,5 +565,21 @@ kfifoInitRamfcSubctx_GB202
     data = MEM_RD32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_WFI_VEID));
     data = FLD_SET_DRF_NUM(_RAMIN, _ENGINE_WFI, _VEID, pKernelChannel->subctxId, data);
     MEM_WR32(pInstMem + SF_OFFSET(NV_RAMIN_ENGINE_WFI_VEID), data);
+}
+
+/*!
+ * Return whether the requested vGPU HWS runlist entry count fits in the
+ * NV_RUNLIST_SUBMIT.LENGTH field.
+ */
+NvBool
+kfifoIsVgpuHwsExtendedRunlistSupported_GB202
+(
+    KernelFifo *pKernelFifo,
+    NvU32       requiredEntries
+)
+{
+    return (pKernelFifo != NULL) &&
+           (requiredEntries != 0) &&
+           (requiredEntries <= NV_U16_MAX);
 }
 

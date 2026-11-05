@@ -421,25 +421,17 @@
 #define NV_REG_ENABLE_STREAM_MEMOPS NV_REG_STRING(__NV_ENABLE_STREAM_MEMOPS)
 
 /*
- * Option: EnableUserNUMAManagement
- *
- * Description:
- *
- * When this option is enabled, the NVIDIA kernel module will require the
- * user-mode NVIDIA Persistence daemon to manage the onlining and offlining
- * of its NUMA device memory.
+ * Internal-only. This is used as the opposite of CoherentGPUMemoryMode
  *
  * This option has no effect on platforms that do not support onlining
- * device memory to a NUMA node (this feature is only supported on certain
- * POWER9 systems).
- *
+ * device memory to a NUMA node 
  * Possible Values:
  *
- *  0: disable user-mode NUMA management (default)
- *  1: enable user-mode NUMA management
+ *  0: disable NUMA mode (default)
+ *  1: enable NUMA mode
  */
-#define __NV_ENABLE_USER_NUMA_MANAGEMENT EnableUserNUMAManagement
-#define NV_REG_ENABLE_USER_NUMA_MANAGEMENT NV_REG_STRING(__NV_ENABLE_USER_NUMA_MANAGEMENT)
+#define __NV_ENABLE_NUMA EnableNUMA
+#define NV_REG_ENABLE_NUMA NV_REG_STRING(__NV_ENABLE_NUMA)
 
 /*
  * Option: CoherentGPUMemoryMode
@@ -752,6 +744,25 @@
 
 #define __NV_REGISTER_PLATFORM_DEVICE_DRIVER  RegisterPlatformDeviceDriver
 #define NV_REG_REGISTER_PLATFORM_DEVICE_DRIVER NV_REG_STRING(__NV_REGISTER_PLATFORM_DEVICE_DRIVER)
+
+/*
+ * Option: EnablePCIeErrorRecovery
+ *
+ * Description:
+ *
+ * When this option is enabled, the NVIDIA driver registers PCIe error
+ * handlers with the PCI subsystem. A fatal AER or DPC event then marks the
+ * GPU inaccessible, and the GPU requires an explicit reset before it will
+ * accept new work.
+ *
+ * Possible values:
+ *
+ *  1 - register PCIe error handlers (default)
+ *  0 - do not register PCIe error handlers
+ */
+
+#define __NV_ENABLE_PCIE_ERROR_RECOVERY  EnablePCIeErrorRecovery
+#define NV_REG_ENABLE_PCIE_ERROR_RECOVERY NV_REG_STRING(__NV_ENABLE_PCIE_ERROR_RECOVERY)
 
 /*
  * Option: EnablePCIERelaxedOrderingMode
@@ -1067,7 +1078,7 @@ NV_DEFINE_REG_ENTRY(__NV_ENABLE_GPU_FIRMWARE, NV_REG_ENABLE_GPU_FIRMWARE_DEFAULT
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_GPU_FIRMWARE_LOGS, NV_REG_ENABLE_GPU_FIRMWARE_LOGS_ENABLE_ON_DEBUG);
 NV_DEFINE_REG_ENTRY(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS, 1);
 
-NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_USER_NUMA_MANAGEMENT, 0);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_NUMA, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_MEMORY_POOL_SIZE, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_KMALLOC_HEAP_MAX_SIZE, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_VMALLOC_HEAP_MAX_SIZE, 0);
@@ -1076,6 +1087,7 @@ NV_DEFINE_REG_ENTRY_GLOBAL(__NV_NVLINK_DISABLE, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_PCIE_RELAXED_ORDERING_MODE, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_REGISTER_PCI_DRIVER, 1);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_REGISTER_PLATFORM_DEVICE_DRIVER, 1);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_PCIE_ERROR_RECOVERY, 1);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_RESIZABLE_BAR, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_DBG_BREAKPOINT, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_TEGRA_GPU_PG_MASK, ~0);
@@ -1126,7 +1138,7 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_VMALLOC_HEAP_MAX_SIZE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_IGNORE_MMIO_CHECK),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_STREAM_MEMOPS),
-    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_USER_NUMA_MANAGEMENT),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_NUMA),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_NVLINK_DISABLE),
     NV_DEFINE_PARAMS_TABLE_ENTRY_CUSTOM_NAME(__NV_RM_PROFILING_ADMIN_ONLY,
         __NV_RM_PROFILING_ADMIN_ONLY_PARAMETER),
@@ -1138,6 +1150,7 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_DYNAMIC_POWER_MANAGEMENT_VIDEO_MEMORY_THRESHOLD),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_TEGRA_GPU_PG_MASK),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_REGISTER_PCI_DRIVER),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_PCIE_ERROR_RECOVERY),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_PCIE_RELAXED_ORDERING_MODE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_RESIZABLE_BAR),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_GPU_FIRMWARE),

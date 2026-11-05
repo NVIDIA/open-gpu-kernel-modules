@@ -289,9 +289,9 @@ void nv_enable_cdmm_mode(nvidia_stack_t *sp)
         return;
     }
 
-    NVreg_EnableUserNUMAManagement = 0;
-    rm_write_registry_dword(sp, NULL, NV_REG_ENABLE_USER_NUMA_MANAGEMENT,
-                            NVreg_EnableUserNUMAManagement);
+    NVreg_EnableNUMA = 0;
+    rm_write_registry_dword(sp, NULL, NV_REG_ENABLE_NUMA,
+                            NVreg_EnableNUMA);
     return;
 }
 
@@ -565,17 +565,17 @@ NV_STATUS NV_API_CALL os_registry_init(void)
 
     //
     // CoherentGPUMemoryMode=driver just implies the older 
-    // EnableUserNUMAManagement=0 option
+    // EnableNUMA=0 option (formerly EnableUserNUMAManagement)
     //
     if (NVreg_CoherentGPUMemoryMode != NULL)
     {
         if (strcmp(NVreg_CoherentGPUMemoryMode, "driver") == 0)
         {
-            NVreg_EnableUserNUMAManagement = 0;
+            NVreg_EnableNUMA = 0;
         }
         else
         {
-            NVreg_EnableUserNUMAManagement = 1;
+            NVreg_EnableNUMA = 1;
         }
     }
 

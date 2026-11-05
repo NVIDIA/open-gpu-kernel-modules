@@ -70,6 +70,8 @@
  *    Optional OS event handle created with NvRmAllocOsEvent().
  */
 
+
+
 #define NV_MEMORY_MULTICAST_FABRIC_PAGE_SIZE_512M                 0x20000000
 #define NV_MEMORY_MULTICAST_FABRIC_PAGE_SIZE_256G                 0x1000000000000
 
@@ -101,5 +103,6 @@ typedef struct NV00FD_ALLOCATION_PARAMETERS {
     NvU32                allocFlags;
     NvU32                numGpus;
     NV_DECLARE_ALIGNED(NvP64 pOsEvent, 8);
+
 } NV00FD_ALLOCATION_PARAMETERS;
 

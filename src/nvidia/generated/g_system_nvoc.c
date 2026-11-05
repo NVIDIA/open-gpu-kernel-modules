@@ -117,7 +117,7 @@ void __nvoc_init_dataField_OBJSYS(OBJSYS *pThis) {
     pThis->setProperty(pThis, PDB_PROP_SYS_PRIORITY_THROTTLE_DELAY_US, 16 * 1000);
     pThis->setProperty(pThis, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT, NV_FALSE);
     pThis->setProperty(pThis, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE, NV_FALSE);
-    pThis->setProperty(pThis, PDB_PROP_SYS_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR, NV_FALSE);
+    pThis->setProperty(pThis, PDB_PROP_SYS_DXGKRNL_NUDGE_BUG_5785851_WAR, NV_FALSE);
     pThis->setProperty(pThis, PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS, NV_TRUE);
     pThis->setProperty(pThis, PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK, NV_TRUE);
 

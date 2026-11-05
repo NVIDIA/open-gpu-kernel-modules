@@ -133,6 +133,7 @@ gpudbRegisterGpu(const NvU8 *pUuid, const NBADDR *pUpstreamPortPciInfo, NvU64 pc
 
     // Initialize all compute polcies with default values
     pNode->policyInfo.timeslice = NV2080_CTRL_CMD_GPU_COMPUTE_TIMESLICE_DEFAULT;
+    pNode->policyInfo.schedulingPriority = NV2080_CTRL_CMD_GPU_COMPUTE_SCHEDULING_PRIORITY_DEFAULT;
 
     // Initialize all choesnIdx to _INVALID
     for (i = 0; i < GPUDB_CLK_PROP_TOP_POLS_COUNT; ++i)
@@ -192,6 +193,10 @@ gpudbSetGpuComputePolicyConfig
     {
         case NV2080_CTRL_GPU_COMPUTE_POLICY_TIMESLICE:
             pNode->policyInfo.timeslice = policyInfo->timeslice;
+            status = NV_OK;
+            break;
+        case NV2080_CTRL_GPU_COMPUTE_POLICY_SCHEDULING_PRIORITY:
+            pNode->policyInfo.schedulingPriority = policyInfo->schedulingPriority;
             status = NV_OK;
             break;
         default:

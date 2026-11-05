@@ -25,7 +25,6 @@
 #include <nvtypes.h>
 #include <nvmisc.h>
 
-
 #include "msgq/msgq.h"
 #include "msgq/msgq_priv.h"
 
@@ -237,7 +236,12 @@ msgqRxLink
         portMemCopy(&pQueue->rx, sizeof(pQueue->rx), (const void *)pQueue->pTheirTxHdr, sizeof(*pQueue->pTheirTxHdr));
     }
 
-    if (size < (pQueue->rx.entryOff + msgSize))
+    if (pQueue->rx.entryOff < sizeof(msgqTxHeader))
+    {
+        return -12;
+    }
+
+    if (pQueue->rx.entryOff > size - msgSize)
     {
         return -6;
     }

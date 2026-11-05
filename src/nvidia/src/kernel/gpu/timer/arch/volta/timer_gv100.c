@@ -29,7 +29,6 @@
 #include "gpu/gpu.h"
 #include "gpu/timer/objtmr.h"
 #include "published/volta/gv100/dev_timer.h"
-#include "published/volta/gv100/dev_usermode.h"
 /* ------------------------- Datatypes -------------------------------------- */
 /* ------------------------- Macros ----------------------------------------- */
 /* ------------------------- Static Function Prototypes --------------------- */
@@ -82,30 +81,4 @@ tmrSetCurrentTime_GV100
     }
 
     return status;
-}
-
-/*!
- * @brief Gets GPU PTIMER offsets
- *
- */
-NV_STATUS
-tmrGetGpuPtimerOffset_GV100
-(
-    OBJGPU  *pGpu,
-    OBJTMR  *pTmr,
-    NvU32   *pGpuTimestampOffsetLo,
-    NvU32   *pGpuTimestampOffsetHi
-)
-{
-    extern NV_STATUS tmrGetGpuPtimerOffset_GM107(OBJGPU *pGpu, OBJTMR *pTmr, NvU32 *pGpuTimestampOffsetLo, NvU32 *pGpuTimestampOffsetHi);
-
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_NV_USERMODE_ENABLED))
-    {
-        *pGpuTimestampOffsetLo = NV_USERMODE_TIME_0;
-        *pGpuTimestampOffsetHi = NV_USERMODE_TIME_1;
-    }
-    else
-        return tmrGetGpuPtimerOffset_GM107(pGpu, pTmr, pGpuTimestampOffsetLo, pGpuTimestampOffsetHi);
-
-    return NV_OK;
 }

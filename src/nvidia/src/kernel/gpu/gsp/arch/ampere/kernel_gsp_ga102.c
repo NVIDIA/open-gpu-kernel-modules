@@ -51,8 +51,10 @@
  _kgspIsCommonSwDecUcodeBinForDebugPlatform(OBJGPU *pGpu)
  {
 #if COMMON_UCODE_BIN_SUPPORT_ON_RELEASE_DRIVER
-     return (NvBool)((IsGB20X(pGpu) && !IsGB20Y(pGpu)) ||
-                     (IsGB10X(pGpu) && !IsGB10Y(pGpu)));
+     return (NvBool)(IsGH100(pGpu) ||
+                     IsGB20X(pGpu)||
+                     (IsGB10X(pGpu) && !IsGB10Y(pGpu)) ||
+                     IsGR10X(pGpu));
 #else
      return NV_FALSE;
 #endif
@@ -79,13 +81,11 @@ kgspConfigureFalcon_GA102
     falconConfig.bIsPmcDeviceEngine = NV_FALSE;
     falconConfig.physEngDesc        = ENG_GSP;
 
-    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
-
     //
     // No CrashCat queue when CC is enabled, as it's not encrypted.
     // Don't bother enabling the host-side decoding either.
     //
-    if (pCC == NULL || !pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+    if (!gpuIsCCFeatureEnabled(pGpu) && !gpuIsBaremetalSecureAiEnabled(pGpu))
     {
         // Enable CrashCat monitoring
         falconConfig.crashcatEngConfig.bEnable = NV_TRUE;

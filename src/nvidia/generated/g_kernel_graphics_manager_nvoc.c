@@ -40,18 +40,6 @@ NV_STATUS __nvoc_down_thunk_KernelGraphicsManager_engstateConstructEngine(OBJGPU
 void __nvoc_down_thunk_KernelGraphicsManager_engstateStateDestroy(OBJGPU *arg1, struct OBJENGSTATE *arg_this);    // this
 
 // Up-thunk(s) to bridge KernelGraphicsManager methods to ancestors (if any)
-void __nvoc_up_thunk_OBJENGSTATE_kgrmgrInitMissing(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreInitLocked(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStateInitLocked(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStateInitUnlocked(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreLoad(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStateLoad(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePostLoad(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreUnload(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStateUnload(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePostUnload(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3);    // this
-NvBool __nvoc_up_thunk_OBJENGSTATE_kgrmgrIsPresent(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate);    // this
 
 // Class-specific details for KernelGraphicsManager
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphicsManager = 
@@ -69,7 +57,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphicsManager =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__KernelGraphicsManager __nvoc_metadata__KernelGraphicsManager = {
     .rtti.pClassDef = &__nvoc_class_def_KernelGraphicsManager,    // (kgrmgr) this
     .rtti.dtor      = &__nvoc_dtor_KernelGraphicsManager,
@@ -81,33 +69,21 @@ static const struct NVOC_METADATA__KernelGraphicsManager __nvoc_metadata__Kernel
     .metadata__OBJENGSTATE.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__OBJENGSTATE.metadata__Object.rtti.offset    = NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
 
-    .vtable.__kgrmgrConstructEngine__ = &kgrmgrConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelGraphicsManager_engstateConstructEngine,    // virtual
-    .vtable.__kgrmgrStateDestroy__ = &kgrmgrStateDestroy_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &__nvoc_down_thunk_KernelGraphicsManager_engstateStateDestroy,    // virtual
-    .vtable.__kgrmgrInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-    .vtable.__kgrmgrStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-    .vtable.__kgrmgrStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .vtable.__kgrmgrStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrStateInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
-    .vtable.__kgrmgrStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-    .vtable.__kgrmgrStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-    .vtable.__kgrmgrStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrStateLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
-    .vtable.__kgrmgrStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePostLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-    .vtable.__kgrmgrStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-    .vtable.__kgrmgrStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrStateUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
-    .vtable.__kgrmgrStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__kgrmgrIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kgrmgrIsPresent,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
 };
 
@@ -126,75 +102,12 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelGraphicsManager = {
 
 // kgrmgrConstructEngine: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelGraphicsManager_engstateConstructEngine(OBJGPU *arg1, struct OBJENGSTATE *arg_this, ENGDESCRIPTOR arg3) {
-    return kgrmgrConstructEngine(arg1, (struct KernelGraphicsManager *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)), arg3);
+    return kgrmgrConstructEngine_IMPL(arg1, (struct KernelGraphicsManager *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)), arg3);
 }
 
 // kgrmgrStateDestroy: virtual override (engstate) base (engstate)
 void __nvoc_down_thunk_KernelGraphicsManager_engstateStateDestroy(OBJGPU *arg1, struct OBJENGSTATE *arg_this) {
-    kgrmgrStateDestroy(arg1, (struct KernelGraphicsManager *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)));
-}
-
-
-// 12 up-thunk(s) defined to bridge methods in KernelGraphicsManager to superclasses
-
-// kgrmgrInitMissing: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_kgrmgrInitMissing(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)));
-}
-
-// kgrmgrStatePreInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreInitLocked(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)));
-}
-
-// kgrmgrStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)));
-}
-
-// kgrmgrStateInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStateInitLocked(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)));
-}
-
-// kgrmgrStateInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStateInitUnlocked(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)));
-}
-
-// kgrmgrStatePreLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreLoad(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgrmgrStateLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStateLoad(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgrmgrStatePostLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePostLoad(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgrmgrStatePreUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePreUnload(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgrmgrStateUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStateUnload(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgrmgrStatePostUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgrmgrStatePostUnload(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgrmgrIsPresent: virtual inherited (engstate) base (engstate)
-NvBool __nvoc_up_thunk_OBJENGSTATE_kgrmgrIsPresent(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)));
+    kgrmgrStateDestroy_IMPL(arg1, (struct KernelGraphicsManager *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelGraphicsManager, __nvoc_base_OBJENGSTATE)));
 }
 
 
@@ -268,7 +181,7 @@ static void __nvoc_init_funcTable_KernelGraphicsManager_1(KernelGraphicsManager 
         pThis->__kgrmgrGetVeidsFromGpcCount__ = &kgrmgrGetVeidsFromGpcCount_GA100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060ffUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->__kgrmgrGetVeidsFromGpcCount__ = &kgrmgrGetVeidsFromGpcCount_GB100;
     }
@@ -280,7 +193,7 @@ static void __nvoc_init_funcTable_KernelGraphicsManager_1(KernelGraphicsManager 
 } // End __nvoc_init_funcTable_KernelGraphicsManager_1 with approximately 4 basic block(s).
 
 
-// Initialize vtable(s) for 15 virtual method(s).
+// Initialize vtable(s) for 1 virtual method(s).
 void __nvoc_init_funcTable_KernelGraphicsManager(KernelGraphicsManager *pThis, GpuHalspecOwner *pGpuhalspecowner) {
 
     // Initialize vtable(s) with 1 per-object function pointer(s).

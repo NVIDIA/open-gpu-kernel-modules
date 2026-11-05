@@ -84,10 +84,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__ImexSessionApi;
 struct NVOC_METADATA__RmResource;
-struct NVOC_VTABLE__ImexSessionApi;
 
 
 struct ImexSessionApi {
@@ -114,36 +113,10 @@ struct ImexSessionApi {
 };
 
 
-// Vtable with 21 per-class function pointers
-struct NVOC_VTABLE__ImexSessionApi {
-    NvBool (*__imexsessionapiAccessCallback__)(struct ImexSessionApi * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__imexsessionapiShareCallback__)(struct ImexSessionApi * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__imexsessionapiGetMemInterMapParams__)(struct ImexSessionApi * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__imexsessionapiCheckMemInterUnmap__)(struct ImexSessionApi * /*this*/, NvBool);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__imexsessionapiGetMemoryMappingDescriptor__)(struct ImexSessionApi * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__imexsessionapiControlSerialization_Prologue__)(struct ImexSessionApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__imexsessionapiControlSerialization_Epilogue__)(struct ImexSessionApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__imexsessionapiControl_Prologue__)(struct ImexSessionApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__imexsessionapiControl_Epilogue__)(struct ImexSessionApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__imexsessionapiCanCopy__)(struct ImexSessionApi * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__imexsessionapiIsDuplicate__)(struct ImexSessionApi * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (rmres)
-    void (*__imexsessionapiPreDestruct__)(struct ImexSessionApi * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__imexsessionapiControl__)(struct ImexSessionApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__imexsessionapiControlFilter__)(struct ImexSessionApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__imexsessionapiMap__)(struct ImexSessionApi * /*this*/, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__imexsessionapiUnmap__)(struct ImexSessionApi * /*this*/, struct CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NvBool (*__imexsessionapiIsPartialUnmapSupported__)(struct ImexSessionApi * /*this*/);  // inline virtual inherited (res) base (rmres) body
-    NV_STATUS (*__imexsessionapiMapTo__)(struct ImexSessionApi * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__imexsessionapiUnmapFrom__)(struct ImexSessionApi * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
-    NvU32 (*__imexsessionapiGetRefCount__)(struct ImexSessionApi * /*this*/);  // virtual inherited (res) base (rmres)
-    void (*__imexsessionapiAddAdditionalDependants__)(struct RsClient *, struct ImexSessionApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__ImexSessionApi {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__RmResource metadata__RmResource;
-    const struct NVOC_VTABLE__ImexSessionApi vtable;
 };
 
 #ifndef __nvoc_class_id_ImexSessionApi
@@ -210,9 +183,9 @@ static inline NV_STATUS imexsessionapiCtrlCmdDisableImporters(struct ImexSession
 
 
 // Wrapper macros for halified functions
-#define imexsessionapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define imexsessionapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define imexsessionapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) imexsessionapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define imexsessionapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
+#define imexsessionapiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define imexsessionapiShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) imexsessionapiShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define imexsessionapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define imexsessionapiGetMemInterMapParams(pRmResource, pParams) imexsessionapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -220,13 +193,13 @@ static inline NV_STATUS imexsessionapiCtrlCmdDisableImporters(struct ImexSession
 #define imexsessionapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) imexsessionapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define imexsessionapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define imexsessionapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) imexsessionapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define imexsessionapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define imexsessionapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define imexsessionapiControlSerialization_Prologue(pResource, pCallContext, pParams) imexsessionapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define imexsessionapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define imexsessionapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define imexsessionapiControlSerialization_Epilogue(pResource, pCallContext, pParams) imexsessionapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define imexsessionapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define imexsessionapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define imexsessionapiControl_Prologue(pResource, pCallContext, pParams) imexsessionapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define imexsessionapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define imexsessionapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define imexsessionapiControl_Epilogue(pResource, pCallContext, pParams) imexsessionapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define imexsessionapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define imexsessionapiCanCopy(pResource) imexsessionapiCanCopy_DISPATCH(pResource)
@@ -255,87 +228,87 @@ static inline NV_STATUS imexsessionapiCtrlCmdDisableImporters(struct ImexSession
 
 // Dispatch functions
 static inline NvBool imexsessionapiAccessCallback_DISPATCH(struct ImexSessionApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool imexsessionapiShareCallback_DISPATCH(struct ImexSessionApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS imexsessionapiGetMemInterMapParams_DISPATCH(struct ImexSessionApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__imexsessionapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS imexsessionapiCheckMemInterUnmap_DISPATCH(struct ImexSessionApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__imexsessionapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS imexsessionapiGetMemoryMappingDescriptor_DISPATCH(struct ImexSessionApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__imexsessionapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS imexsessionapiControlSerialization_Prologue_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void imexsessionapiControlSerialization_Epilogue_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS imexsessionapiControl_Prologue_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void imexsessionapiControl_Epilogue_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool imexsessionapiCanCopy_DISPATCH(struct ImexSessionApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiCanCopy__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS imexsessionapiIsDuplicate_DISPATCH(struct ImexSessionApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void imexsessionapiPreDestruct_DISPATCH(struct ImexSessionApi *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiPreDestruct__(pResource);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS imexsessionapiControl_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS imexsessionapiControlFilter_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS imexsessionapiMap_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS imexsessionapiUnmap_DISPATCH(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool imexsessionapiIsPartialUnmapSupported_DISPATCH(struct ImexSessionApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS imexsessionapiMapTo_DISPATCH(struct ImexSessionApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS imexsessionapiUnmapFrom_DISPATCH(struct ImexSessionApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 imexsessionapiGetRefCount_DISPATCH(struct ImexSessionApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiGetRefCount__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void imexsessionapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ImexSessionApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__imexsessionapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

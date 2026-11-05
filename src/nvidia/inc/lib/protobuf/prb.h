@@ -294,12 +294,13 @@ typedef struct
 
 typedef NV_STATUS PrbBufferCallback(void *pEncoder, NvBool bBufferFull);
 
-typedef struct
+typedef struct PRB_ENCODER
 {
     PRB_ENCODER_STACK_FRAME stack[PRB_MAX_DEPTH];
     PrbBufferCallback *pBufferCallback;
     int depth;
     int flags;
+    NvU8 *pPeakPos;
 } PRB_ENCODER;
 
 // flags

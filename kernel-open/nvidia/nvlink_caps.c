@@ -68,6 +68,32 @@ int nvlink_cap_acquire(int fd, NvU32 type)
     return dup_fd;
 }
 
+int nvlink_cap_validate(int fd, NvU32 type)
+{
+    int ret = -1;
+
+    if (fd < 0)
+    {
+        return -1;
+    }
+
+    switch(type)
+    {
+        case NVLINK_CAP_FABRIC_MANAGEMENT:
+        {
+            ret = nv_cap_validate_fd(nvlink_caps.fabric_mgmt, fd);
+            break;
+        }
+        default:
+        {
+            nvlink_print(NVLINK_DBG_ERRORS, "Unknown capability specified\n");
+            return -1;
+        }
+    }
+
+    return ret;
+}
+
 void nvlink_cap_release(int fd)
 {
     if (fd < 0)

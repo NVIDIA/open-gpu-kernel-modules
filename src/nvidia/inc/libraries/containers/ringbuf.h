@@ -71,7 +71,7 @@ typedef struct RingBufBase
         (idx) = (pBuf)->base.tail;                                                                                \
         while((idx) != (pBuf)->base.head)                                                                         \
         {                                                                                                         \
-            (ptr) = (typeof(&((pBuf)->elem)[0])) &(pBuf)->base.arr[((idx) & RINGBUF_ARRAY_MASK(&((pBuf)->base))) * \
+            (ptr) = (__typeof__(&((pBuf)->elem)[0])) &(pBuf)->base.arr[((idx) & RINGBUF_ARRAY_MASK(&((pBuf)->base))) * \
                                                                   sizeof(*((pBuf)->elem))];                       \
             (idx)++;
 
@@ -92,6 +92,34 @@ typedef struct RingBufBase
         }                      \
     }
 
+#if NV_TYPEOF_SUPPORTED
+
+#define FOR_EACH_IN_RINGBUF_REVERSE(pBuf, idx, ptr)                                                               \
+    {                                                                                                             \
+        (idx) = (pBuf)->base.head;                                                                                \
+        while ((idx) != (pBuf)->base.tail)                                                                        \
+        {                                                                                                         \
+            (idx)--;                                                                                              \
+            (ptr) = (typeof(&((pBuf)->elem)[0])) &(pBuf)->base.arr[((idx) &                                       \
+                                RINGBUF_ARRAY_MASK(&((pBuf)->base))) * sizeof(*((pBuf)->elem))];
+
+#else
+
+#define FOR_EACH_IN_RINGBUF_REVERSE(pBuf, idx, ptr)                                                               \
+    {                                                                                                             \
+        (idx) = (pBuf)->base.head;                                                                                \
+        while ((idx) != (pBuf)->base.tail)                                                                        \
+        {                                                                                                         \
+            (idx)--;                                                                                              \
+            (ptr) = (void *)&(pBuf)->base.arr[((idx) &                                                            \
+                                RINGBUF_ARRAY_MASK(&((pBuf)->base))) * sizeof(*((pBuf)->elem))];
+
+#endif // NV_TYPEOF_SUPPORTED
+
+#define FOR_EACH_END_RINGBUF_REVERSE() \
+        }                              \
+    }
+
 
 #define ringbufConstructDynamic(pBuf, logSz, pAlloc) \
     ((pBuf)->pAllocator = pAlloc, ringbufConstructDynamic_IMPL(&((pBuf)->base), logSz, sizeof(*((pBuf)->elem)), pAlloc))
@@ -105,19 +133,19 @@ typedef struct RingBufBase
 #if NV_TYPEOF_SUPPORTED
 
 #define ringbufPopN(pBuf, pMax) \
-    (typeof(&((pBuf)->elem)[0])) ringbufPopN_IMPL(&((pBuf)->base), sizeof(*((pBuf)->elem)), pMax)
+    (__typeof__(&((pBuf)->elem)[0])) ringbufPopN_IMPL(&((pBuf)->base), sizeof(*((pBuf)->elem)), pMax)
 
 #define ringbufPeekN(pBuf, pMax) \
-    (typeof(&((pBuf)->elem)[0])) ringbufPeekN_IMPL(&((pBuf)->base), sizeof(*((pBuf)->elem)), pMax)
+    (__typeof__(&((pBuf)->elem)[0])) ringbufPeekN_IMPL(&((pBuf)->base), sizeof(*((pBuf)->elem)), pMax)
 
 #define ringbufAppendN(pBuf, pEles, num, bOver) \
     ringbufAppendN_IMPL(&((pBuf)->base), sizeof(*((pBuf)->elem)), (NvU8*)pEles, num, bOver)
 
 #define ringbufPop(pBuf) \
-    (typeof(&((pBuf)->elem)[0])) ringbufPop_IMPL(&((pBuf)->base), sizeof(*((pBuf)->elem)))
+    (__typeof__(&((pBuf)->elem)[0])) ringbufPop_IMPL(&((pBuf)->base), sizeof(*((pBuf)->elem)))
 
 #define ringbufPeek(pBuf) \
-    (typeof(&((pBuf)->elem)[0])) ringbufPeek_IMPL(&((pBuf)->base), sizeof(*((pBuf)->elem)))
+    (__typeof__(&((pBuf)->elem)[0])) ringbufPeek_IMPL(&((pBuf)->base), sizeof(*((pBuf)->elem)))
 
 #else
 

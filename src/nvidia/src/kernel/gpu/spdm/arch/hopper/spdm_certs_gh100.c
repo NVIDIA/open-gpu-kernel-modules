@@ -322,6 +322,8 @@ spdmGetCertificates_GH100
     NvU8                 *pDerCertChain           = NULL;
     size_t                derCertChainSize        = 0;
     NvU32                 responderCertCount;
+    const NvU8           *pGspCert                = NULL;
+    NvU32                 gspCertSize             = 0;
     NV_SPDM_CERT_CONTEXT  responderCertCtx[NV_SPDM_RESPONDER_CERT_COUNT_MAX];
 
     // Don't allow certificate retrieval after session is established.
@@ -390,6 +392,39 @@ spdmGetCertificates_GH100
         goto ErrorExit;
     }
 
+    // Cache the serial number of the GSP (L4/IK) certificate.
+    status = spdmGetCertFromChain(pGpu, pSpdm, pDerCertChain, (NvU32)derCertChainSize,
+                                  NV_SPDM_GSP_CERT_L4_INDEX, &pGspCert, &gspCertSize);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "spdmGetCertFromChain() failed for GSP cert !!! \n");
+        goto ErrorExit;
+    }
+
+    // Free first, as certificate retrieval may be retried after a failed session.
+    portMemFree(pSpdm->pGspCertSerialNumber);
+    pSpdm->gspCertSerialNumberSize = NV_SPDM_GSP_CERT_SERIAL_NUMBER_SIZE;
+    pSpdm->pGspCertSerialNumber    = portMemAllocNonPaged(pSpdm->gspCertSerialNumberSize);
+
+    if (pSpdm->pGspCertSerialNumber == NULL)
+    {
+        status = NV_ERR_NO_MEMORY;
+        goto ErrorExit;
+    }
+
+    portMemSet(pSpdm->pGspCertSerialNumber, 0, pSpdm->gspCertSerialNumberSize);
+
+    status = spdmGetCertSerialNumber(pGpu, pSpdm, pGspCert, gspCertSize,
+                                     pSpdm->pGspCertSerialNumber,
+                                     &pSpdm->gspCertSerialNumberSize);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "spdmGetCertSerialNumber() failed for GSP cert !!! \n");
+        goto ErrorExit;
+    }
+
 ErrorExit:
     //
     // In both success and failure we need to free these allocated buffers.
@@ -408,6 +443,10 @@ ErrorExit:
         portMemFree(pSpdm->pAttestationCertChain);
         pSpdm->pAttestationCertChain    = NULL;
         pSpdm->attestationCertChainSize = 0;
+
+        portMemFree(pSpdm->pGspCertSerialNumber);
+        pSpdm->pGspCertSerialNumber    = NULL;
+        pSpdm->gspCertSerialNumberSize = 0;
     }
 
     return status;

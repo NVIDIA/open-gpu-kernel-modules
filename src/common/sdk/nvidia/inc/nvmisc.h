@@ -1147,7 +1147,6 @@ static NV_FORCEINLINE NvU64 nvFindGcdU64(NvU64 a, NvU64 b)
 }
 #endif //__cplusplus
 #else
-#include <misc/nvmisc_drf.h>
-#include <misc/bitops.h>
+#include <nvmisc_drf.h>
 #endif // !defined(NVRISCV_LIBFSP_BUILD) || !NVRISCV_LIBFSP_BUILD
 #endif // __NV_MISC_H

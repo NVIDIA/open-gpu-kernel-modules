@@ -510,7 +510,7 @@ gpuboostmgrDecrementRefCount_IMPL
  *       method lends itself to a while() construct  like so -
  *       while (NULL != (pGpu = ItrMethod(pBoostGrp, &index)){ //foo };
  */
-POBJGPU
+OBJGPU *
 gpuboostmgrGpuItr_IMPL
 (
     OBJGPUBOOSTMGR       *pBoostMgr,

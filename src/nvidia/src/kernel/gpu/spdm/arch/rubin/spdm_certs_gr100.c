@@ -74,6 +74,10 @@ spdmGetIndividualCertificate_GR100
             pBinArchive = spdmGetBinArchiveL1Certificate_IMPL(pSpdm);
         break;
 
+        case NV_SPDM_FSP_L1_CERTIFICATE_ID:
+            pBinArchive = spdmGetBinArchiveFspL1Certificate_IMPL(pSpdm);
+        break;
+
         case NV_SPDM_REQ_L2_CERTIFICATE_ID:
             pBinArchive = spdmGetBinArchiveIndividualL2Certificate_HAL(pSpdm);
         break;

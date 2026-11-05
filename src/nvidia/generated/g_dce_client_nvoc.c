@@ -42,16 +42,6 @@ NV_STATUS __nvoc_down_thunk_OBJDCECLIENTRM_engstateStateLoad(struct OBJGPU *arg1
 NV_STATUS __nvoc_down_thunk_OBJDCECLIENTRM_engstateStateUnload(struct OBJGPU *arg1, struct OBJENGSTATE *arg_this, NvU32 arg3);    // this
 
 // Up-thunk(s) to bridge OBJDCECLIENTRM methods to ancestors (if any)
-void __nvoc_up_thunk_OBJENGSTATE_dceclientInitMissing(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePreInitLocked(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePreInitUnlocked(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStateInitLocked(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStateInitUnlocked(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePreLoad(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePostLoad(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePreUnload(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePostUnload(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3);    // this
-NvBool __nvoc_up_thunk_OBJENGSTATE_dceclientIsPresent(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate);    // this
 
 // Class-specific details for OBJDCECLIENTRM
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJDCECLIENTRM = 
@@ -69,7 +59,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJDCECLIENTRM =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__OBJDCECLIENTRM __nvoc_metadata__OBJDCECLIENTRM = {
     .rtti.pClassDef = &__nvoc_class_def_OBJDCECLIENTRM,    // (dceclient) this
     .rtti.dtor      = &__nvoc_dtor_OBJDCECLIENTRM,
@@ -81,33 +71,21 @@ static const struct NVOC_METADATA__OBJDCECLIENTRM __nvoc_metadata__OBJDCECLIENTR
     .metadata__OBJENGSTATE.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__OBJENGSTATE.metadata__Object.rtti.offset    = NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
 
-    .vtable.__dceclientConstructEngine__ = &dceclientConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_OBJDCECLIENTRM_engstateConstructEngine,    // virtual
-    .vtable.__dceclientStateDestroy__ = &dceclientStateDestroy_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &__nvoc_down_thunk_OBJDCECLIENTRM_engstateStateDestroy,    // virtual
-    .vtable.__dceclientStateLoad__ = &dceclientStateLoad_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &__nvoc_down_thunk_OBJDCECLIENTRM_engstateStateLoad,    // virtual
-    .vtable.__dceclientStateUnload__ = &dceclientStateUnload_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &__nvoc_down_thunk_OBJDCECLIENTRM_engstateStateUnload,    // virtual
-    .vtable.__dceclientInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_dceclientInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-    .vtable.__dceclientStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_dceclientStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-    .vtable.__dceclientStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_dceclientStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .vtable.__dceclientStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_dceclientStateInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
-    .vtable.__dceclientStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_dceclientStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-    .vtable.__dceclientStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_dceclientStatePreLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-    .vtable.__dceclientStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_dceclientStatePostLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-    .vtable.__dceclientStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_dceclientStatePreUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-    .vtable.__dceclientStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_dceclientStatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__dceclientIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_dceclientIsPresent,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
 };
 
@@ -126,75 +104,22 @@ const struct NVOC_CASTINFO __nvoc_castinfo__OBJDCECLIENTRM = {
 
 // dceclientConstructEngine: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_OBJDCECLIENTRM_engstateConstructEngine(struct OBJGPU *arg1, struct OBJENGSTATE *arg_this, ENGDESCRIPTOR arg3) {
-    return dceclientConstructEngine(arg1, (struct OBJDCECLIENTRM *)(((unsigned char *) arg_this) - NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)), arg3);
+    return dceclientConstructEngine_IMPL(arg1, (struct OBJDCECLIENTRM *)(((unsigned char *) arg_this) - NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)), arg3);
 }
 
 // dceclientStateDestroy: virtual override (engstate) base (engstate)
 void __nvoc_down_thunk_OBJDCECLIENTRM_engstateStateDestroy(struct OBJGPU *arg1, struct OBJENGSTATE *arg_this) {
-    dceclientStateDestroy(arg1, (struct OBJDCECLIENTRM *)(((unsigned char *) arg_this) - NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)));
+    dceclientStateDestroy_IMPL(arg1, (struct OBJDCECLIENTRM *)(((unsigned char *) arg_this) - NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)));
 }
 
 // dceclientStateLoad: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_OBJDCECLIENTRM_engstateStateLoad(struct OBJGPU *arg1, struct OBJENGSTATE *arg_this, NvU32 arg3) {
-    return dceclientStateLoad(arg1, (struct OBJDCECLIENTRM *)(((unsigned char *) arg_this) - NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)), arg3);
+    return dceclientStateLoad_IMPL(arg1, (struct OBJDCECLIENTRM *)(((unsigned char *) arg_this) - NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)), arg3);
 }
 
 // dceclientStateUnload: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_OBJDCECLIENTRM_engstateStateUnload(struct OBJGPU *arg1, struct OBJENGSTATE *arg_this, NvU32 arg3) {
-    return dceclientStateUnload(arg1, (struct OBJDCECLIENTRM *)(((unsigned char *) arg_this) - NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-
-// 10 up-thunk(s) defined to bridge methods in OBJDCECLIENTRM to superclasses
-
-// dceclientInitMissing: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_dceclientInitMissing(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)));
-}
-
-// dceclientStatePreInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePreInitLocked(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)));
-}
-
-// dceclientStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePreInitUnlocked(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)));
-}
-
-// dceclientStateInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStateInitLocked(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)));
-}
-
-// dceclientStateInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStateInitUnlocked(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)));
-}
-
-// dceclientStatePreLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePreLoad(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// dceclientStatePostLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePostLoad(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// dceclientStatePreUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePreUnload(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// dceclientStatePostUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_dceclientStatePostUnload(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// dceclientIsPresent: virtual inherited (engstate) base (engstate)
-NvBool __nvoc_up_thunk_OBJENGSTATE_dceclientIsPresent(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)));
+    return dceclientStateUnload_IMPL(arg1, (struct OBJDCECLIENTRM *)(((unsigned char *) arg_this) - NV_OFFSETOF(OBJDCECLIENTRM, __nvoc_base_OBJENGSTATE)), arg3);
 }
 
 
@@ -250,7 +175,7 @@ static void __nvoc_init_funcTable_OBJDCECLIENTRM_1(OBJDCECLIENTRM *pThis) {
 } // End __nvoc_init_funcTable_OBJDCECLIENTRM_1
 
 
-// Initialize vtable(s) for 14 virtual method(s).
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJDCECLIENTRM(OBJDCECLIENTRM *pThis) {
     __nvoc_init_funcTable_OBJDCECLIENTRM_1(pThis);
 }

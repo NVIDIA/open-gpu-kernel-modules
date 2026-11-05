@@ -214,11 +214,13 @@ typedef struct GspSystemInfo
     GSP_VF_INFO gspVFInfo;
     NvBool bIsPrimary;
     NvBool bIsUnixHdmiFrlComplianceEnabled;
+    NvBool bHostDefaultChannelInterleavedSched;
     NvBool isGridBuild;
     GSP_PCIE_CONFIG_REG pcieConfigReg;
     NvU32 gridBuildCsp;
     NvBool bPreserveVideoMemoryAllocations;
     NvBool bTdrEventSupported;
+    NvBool bTdispEnabled;
     NvBool bFeatureStretchVblankCapable;
     NvBool bEnableDynamicGranularityPageArrays;
     NvBool bClockBoostSupported;
@@ -232,6 +234,9 @@ typedef struct GspSystemInfo
     NvU32  pf0DeviceControl2Reg;
     NvBool bIsCxlDevice;
     NvBool bReserveZeroFbAddressAsRegion;
+    NvU32  defaultTimeoutUsVgpu;
+    NvU32  defaultTimeoutUsGraphicsMode;
+    NvU32  defaultTimeoutUsComputeMode;
 } GspSystemInfo;
 
 /*

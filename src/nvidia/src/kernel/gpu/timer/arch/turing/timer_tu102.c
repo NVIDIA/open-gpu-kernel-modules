@@ -29,6 +29,7 @@
 #include "gpu/gpu.h"
 #include "gpu/timer/objtmr.h"
 #include "published/turing/tu102/dev_vm.h"
+#include "published/turing/tu102/dev_timer.h"
 /* ------------------------- Datatypes -------------------------------------- */
 /* ------------------------- Macros ----------------------------------------- */
 /* ------------------------- Static Function Prototypes --------------------- */
@@ -98,7 +99,6 @@ tmrGetGpuPtimerOffset_TU102
     NvU32   *pGpuTimestampOffsetHi
 )
 {
-    extern NV_STATUS tmrGetGpuPtimerOffset_GV100(OBJGPU *pGpu, OBJTMR *pTmr, NvU32 *pGpuTimestampOffsetLo, NvU32 *pGpuTimestampOffsetHi);
     NvU32 ptimerOffsetLo = 0;
     NvU32 ptimerOffsetHi = 0;
 
@@ -109,7 +109,8 @@ tmrGetGpuPtimerOffset_TU102
     }
     else
     {
-        return tmrGetGpuPtimerOffset_GV100(pGpu, pTmr, pGpuTimestampOffsetLo, pGpuTimestampOffsetHi);
+        ptimerOffsetLo = NV_PTIMER_TIME_0;
+        ptimerOffsetHi = NV_PTIMER_TIME_1;
     }
 
     if (pGpuTimestampOffsetLo)

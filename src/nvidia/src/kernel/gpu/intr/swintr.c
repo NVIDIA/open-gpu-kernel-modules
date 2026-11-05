@@ -41,7 +41,6 @@ swintrRegisterIntrService_IMPL
     NvU32 engineIdx = MC_ENGINE_IDX_CPU_DOORBELL;
     NV_ASSERT(pRecords[engineIdx].pInterruptService == NULL);
     pRecords[engineIdx].pInterruptService = staticCast(pSwIntr, IntrService);
-
 }
 
 /**

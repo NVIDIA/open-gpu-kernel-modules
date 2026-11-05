@@ -94,10 +94,9 @@ typedef struct NVFBC_SESSION_ENTRY
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__NvfbcSession;
 struct NVOC_METADATA__GpuResource;
-struct NVOC_VTABLE__NvfbcSession;
 
 
 struct NvfbcSession {
@@ -124,40 +123,10 @@ struct NvfbcSession {
 };
 
 
-// Vtable with 25 per-class function pointers
-struct NVOC_VTABLE__NvfbcSession {
-    NV_STATUS (*__nvfbcsessionControl__)(struct NvfbcSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__nvfbcsessionMap__)(struct NvfbcSession * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__nvfbcsessionUnmap__)(struct NvfbcSession * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__nvfbcsessionShareCallback__)(struct NvfbcSession * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__nvfbcsessionGetRegBaseOffsetAndSize__)(struct NvfbcSession * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__nvfbcsessionGetMapAddrSpace__)(struct NvfbcSession * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__nvfbcsessionInternalControlForward__)(struct NvfbcSession * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__nvfbcsessionGetInternalObjectHandle__)(struct NvfbcSession * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__nvfbcsessionAccessCallback__)(struct NvfbcSession * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__nvfbcsessionGetMemInterMapParams__)(struct NvfbcSession * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__nvfbcsessionCheckMemInterUnmap__)(struct NvfbcSession * /*this*/, NvBool);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__nvfbcsessionGetMemoryMappingDescriptor__)(struct NvfbcSession * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__nvfbcsessionControlSerialization_Prologue__)(struct NvfbcSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__nvfbcsessionControlSerialization_Epilogue__)(struct NvfbcSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__nvfbcsessionControl_Prologue__)(struct NvfbcSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__nvfbcsessionControl_Epilogue__)(struct NvfbcSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NvBool (*__nvfbcsessionCanCopy__)(struct NvfbcSession * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__nvfbcsessionIsDuplicate__)(struct NvfbcSession * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__nvfbcsessionPreDestruct__)(struct NvfbcSession * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__nvfbcsessionControlFilter__)(struct NvfbcSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (gpures)
-    NvBool (*__nvfbcsessionIsPartialUnmapSupported__)(struct NvfbcSession * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__nvfbcsessionMapTo__)(struct NvfbcSession * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__nvfbcsessionUnmapFrom__)(struct NvfbcSession * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__nvfbcsessionGetRefCount__)(struct NvfbcSession * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__nvfbcsessionAddAdditionalDependants__)(struct RsClient *, struct NvfbcSession * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__NvfbcSession {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResource metadata__GpuResource;
-    const struct NVOC_VTABLE__NvfbcSession vtable;
 };
 
 #ifndef __nvoc_class_id_NvfbcSession
@@ -204,13 +173,13 @@ static inline NV_STATUS nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo(struct Nvfbc
 
 
 // Wrapper macros for halified functions
-#define nvfbcsessionControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define nvfbcsessionControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define nvfbcsessionControl(pGpuResource, pCallContext, pParams) nvfbcsessionControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define nvfbcsessionMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
+#define nvfbcsessionMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define nvfbcsessionMap(pGpuResource, pCallContext, pParams, pCpuMapping) nvfbcsessionMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define nvfbcsessionUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
+#define nvfbcsessionUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define nvfbcsessionUnmap(pGpuResource, pCallContext, pCpuMapping) nvfbcsessionUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define nvfbcsessionShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define nvfbcsessionShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define nvfbcsessionShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) nvfbcsessionShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define nvfbcsessionGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define nvfbcsessionGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) nvfbcsessionGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -220,7 +189,7 @@ static inline NV_STATUS nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo(struct Nvfbc
 #define nvfbcsessionInternalControlForward(pGpuResource, command, pParams, size) nvfbcsessionInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define nvfbcsessionGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define nvfbcsessionGetInternalObjectHandle(pGpuResource) nvfbcsessionGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define nvfbcsessionAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define nvfbcsessionAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define nvfbcsessionAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) nvfbcsessionAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define nvfbcsessionGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define nvfbcsessionGetMemInterMapParams(pRmResource, pParams) nvfbcsessionGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -228,13 +197,13 @@ static inline NV_STATUS nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo(struct Nvfbc
 #define nvfbcsessionCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) nvfbcsessionCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define nvfbcsessionGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define nvfbcsessionGetMemoryMappingDescriptor(pRmResource, ppMemDesc) nvfbcsessionGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define nvfbcsessionControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define nvfbcsessionControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define nvfbcsessionControlSerialization_Prologue(pResource, pCallContext, pParams) nvfbcsessionControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define nvfbcsessionControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define nvfbcsessionControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define nvfbcsessionControlSerialization_Epilogue(pResource, pCallContext, pParams) nvfbcsessionControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define nvfbcsessionControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define nvfbcsessionControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define nvfbcsessionControl_Prologue(pResource, pCallContext, pParams) nvfbcsessionControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define nvfbcsessionControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define nvfbcsessionControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define nvfbcsessionControl_Epilogue(pResource, pCallContext, pParams) nvfbcsessionControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define nvfbcsessionCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define nvfbcsessionCanCopy(pResource) nvfbcsessionCanCopy_DISPATCH(pResource)
@@ -257,103 +226,103 @@ static inline NV_STATUS nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo(struct Nvfbc
 
 // Dispatch functions
 static inline NV_STATUS nvfbcsessionControl_DISPATCH(struct NvfbcSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS nvfbcsessionMap_DISPATCH(struct NvfbcSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pGpuResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS nvfbcsessionUnmap_DISPATCH(struct NvfbcSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pGpuResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool nvfbcsessionShareCallback_DISPATCH(struct NvfbcSession *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS nvfbcsessionGetRegBaseOffsetAndSize_DISPATCH(struct NvfbcSession *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS nvfbcsessionGetMapAddrSpace_DISPATCH(struct NvfbcSession *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pGpuResource, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS nvfbcsessionInternalControlForward_DISPATCH(struct NvfbcSession *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle nvfbcsessionGetInternalObjectHandle_DISPATCH(struct NvfbcSession *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool nvfbcsessionAccessCallback_DISPATCH(struct NvfbcSession *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS nvfbcsessionGetMemInterMapParams_DISPATCH(struct NvfbcSession *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS nvfbcsessionCheckMemInterUnmap_DISPATCH(struct NvfbcSession *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS nvfbcsessionGetMemoryMappingDescriptor_DISPATCH(struct NvfbcSession *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS nvfbcsessionControlSerialization_Prologue_DISPATCH(struct NvfbcSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void nvfbcsessionControlSerialization_Epilogue_DISPATCH(struct NvfbcSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS nvfbcsessionControl_Prologue_DISPATCH(struct NvfbcSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void nvfbcsessionControl_Epilogue_DISPATCH(struct NvfbcSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool nvfbcsessionCanCopy_DISPATCH(struct NvfbcSession *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionCanCopy__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS nvfbcsessionIsDuplicate_DISPATCH(struct NvfbcSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void nvfbcsessionPreDestruct_DISPATCH(struct NvfbcSession *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionPreDestruct__(pResource);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS nvfbcsessionControlFilter_DISPATCH(struct NvfbcSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool nvfbcsessionIsPartialUnmapSupported_DISPATCH(struct NvfbcSession *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS nvfbcsessionMapTo_DISPATCH(struct NvfbcSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS nvfbcsessionUnmapFrom_DISPATCH(struct NvfbcSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 nvfbcsessionGetRefCount_DISPATCH(struct NvfbcSession *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionGetRefCount__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void nvfbcsessionAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct NvfbcSession *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__nvfbcsessionAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

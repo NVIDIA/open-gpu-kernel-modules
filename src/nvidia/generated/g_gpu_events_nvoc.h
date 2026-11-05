@@ -743,6 +743,176 @@ NV_STATUS gpuresretConstruct_IMPL(struct GpuResourceRetirement *pEvent, struct E
 #undef PRIVATE_FIELD
 
 
+// GPU_OPERATIONAL_EVENT_CATEGORY_STATE_CHANGED
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_GPU_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GpuStateChanged;
+struct NVOC_METADATA__GpuOperationalEvent;
+
+
+struct GpuStateChanged {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__GpuStateChanged *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuOperationalEvent __nvoc_base_GpuOperationalEvent;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^4
+    struct Event *__nvoc_pbase_Event;    // event super^3
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^2
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super
+    struct GpuStateChanged *__nvoc_pbase_GpuStateChanged;    // gpustatechanged
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GpuStateChanged {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuOperationalEvent metadata__GpuOperationalEvent;
+};
+
+#ifndef __nvoc_class_id_GpuStateChanged
+#define __nvoc_class_id_GpuStateChanged 0x1ab651u
+typedef struct GpuStateChanged GpuStateChanged;
+#endif /* __nvoc_class_id_GpuStateChanged */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuStateChanged;
+
+#define __staticCast_GpuStateChanged(pThis) \
+    ((pThis)->__nvoc_pbase_GpuStateChanged)
+
+#ifdef __nvoc_gpu_events_h_disabled
+#define __dynamicCast_GpuStateChanged(pThis) ((GpuStateChanged*) NULL)
+#else //__nvoc_gpu_events_h_disabled
+#define __dynamicCast_GpuStateChanged(pThis) \
+    ((GpuStateChanged*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GpuStateChanged)))
+#endif //__nvoc_gpu_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_GpuStateChanged(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_GpuStateChanged(GpuStateChanged**, Dynamic*, NvU32, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);
+#define __objCreate_GpuStateChanged(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel) \
+    __nvoc_objCreate_GpuStateChanged((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS gpustatechangedConstruct_IMPL(struct GpuStateChanged *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);
+#define __nvoc_gpustatechangedConstruct(pEvent, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel) gpustatechangedConstruct_IMPL(pEvent, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+// GPU_OPERATIONAL_EVENT_CATEGORY_RESOURCE_THRESHOLD
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_GPU_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GpuResourceThreshold;
+struct NVOC_METADATA__GpuOperationalEvent;
+
+
+struct GpuResourceThreshold {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__GpuResourceThreshold *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuOperationalEvent __nvoc_base_GpuOperationalEvent;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^4
+    struct Event *__nvoc_pbase_Event;    // event super^3
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^2
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super
+    struct GpuResourceThreshold *__nvoc_pbase_GpuResourceThreshold;    // gpuresthreshold
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GpuResourceThreshold {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuOperationalEvent metadata__GpuOperationalEvent;
+};
+
+#ifndef __nvoc_class_id_GpuResourceThreshold
+#define __nvoc_class_id_GpuResourceThreshold 0x0e6f48u
+typedef struct GpuResourceThreshold GpuResourceThreshold;
+#endif /* __nvoc_class_id_GpuResourceThreshold */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResourceThreshold;
+
+#define __staticCast_GpuResourceThreshold(pThis) \
+    ((pThis)->__nvoc_pbase_GpuResourceThreshold)
+
+#ifdef __nvoc_gpu_events_h_disabled
+#define __dynamicCast_GpuResourceThreshold(pThis) ((GpuResourceThreshold*) NULL)
+#else //__nvoc_gpu_events_h_disabled
+#define __dynamicCast_GpuResourceThreshold(pThis) \
+    ((GpuResourceThreshold*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GpuResourceThreshold)))
+#endif //__nvoc_gpu_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_GpuResourceThreshold(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_GpuResourceThreshold(GpuResourceThreshold**, Dynamic*, NvU32, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);
+#define __objCreate_GpuResourceThreshold(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel) \
+    __nvoc_objCreate_GpuResourceThreshold((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS gpuresthresholdConstruct_IMPL(struct GpuResourceThreshold *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);
+#define __nvoc_gpuresthresholdConstruct(pEvent, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel) gpuresthresholdConstruct_IMPL(pEvent, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
 /* ---------------------------------- GPU Operational Events ---------------------------------- */
 
 typedef struct GpuDriverInitMetadataContext
@@ -838,6 +1008,11 @@ NV_STATUS gpudrvinitConstruct_IMPL(struct GpuDriverInit *pEvent, struct EventBus
 // Static inline method definitions
 #undef PRIVATE_FIELD
 
+
+NV_STATUS gpudrvinitDeserialize(struct OBJGPU *pGpu,
+                                const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+                                const NvU8 *pContextData,
+                                NvU32 contextDataSize);
 
 #endif // _GPU_EVENTS_H_
 

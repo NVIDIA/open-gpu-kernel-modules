@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,9 +34,7 @@
 #include "published/hopper/gh100/dev_fuse_zb.h"
 #include "rmapi/rmapi.h"
 #include "conf_compute/cc_keystore.h"
-#include "nvdevid.h"
-#include "detect-self-hosted.h"
-//#include "hopper/gh100/dev_se_seb.h"
+#include "gpu/spdm/spdm.h"
 
 #include "gpu/keystore/keystore.h"
 
@@ -161,7 +159,7 @@ NV_STATUS
 confComputeDeriveSecrets_GH100(ConfidentialCompute *pConfCompute,
                                NvU32                engine)
 {
-    OBJGPU *pGpu = ENG_GET_GPU(pConfCompute);
+    OBJGPU *pGpu   = ENG_GET_GPU(pConfCompute);
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     if (!IS_GSP_CLIENT(pGpu))
@@ -259,6 +257,13 @@ confComputeDeriveSecrets_GH100(ConfidentialCompute *pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_SCRUBBER)));
             NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER)));
+
+            if (gpuIsSpdmHeartbeatEnabled(pGpu))
+            {
+                NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                    CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_HEARTBEAT)));
+            }
+
             NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pSec2Keystore, CC_KEYSPACE_SEC2_SIZE,
                                                      CC_LKEYID_CPU_SEC2_DATA_USER,
                                                      CC_LKEYID_CPU_SEC2_DATA_USER_STR,
@@ -289,6 +294,14 @@ confComputeDeriveSecrets_GH100(ConfidentialCompute *pConfCompute,
                                                      CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER_STR,
                                                      portStringLength(CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER_STR),
                                                      KEYSTORE_USAGE_HMAC_SHA256));
+            if (gpuIsSpdmHeartbeatEnabled(pGpu))
+            {
+                 NV_ASSERT_OK_OR_RETURN(keystoreDeriveKey(pConfCompute->pSec2Keystore, CC_KEYSPACE_SEC2_SIZE,
+                                                         CC_LKEYID_CPU_SEC2_DATA_HEARTBEAT,
+                                                         CC_LKEYID_CPU_SEC2_DATA_HEARTBEAT_STR,
+                                                         portStringLength(CC_LKEYID_CPU_SEC2_DATA_HEARTBEAT_STR),
+                                                         KEYSTORE_USAGE_AES_256_GCM));
+            }
 
             AES_256_GCM_DATA aesData = {0};
             portMemCopy(aesData.ivMask, KEYSTORE_AES_256_GCM_IV_SIZE_BYTES,
@@ -586,7 +599,7 @@ NV_STATUS confComputeUpdateSecrets_GH100(ConfidentialCompute *pConfCompute,
             pKernelChannel->clientKmb.hmacBundle.nonce[4] = 0x00000000;
             pKernelChannel->clientKmb.hmacBundle.nonce[5] = 0x00000000;
         }
-	}
+    }
     return NV_OK;
 }
 
@@ -600,11 +613,12 @@ confComputeTestPlatformSupport_GH100
     ConfidentialCompute *pConfCompute
 )
 {
-    if (pci_devid_is_self_hosted(DRF_VAL(_PCI, _SUBID, _DEVICE, pGpu->idInfo.PCIDeviceID)) &&
+    if (gpuIsSelfHosted(pGpu) &&
         (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED)))
     {
         NV_PRINTF(LEVEL_ERROR, "CC is not supported on self-hosted platforms\n");
         return NV_ERR_NOT_SUPPORTED;
     }
+
     return NV_OK;
 }

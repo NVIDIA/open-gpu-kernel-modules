@@ -286,11 +286,48 @@ nvHandleCpEventDeferredWork(void *dataPtr, NvU32 dataU32)
     NvU32 displayId = dataU32 & 0x00FFFFFFU;
     NvU32 hdcpStatusChangeNotif = ((dataU32 & 0xFF000000) >> 24);
     NVDpyId id = nvNvU32ToDpyId(displayId);
+
+    /*
+     * For SST and HDMI: RM sends the connector's static displayId, which is
+     * also the id of the single root NVDpyEvoRec allocated in AllocDpys().
+     * The lookup succeeds directly.
+     *
+     * For HDCP2X DP-MST: RM sends the parent connector's static displayId.
+     * Same as SST — the root NVDpyEvoRec for the connector has that id,
+     * so the lookup succeeds directly.
+     *
+     * For HDCP1X DP-MST: RM sends the dynamically allocated child displayId
+     * (from NV0073_CTRL_CMD_DP_TOPOLOGY_ALLOCATE_DISPLAYID). No NVDpyEvoRec
+     * carries that id (MST children use NVKMS-internal ids from nvNewDpyId()),
+     * so the lookup returns NULL and falls through to the hwHead scan below.
+     */
     NVDpyEvoRec *pDpyEvo = nvGetDpyEvoFromDispEvo(pDispEvo, id);
 
+    /*
+     * HDCP1X DP-MST fallback: the dynamic child displayId sent by RM is stored
+     * in headState[hwHead].activeRmId (set via nvRmAllocDisplayId at modeset).
+     * Scan all heads, find the one whose activeRmId matches, then resolve the
+     * parent connector's root NVDpyEvoRec via pConnectorEvo->displayId.
+     */
     if (pDpyEvo == NULL) {
-        nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
-            "nvHandleCpEventDeferredWork: displayId 0x%x invalid\n", displayId);
+        NvU32 hwHead;
+        nvEvoLogDisp(pDispEvo, EVO_LOG_INFO, "nvHandleCpEventDeferredWork: Cannot "
+            "find pDpyEvo for displayId: 0x%x\n", displayId);
+        for (hwHead = 0; hwHead < NVKMS_MAX_HEADS_PER_DISP; hwHead++) {
+            if (pDispEvo->headState[hwHead].activeRmId == displayId &&
+                pDispEvo->headState[hwHead].pConnectorEvo != NULL) {
+                id = pDispEvo->headState[hwHead].pConnectorEvo->displayId;
+                nvEvoLogDisp(pDispEvo, EVO_LOG_INFO, "nvHandleCpEventDeferredWork: Found "
+                    "root pDpyEvo with displayId: 0x%x\n", nvDpyIdToNvU32(id));
+                pDpyEvo = nvGetDpyEvoFromDispEvo(pDispEvo, id);
+                break;
+            }
+        }
+    }
+
+    if (pDpyEvo == NULL) {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+             "nvHandleCpEventDeferredWork: displayId 0x%x invalid\n", displayId);
         return;
     }
 

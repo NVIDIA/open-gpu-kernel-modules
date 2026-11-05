@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,6 +51,12 @@ dceclientDestruct_IMPL
     dceclientDeinitRpcInfra(pDceClient);
 }
 
+/*
+ * @brief State load for DceClient during PM resume.
+ *
+ * Re-initializes the RPC infrastructure that was torn down during suspend
+ * and triggers the RM resume path
+ */
 NV_STATUS
 dceclientStateLoad_IMPL
 (
@@ -59,10 +65,21 @@ dceclientStateLoad_IMPL
     NvU32         flags
 )
 {
+    NV_STATUS nvStatus = NV_OK;
+
     if (!(flags & GPU_STATE_FLAGS_PM_TRANSITION))
         return NV_OK;
 
-    return dceclientInitRpcInfra(pGpu, pDceClient);
+    nvStatus = dceclientInitRpcInfra(pGpu, pDceClient);
+    if (nvStatus != NV_OK)
+        return nvStatus;
+
+    /*
+    * During PM resume, send the DCE RM init RPC with bInit = NV_FALSE and
+    * bFromResume = NV_TRUE. bInit is FALSE because this is not a fresh
+    * init and bFromResume signals DCE to trigger dce_rm_resume()
+    */
+    return dceclientSendRmInitRpc(pGpu, pDceClient, NV_FALSE, NV_TRUE);
 }
 
 NV_STATUS

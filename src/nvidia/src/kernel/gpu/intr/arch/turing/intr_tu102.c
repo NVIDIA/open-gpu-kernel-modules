@@ -187,6 +187,8 @@ intrCacheIntrFields_TU102
     //
     pIntr->intrTopEnMask |= intrGetIntrTopLockedMask_HAL(pIntr);
 
+    intrCachePreemptIntrVectors_HAL(pGpu, pIntr);
+
     // Cache client owned, shared interrupt, and display vectors for ease of use later
     pIntr->accessCntrIntrVector      = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_ACCESS_CNTR, NV_FALSE);
 
@@ -924,7 +926,12 @@ intrGetPendingStallEngines_TU102
     sanityCheckSubtreeMask = intrGetIntrTopLegacyStallMask_HAL(pIntr);
 
     portMemSet(intrLeafValues, 0, numIntrLeaves * sizeof(NvU32));
-    bitVectorClrAll(pEngines);
+
+    // there are cached values in pEngines already, so don't clear it
+    if (!bUseCachedRegVal)
+    {
+        bitVectorClrAll(pEngines);
+    }
 
     // dev_ctrl tree is not used for legacy-vGPU
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
@@ -1268,13 +1275,22 @@ intrGetPendingDispLowLatencyAndStaticReg_TU102
 
     if (pIntr->displayIntrVector == NV_INTR_VECTOR_INVALID)
     {
+        *pStaticRegVal = val;
         return NV_OK;
     }
 
     bit = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(pIntr->displayIntrVector);
 
-    if (val & NVBIT(bit))
+    if (val & NVBIT32(bit))
         bitVectorSet(pEngines, MC_ENGINE_IDX_DISP);
+
+    //
+    // Clear the value since it is already evaluated into the pEngines and we don't
+    // want to re-evaluate it from the static reg later
+    // on turing, we still do want to evaluate this for non-low latency
+    // and that is already taken into account in the  pEngines that we return
+    //
+    *pStaticRegVal = (val &~ NVBIT32(bit));
 
     return NV_OK;
 }

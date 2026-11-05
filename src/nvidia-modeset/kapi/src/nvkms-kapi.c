@@ -575,8 +575,6 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
     device->hKmsDisp = paramsAlloc->reply.dispHandles[0];
     device->dispIdx  = 0;
 
-    device->subDeviceMask = paramsAlloc->reply.subDeviceMask;
-
     device->isoIOCoherencyModes = paramsAlloc->reply.isoIOCoherencyModes;
     device->nisoIOCoherencyModes = paramsAlloc->reply.nisoIOCoherencyModes;
 
@@ -1549,6 +1547,7 @@ static NvBool GetDynamicDisplayInfo(
         NvBool vrrSupported =
             (pParamsDpyDynamic->reply.vrrType != NVKMS_DPY_VRR_TYPE_NONE) ? NV_TRUE : NV_FALSE;
         params->vrrSupported = vrrSupported;
+        params->allmCapable = pParamsDpyDynamic->reply.allmCapable;
     }
 
 done:
@@ -2783,6 +2782,8 @@ static NvBool AssignLayerLutConfig(
             layerConfig->tmo.vssSegments;
         params->layer[layer].tmo.lut.lutEntries =
             layerConfig->tmo.lutEntries;
+        params->layer[layer].tmo.satCorrEnable =
+            layerConfig->tmo.satCorrEnable;
 
         changed = TRUE;
     }
@@ -3338,6 +3339,7 @@ static NvBool NvKmsKapiRequestedModeSetConfigToKms(
     params->request.commit = commit;
     params->request.deviceHandle = device->hKmsDevice;
     params->request.requestedDispsBitMask = 1 << dispIdx;
+    params->request.allowHeadSurfaceInNvKms = TRUE;
 
     for (head = 0;
          head < ARRAY_LEN(requestedConfig->headRequestedConfig); head++) {
@@ -3441,6 +3443,9 @@ static NvBool NvKmsKapiRequestedModeSetConfigToKms(
         paramsHead->flip.hdmiVsifMetadata.vsifMetadata =
             headModeSetConfig->hdmiVsifMetadata;
 
+        paramsHead->flip.allmMode.specified = NV_TRUE;
+        paramsHead->flip.allmMode.mode = headModeSetConfig->allmMode;
+
         paramsHead->flip.colorimetry.specified = NV_TRUE;
         paramsHead->flip.colorimetry.val = headModeSetConfig->colorimetry;
 
@@ -3461,6 +3466,21 @@ static NvBool NvKmsKapiRequestedModeSetConfigToKms(
         paramsHead->flip.postcompColorPassthrough.specified = TRUE;
         paramsHead->flip.postcompColorPassthrough.enabled =
             headModeSetConfig->postcompColorPassthrough;
+        /* 
+         * Always specify the color format so that an existing setting is
+         * not used; that could break the reproducibility of atomic commits. 
+         */
+        paramsHead->colorFormat =
+            (enum NvKmsDpyAttributeRequestedColorFormatValue)
+                headModeSetConfig->colorFormat;
+        paramsHead->colorFormatSpecified = TRUE;
+
+        paramsHead->colorBpc =
+            (enum NvKmsDpyAttributeColorBpcValue)
+                headModeSetConfig->colorBpc;
+        paramsHead->colorBpcSpecified =
+            (headModeSetConfig->colorBpc !=
+             NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN);
     }
 
     return NV_TRUE;
@@ -3604,7 +3624,6 @@ static NvBool KmsFlip(
             continue;
         }
 
-        pFlipHead[params->request.numFlipHeads].sd = 0;
         pFlipHead[params->request.numFlipHeads].head = head;
         flipParams = &pFlipHead[params->request.numFlipHeads].flip;
         params->request.numFlipHeads++;
@@ -3663,6 +3682,12 @@ static NvBool KmsFlip(
         if (flipParams->hdmiVsifMetadata.specified) {
             flipParams->hdmiVsifMetadata.vsifMetadata =
                 headModeSetConfig->hdmiVsifMetadata;
+        }
+
+        flipParams->allmMode.specified =
+            headRequestedConfig->flags.allmModeChanged;
+        if (flipParams->allmMode.specified) {
+            flipParams->allmMode.mode = headModeSetConfig->allmMode;
         }
 
         flipParams->colorimetry.specified =
@@ -3735,7 +3760,7 @@ static NvBool KmsFlip(
     }
 
     /*! fill back flip reply */
-    replyConfig->vrrFlip = params->reply.vrrFlipType;
+    replyConfig->vrrFlip = params->reply.vrrFlip;
 
     for (i = 0; i < params->request.numFlipHeads; i++) {
          const struct NvKmsKapiHeadRequestedConfig *headRequestedConfig =
@@ -3809,13 +3834,19 @@ static NvBool ApplyModeSetConfig(
         bRequiredModeset =
             headRequestedConfig->flags.activeChanged       ||
             headRequestedConfig->flags.displaysChanged     ||
-            headRequestedConfig->flags.modeChanged;
+            headRequestedConfig->flags.modeChanged         ||
+            headRequestedConfig->flags.colorFormatChanged  ||
+            headRequestedConfig->flags.colorBpcChanged;
 
         if (!device->caps.supportsFlipSynchronizedInfoframes) {
             bRequiredModeset |=
                 headRequestedConfig->flags.hdrInfoFrameChanged ||
                 headRequestedConfig->flags.colorimetryChanged  ||
-                headRequestedConfig->flags.hdmiVsifMetadataChanged;
+                headRequestedConfig->flags.hdmiVsifMetadataChanged ||
+                headRequestedConfig->flags.allmModeChanged ||
+                ((headModeSetConfig->allmMode ==
+                    NVKMS_ALLM_MODE_ENABLED_DYNAMIC) &&
+                 headRequestedConfig->flags.vrrEnabledChanged);
         }
         /*
          * NVKMS flip ioctl could not validate flip configuration for an

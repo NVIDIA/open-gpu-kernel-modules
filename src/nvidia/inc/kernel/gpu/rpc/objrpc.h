@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -95,6 +95,8 @@ struct OBJRPC{
 
     /* sequence number for RPC */ 
     NvU32 sequence;
+    NvU32 *mctpHeader;
+    NvBool bMCTPRpcSupported;
     NvU32 timeoutCount;
     NvBool bQuietPrints;
 
@@ -164,4 +166,7 @@ OBJRPC *gpuGetRpc(OBJGPU*);
 #define GPU_GET_VGPU_RPC(u)        gpuGetVgpuRpc(u)
 #define GPU_GET_RPC(u)             gpuGetRpc(u)
 
+// The caller must fill the GMC header and request data into pRpc->message_buffer
+// before calling this function (gpuSendGmcRpc_KERNEL does this).
+NV_STATUS rpcGMCControl(OBJGPU *pGpu, OBJRPC *pRpc);
 #endif // _OBJRPC_H_

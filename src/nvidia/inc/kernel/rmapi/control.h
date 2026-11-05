@@ -344,6 +344,13 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 #define RMCTRL_FLAGS_PERSISTENT_CACHEABLE                     0x000800000
 
 //
+// This flag specifies that extra NVLink diagnostic information should be
+// dumped if the control is in flight when RM declares a GSP RPC timeout.
+// Apply it to controls whose XID 119 reports should include NVLink context.
+//
+#define RMCTRL_FLAGS_NVLINK                                   0x001000000
+
+//
 //  'ACCESS_RIGHTS' Attribute
 //  ------------------------
 //
@@ -362,5 +369,4 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 //
 
 #endif // _CONTROL_H_
-
 

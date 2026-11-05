@@ -676,19 +676,19 @@ NvBool rmcfg_IsT234DorBetter(POBJGPU pGpu)
     return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_T234D);
 }
 
-NvBool rmcfg_IsT239D(POBJGPU pGpu)
+NvBool rmcfg_IsT238D(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_T239D);
+    return gpuIsImplementation(pGpu, HAL_IMPL_T238D);
 }
 
-NvBool rmcfg_IsT239DorBetter(POBJGPU pGpu)
+NvBool rmcfg_IsT238DorBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_T239D);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_T238D);
 }
 
 NvBool rmcfg_IsT23XD(POBJGPU pGpu)
 {
-    return IsT234D(pGpu) || IsT239D(pGpu);
+    return IsT234D(pGpu) || IsT238D(pGpu);
 }
 
 NvBool rmcfg_IsT23XDorBetter(POBJGPU pGpu)
@@ -953,7 +953,7 @@ NvBool rmcfg_IsZERO_GFX(POBJGPU pGpu)
 
 NvBool rmcfg_IsTEGRA_NVDISP_GPUS(POBJGPU pGpu)
 {
-    return IsT234D(pGpu) || IsT239D(pGpu) || IsT264D(pGpu);
+    return IsT234D(pGpu) || IsT238D(pGpu) || IsT264D(pGpu);
 }
 
 NvBool rmcfg_IsTEGRA_NVDISP_GPUSorBetter(POBJGPU pGpu)
@@ -963,7 +963,7 @@ NvBool rmcfg_IsTEGRA_NVDISP_GPUSorBetter(POBJGPU pGpu)
 
 NvBool rmcfg_IsT23X_TEGRA_NVDISP_GPUS(POBJGPU pGpu)
 {
-    return IsT234D(pGpu) || IsT239D(pGpu);
+    return IsT234D(pGpu) || IsT238D(pGpu);
 }
 
 NvBool rmcfg_IsT23X_TEGRA_NVDISP_GPUSorBetter(POBJGPU pGpu)
@@ -973,7 +973,7 @@ NvBool rmcfg_IsT23X_TEGRA_NVDISP_GPUSorBetter(POBJGPU pGpu)
 
 NvBool rmcfg_IsTEGRA_TEGRA_NVDISP_GPUS(POBJGPU pGpu)
 {
-    return IsT234D(pGpu) || IsT239D(pGpu) || IsT264D(pGpu);
+    return IsT234D(pGpu) || IsT238D(pGpu) || IsT264D(pGpu);
 }
 
 NvBool rmcfg_IsTEGRA_TEGRA_NVDISP_GPUSorBetter(POBJGPU pGpu)
@@ -983,7 +983,7 @@ NvBool rmcfg_IsTEGRA_TEGRA_NVDISP_GPUSorBetter(POBJGPU pGpu)
 
 NvBool rmcfg_IsTEGRA_DISP_TEGRA_NVDISP_GPUS(POBJGPU pGpu)
 {
-    return IsT234D(pGpu) || IsT239D(pGpu) || IsT264D(pGpu);
+    return IsT234D(pGpu) || IsT238D(pGpu) || IsT264D(pGpu);
 }
 
 NvBool rmcfg_IsTEGRA_DISP_TEGRA_NVDISP_GPUSorBetter(POBJGPU pGpu)

@@ -33,7 +33,7 @@
 #include <class/cl0000.h>
 #include <rmosxfac.h> // Declares RmInitRm().
 #include "gpu/gpu.h"
-#include "gps.h"
+#include "pfmReqHndlr.h"
 #include <platform/chipset/chipset.h>
 
 #include <gpu/timer/objtmr.h>
@@ -97,20 +97,20 @@
 #define TIMER_RESCHED_TIME_DURING_PM_RESUME_NS      (100 * 1000 * 1000)
 
 static void RmInflatePageArray(
-    RmPhysAddr *pteArray, 
+    RmPhysAddr *pteArray,
     NvU64 pageCountFrom,
     NvU64 pageSizeFrom,
     NvU64 pageCountTo,
     NvU64 pageSizeTo);
 static void RmDeflatePageArray(
-    RmPhysAddr *pteArray, 
+    RmPhysAddr *pteArray,
     NvU64 pageCountFrom,
     NvU64 pageSizeFrom,
     NvU64 pageCountTo,
     NvU64 pageSizeTo);
 
 static void RmInflatePageArray(
-    RmPhysAddr *pteArray, 
+    RmPhysAddr *pteArray,
     NvU64 pageCountFrom,
     NvU64 pageSizeFrom,
     NvU64 pageCountTo,
@@ -137,7 +137,7 @@ static void RmInflatePageArray(
 }
 
 static void RmDeflatePageArray(
-    RmPhysAddr *pteArray, 
+    RmPhysAddr *pteArray,
     NvU64 pageCountFrom,
     NvU64 pageSizeFrom,
     NvU64 pageCountTo,
@@ -157,7 +157,7 @@ static void RmDeflatePageArray(
 }
 
 void convertPageArrayBetweenOsAndRm(
-    RmPhysAddr *pteArray, 
+    RmPhysAddr *pteArray,
     NvU64 pageCountFrom,
     NvU64 pageSizeFrom,
     NvU64 pageCountTo,
@@ -166,10 +166,10 @@ void convertPageArrayBetweenOsAndRm(
 {
     if (pageSizeFrom < pageSizeTo)
     {
-        RmDeflatePageArray(pteArray, 
+        RmDeflatePageArray(pteArray,
             pageCountFrom,
-            pageSizeFrom, 
-            pageCountTo, 
+            pageSizeFrom,
+            pageCountTo,
             pageSizeTo
         );
         if (newPageCountTo)
@@ -179,8 +179,8 @@ void convertPageArrayBetweenOsAndRm(
     }
     else if (pageSizeFrom > pageSizeTo)
     {
-        RmInflatePageArray(pteArray, 
-            pageCountFrom, 
+        RmInflatePageArray(pteArray,
+            pageCountFrom,
             pageSizeFrom,
             pageCountTo,
             pageSizeTo
@@ -282,6 +282,11 @@ static NV_STATUS RmGenerateGpuUuidFromDvsecPdi
     }
 
     pNvp = NV_GET_NV_PRIV(pNv);
+    if (pNvp == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     chipId = (NvU16)decodePmcBoot42ChipId(pNvp->pmc_boot_42);
 
     rmStatus = nv_pci_read_gpu_pdi_from_dvsec(pNv, &pdi);
@@ -303,15 +308,22 @@ const NvU8 * RmGetGpuUuidRaw
     NvU32 gidFlags;
     NvBool isApiLockTaken = NV_FALSE;
 
+    if (pNv == NULL)
+    {
+        goto err;
+    }
+
     if (pNv->nv_uuid_cache.valid)
-        return pNv->nv_uuid_cache.uuid;
+    {
+        goto done;
+    }
 
     if (!rmapiLockIsOwner())
     {
         rmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU);
         if (rmStatus != NV_OK)
         {
-            return NULL;
+            goto err;
         }
 
         isApiLockTaken = NV_TRUE;
@@ -373,14 +385,20 @@ const NvU8 * RmGetGpuUuidRaw
              | DRF_DEF(2080_GPU_CMD,_GPU_GET_GID_FLAGS,_FORMAT,_BINARY);
 
     if (!pGpu)
+    {
         goto err;
+    }
 
     rmStatus = gpuGetGidInfo(pGpu, NULL, NULL, gidFlags);
     if (rmStatus != NV_OK)
+    {
         goto err;
+    }
 
     if (!pGpu->gpuUuid.isInitialized)
+    {
         goto err;
+    }
 
     // copy the uuid from the OBJGPU uuid cache
     os_mem_copy(pNv->nv_uuid_cache.uuid, pGpu->gpuUuid.uuid, GPU_UUID_LEN);
@@ -691,6 +709,7 @@ done:
 }
 
 static NV_STATUS free_os_event(
+    nv_file_private_t  *nvfp,
     NvHandle            hParent,
     NvU32               fd
 )
@@ -704,6 +723,7 @@ static NV_STATUS free_os_event(
     while (event)
     {
         if ((event->fd == fd) && (event->hParent == hParent)
+            && (event->nvfp == nvfp)
            )
         {
             if (event == nv->event_list)
@@ -1332,7 +1352,7 @@ NV_STATUS RmPowerSourceChangeEvent(
  * of the system) when RM is not available to receive the Dx notifiers.
  * This function gets the latest D-Notifier status from SBIOS
  * when RM is ready to receive and handle those events.
- * Use GPS_FUNC_REQUESTDXSTATE subfunction to invoke current Dx state.
+ * Use PFM_REQ_HNDLR_FUNC_REQUESTDXSTATE subfunction to invoke current Dx state.
  *
  * @param[in]   pNv   nv_state_t pointer.
  */
@@ -1345,13 +1365,13 @@ void RmRequestDNotifierState(
     NvU16 dsmDataSize    = sizeof(supportedFuncs);
     NV_STATUS status     = NV_OK;
 
-    status = osCallACPI_DSM(pGpu, ACPI_DSM_FUNCTION_GPS_2X,
-                            GPS_FUNC_REQUESTDXSTATE, &supportedFuncs,
+    status = osCallACPI_DSM(pGpu, ACPI_DSM_FUNCTION_PRH_2X,
+                            PFM_REQ_HNDLR_FUNC_REQUESTDXSTATE, &supportedFuncs,
                             &dsmDataSize);
     if (status != NV_OK)
     {
         //
-        // Call for 'GPS_FUNC_REQUESTDXSTATE' subfunction may fail if the
+        // Call for 'PFM_REQ_HNDLR_FUNC_REQUESTDXSTATE' subfunction may fail if the
         // SBIOS/EC does not have the corresponding implementation.
         //
         NV_PRINTF(LEVEL_INFO,
@@ -1437,11 +1457,13 @@ static NvU32 RmDmabufMmapGetCpuCacheType(
     if ((pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING)) &&
         (mappingType == NV_DMABUF_EXPORT_MAPPING_TYPE_DEFAULT))
     {
+        // C2C - cached mapping
         return NV_MEMORY_CACHED;
     }
     else
     {
-        return NV_MEMORY_UNCACHED;
+        // PCIe/BAR1 - WC mapping
+        return NV_MEMORY_WRITECOMBINED;
     }
 #else
     // Default to uncached for other platforms for now
@@ -2102,14 +2124,14 @@ NV_STATUS NV_API_CALL rm_release_all_gpus_lock(
 }
 
 /*!
- * @brief Handle ACPI_NOTIFY_GPS_STATUS_CHANGE event.
+ * @brief Handle PFM_REQ_HNDLR(PRH) ACPI event .
  *
- * This function is called for GPS when SBIOS trigger
- * gps STATUS_CHANGE event, which calls rm control call
- * NV0000_CTRL_CMD_SYSTEM_GPS_CONTROL to init the GPS
+ * This function is called for PRH when SBIOS trigger
+ * PRH STATUS_CHANGE event, which calls rm control call
+ * NV0000_CTRL_CMD_SYSTEM_PFM_REQ_HNDLR_CONTROL to init the PRH
  * data from SBIOS.
  */
-static void RmHandleGPSStatusChange
+static void RmAcpiEventPfmReqHndlrEventStatusChange
 (
     nv_state_t *pNv
 )
@@ -2117,7 +2139,7 @@ static void RmHandleGPSStatusChange
     NV_STATUS          rmStatus;
     RM_API            *pRmApi;
     THREAD_STATE_NODE  threadState;
-    NV0000_CTRL_SYSTEM_GPS_CONTROL_PARAMS gpsControl = { 0 };
+    NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CONTROL_PARAMS pfmReqHndlrControl = { 0 };
 
     pRmApi = RmUnixRmApiPrologue(pNv, &threadState, RM_LOCK_MODULES_ACPI);
     if (pRmApi == NULL)
@@ -2125,12 +2147,13 @@ static void RmHandleGPSStatusChange
         return;
     }
 
-    gpsControl.command = NV0000_CTRL_CMD_SYSTEM_GPS_DATA_INIT_USING_SBIOS_AND_ACK;
-    gpsControl.locale  = NV0000_CTRL_CMD_SYSTEM_GPS_LOCALE_SYSTEM;
+    pfmReqHndlrControl.command = NV0000_CTRL_CMD_SYSTEM_PFM_REQ_HNDLR_DATA_INIT_USING_SBIOS_AND_ACK;
+    pfmReqHndlrControl.locale  = NV0000_CTRL_CMD_SYSTEM_PFM_REQ_HNDLR_LOCALE_SYSTEM;
+    pfmReqHndlrControl.data    = 0;
 
     //
-    // NV0000_CTRL_CMD_SYSTEM_GPS_CONTROL is not a subdevice command.
-    // But, Inside GPS module, the first GPU, which has GPS
+    // NV0000_CTRL_CMD_SYSTEM_PFM_REQ_HNDLR_CONTROL is not a subdevice command.
+    // But, Inside PRH module, the first GPU, which has PRH supported and
     // enabled will be grabbed with GPU manager. The RMAPI_API_LOCK_INTERNAL
     // will internally grab the GPU locks and wake-up all the GPUs. Ideally
     // this control call should be GPU specific command, if internally
@@ -2139,16 +2162,16 @@ static void RmHandleGPSStatusChange
     rmStatus = pRmApi->Control(pRmApi,
                                pNv->rmapi.hClient,
                                pNv->rmapi.hClient,
-                               NV0000_CTRL_CMD_SYSTEM_GPS_CONTROL,
-                               (void *)&gpsControl,
-                               sizeof(NV0000_CTRL_SYSTEM_GPS_CONTROL_PARAMS));
+                               NV0000_CTRL_CMD_SYSTEM_PFM_REQ_HNDLR_CONTROL,
+                               (void *)&pfmReqHndlrControl,
+                               sizeof(NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CONTROL_PARAMS));
 
     RmUnixRmApiEpilogue(pNv, &threadState);
 
     if (rmStatus != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "%s: Failed to handle ACPI GPS status change event, status=0x%x\n",
+                  "%s: Failed to handle ACPI PFM_REQ_HNDLR status change event, status=0x%x\n",
                   __FUNCTION__, rmStatus);
     }
 }
@@ -2181,8 +2204,8 @@ void NV_API_CALL rm_acpi_notify(
             break;
         }
 
-        case ACPI_NOTIFY_GPS_STATUS_CHANGE:
-            RmHandleGPSStatusChange(nv);
+        case PFM_REQ_HNDLR_EVENT_STATUS_CHANGE:
+            RmAcpiEventPfmReqHndlrEventStatusChange(nv);
             break;
 
         case ACPI_NOTIFY_POWER_LEVEL_D1:    /* fallthrough */
@@ -2202,568 +2225,6 @@ void NV_API_CALL rm_acpi_notify(
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
 
-static void nv_align_mmap_offset_length(
-    nv_usermap_access_params_t *nvuap)
-{
-    NvU64 page_size = os_page_size;
-    NvU64 end = nvuap->size + (nvuap->addr & (page_size - 1));
-
-    nvuap->memArea.numRanges = 1;
-    nvuap->memArea.pRanges[0].start = NV_ALIGN_DOWN(nvuap->addr, page_size);
-    nvuap->memArea.pRanges[0].size = NV_ALIGN_UP(end, page_size);
-    nvuap->offset = NV_ALIGN_DOWN(nvuap->offset, page_size);
-}
-
-static inline NV_STATUS RmGetArrayMinMax(
-    NvU64 *array,
-    NvU64 count,
-    NvU64 *min,
-    NvU64 *max
-)
-{
-    NvU64 i;
-
-    if (array == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    *min = array[0];
-    *max = array[0];
-
-    if (count == 1)
-        return NV_OK;
-
-    for (i = 1; i < count; i++)
-    {
-        if (array[i] > *max)
-            *max = array[i];
-
-        if (array[i] < *min)
-            *min = array[i];
-    }
-
-    return NV_OK;
-}
-
-static NV_STATUS RmGetAllocPrivate(RmClient *, NvU32, NvU64, NvU64, NvU32 *, void **,
-                                   NvU64 *);
-
-static NV_STATUS RmValidateMmapRequest(
-    nv_state_t *pNv,
-    NvU64       offset,
-    NvU64       length,
-    NvU32      *pProtection
-)
-{
-    NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS params = { 0 };
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NV_STATUS status;
-
-    if (osIsAdministrator())
-    {
-        *pProtection = NV_PROTECT_READ_WRITE;
-        return NV_OK;
-    }
-
-    params.addressStart = offset;
-    params.addressLength = length;
-
-    status = pRmApi->Control(pRmApi, pNv->rmapi.hClient,
-                             pNv->rmapi.hSubDevice,
-                             NV2080_CTRL_CMD_GPU_VALIDATE_MEM_MAP_REQUEST,
-                             &params, sizeof(params));
-
-    if (status == NV_OK)
-    {
-        *pProtection = params.protection;
-    }
-
-    return status;
-}
-
-static NV_STATUS RmSetUserMapAccessRange(
-    nv_usermap_access_params_t *nvuap
-)
-{
-    NV_STATUS status = NV_OK;
-
-    if (nvuap->contig)
-    {
-         nvuap->access_start = nvuap->memArea.pRanges[0].start;
-         nvuap->access_size = nvuap->memArea.pRanges[0].size;
-    }
-    else
-    {
-        NvU64 highest_address_mapped;
-        NvU64 lowest_address_mapped;
-
-        status = RmGetArrayMinMax(nvuap->page_array, nvuap->num_pages,
-                                  &lowest_address_mapped,
-                                  &highest_address_mapped);
-        if (status != NV_OK)
-        {
-            return status;
-        }
-
-        nvuap->access_start = lowest_address_mapped;
-        nvuap->access_size = (highest_address_mapped + os_page_size) - lowest_address_mapped;
-    }
-
-    return status;
-}
-
-static NV_STATUS RmGetMmapPteArray(
-    KernelMemorySystem         *pKernelMemorySystem,
-    RsClient                   *pClient,
-    NvHandle                    hMemory,
-    nv_usermap_access_params_t *nvuap
-)
-{
-    NV_STATUS status = NV_OK;
-    NvU64 pages = 0;
-    Memory *pMemory = NULL;
-    PMEMORY_DESCRIPTOR pMemDesc  = NULL;
-    RsResourceRef *pResourceRef;
-    NvU64 i;
-    NvU64 *pteArray;
-    NvU64 index;
-
-    if (nvuap == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    //
-    // If we're mapping a memory handle, we can get the data from the
-    // descriptor (required if the allocation being mapped is discontiguous).
-    //
-    if (clientGetResourceRef(pClient, hMemory, &pResourceRef) == NV_OK)
-    {
-        pMemory = dynamicCast(pResourceRef->pResource, Memory);
-        if (pMemory != NULL)
-        {
-            pMemDesc = pMemory->pMemDesc;
-            nvuap->contig = memdescGetContiguity(pMemDesc, AT_CPU);
-        }
-    }
-
-    //
-    // In the discontiguous case, the page array needs to be large enough to hold
-    // the 4K-page-sized addresses that we will then deflate to OS page addresses.
-    // For the contiguous case, we can create the OS-page-sized addresses
-    // directly in the array.
-    //
-    if (nvuap->contig)
-    {
-        pages = nvuap->memArea.pRanges[0].size / os_page_size;
-    }
-    else
-    {
-        if (IS_DISCONTIG_AND_DYNGRAN_ENABLED(pMemDesc))
-        {
-            pages = nvuap->memArea.pRanges[0].size / NV_MIN(os_page_size, pMemDesc->pageArrayGranularity);
-        }
-        else
-        {
-            pages = nvuap->memArea.pRanges[0].size / NV_RM_PAGE_SIZE;
-        }
-    }
-
-    NV_ASSERT_OR_RETURN(pages != 0, NV_ERR_INVALID_ARGUMENT);
-
-    status = os_alloc_mem((void **)&nvuap->page_array, (pages * sizeof(NvU64)));
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    if (!nvuap->contig)
-    {
-        pteArray = memdescGetPteArray(pMemDesc, AT_CPU);
-        if (IS_DISCONTIG_AND_DYNGRAN_ENABLED(pMemDesc))
-        {
-            index = nvuap->offset / NV_MIN(os_page_size, pMemDesc->pageArrayGranularity);
-        }
-        else
-        {
-            index = nvuap->offset / NV_RM_PAGE_SIZE;
-        }
-
-        //
-        // We're guaranteed to have a MEMORY_DESCRIPTOR in the discontiguous
-        // case. Copy over the addresses now.
-        //
-        NvU64 copyByteSize = NV_MIN(pages, pMemDesc->pageArraySize) * sizeof(NvU64);
-        portMemCopy((void *)nvuap->page_array,
-                    copyByteSize, (void *)&pteArray[index],
-                    copyByteSize);
-
-        if (!IS_DISCONTIG_AND_DYNGRAN_ENABLED(pMemDesc))
-        {
-            if (NV_RM_PAGE_SIZE < os_page_size)
-            {
-                RmDeflateRmToOsPageArray(nvuap->page_array, pages);
-                pages = NV_RM_PAGES_TO_OS_PAGES(pages);
-            }
-        }
-        else
-        {
-            //
-            // Because of PMA case, we need to convert page array 
-            // from RM native granularity to OS granularity.
-            //
-            convertPageArrayBetweenOsAndRm(
-                nvuap->page_array,
-                nvuap->memArea.pRanges[0].size / pMemDesc->pageArrayGranularity,
-                pMemDesc->pageArrayGranularity, 
-                nvuap->memArea.pRanges[0].size / os_page_size,
-                os_page_size,
-                &pages
-            );
-        }
-
-        //
-        // Convert the GPU physical addresses to system physical addresses,
-        // if applicable.
-        //
-        for (i = 0; i < pages; i++)
-        {
-            nvuap->page_array[i] += pKernelMemorySystem->coherentCpuFbBase;
-        }
-    }
-    else
-    {
-        // Offset is accounted in nvuap->memArea.pRanges[0].start.
-        for (nvuap->page_array[0] = nvuap->memArea.pRanges[0].start, i = 1;
-             i < pages; i++)
-        {
-            nvuap->page_array[i] = nvuap->page_array[i-1] + os_page_size;
-        }
-    }
-
-    nvuap->num_pages = pages;
-
-    return status;
-}
-
-/* Must be called with the API lock and the GPU locks */
-static NV_STATUS RmCreateMmapContextLocked(
-    RmClient   *pRmClient,
-    NvHandle    hDevice,
-    NvHandle    hMemory,
-    NvP64       address,
-    NvU64       size,
-    NvU64       offset,
-    NvU32       cachingType,
-    NvU32       fd
-)
-{
-    NV_STATUS status = NV_OK;
-    void *pAllocPriv = NULL;
-    OBJGPU *pGpu = NULL;
-    RsClient *pClient = staticCast(pRmClient, RsClient);
-    KernelMemorySystem *pKernelMemorySystem = NULL;
-    NvBool bCoherentAtsCpuOffset = NV_FALSE;
-    NvBool bHostCoherentFbOffset = NV_FALSE;
-    nv_state_t *pNv = NULL;
-    NvU64 addr = (NvU64)address;
-    NvU32 prot = 0;
-    NvU64 pageIndex = 0;
-    nv_usermap_access_params_t *nvuap = NULL;
-    NvBool bClientMap = (pClient->hClient == hDevice);
-
-    if (!bClientMap)
-    {
-        if (CliSetGpuContext(pClient->hClient, hDevice, &pGpu, NULL) != NV_OK)
-        {
-            Subdevice *pSubdevice;
-
-            status = subdeviceGetByHandle(pClient, hDevice, &pSubdevice);
-            if (status != NV_OK)
-                return status;
-
-            pGpu = GPU_RES_GET_GPU(pSubdevice);
-
-            GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
-        }
-    }
-    nvuap = tlsEntryGet(TLS_ENTRY_ID_MAPPING_CONTEXT);
-    if (nvuap != NULL)
-    {
-        NV_ASSERT(tlsEntryRelease(TLS_ENTRY_ID_MAPPING_CONTEXT) == 0);
-        prot = NV_PROTECT_READ_WRITE;
-        //
-        // TODO: Add this to the mapping context so we don't need to do gymnastics
-        // to figure out what the correct pNv is
-        //
-        pNv = NV_GET_NV_STATE(pGpu);
-        goto add_ctx_to_file;
-    }
-
-    NV_ASSERT_OK_OR_RETURN(os_alloc_mem((void**)&nvuap, sizeof(nv_usermap_access_params_t)));
-    portMemSet(nvuap, 0, sizeof(nv_usermap_access_params_t));
-
-    NV_ASSERT_OK_OR_GOTO(status, os_alloc_mem((void**)&(nvuap->memArea.pRanges), sizeof(MemoryRange)), free_nvuap);
-
-    nvuap->addr = addr;
-    nvuap->size = size;
-    nvuap->offset = offset;
-    nvuap->caching = cachingType;
-
-    //
-    // Assume the allocation is contiguous until RmGetMmapPteArray
-    // determines otherwise.
-    //
-    nvuap->contig = NV_TRUE;
-    nv_align_mmap_offset_length(nvuap);
-
-    if (pGpu != NULL)
-    {
-        pNv = NV_GET_NV_STATE(pGpu);
-        pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-        bCoherentAtsCpuOffset = IS_COHERENT_CPU_ATS_OFFSET(pGpu, pKernelMemorySystem, addr, size);
-        bHostCoherentFbOffset = !bCoherentAtsCpuOffset &&
-            IS_COHERENT_FB_OFFSET(pGpu, pKernelMemorySystem, addr, size);
-    }
-    //
-    // If no device is given, or the address isn't in the given device's BARs,
-    // validate this as a system memory mapping and associate it with the
-    // control device.
-    //
-    if ((pNv == NULL) ||
-        (!IS_REG_OFFSET(pNv, addr, size) &&
-         !IS_FB_OFFSET(pNv, addr, size) &&
-         !(bCoherentAtsCpuOffset || bHostCoherentFbOffset) &&
-         !IS_IMEM_OFFSET(pNv, addr, size)))
-    {
-        pNv = nv_get_ctl_state();
-
-        //
-        // Validate the mapping request by looking up the underlying sysmem
-        // allocation.
-        //
-        status = RmGetAllocPrivate(pRmClient, hMemory, addr, size, &prot, &pAllocPriv,
-                                   &pageIndex);
-
-        if (status != NV_OK)
-        {
-            goto done;
-        }
-    }
-    else
-    {
-        //
-        // Validate the mapping request for ATS and get pteArray
-        //
-        if (bCoherentAtsCpuOffset)
-        {
-            status = RmGetMmapPteArray(pKernelMemorySystem, pClient, hMemory, nvuap);
-            if (status != NV_OK)
-            {
-                goto done;
-            }
-        }
-        else if (bHostCoherentFbOffset)
-        {
-            status = RmGetMmapPteArray(pKernelMemorySystem, pClient, hMemory, nvuap);
-            if (status != NV_OK)
-            {
-                goto done;
-            }
-
-            //
-            // nvuap->page_array(allocated in RmGetMmapPteArray) is not assigned
-            // to nvamc->page_array if onlining status is false(which is the case with
-            // bHostCoherentFbOffset) and so doesn't get freed if not done here.
-            // The call to RmGetMmapPteArray is for getting the contig and num
-            // pages of the allocation.
-            //
-            os_free_mem(nvuap->page_array);
-            nvuap->page_array = NULL;
-        }
-
-        NV_ASSERT_OK_OR_GOTO(status, RmSetUserMapAccessRange(nvuap), done);
-
-        // Validate the mapping request for BAR's.
-        status = RmValidateMmapRequest(pNv, nvuap->access_start,
-                                       nvuap->access_size, &prot);
-        if (status != NV_OK)
-        {
-            goto done;
-        }
-    }
-
-add_ctx_to_file:
-    status = nv_add_mapping_context_to_file(pNv, nvuap, prot, pAllocPriv,
-                                            pageIndex, fd);
-
-done:
-    os_free_mem(nvuap->memArea.pRanges);
-free_nvuap:
-    os_free_mem(nvuap);
-    return status;
-}
-
-// TODO: Bug 1802250: [uvm8] Use an alt stack in all functions in unix/src/osapi.c
-NV_STATUS rm_create_mmap_context(
-    NvHandle    hClient,
-    NvHandle    hDevice,
-    NvHandle    hMemory,
-    NvP64       address,
-    NvU64       size,
-    NvU64       offset,
-    NvU32       cachingType,
-    NvU32       fd
-)
-{
-    NV_STATUS rmStatus = NV_OK;
-    // LOCK: acquire API lock
-    if ((rmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_OSAPI)) == NV_OK)
-    {
-        CLIENT_ENTRY *pClientEntry;
-        RmClient *pRmClient;
-
-        if (NV_OK != serverutilAcquireClient(hClient, LOCK_ACCESS_READ, &pClientEntry,
-                &pRmClient))
-        {
-            // UNLOCK: release API lock
-            rmapiLockRelease();
-            return NV_ERR_INVALID_CLIENT;
-        }
-
-        if (pRmClient->ProcID != osGetCurrentProcess())
-        {
-            rmStatus = NV_ERR_INVALID_CLIENT;
-        }
-        // LOCK: acquire GPUs lock
-        else if ((rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI)) == NV_OK)
-        {
-            rmStatus = RmCreateMmapContextLocked(pRmClient, hDevice,
-                                                 hMemory, address, size, offset,
-                                                 cachingType, fd);
-            // UNLOCK: release GPUs lock
-            rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
-        }
-
-        serverutilReleaseClient(LOCK_ACCESS_READ, pClientEntry);
-
-        // UNLOCK: release API lock
-        rmapiLockRelease();
-    }
-
-    return rmStatus;
-}
-
-static NV_STATUS RmGetAllocPrivate(
-    RmClient   *pRmClient,
-    NvU32       hMemory,
-    NvU64       offset,
-    NvU64       length,
-    NvU32      *pProtection,
-    void      **ppPrivate,
-    NvU64      *pPageIndex
-)
-{
-    NV_STATUS rmStatus;
-    PMEMORY_DESCRIPTOR pMemDesc;
-    NvU32 pageOffset;
-    NvU64 pageCount;
-    NvU64 endingOffset;
-    RsResourceRef *pResourceRef;
-    RmResource *pRmResource;
-    void *pMemData;
-    NvBool bPeerIoMem;
-    NvBool bReadOnlyMem;
-    *pProtection = NV_PROTECT_READ_WRITE;
-    *ppPrivate = NULL;
-
-    pageOffset = (offset & ~os_page_mask);
-    offset &= os_page_mask;
-
-    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
-
-    rmStatus = clientGetResourceRef(staticCast(pRmClient, RsClient),
-        hMemory, &pResourceRef);
-    if (rmStatus != NV_OK)
-        goto done;
-
-    pRmResource = dynamicCast(pResourceRef->pResource, RmResource);
-    if (!pRmResource)
-    {
-        rmStatus = NV_ERR_INVALID_OBJECT;
-        goto done;
-    }
-
-    rmStatus = rmresGetMemoryMappingDescriptor(pRmResource, &pMemDesc);
-    if (rmStatus != NV_OK)
-        goto done;
-
-    bReadOnlyMem = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_USER_READ_ONLY);
-    bPeerIoMem = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_PEER_IO_MEM);
-
-    if (!(pMemDesc->Allocated || bPeerIoMem ||
-          memdescIsCarveoutMemory(pMemDesc) ||
-          (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOW_EXT_SYSMEM_USER_CPU_MAPPING))))
-    {
-        NV_PRINTF(LEVEL_ERROR, "Mmap is not allowed\n");
-        rmStatus = NV_ERR_OBJECT_NOT_FOUND;
-        goto done;
-    }
-
-    switch (memdescGetAddressSpace(pMemDesc))
-    {
-        case ADDR_SYSMEM:
-            break;
-        default:
-            rmStatus = NV_ERR_OBJECT_NOT_FOUND;
-            goto done;
-    }
-
-    pMemData = memdescGetMemData(pMemDesc);
-    if (pMemData == NULL)
-    {
-        rmStatus = NV_ERR_OBJECT_NOT_FOUND;
-        goto done;
-    }
-
-    rmStatus = os_match_mmap_offset(pMemData, offset, pPageIndex);
-    if (rmStatus != NV_OK)
-        goto done;
-
-    if (!portSafeAddU64(pageOffset, length, &endingOffset))
-    {
-        rmStatus = NV_ERR_INVALID_ARGUMENT;
-        goto done;
-    }
-
-    pageCount = (endingOffset / os_page_size);
-
-    if (!portSafeAddU64(*pPageIndex + ((endingOffset % os_page_size) ? 1 : 0),
-                        pageCount, &pageCount))
-    {
-        rmStatus = NV_ERR_INVALID_ARGUMENT;
-        goto done;
-    }
-
-    if (IS_DISCONTIG_AND_DYNGRAN_ENABLED(pMemDesc))
-    {
-        NV_ASSERT_OR_ELSE(pageCount <= pMemDesc->PageCount, rmStatus = NV_ERR_INVALID_ARGUMENT; goto done);
-    }
-    else if (pageCount > NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount))
-    {
-        rmStatus = NV_ERR_INVALID_ARGUMENT;
-        goto done;
-    }
-
-    if (bReadOnlyMem)
-       *pProtection = NV_PROTECT_READABLE;
-
-    *ppPrivate = pMemData;
-
-done:
-    return rmStatus;
-}
 
 NV_STATUS rm_get_adapter_status(
     nv_state_t *pNv,
@@ -2956,14 +2417,19 @@ done:
 }
 
 NV_STATUS NV_API_CALL rm_validate_ioctls(
+    nvidia_stack_t     *sp,
     NvU32               command,
     NvU32               dataSize
 )
 {
+    void *fp;
     size_t arg_size = dataSize;
     int arg_cmd = (command & 0xFF);
     int i;
     NV_STATUS status;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+
     static const struct {
         unsigned int cmdKey;
         size_t paramSize;
@@ -2979,7 +2445,7 @@ NV_STATUS NV_API_CALL rm_validate_ioctls(
     status = RmValidateIoctl(command, dataSize);
     if (status != NV_ERR_INVALID_COMMAND)
     {
-        return status; 
+        goto done;
     }
 
     for (i = 0; i < NV_ARRAY_ELEMENTS(rm_ioctls_table); ++i)
@@ -2988,16 +2454,23 @@ NV_STATUS NV_API_CALL rm_validate_ioctls(
         {
             if (arg_size == rm_ioctls_table[i].paramSize)
             {
-                return NV_OK;
+                status = NV_OK;
+                goto done;
             }
             nv_printf(NV_DBG_ERRORS, "NVRM: invalid %d structure size, expected %d, got %d!\n",
                       rm_ioctls_table[i].cmdKey, rm_ioctls_table[i].paramSize, arg_size);
 
-            return NV_ERR_INVALID_ARGUMENT;
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto done;
         }
     }
+
     // Unknown IOCTL case. Not found in any rm and RM Tables.
-    return NV_ERR_INVALID_COMMAND;
+    status = NV_ERR_INVALID_COMMAND;
+done:
+    NV_EXIT_RM_RUNTIME(sp,fp);
+
+    return status;
 }
 
 NV_STATUS NV_API_CALL rm_ioctl(
@@ -3045,6 +2518,7 @@ NV_STATUS NV_API_CALL rm_ioctl(
             }
 
             pApi->Status = free_os_event(
+                nvfp,
                 pApi->hClient, pApi->fd);
             break;
         }
@@ -5241,22 +4715,8 @@ void  NV_API_CALL  rm_kernel_rmapi_op(nvidia_stack_t *sp, void *ops_cmd)
             break;
 
         case NV04_MAP_MEMORY:
-        {
-            //
-            // We need to free NVUAP for MEM_SPACE_USER mappings,
-            // since we're not going through the regular path
-            //
-            nv_usermap_access_params_t *pNvuap = NULL;
             Nv04MapMemoryKernel(&ops->params.mapMemory);
-            pNvuap = (nv_usermap_access_params_t *) tlsEntryGet(TLS_ENTRY_ID_MAPPING_CONTEXT);
-            if (pNvuap != NULL)
-            {
-                NV_ASSERT(tlsEntryRelease(TLS_ENTRY_ID_MAPPING_CONTEXT) == 0);
-                os_free_mem(pNvuap->memArea.pRanges);
-                os_free_mem(pNvuap);
-            }
             break;
-        }
 
         case NV04_UNMAP_MEMORY:
             Nv04UnmapMemoryKernel(&ops->params.unmapMemory);
@@ -5333,10 +4793,10 @@ void RmUnInitAcpiMethods(OBJSYS *pSys)
 void RmInflateOsToRmPageArray(RmPhysAddr *pteArray, NvU64 pageCount)
 {
     RmInflatePageArray(
-        pteArray, 
+        pteArray,
         NV_RM_PAGES_TO_OS_PAGES(pageCount),
-        os_page_size, 
-        pageCount, 
+        os_page_size,
+        pageCount,
         NV_RM_PAGE_SIZE
     );
 }
@@ -5344,8 +4804,8 @@ void RmInflateOsToRmPageArray(RmPhysAddr *pteArray, NvU64 pageCount)
 void RmDeflateRmToOsPageArray(RmPhysAddr *pteArray, NvU64 pageCount)
 {
     RmDeflatePageArray(
-        pteArray, 
-        pageCount, 
+        pteArray,
+        pageCount,
         NV_RM_PAGE_SIZE,
         NV_RM_PAGES_TO_OS_PAGES(pageCount),
         os_page_size
@@ -6322,7 +5782,8 @@ NV_STATUS NV_API_CALL rm_pmu_perfmon_get_load(
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (nvp->dynamic_power.state == NV_DYNAMIC_POWER_STATE_IDLE_INDICATED)
+    if (nvp->dynamic_power.state == NV_DYNAMIC_POWER_STATE_IDLE_INDICATED ||
+        nvp->dynamic_power.state == NV_DYNAMIC_POWER_STATE_IDLE_SUSTAINED)
     {
         *load = 0;
         return NV_OK;

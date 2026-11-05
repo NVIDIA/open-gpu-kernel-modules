@@ -562,8 +562,8 @@ kmemsysForceSetSysmemCaching_GR100
 
     REG_WR32(pKernelMemorySystem->pSysLtcBcAperture, NV_PSYSL2LTC_LTSS_CBC_NUM_ACTIVE_LTCS, regVal);
 
-    // WB & I also if disabling cache
-    if (!bEnable)
+    // Write back and invalidate when disabling cache if the GPU is reachable.
+    if (!bEnable && !API_GPU_NOT_REACHABLE(pGpu))
     {
         kmemsysWriteBackAndInvalidateSysL2_HAL(pGpu, pKernelMemorySystem);
     }

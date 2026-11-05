@@ -34,12 +34,21 @@
 #include "nvtypes.h"
 
 typedef struct {
+    // Offset from DMEM/TCM start to buffer end (NOT start, this is for convenience).
+    NvU32 endOffset;
+    // Size of the buffer.
+    NvU32 size;
+} RM_RISCV_DEBUG_BUFFER_DESC;
+
+typedef struct {
     //
     // Version 1
     // Version 2
     // Version 3 = for Partition boot
     // Version 4 = for eb riscv boot
     // Version 5 = Support signing entire RISC-V image as "code" in code section for hopper and later.
+    // Version 6 = Add SMP/PLIC enablement options
+    // Version 7 = Support debug buffer descriptors
     //
     NvU32  version;                         // structure version
     NvU32  bootloaderOffset;
@@ -88,8 +97,13 @@ typedef struct {
     // SMP (multihart) and PLIC (split interrupts)
     // enablement options
     //
-    NvU32 bIsSmp;
-    NvU32 bIsPlicEnabled;
+    NvU32  bIsSmp;
+    NvU32  bIsPlicEnabled;
+    //
+    // Partition debug buffer offsets (flexible array member of struct, has to go last)
+    //
+    NvU32  numDebugBuffers;
+    RM_RISCV_DEBUG_BUFFER_DESC debugBufferDescs[];
 } RM_RISCV_UCODE_DESC;
 
 #endif  // RM_RISCV_UCODE_H

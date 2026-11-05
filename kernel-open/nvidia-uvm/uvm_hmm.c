@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2025 NVIDIA Corporation
+    Copyright (c) 2016-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -347,7 +347,7 @@ void uvm_hmm_unregister_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu, struct mm_
 
             retry = false;
 
-            for (pfn = __phys_to_pfn(devmem_start); pfn <= __phys_to_pfn(devmem_end); pfn++) {
+            for (pfn = __phys_to_pfn(devmem_start); pfn < __phys_to_pfn(devmem_end); pfn++) {
                 struct page *page = pfn_to_page(pfn);
 
                 // No need to keep scanning if no HMM pages are allocated for this
@@ -1038,6 +1038,9 @@ NV_STATUS uvm_hmm_va_block_reclaim(uvm_va_space_t *va_space,
     uvm_range_tree_node_t *node, *next;
     uvm_va_block_t *va_block;
     NV_STATUS status;
+
+    UVM_ASSERT(PAGE_ALIGNED(start));
+    UVM_ASSERT(PAGE_ALIGNED(end + 1));
 
     if (!uvm_hmm_is_enabled(va_space))
         return NV_OK;
@@ -2474,6 +2477,25 @@ static bool hmm_range_fault_retry(uvm_va_block_t *va_block)
     return uvm_context->hmm_invalidate_seqnum != va_block->hmm.changed;
 }
 
+static int hmm_range_fault_for_locked_block(uvm_va_block_t *va_block, struct hmm_range *range)
+{
+    int ret;
+
+    uvm_assert_mutex_locked(&va_block->lock);
+
+    uvm_mutex_unlock(&va_block->lock);
+
+    // Note that mmu_interval_read_begin() calls wait_event() for any
+    // parallel invalidation callbacks to finish so we can't hold locks that
+    // the invalidation callback acquires.
+    range->notifier_seq = mmu_interval_read_begin(range->notifier);
+    ret = hmm_range_fault(range);
+
+    uvm_mutex_lock(&va_block->lock);
+
+    return ret;
+}
+
 // Make the region be resident on the CPU by calling hmm_range_fault() to fault
 // in CPU pages.
 static NV_STATUS hmm_make_resident_cpu(uvm_va_block_t *va_block,
@@ -2524,16 +2546,7 @@ static NV_STATUS hmm_make_resident_cpu(uvm_va_block_t *va_block,
     // Mirror the VA block to the HMM address range.
     // Note that we request HMM to handle page faults, which means that it will
     // populate and map potentially not-yet-existing pages to the VMA.
-    // Also note that mmu_interval_read_begin() calls wait_event() for any
-    // parallel invalidation callbacks to finish so we can't hold locks that
-    // the invalidation callback acquires.
-    uvm_mutex_unlock(&va_block->lock);
-
-    range.notifier_seq = mmu_interval_read_begin(range.notifier);
-    ret = hmm_range_fault(&range);
-
-    uvm_mutex_lock(&va_block->lock);
-
+    ret = hmm_range_fault_for_locked_block(va_block, &range);
     if (ret)
         return (ret == -EBUSY) ? NV_WARN_MORE_PROCESSING_REQUIRED : errno_to_nv_status(ret);
 
@@ -3858,24 +3871,14 @@ NV_STATUS uvm_hmm_va_block_update_residency_info(uvm_va_block_t *va_block,
             range.default_flags |= HMM_PFN_REQ_WRITE;
     }
 
-    while (true) {
-        range.notifier_seq = mmu_interval_read_begin(range.notifier);
-        uvm_mutex_unlock(&va_block->lock);
-        ret = hmm_range_fault(&range);
+    do {
+        ret = hmm_range_fault_for_locked_block(va_block, &range);
         if (ret == -EBUSY)
             continue;
-
-        uvm_mutex_lock(&va_block->lock);
-
-        if (ret == -EBUSY)
-            continue;
-
         if (ret)
             return errno_to_nv_status(ret);
 
-        if (!mmu_interval_read_retry(range.notifier, range.notifier_seq))
-            break;
-    }
+    } while (mmu_interval_read_retry(range.notifier, range.notifier_seq));
 
     // Update the va_block CPU state based on the snapshot.
     // Note that we have to adjust the pfns address since it will be indexed
@@ -4040,6 +4043,184 @@ bool uvm_hmm_must_use_sysmem(uvm_va_block_t *va_block,
            (vma->vm_flags & VM_SPECIAL) ||
            vma_is_dax(vma) ||
            is_vm_hugetlb_page(vma);
+}
+
+static NV_STATUS hmm_ats_pte_snapshot_locked(uvm_va_block_t *va_block,
+                                            uvm_service_block_context_t *service_context,
+                                            uvm_page_index_t page_index)
+{
+    uvm_va_block_context_t *block_context = service_context->block_context;
+    struct vm_area_struct *vma = block_context->hmm.vma;
+    unsigned long *pfn = &block_context->hmm.src_pfns[page_index];
+    struct hmm_range range = {
+        .notifier = &va_block->hmm.notifier,
+        .start = uvm_va_block_cpu_page_address(va_block, page_index),
+        .end = uvm_va_block_cpu_page_address(va_block, page_index) + PAGE_SIZE,
+        .hmm_pfns = pfn,
+        .default_flags = 0,
+        .pfn_flags_mask = 0,
+        .dev_private_owner = &g_uvm_global,
+    };
+    int ret;
+
+    uvm_assert_mutex_locked(&va_block->lock);
+    uvm_assert_mmap_lock_locked(block_context->mm);
+
+    // A zeroed entry reads as !HMM_PFN_VALID
+    *pfn = 0;
+
+    // hmm_range_fault() does not support VM_IO or VM_PFNMAP, see
+    // hmm_make_resident_cpu(). Normal block servicing handles those through
+    // uvm_populate_pageable_vma().
+    if (vma->vm_flags & (VM_IO | VM_PFNMAP))
+        return NV_OK;
+
+    // A va_block can extend past the VMA. Faults there are not serviced by the
+    // block either, so leave them to the normal path.
+    if (range.start < vma->vm_start || range.end > vma->vm_end)
+        return NV_OK;
+
+    // No request flags: this only reads the CPU PTE and never faults, so no
+    // MMU notifier is raised by this call. The va_block lock is dropped around
+    // hmm_range_fault() because mmu_interval_read_begin() waits for concurrent
+    // hmm_invalidate() calls, which take it. Since hmm_invalidate() needs the
+    // va_block lock, any invalidation of the block happens while it is dropped
+    // here, checking each call is enough.
+    hmm_range_fault_begin(va_block);
+    ret = hmm_range_fault_for_locked_block(va_block, &range);
+
+    // The block was invalidated while the lock was dropped. Retry servicing
+    // from the start so that nothing is classified against a stale snapshot.
+    if (ret == -EBUSY || hmm_range_fault_retry(va_block))
+        return NV_ERR_MORE_PROCESSING_REQUIRED;
+
+    if (ret)
+        *pfn = 0;
+
+    return NV_OK;
+}
+
+NV_STATUS uvm_hmm_ats_pte_fixup_check_and_record(uvm_va_block_t *va_block,
+                                                uvm_gpu_t *gpu,
+                                                uvm_page_index_t page_index,
+                                                uvm_fault_access_type_t access_type,
+                                                uvm_service_block_context_t *service_context,
+                                                bool *recorded)
+{
+    unsigned long pfn;
+    NV_STATUS status;
+
+    *recorded = false;
+
+    if (!uvm_va_block_is_hmm(va_block) || !gpu->parent->ats_supported)
+        return NV_OK;
+
+    uvm_assert_mutex_locked(&va_block->lock);
+
+    status = hmm_ats_pte_snapshot_locked(va_block, service_context, page_index);
+    if (status != NV_OK)
+        return status;
+
+    pfn = service_context->block_context->hmm.src_pfns[page_index];
+
+    // Not present: first touch, swapped out, migration entry or NUMA hinting
+    // (pte_protnone() is reported as not valid). Normal block servicing
+    // populates or migrates the page.
+    if (!(pfn & HMM_PFN_VALID) || (pfn & HMM_PFN_ERROR))
+        return NV_OK;
+
+    // An ATS GPU has no GMMU mapping for a HMM va_block, see
+    // block_map_gpu_to(), so it translates through the CPU page tables and
+    // only the CPU PTE can be fixed up. Block servicing does not change the
+    // CPU PTE of a page, so a fault on a present PTE has to be resolved here
+    // whatever the residency. If the PTE already permits the access, the fault
+    // is an access flag fault, a dirty-bit permission fault on a
+    // writable-clean PTE (pte_write() is true, but the SMMU sees it read-only
+    // without hardware dirty-bit management) or a stale TLB entry. Otherwise
+    // it is a write to a PTE without write permission: CoW, an exclusive page
+    // waiting for wp_page_reuse(), or soft-dirty tracking.
+    //
+    // Note that this means a minor fault does not drive a policy migration:
+    // the PTE is fixed up and the page stays where it is. Migration for ATS
+    // GPUs is driven by access counters and by faults on pages that are not
+    // present.
+    if (access_type < UVM_FAULT_ACCESS_TYPE_WRITE || (pfn & HMM_PFN_WRITE))
+        uvm_page_mask_set(&service_context->ats_pte_fixup_mask, page_index);
+    else
+        uvm_page_mask_set(&service_context->ats_pte_write_mask, page_index);
+
+    *recorded = true;
+
+    return NV_OK;
+}
+
+NV_STATUS uvm_hmm_ats_pte_fixup(uvm_va_block_t *va_block,
+                                uvm_service_block_context_t *service_context,
+                                NvU64 fault_address,
+                                uvm_fault_access_type_t fault_access_type)
+{
+    struct vm_area_struct *vma = service_context->block_context->hmm.vma;
+    uvm_page_index_t page_index = uvm_va_block_cpu_page_index(va_block, fault_address);
+    unsigned int flags = FAULT_FLAG_REMOTE;
+    unsigned int ret;
+
+    // handle_mm_fault() and hmm_range_fault() may invalidate the range, which
+    // calls hmm_invalidate() and takes the va_block lock, so the caller must
+    // have dropped it. The migrate lock stays held so that another thread
+    // cannot migrate this block out from under the fixup and livelock fault
+    // servicing.
+    //
+    // Note that we cannot use uvm_assert_mutex_unlocked() here because that
+    // does not take into account which thread owns the mutex. If another
+    // thread has acquired the lock then the assertion will fail.
+    uvm_assert_mutex_locked(&va_block->hmm.migrate_lock);
+    uvm_assert_mmap_lock_locked(service_context->block_context->mm);
+
+    // Not an HTTU fault: fault the page in for write with hmm_range_fault(),
+    // which may break CoW and raise MMU notifiers, and record the resulting
+    // CPU page in the va_block.
+    if (uvm_page_mask_test_and_clear(&service_context->ats_pte_write_mask, page_index)) {
+        NV_STATUS status;
+
+        uvm_mutex_lock(&va_block->lock);
+        status = uvm_hmm_va_block_update_residency_info(va_block,
+                                                        service_context->block_context->mm,
+                                                        uvm_va_block_cpu_page_address(va_block, page_index),
+                                                        true);
+        uvm_mutex_unlock(&va_block->lock);
+
+        return status;
+    }
+
+    if (!uvm_page_mask_test_and_clear(&service_context->ats_pte_fixup_mask, page_index))
+        return NV_OK;
+
+    // mmap_lock is held, so the VMA permissions cannot change here. A write
+    // fault on a read-only VMA was downgraded to a read by the caller, since
+    // uvm_hmm_compute_logical_prot() derives the logical permission from the
+    // VMA, so don't ask for write.
+    if (fault_access_type >= UVM_FAULT_ACCESS_TYPE_WRITE && (vma->vm_flags & VM_WRITE))
+        flags |= FAULT_FLAG_WRITE;
+
+    // FAULT_FLAG_ALLOW_RETRY and FAULT_FLAG_VMA_LOCK are not set, so
+    // handle_mm_fault() cannot return VM_FAULT_RETRY and never drops
+    // mmap_lock: vma stays valid across the call. For an HTTU fault this only
+    // sets the access flag and/or dirty bit. The va_block lock has been
+    // dropped since the snapshot, so the PTE may have changed and
+    // handle_mm_fault() can still do more (for example a NUMA hinting
+    // migration), which is safe because the va_block lock is not held, and
+    // which can fail.
+    ret = UVM_HANDLE_MM_FAULT(vma, uvm_va_block_cpu_page_address(va_block, page_index), flags);
+
+    // Map VM_FAULT_ERROR the same way as uvm_populate_pageable_vma():
+    // SIGSEGV, SIGBUS and HWPOISON become NV_ERR_INVALID_ADDRESS, the GPU
+    // equivalent of the signal a CPU thread would receive, and VM_FAULT_OOM
+    // becomes NV_ERR_NO_MEMORY. Ignoring the error would replay the same
+    // fault for as long as the error persists.
+    if (ret & VM_FAULT_ERROR)
+        return errno_to_nv_status(vm_fault_to_errno(ret, 0));
+
+    return NV_OK;
 }
 
 #endif // UVM_IS_CONFIG_HMM()

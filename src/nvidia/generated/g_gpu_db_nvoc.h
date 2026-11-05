@@ -69,6 +69,11 @@ typedef struct GPU_COMPUTE_POLICY_INFO
     // are restricted to four levels : default, short, medium and long.
     //
     NvU32 timeslice;
+    //
+    // Scheduling priority for compute work on this GPU. Maps to runlist
+    // interleave levels. Four levels: default, low, medium, high.
+    //
+    NvU32 schedulingPriority;
     // Future policies to be added here
 } GPU_COMPUTE_POLICY_INFO;
 

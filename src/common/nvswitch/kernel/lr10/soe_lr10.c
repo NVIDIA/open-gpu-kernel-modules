@@ -1201,6 +1201,7 @@ _soeEmemTransfer_LR10
     NvU32      *pData = (NvU32 *)pBuf;
     NvU32       startEmem;
     NvU32       endEmem;
+    NvU32       ememSize;
     NvU32       reg32;
     NvU32       i;
     NvU32       ememCOffset;
@@ -1258,12 +1259,24 @@ _soeEmemTransfer_LR10
     startEmem = soeGetEmemStartOffset_HAL(device, pSoe);
 
     // END_EMEM = START_EMEM + SIZE_EMEM (the size of EMEM is given in blocks)
-    endEmem = startEmem + soeGetEmemSize_HAL(device, pSoe);
+    ememSize = soeGetEmemSize_HAL(device, pSoe);
+    endEmem = startEmem + ememSize;
 
-    if (dmemAddr < startEmem || (dmemAddr + sizeBytes) > endEmem)
+    if (endEmem <= startEmem)
     {
         NVSWITCH_PRINT(device, ERROR,
-            "%s: copy must be in EMEM aperature [0x%x, 0x%x)\n",
+            "%s: invalid EMEM aperture [0x%x, 0x%x)\n",
+            __FUNCTION__, startEmem, endEmem);
+        NVSWITCH_ASSERT(0);
+        return;
+    }
+
+    if ((dmemAddr < startEmem) ||
+        (sizeBytes > ememSize) ||
+        (dmemAddr > (endEmem - sizeBytes)))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: copy must be in EMEM aperture [0x%x, 0x%x)\n",
             __FUNCTION__, startEmem, endEmem);
         NVSWITCH_ASSERT(0);
         return;
@@ -2181,7 +2194,18 @@ _soeQMgrCreateQueuesFromInitMsg
     for (i = 0; i < pFlcn->numQueues; i++)
     {
         queueLogId = pInit->qInfo[i].queueLogId;
-        NVSWITCH_ASSERT(queueLogId < pFlcn->numQueues);
+        if (queueLogId >= pFlcn->numQueues)
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s: Invalid SOE queueLogId 0x%x (numQueues=%u).\n",
+                __FUNCTION__, queueLogId, (NvU32)pFlcn->numQueues);
+            return NV_ERR_INVALID_STATE;
+        }
+    }
+
+    for (i = 0; i < pFlcn->numQueues; i++)
+    {
+        queueLogId = pInit->qInfo[i].queueLogId;
         pQueue = &pQueueInfo->pQueues[queueLogId];
         status = flcnQueueConstruct_dmem_nvswitch(
                      device,
@@ -2297,6 +2321,9 @@ _soeGetInitMessage
     NvU32               tail    = 0;
     PFALCON_QUEUE_INFO  pQueueInfo;
     // on the GPU, rmEmemPortId = sec2RmEmemPortIdGet_HAL(...);
+    NvU32               initMsgSize =
+                            (NvU32)RM_SOE_MSG_SIZE(INIT, SOE_INIT);
+    NvU32               msgBodySize;
     NvU8                rmEmemPortId = 0;
 
     if (pFlcn == NULL)
@@ -2358,6 +2385,17 @@ _soeGetInitMessage
         goto _soeGetInitMessage_exit;
     }
 
+    if (pMsg->hdr.size != initMsgSize)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: invalid SOE INIT message size=0x%x expected=0x%x\n",
+            __FUNCTION__, pMsg->hdr.size, initMsgSize);
+        status = NV_ERR_INVALID_STATE;
+        goto _soeGetInitMessage_exit;
+    }
+
+    msgBodySize = initMsgSize - RM_FLCN_QUEUE_HDR_SIZE;
+
     // read the message body and update the tail position
     if (pFlcn->bEmemEnabled)
     {
@@ -2369,7 +2407,7 @@ _soeGetInitMessage
             device, pFlcn->pFlcnable,
             tail + RM_FLCN_QUEUE_HDR_SIZE,              // src
             (NvU8 *)&pMsg->msg,                         // pDst
-            pMsg->hdr.size - RM_FLCN_QUEUE_HDR_SIZE,    // numBytes
+            msgBodySize,                                // numBytes
             rmEmemPortId);                              // port
     }
     else
@@ -2378,7 +2416,7 @@ _soeGetInitMessage
             pFlcn,
             tail + RM_FLCN_QUEUE_HDR_SIZE,              // src
             (NvU8 *)&pMsg->msg,                         // pDst
-            pMsg->hdr.size - RM_FLCN_QUEUE_HDR_SIZE,    // numBytes
+            msgBodySize,                                // numBytes
             0);                                         // port
         if (status != NV_OK)
         {

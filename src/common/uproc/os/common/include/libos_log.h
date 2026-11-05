@@ -28,6 +28,13 @@
 #include <stdarg.h>
 #include "libos_printf_arg.h"
 
+#if defined(GSPRM_HWASAN_ENABLE)
+#include "libasan.h"
+#else
+// Openrm can't include libasan.h so we'll provide what it needs directly.
+#define SANITIZER_INTERFACE_AWARE
+#endif
+
 #if defined(NVRM)
 #include "nvctassert.h"
 #include "utils/nvprintf_level.h"
@@ -238,7 +245,14 @@ ct_assert(LOG_LEVEL_ERROR == LEVEL_ERROR);
 #define MAKE_LIBOS_LOGGING_STR(str) str
 #endif
 
-#define LIBOS_SECTION_LOGGING __attribute__((section(".logging")))
+//
+// Opt log infrastructure out of HWASAN globals tagging. Clang will otherwise
+// tag these globals, baking tagged filename/format pointers into the metadata
+// structs. This confuses the host-side log decoder logic which uses the raw
+// .logging segment image and can't follow tagged VAs.
+//
+
+#define LIBOS_SECTION_LOGGING __attribute__((section(".logging"))) SANITIZER_INTERFACE_AWARE
 
 // The compiler used for Windows doesn't have access to the format attribute
 #if defined(__GNUC__)
@@ -276,11 +290,11 @@ void LibosLogEntry(NvU64 nArgs, ...);
  * appending its own default flags.
  */
 #if defined(__clang__)
-#define LIBOS_SECTION_LOGGING_CONST    __attribute__((section(".logging_const")))
+#define LIBOS_SECTION_LOGGING_CONST    __attribute__((section(".logging_const"))) SANITIZER_INTERFACE_AWARE
 #else
 #define LIBOS_SECTION_LOGGING_CONST    __attribute__((section(".logging_const, \"MSa\", @progbits, 1 #")))
 #endif
-#define LIBOS_SECTION_LOGGING_METADATA __attribute__((section(".logging_metadata")))
+#define LIBOS_SECTION_LOGGING_METADATA __attribute__((section(".logging_metadata"))) SANITIZER_INTERFACE_AWARE
 #define LIBOS_LOGGING_AUX_METADATA_DUMP \
     static const LIBOS_SECTION_LOGGING_CONST int  libos_dummy_line[] LIBOS_ATTR_USED = {__LINE__};
 

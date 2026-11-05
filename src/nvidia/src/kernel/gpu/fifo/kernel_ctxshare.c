@@ -26,6 +26,7 @@
 #include "kernel/gpu/fifo/kernel_ctxshare.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
+
 #include "vgpu/rpc.h"
 #include "gpu/device/device.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
@@ -124,6 +125,15 @@ kctxshareapiConstruct_IMPL
     NV_ASSERT_OR_RETURN((rmStatus == NV_OK), rmStatus);
     NV_ASSERT_OR_RETURN((pVAS != NULL), NV_ERR_INVALID_STATE);
 
+    //
+    // Pick the HandleVAS that will be bound on this ctxshare. Mirrors how
+    // pVAS is selected above:
+    //   - legacy mode -> TSG's pHandleVAS (== group->pHandleVAS).
+    //   - client-allocated mode -> pHandleVasApi resolved from ctxshare
+    //     alloc params, or NULL if no HandleVAS was supplied.
+    //
+    HANDLE_VASPACE *pBoundHandleVAS = NULL;
+
     NV_ASSERT_OK_OR_GOTO(rmStatus,
                          serverAllocShareWithHalspecParent(&g_resServ, classInfo(KernelCtxShare), &pShared, staticCast(pGpu, Object)),
                          failed);
@@ -133,6 +143,7 @@ kctxshareapiConstruct_IMPL
                                              pKernelCtxShareApi,
                                              pGpu,
                                              pVAS,
+                                             pBoundHandleVAS,
                                              pUserParams->flags,
                                              &pUserParams->subctxId,
                                              pKernelChannelGroupApi),
@@ -355,6 +366,7 @@ kctxshareInitCommon_IMPL
     KernelCtxShareApi     *pKernelCtxShareApi,
     OBJGPU                *pGpu,
     OBJVASPACE            *pVAS,
+    HANDLE_VASPACE        *pHandleVAS,
     NvU32                  Flags,
     NvU32                 *pSubctxId,
     KernelChannelGroupApi *pKernelChannelGroupApi
@@ -521,6 +533,7 @@ kctxshareInitCommon_IMPL
     }
 
     pKernelCtxShare->pVAS                = pVAS;
+    pKernelCtxShare->pHandleVAS          = pHandleVAS;
     pKernelCtxShare->subctxId            = NvU64_LO32(subctxOffset);
     pKernelCtxShare->vaSpaceId           = NvU64_LO32(vaSpaceOffset);
     pKernelCtxShare->pKernelChannelGroup = pKernelChannelGroup;

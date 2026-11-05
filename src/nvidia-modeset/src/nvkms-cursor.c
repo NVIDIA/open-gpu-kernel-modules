@@ -178,7 +178,6 @@ FlipCursorImage(NVDispEvoPtr pDispEvo,
                 NvU32 apiHead,
                 const struct NvKmsSetCursorImageCommonParams *pImageParams)
 {
-    const NvU32 sd = pDispEvo->displayOwner;
     NvBool ret;
     struct NvKmsFlipRequestOneHead *pFlipHead =
         nvCalloc(1, sizeof(*pFlipHead));
@@ -187,7 +186,6 @@ FlipCursorImage(NVDispEvoPtr pDispEvo,
         return FALSE;
     }
 
-    pFlipHead->sd = sd;
     pFlipHead->head = apiHead;
     pFlipHead->flip.cursor.image = *pImageParams;
     pFlipHead->flip.cursor.imageSpecified = TRUE;

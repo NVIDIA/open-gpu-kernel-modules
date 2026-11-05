@@ -31,7 +31,6 @@
 #include "published/maxwell/gm107/dev_fb.h"
 #include "published/maxwell/gm107/dev_bus.h"
 #include "published/maxwell/gm107/dev_flush.h"
-#include "published/maxwell/gm107/dev_fifo.h"
 
 // Based on busFlushSingle_GM107
 
@@ -155,48 +154,6 @@ kmemsysDoCacheOp_GM107
 #endif // DEBUG
 
     return rmStatus;
-}
-
-void
-kmemsysWriteL2SysmemInvalidateReg_GM107
-(
-    OBJGPU             *pGpu,
-    KernelMemorySystem *pKernelMemorySystem,
-    NvU32               value
-)
-{
-    GPU_REG_WR32(pGpu, NV_UFLUSH_L2_SYSMEM_INVALIDATE, value);
-}
-
-NvU32
-kmemsysReadL2SysmemInvalidateReg_GM107
-(
-    OBJGPU             *pGpu,
-    KernelMemorySystem *pKernelMemorySystem
-)
-{
-    return GPU_REG_RD32(pGpu, NV_UFLUSH_L2_SYSMEM_INVALIDATE);
-}
-
-void
-kmemsysWriteL2PeermemInvalidateReg_GM107
-(
-    OBJGPU             *pGpu,
-    KernelMemorySystem *pKernelMemorySystem,
-    NvU32               value
-)
-{
-    GPU_REG_WR32(pGpu, NV_UFLUSH_L2_PEERMEM_INVALIDATE, value);
-}
-
-NvU32
-kmemsysReadL2PeermemInvalidateReg_GM107
-(
-    OBJGPU             *pGpu,
-    KernelMemorySystem *pKernelMemorySystem
-)
-{
-    return GPU_REG_RD32(pGpu, NV_UFLUSH_L2_PEERMEM_INVALIDATE);
 }
 
 /*!
@@ -445,25 +402,4 @@ kmemsysGetMaximumBlacklistPages_GM107
 )
 {
     return NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES;
-}
-
-/*!
- * @brief  Do any operations to get ready for a XVE sw reset.
- *
- * Set the PFIFO_FB_IFACE to DISABLE
- *
- * @return NV_OK
- */
-NV_STATUS
-kmemsysPrepareForXVEReset_GM107
-(
-    OBJGPU             *pGpu,
-    KernelMemorySystem *pKernelMemorySystem
-)
-{
-    GPU_REG_WR32(pGpu, NV_PFIFO_FB_IFACE,
-                 DRF_DEF(_PFIFO, _FB_IFACE, _CONTROL, _DISABLE) |
-                 DRF_DEF(_PFIFO, _FB_IFACE, _STATUS, _DISABLED));
-
-    return NV_OK;
 }

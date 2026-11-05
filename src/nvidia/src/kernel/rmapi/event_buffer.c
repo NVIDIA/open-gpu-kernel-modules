@@ -35,6 +35,7 @@
 #include "rmapi/rs_utils.h"
 #include "rmapi/rmapi_utils.h"
 #include "kernel/gpu/gr/fecs_event_list.h"
+#include "kernel/diagnostics/nocat_event_list.h"
 
 #include "gpu/bus/kern_bus.h"
 #include "mem_mgr/no_device_mem.h"
@@ -460,9 +461,9 @@ eventbufferConstruct_IMPL
         }
         else
         {
-            status = osUserHandleToKernelPtr(pCallContext->pClient->hClient,
-                                             (NvP64)pAllocParams->notificationHandle,
-                                             &kernelNotificationhandle);
+            status = osGetAndRefEventFromUserHandle(pCallContext->pClient->hClient,
+                                                    (NvP64)pAllocParams->notificationHandle,
+                                                    &kernelNotificationhandle);
             if (status != NV_OK)
                 goto cleanup;
         }
@@ -526,6 +527,7 @@ eventbufferDestruct_IMPL
 #if KERNEL_GSP_TRACING_RATS_ENABLED
     gspRatsRemoveAllBindpoints(pEventBuffer);
 #endif
+    nocatRemoveAllBindpoints(pEventBuffer);
 
     _unmapAndFreeMemory(pEventBuffer->pHeaderDesc, bKernel, pKernelMap->headerAddr,
         pKernelMap->headerPriv, pClientMap->headerAddr, pClientMap->headerPriv);

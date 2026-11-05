@@ -121,6 +121,10 @@ struct uvm_user_channel_struct
     // The value that is used when ringing the channel's doorbell.
     NvU32 work_submission_token;
 
+    // Live-updated token location in the channel's notifier page.
+    // NULL if not available (e.g. user-managed notifier).
+    volatile NvU32 *p_work_submission_token;
+
     // Id of the SMC engine this channel is bound to, or zero if the GPU
     // does not support SMC or it is a CE channel
     NvU32 smc_engine_id;

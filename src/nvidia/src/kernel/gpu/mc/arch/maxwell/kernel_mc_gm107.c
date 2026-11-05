@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,30 +27,6 @@
 #include "os/os.h"
 
 #include "published/maxwell/gm107/dev_pmc.h"
-
-/*!
- * @brief Returns the BAR0 offset and size of the PMC range.
- *
- * @param[in] pGpu
- * @param[in] pKernelMc
- * @param[out] pBar0MapOffset
- * @param[out] pBar0MapSize
- *
- * @return NV_STATUS
- */
-NV_STATUS
-kmcGetMcBar0MapInfo_GM107
-(
-    OBJGPU  *pGpu,
-    KernelMc  *pKernelMc,
-    NvU64   *pBar0MapOffset,
-    NvU32   *pBar0MapSize
-)
-{
-    *pBar0MapOffset = DRF_BASE(NV_PMC);
-    *pBar0MapSize = DRF_SIZE(NV_PMC);
-    return NV_OK;
-}
 
 //
 // This function is used to power-up the engines before we do a full-chip
@@ -112,14 +88,4 @@ kmcWritePmcEnableReg_GM107
     osDelayUs(NV_PMC_RESET_DELAY_US);
 
     return NV_OK;
-}
-
-NvU32
-kmcReadPmcBoot0_GM107
-(
-    OBJGPU  *pGpu,
-    KernelMc  *pKernelMc
-)
-{
-    return GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
 }

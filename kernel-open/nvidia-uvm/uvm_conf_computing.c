@@ -65,6 +65,37 @@ static ulong uvm_conf_computing_channel_iv_rotation_limit = UVM_CONF_COMPUTING_I
 
 module_param(uvm_conf_computing_channel_iv_rotation_limit, ulong, S_IRUGO);
 
+unsigned uvm_force_conf_computing = 0;
+module_param(uvm_force_conf_computing, uint, S_IRUGO);
+
+// UVM mode               TDISP          CC
+//
+// Non-CC, BMSAI              0           0
+// Bounce-buffer CC           0           1
+// Not supported              1           0
+// TDISP-CC                   1           1
+NV_STATUS uvm_conf_computing_init(const UvmPlatformInfo *platform_info)
+{
+    g_uvm_global.hw_conf_computing_enabled = platform_info->confComputingEnabled;
+    g_uvm_global.tdisp_enabled = platform_info->tdispEnabled;
+
+    if (platform_info->tdispEnabled) {
+        if (!platform_info->confComputingEnabled)
+            return NV_ERR_NOT_SUPPORTED;
+
+        // TDISP-CC is transparent for UVM
+        g_uvm_global.conf_computing_enabled = NV_FALSE;
+    }
+    else {
+        g_uvm_global.conf_computing_enabled = platform_info->confComputingEnabled;
+    }
+
+    g_uvm_global.conf_computing_enabled =
+        g_uvm_global.conf_computing_enabled || uvm_force_conf_computing;
+
+    return NV_OK;
+}
+
 void uvm_conf_computing_check_parent_gpu(const uvm_parent_gpu_t *parent)
 {
     uvm_assert_mutex_locked(&g_uvm_global.global_lock);
@@ -72,7 +103,7 @@ void uvm_conf_computing_check_parent_gpu(const uvm_parent_gpu_t *parent)
     // Confidential Computing enablement on the system should match enablement
     // on the GPU.
     UVM_ASSERT(parent->rm_info.gpuConfComputeCaps.bConfComputingEnabled == g_uvm_global.conf_computing_enabled);
-}
+    }
 
 static void dma_buffer_destroy_locked(uvm_conf_computing_dma_buffer_pool_t *dma_buffer_pool,
                                       uvm_conf_computing_dma_buffer_t *dma_buffer)
@@ -348,6 +379,7 @@ void uvm_conf_computing_dma_buffer_free(uvm_conf_computing_dma_buffer_pool_t *dm
 static void dummy_iv_mem_deinit(uvm_gpu_t *gpu)
 {
     uvm_mem_free(gpu->conf_computing.iv_mem);
+    gpu->conf_computing.iv_mem = NULL;
 }
 
 static NV_STATUS dummy_iv_mem_init(uvm_gpu_t *gpu)

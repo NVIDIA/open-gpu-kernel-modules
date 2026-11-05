@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -160,7 +160,7 @@ static NvBool _gpuCheckIsBar0OffByN(OBJGPU *pGpu)
     // Check to see if we can find PMC_BOOT_0
     for (i = 0; i < 20; i++)
     {
-        pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0 + (i * 4));
+        pmcBoot0 = GPU_REG_RD32(pGpu, gpuGetPmcBoot0Addr_HAL(pGpu) + (i * 4));
         if (pmcBoot0 == pGpu->chipId0)
         {
             break;
@@ -270,7 +270,7 @@ NV_STATUS gpuSanityCheck_IMPL
         //
         if (!API_GPU_IN_RESET_SANITY_CHECK(pGpu))
         {
-            NvU32 pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+            NvU32 pmcBoot0 = GPU_REG_RD32(pGpu, gpuGetPmcBoot0Addr_HAL(pGpu));
             if (pmcBoot0 != pGpu->chipId0)
             {
                 flagsFailed |= GPU_SANITY_CHECK_FLAGS_BOOT_0;

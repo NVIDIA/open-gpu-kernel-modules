@@ -82,6 +82,11 @@
 #define NVGMC_SI_FHB_BUSINFO_REVISION_ID                                        0x0090
 #define NVGMC_SI_CHIPSET_BUSINFO_REVISION_ID                                    0x0091
 
+/* Default timeout values for different modes */
+#define NVGMC_SI_DEFAULT_TIMEOUT_US_VGPU                                        0x00A0
+#define NVGMC_SI_DEFAULT_TIMEOUT_US_GRAPHICS_MODE                               0x00A1
+#define NVGMC_SI_DEFAULT_TIMEOUT_US_COMPUTE_MODE                                0x00A2
+
 /*
  * ACPI Method Data Keys.  All are 32-bit values.
  */
@@ -147,6 +152,8 @@
 #define NVGMC_SI_FEATURE_FLAGS_CLOCK_BOOST_SUPPORTED                            4:4
 #define NVGMC_SI_FEATURE_FLAGS_IS_CMC_BASED_HWS                                 5:5
 #define NVGMC_SI_FEATURE_FLAGS_WINDOW_CHANNEL_ALWAYS_MAPPED                     6:6
+#define NVGMC_SI_FEATURE_FLAGS_TDISP_ENABLED                                    7:7
+#define NVGMC_SI_FEATURE_FLAGS_DEFAULT_CHANNEL_INTERLEAVED_SCHED               8:8
 
 #define NVGMC_SI_VF_FLAGS                                                       0x1003
 #define NVGMC_SI_VF_FLAGS_64BIT_BAR0                                            0:0

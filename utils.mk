@@ -180,7 +180,7 @@ endif
 
 # This variable controls which floating-point ABI is targeted.  For ARM, it
 # defaults to "gnueabi" for softfp.  Another option is "gnueabihf" for
-# hard(fp).  This is necessary to pick up the correct rtld_test binary.
+# hard(fp).
 # All other architectures default to empty.
 ifeq ($(TARGET_ARCH),armv7l)
   TARGET_ARCH_ABI     ?= gnueabi

@@ -333,13 +333,11 @@ gpuHandleSanityCheckRegReadError_GH100
             // suppress the rest, and emit a summary when the message changes
             // or the window expires (Bug 6265510).
             //
-            NvU32 nowSec, nowUsec;
+            NvU64 nowNs = osGetMonotonicTimeNs();
             NvBool bSame = (addr == pGpu->priReadErrLastAddr) &&
                            (value == pGpu->priReadErrLastValue);
 
-            osGetSystemTime(&nowSec, &nowUsec);
-
-            if (!bSame || (nowSec - pGpu->priReadErrTimeSec) >= 1)
+            if (!bSame || (nowNs - pGpu->priReadErrTimeNs) >= NSEC_PER_SEC)
             {
                 if (pGpu->priReadErrCount > 2)
                 {
@@ -350,7 +348,7 @@ gpuHandleSanityCheckRegReadError_GH100
                               pGpu->priReadErrCount - 2);
                 }
 
-                pGpu->priReadErrTimeSec  = nowSec;
+                pGpu->priReadErrTimeNs   = nowNs;
                 pGpu->priReadErrLastAddr  = addr;
                 pGpu->priReadErrLastValue = value;
                 pGpu->priReadErrCount     = 0;
@@ -414,6 +412,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GH100[] =
     GPU_CHILD_PRESENT(OBJTMR, 1),
     GPU_CHILD_PRESENT(KernelMIGManager, 1),
     GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelVbios, 1),
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),

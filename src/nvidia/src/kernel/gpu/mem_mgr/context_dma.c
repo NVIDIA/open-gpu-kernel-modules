@@ -60,25 +60,19 @@ _ctxdmaDestroyFBMappings
     OBJGPU     *pGpu
 )
 {
-    NvU32 gpuSubDevInst;
-
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-
-    gpuSubDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-
-    if (pContextDma->KernelVAddr[gpuSubDevInst] != NULL)
+    if (pContextDma->KernelVAddr != NULL)
     {
         RsCpuMapping *pCpuMapping = NULL;
         RsResourceRef *pMemoryRef = RES_GET_REF(pContextDma->pMemory);
         refFindCpuMapping(pMemoryRef,
-                NV_PTR_TO_NvP64(pContextDma->KernelVAddr[gpuSubDevInst]),
+                NV_PTR_TO_NvP64(pContextDma->KernelVAddr),
                 &pCpuMapping);
 
         //
         // It is actually expected that in some cases KernelVAddr != NULL but
         // that no mappings exist.  There are scenarios where the memory
         // mapping will be freed before we get here (CliDelDeviceMemory).
-        // KernelVAddr[i] may be non-null, but the mapping has been
+        // KernelVAddr may be non-null, but the mapping has been
         // freed and it is no longer valid.  So we just mark it as NULL and
         // continue.
         //
@@ -89,12 +83,12 @@ _ctxdmaDestroyFBMappings
             if(pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
             {
                 kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus, pContextDma->pMemDesc,
-                                                pContextDma->KernelVAddr[gpuSubDevInst],
+                                                pContextDma->KernelVAddr,
                                                 pContextDma->KernelPriv);
             }
             else
             {
-                osUnmapPciMemoryKernelOld(pGpu, pContextDma->KernelVAddr[gpuSubDevInst]);
+                osUnmapPciMemoryKernelOld(pGpu, pContextDma->KernelVAddr);
             }
             refRemoveMapping(pMemoryRef, pCpuMapping);
 
@@ -106,21 +100,19 @@ _ctxdmaDestroyFBMappings
              // guest OS (where IS_VIRTUAL(pGpu) is true).
              //
             if (!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu) &&
-                (pContextDma->FbApertureLen[gpuSubDevInst] != 0))
+                (pContextDma->FbApertureLen != 0))
             {
                 kbusUnmapFbApertureSingle(pGpu, pKernelBus, pContextDma->pMemDesc,
-                                          pContextDma->FbAperture[gpuSubDevInst],
-                                          pContextDma->FbApertureLen[gpuSubDevInst],
+                                          pContextDma->FbAperture,
+                                          pContextDma->FbApertureLen,
                                           BUS_MAP_FB_FLAGS_MAP_UNICAST);
-                pContextDma->FbAperture[gpuSubDevInst]    = (NvU64)-1;
-                pContextDma->FbApertureLen[gpuSubDevInst] = 0;
+                pContextDma->FbAperture    = (NvU64)-1;
+                pContextDma->FbApertureLen = 0;
             }
         }
 
-        pContextDma->KernelVAddr[gpuSubDevInst] = NULL;
+        pContextDma->KernelVAddr = NULL;
     }
-
-    SLI_LOOP_END
 }
 
 NV_STATUS
@@ -133,7 +125,7 @@ ctxdmaConstruct_IMPL
 {
     NV_STATUS                         status;
     NV_CONTEXT_DMA_ALLOCATION_PARAMS *pAllocParams = pParams->pAllocParams;
-    NvU32                             cachesnoop, type, i;
+    NvU32                             cachesnoop, type;
     NvBool                            bReadOnly;
     RsResourceRef                    *pMemoryRef;
     NvHandle                          hParentFromMemory;
@@ -205,23 +197,12 @@ ctxdmaConstruct_IMPL
     pContextDma->Type                 = type;
     pContextDma->Limit                = limit;
 
-    for (i = 0; i < NV_ARRAY_ELEMENTS(pContextDma->KernelVAddr); i++)
-        pContextDma->KernelVAddr[i]   = NULL;
-
+    pContextDma->KernelVAddr          = NULL;
     pContextDma->KernelPriv           = NULL;
-
-    for (i = 0; i < NV_ARRAY_ELEMENTS(pContextDma->FbAperture); i++)
-    {
-        pContextDma->FbAperture[i]    = (NvU64)-1;
-        pContextDma->FbApertureLen[i] = 0;
-    }
-
-    for (i = 0; i < NV_ARRAY_ELEMENTS(pContextDma->Instance); i++)
-    {
-        pContextDma->Instance[i]      = 0;
-        pContextDma->InstRefCount[i]  = 0;
-    }
-
+    pContextDma->FbAperture           = (NvU64)-1;
+    pContextDma->FbApertureLen        = 0;
+    pContextDma->Instance             = 0;
+    pContextDma->InstRefCount         = 0;
     pContextDma->pMemDesc             = NULL;
     pContextDma->AddressSpace = ADDR_UNKNOWN;
 
@@ -288,12 +269,10 @@ ctxdmaCtrlCmdUpdateContextdma_IMPL
         NV_CHECK_OR_RETURN(LEVEL_ERROR, pSubdevice->pDevice == pContextDma->pDevice, NV_ERR_INVALID_OBJECT_HANDLE);
 
         pGpu = GPU_RES_GET_GPU(pSubdevice);
-        GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
     }
     else
     {
         pGpu = pContextDma->pGpu;
-        gpuSetThreadBcState(pGpu, !pContextDma->bUnicast);
     }
 
     pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
@@ -309,15 +288,11 @@ ctxdmaCtrlCmdUpdateContextdma_IMPL
 
     comprInfo = DRF_VAL(0002_CTRL_CMD, _UPDATE_CONTEXTDMA_FLAGS, _USE_COMPR_INFO, pUpdateCtxDmaParams->flags);
 
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     pInstMem = KERNEL_DISPLAY_GET_INST_MEM(pKernelDisplay);
 
     status = instmemUpdateContextDma_HAL(pGpu, pInstMem, pContextDma,
                                          pNewAddress, pNewLimit, hMemory, comprInfo);
     NV_ASSERT(status == NV_OK);
-
-    SLI_LOOP_END
 
     return status;
 }
@@ -334,7 +309,6 @@ _ctxdmaDestruct
 
     pGpu = pContextDma->pGpu;
     NV_ASSERT_OR_RETURN(pGpu != NULL, NV_WARN_NULL_OBJECT);
-    gpuSetThreadBcState(pGpu, !pContextDma->bUnicast);
 
     if (pContextDma->bUnicast || RES_GET_PARENT_HANDLE(pContextDma) == RES_GET_HANDLE(pContextDma->pDevice))
     {
@@ -359,14 +333,12 @@ _ctxdmaDestruct
     // Handle unicast sysmem mapping mapping before _ctxdmaDestroyFBMappings()
     if (pContextDma->AddressSpace == ADDR_SYSMEM)
     {
-        NvU32 gpuDevInst = gpumgrGetSubDeviceInstanceFromGpu(gpumgrGetParentGPU(pGpu));
-
-        if (pContextDma->KernelVAddr[gpuDevInst])
+        if (pContextDma->KernelVAddr)
         {
             memdescUnmapOld(pContextDma->pMemory->pMemDesc, NV_TRUE,
-                    pContextDma->KernelVAddr[gpuDevInst],
+                    pContextDma->KernelVAddr,
                     pContextDma->KernelPriv);
-            pContextDma->KernelVAddr[gpuDevInst] = NULL;
+            pContextDma->KernelVAddr = NULL;
             pContextDma->KernelPriv = NULL;
         }
     }
@@ -395,8 +367,6 @@ ctxdmaCtrlCmdBindContextdma_IMPL
 )
 {
     NvHandle       hChannel     = pBindCtxDmaParams->hChannel;
-
-    gpuSetThreadBcState(pContextDma->pGpu, !pContextDma->bUnicast);
 
     if (!osIsRaisedIRQL())
     {
@@ -429,8 +399,6 @@ ctxdmaCtrlCmdUnbindContextdma_IMPL
     NV0002_CTRL_UNBIND_CONTEXTDMA_PARAMS *pUnbindCtxDmaParams
 )
 {
-    gpuSetThreadBcState(pContextDma->pGpu, !pContextDma->bUnicast);
-
     API_GPU_FULL_POWER_SANITY_CHECK(pContextDma->pGpu, NV_TRUE, NV_FALSE);
 
     return dispchnUnbindCtx(pContextDma->pGpu, pContextDma, pUnbindCtxDmaParams->hChannel);
@@ -476,8 +444,6 @@ _ctxdmaConstruct
             return NV_ERR_INVALID_OBJECT_PARENT;
     }
 
-    gpuSetThreadBcState(pGpu, !pContextDma->bUnicast);
-
     if (hSubDevice == 0)
     {
         //
@@ -520,7 +486,7 @@ _ctxdmaConstruct
     pContextDma->pMemory = pMemory;
     pContextDma->pGpu = pGpu;
 
-    pContextDma->AddressSpace = memdescGetAddressSpace(memdescGetMemDescFromGpu(pMemDesc, pGpu));
+    pContextDma->AddressSpace = memdescGetAddressSpace(pMemDesc);
 
     // Fail allocation of virtual ContextDmas. These have moved the DynamicMemory.
     if (pContextDma->AddressSpace == ADDR_VIRTUAL)
@@ -544,7 +510,7 @@ _ctxdmaConstruct
             rmStatus = memdescMapOld(
                 pMemDesc,
                 offset, limit+1, NV_TRUE, NV_PROTECT_READ_WRITE,
-                &pContextDma->KernelVAddr[gpumgrGetSubDeviceInstanceFromGpu(gpumgrGetParentGPU(pGpu))],
+                &pContextDma->KernelVAddr,
                 &pContextDma->KernelPriv);
             if (rmStatus != NV_OK)
                 goto done;
@@ -558,108 +524,98 @@ _ctxdmaConstruct
     if ( (DRF_VAL(OS03, _FLAGS, _TYPE, flags) == NVOS03_FLAGS_TYPE_NOTIFIER) &&
          (pContextDma->AddressSpace == ADDR_FBMEM) )
     {
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
+        KernelBus  *pKernelBus    = GPU_GET_KERNEL_BUS(pGpu);
+
+        //
+        // Allocate GPU virtual address space for the video memory region
+        // for those GPUs that support it.
+        //
+        pContextDma->FbApertureLen = pContextDma->Limit + 1;
+
+        //
+        // vGPU:
+        //
+        // Since vGPU does all real hardware management in the
+        // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
+        // do an RPC to the host to do the hardware update.
+        //
+        NV_RM_RPC_MAP_MEMORY(pGpu, hClient, hDevice, RES_GET_HANDLE(pMemory), offset, pContextDma->FbApertureLen,
+                             0, &pContextDma->FbAperture, rmStatus);
+
+        if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
         {
-            KernelBus  *pKernelBus    = GPU_GET_KERNEL_BUS(pGpu);
-            NvU32       gpuSubDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-
-            //
-            // Allocate GPU virtual address space for the video memory region
-            // for those GPUs that support it.
-            //
-            pContextDma->FbApertureLen[gpuSubDevInst] = pContextDma->Limit + 1;
-
-            //
-            // vGPU:
-            //
-            // Since vGPU does all real hardware management in the
-            // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
-            // do an RPC to the host to do the hardware update.
-            //
-            NV_RM_RPC_MAP_MEMORY(pGpu, hClient, hDevice, RES_GET_HANDLE(pMemory), offset, pContextDma->FbApertureLen[gpuSubDevInst],
-                                 0, &pContextDma->FbAperture[gpuSubDevInst], rmStatus);
-
-            if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+            if (rmStatus == NV_OK)
             {
-                if (rmStatus == NV_OK)
-                {
-                    pContextDma->FbAperture[gpuSubDevInst] =
-                        pContextDma->FbAperture[gpuSubDevInst] - pGpu->busInfo.gpuPhysFbAddr;
-                }
+                pContextDma->FbAperture =
+                    pContextDma->FbAperture - pGpu->busInfo.gpuPhysFbAddr;
             }
-            else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
-            {
-                //
-                // Don't add the offset again, as the base address of pContextDma->pMemDesc
-                // already has the offset applied.
-                //
-                rmStatus = kbusMapCoherentCpuMapping_HAL(pGpu,
-                                                         pKernelBus,
-                                                         pContextDma->pMemDesc,
-                                                         0, // Offset already applied.
-                                                         pContextDma->Limit + 1,
-                                                         NV_PROTECT_READ_WRITE,
-                                                         &pContextDma->KernelVAddr[gpuSubDevInst],
-                                                         &pContextDma->KernelPriv);
-
-                if (rmStatus != NV_OK)
-                {
-                    SLI_LOOP_GOTO(done);
-                }
-            }
-            else
-            {
-                rmStatus = kbusMapFbApertureSingle(pGpu, pKernelBus,
-                                                   pMemDesc, offset,
-                                                   &pContextDma->FbAperture[gpuSubDevInst],
-                                                   &pContextDma->FbApertureLen[gpuSubDevInst],
-                                                   BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
-
-                if (rmStatus != NV_OK)
-                {
-                    pContextDma->FbApertureLen[gpuSubDevInst] = 0;
-                    SLI_LOOP_GOTO(done);
-                }
-
-                memdescSetPageSize(pContextDma->pMemDesc, AT_GPU,
-                            memdescGetPageSize(pMemDesc, AT_GPU));
-
-                rmStatus = osMapPciMemoryKernelOld(pGpu,
-                                                gpumgrGetGpuPhysFbAddr(pGpu) + pContextDma->FbAperture[gpuSubDevInst],
-                                                pContextDma->Limit+1,
-                                                NV_PROTECT_READ_WRITE,
-                                                &pContextDma->KernelVAddr[gpuSubDevInst],
-                                                NV_MEMORY_WRITECOMBINED);
-                if (rmStatus != NV_OK)
-                {
-                    // Force out of the SLI loop
-                    SLI_LOOP_BREAK;
-                }
-            }
-
-            {
-                RsResourceRef *pResourceRef = RES_GET_REF(pMemory);
-                RsCpuMapping *pCpuMapping = NULL;
-                RS_CPU_MAP_PARAMS dummyParams;
-                portMemSet(&dummyParams, 0, sizeof(dummyParams));
-
-                refAddMapping(pResourceRef, &dummyParams, pResourceRef->pParentRef, &pCpuMapping);
-                rmStatus = CliUpdateDeviceMemoryMapping(pCpuMapping,
-                                                        NV_TRUE,
-                                                        NvP64_NULL,
-                                                        NV_PTR_TO_NvP64(pContextDma->KernelVAddr[gpuSubDevInst]),
-                                                        pContextDma->Limit+1,
-                                                        pContextDma->FbAperture[gpuSubDevInst],
-                                                        pContextDma->FbApertureLen[gpuSubDevInst],
-                                                        NVOS33_FLAGS_ACCESS_READ_WRITE);
-                pCpuMapping->pPrivate->pGpu = pGpu;
-            }
-
         }
-        SLI_LOOP_END
+        else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+        {
+            //
+            // Don't add the offset again, as the base address of pContextDma->pMemDesc
+            // already has the offset applied.
+            //
+            rmStatus = kbusMapCoherentCpuMapping_HAL(pGpu,
+                                                     pKernelBus,
+                                                     pContextDma->pMemDesc,
+                                                     0, // Offset already applied.
+                                                     pContextDma->Limit + 1,
+                                                     NV_PROTECT_READ_WRITE,
+                                                     &pContextDma->KernelVAddr,
+                                                     &pContextDma->KernelPriv);
 
-        if (rmStatus != NV_OK)
-            goto done;
+            if (rmStatus != NV_OK)
+            {
+                goto done;
+            }
+        }
+        else
+        {
+            rmStatus = kbusMapFbApertureSingle(pGpu, pKernelBus,
+                                               pMemDesc, offset,
+                                               &pContextDma->FbAperture,
+                                               &pContextDma->FbApertureLen,
+                                               BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
+
+            if (rmStatus != NV_OK)
+            {
+                pContextDma->FbApertureLen = 0;
+                goto done;
+            }
+
+            memdescSetPageSize(pContextDma->pMemDesc, AT_GPU,
+                        memdescGetPageSize(pMemDesc, AT_GPU));
+
+            rmStatus = osMapPciMemoryKernelOld(pGpu,
+                                            gpumgrGetGpuPhysFbAddr(pGpu) + pContextDma->FbAperture,
+                                            pContextDma->Limit+1,
+                                            NV_PROTECT_READ_WRITE,
+                                            &pContextDma->KernelVAddr,
+                                            NV_MEMORY_WRITECOMBINED);
+            if (rmStatus != NV_OK)
+            {
+                goto done;
+            }
+        }
+
+        {
+            RsResourceRef *pResourceRef = RES_GET_REF(pMemory);
+            RsCpuMapping *pCpuMapping = NULL;
+            RS_CPU_MAP_PARAMS dummyParams;
+            portMemSet(&dummyParams, 0, sizeof(dummyParams));
+
+            refAddMapping(pResourceRef, &dummyParams, pResourceRef->pParentRef, &pCpuMapping);
+            rmStatus = CliUpdateDeviceMemoryMapping(pCpuMapping,
+                                                    NV_TRUE,
+                                                    NvP64_NULL,
+                                                    NV_PTR_TO_NvP64(pContextDma->KernelVAddr),
+                                                    pContextDma->Limit+1,
+                                                    pContextDma->FbAperture,
+                                                    pContextDma->FbApertureLen,
+                                                    NVOS33_FLAGS_ACCESS_READ_WRITE);
+            pCpuMapping->pPrivate->pGpu = pGpu;
+        }
     }
 
 done:
@@ -756,8 +712,7 @@ ctxdmaGetKernelVA_IMPL
     ContextDma *pContextDma,
     NvU64       Start,
     NvU64       Length,
-    void      **ppAddress,
-    NvU32       VA_idx
+    void      **ppAddress
 )
 {
     NV_STATUS status;
@@ -774,10 +729,10 @@ ctxdmaGetKernelVA_IMPL
     if (status != NV_OK)
         return status;
 
-    if (pContextDma->KernelVAddr[VA_idx] == NULL)
+    if (pContextDma->KernelVAddr == NULL)
         return NV_ERR_DMA_MEM_NOT_LOCKED;
 
-    *ppAddress = (NvU8*)pContextDma->KernelVAddr[VA_idx] + Start;
+    *ppAddress = (NvU8*)pContextDma->KernelVAddr + Start;
 
     return NV_OK;
 }
@@ -789,7 +744,6 @@ ctxdmaMapTo_IMPL
     RS_RES_MAP_TO_PARAMS *pParams
 )
 {
-    OBJGPU            *pGpu = pParams->pGpu;
     MEMORY_DESCRIPTOR *pSrcMemDesc = pParams->pSrcMemDesc;
     NvU64              offset = pParams->offset;
 
@@ -798,8 +752,8 @@ ctxdmaMapTo_IMPL
     // the given context target context dma. still useful for dFPGA.
     // It is used by mods.
     //
-    if ((memdescGetAddressSpace(memdescGetMemDescFromGpu(pSrcMemDesc, pGpu)) == ADDR_FBMEM) &&
-        (memdescGetAddressSpace(memdescGetMemDescFromGpu(pContextDma->pMemDesc, pGpu)) == ADDR_FBMEM))
+    if ((memdescGetAddressSpace(pSrcMemDesc) == ADDR_FBMEM) &&
+        (memdescGetAddressSpace(pContextDma->pMemDesc) == ADDR_FBMEM))
     {
         RmPhysAddr physaddr;
         if (!memdescGetContiguity(pSrcMemDesc, AT_GPU))
@@ -847,11 +801,5 @@ ctxdmaIsBound_IMPL
     ContextDma *pContextDma
 )
 {
-    NvU32 refs = 0;
-    NvU32 i;
-
-    for (i=0; i < NV_MAX_SUBDEVICES; i++)
-        refs += pContextDma->InstRefCount[i];
-
-    return refs != 0;
+    return pContextDma->InstRefCount != 0;
 }

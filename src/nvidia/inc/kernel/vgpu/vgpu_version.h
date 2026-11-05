@@ -30,8 +30,8 @@
 
 #define RPC_VERSION_FROM_VGX_VERSION(major, minor) (DRF_NUM(_RPC, _VERSION_NUMBER, _MAJOR, major) | \
                                                     DRF_NUM(_RPC, _VERSION_NUMBER, _MINOR, minor))
-#define VGX_MAJOR_VERSION_NUMBER 0x2F
-#define VGX_MINOR_VERSION_NUMBER 0x06
+#define VGX_MAJOR_VERSION_NUMBER 0x30
+#define VGX_MINOR_VERSION_NUMBER 0x0C
 
 #define VGX_MAJOR_VERSION_NUMBER_VGPU_17_0 0x25
 #define VGX_MAJOR_VERSION_NUMBER_VGPU_18_0 0x29
@@ -39,6 +39,7 @@
 #define VGX_MAJOR_VERSION_NUMBER_VGPU_19_0 0x2B
 #define VGX_MINOR_VERSION_NUMBER_VGPU_19_0 0x13
 #define VGX_MAJOR_VERSION_NUMBER_VGPU_20_0 0x2D
+#define VGX_MAJOR_VERSION_NUMBER_VGPU_21_0 0x30
 
 /**
  * This macro have the mapping between internal (RPC) and external version
@@ -51,6 +52,7 @@
  * 2. This is the first break in migration compatibility after a release.
  */
 #define NV_VGPU_GRIDSW_INTERNAL_TO_EXTERNAL_VERSION_MAPPING \
+    {{0x30, 0x00}, {0x30, 0x0C}, {0x1F, 0x01}},                     \
     {{0x2F, 0x00}, {0x2F, 0x06}, {0x1E, 0x01}},                     \
     {{0x2E, 0x00}, {0x2E, 0x0D}, {0x1D, 0x01}},                     \
     {{0x2D, 0x00}, {0x2D, 0x03}, {0x1C, 0x01}},    /* R595 */       \
@@ -110,7 +112,7 @@
 
 /* WARNING: Should be updated with each vGPU release, if there is a break in
  * migration compatibility during the development of that release. */
-#define NV_VGPU_MAX_SUPPORTED_GRIDSW_VERSION_EXTERNAL_MAJOR 0x1E
+#define NV_VGPU_MAX_SUPPORTED_GRIDSW_VERSION_EXTERNAL_MAJOR 0x1F
 #define NV_VGPU_MAX_SUPPORTED_GRIDSW_VERSION_EXTERNAL_MINOR 0x1
 
 /* WARNING: Should be updated with each vGPU release, if minimum supported

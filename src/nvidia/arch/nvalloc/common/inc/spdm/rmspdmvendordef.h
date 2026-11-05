@@ -139,7 +139,6 @@ typedef union {
 #pragma pack()
 
 /* ------------------------- Macros ----------------------------------------- */
-#define SPDM_MAX_MEASUREMENT_BLOCK_COUNT     (64)
 #define SPDM_CERT_DEFAULT_SLOT_ID            (0)
 #define SPDM_CAPABILITIES_CT_EXPONENT_MAX    (0x1F)
 #define SPDM_DEFAULT_HEARTBEAT_PERIOD_IN_SEC (4)

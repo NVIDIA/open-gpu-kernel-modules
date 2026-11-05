@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,21 +46,24 @@ void nvEvoLogModeValidationModeTimings(NVEvoInfoStringPtr
 
 NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
                                 const struct NvKmsModeValidationParams *pParams,
-                                const struct NvKmsMode *pKmsMode,
-                                const struct NvKmsSize *pViewPortSizeIn,
-                                const struct NvKmsRect *pViewPortOut,
-                                const NvBool colorFormatSpecified,
-                                const NvBool colorBpcSpecified,
-                                NVDpyAttributeColor *pDpyColor,
-                                NVHwModeTimingsEvo *pTimingsEvo,
+                                struct NvKmsMode *pKmsMode,
+                                const NvBool yuv420ModeSpecified,
+                                const enum NvYuv420Mode yuv420ModeIn,
+                                enum NvYuv420Mode *pYuv420ModeOut,
+                                NvBool *pDscPassThrough,
                                 NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
                                 NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
                                 NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpInfoFrameCtrl);
 
-const NVT_TIMING *nvFindEdidNVT_TIMING(
+const NVT_TIMING *nvFindEdidNVT_TIMING
+(
     const NVDpyEvoRec *pDpyEvo,
     const NvModeTimings *pModeTimings,
-    const struct NvKmsModeValidationParams *pParams);
+    const NvBool yuv420ModeSpecified,
+    const enum NvYuv420Mode yuv420ModeIn,
+    enum NvYuv420Mode *pYuv420ModeOut,
+    const struct NvKmsModeValidationParams *pParams
+);
 
 #ifdef __cplusplus
 };

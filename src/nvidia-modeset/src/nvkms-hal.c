@@ -68,8 +68,9 @@ enum NvKmsAllocDeviceStatus nvAssignEvoCaps(NVDevEvoPtr pDevEvo)
               _hdmiTmds10BpcMaxPClkMHz,                                   \
               _rasterLockAcrossProtocolsAllowed,                          \
               _adaptiveSyncSdpSupported,                                  \
-              _maxViewportDimension,                                       \
-              _supportsGenericSharedInfoFrames,                            \
+              _maxViewportDimension,                                      \
+              _supportsGenericSharedInfoFrames,                           \
+              _supportsVirtualRefreshRate,                                \
               _maxPitch,                                                  \
               _maxWidthInBytes,                                           \
               _maxWidthInPixels,                                          \
@@ -97,7 +98,8 @@ enum NvKmsAllocDeviceStatus nvAssignEvoCaps(NVDevEvoPtr pDevEvo)
             .rasterLockAcrossProtocolsAllowed = _rasterLockAcrossProtocolsAllowed, \
             .adaptiveSyncSdpSupported = _adaptiveSyncSdpSupported,        \
             .maxViewportDimension = _maxViewportDimension,                \
-            .supportsGenericSharedInfoFrames = _supportsGenericSharedInfoFrames \
+            .supportsGenericSharedInfoFrames = _supportsGenericSharedInfoFrames, \
+            .supportsVirtualRefreshRate = _supportsVirtualRefreshRate,    \
         }                                                                 \
     }
 
@@ -138,30 +140,30 @@ enum NvKmsAllocDeviceStatus nvAssignEvoCaps(NVDevEvoPtr pDevEvo)
         const NVEvoCapsRec evoCaps;
     } dispTable[] = {
         /*
-         * supportsGenericSharedInfoFrames------------+
-         * maxViewportDimension------------------+    |
-         * adaptiveSyncSdpSupported---------+    |    |
-         * rasterLockAcrossProtocolsAllowed |    |    |
-         * hdmiTmds10BpcMaxPClkMHz--+    |  |    |    |
-         * pEvoHal --------------+  |    |  |    |    |
-         * windowClassPrefix     |  |    |  |    |    |
-         * classPrefix |         |  |    |  |    |    |
-         *         |   |         |  |    |  |    |    |
+         * supportsVirtualRefreshRate--------------------+
+         * supportsGenericSharedInfoFrames------------+  |
+         * maxViewportDimension------------------+    |  |
+         * adaptiveSyncSdpSupported---------+    |    |  |
+         * rasterLockAcrossProtocolsAllowed |    |    |  |
+         * hdmiTmds10BpcMaxPClkMHz--+    |  |    |    |  |
+         * pEvoHal --------------+  |    |  |    |    |  |
+         * windowClassPrefix     |  |    |  |    |    |  |
+         * classPrefix |         |  |    |  |    |    |  |
+         *         |   |         |  |    |  |    |    |  |
          */
-        ENTRY_NVD(CC, CC, &nvEvoCA, 324, 0, 1, 16384, 1),
-        ENTRY_NVD(CB, CB, &nvEvoCA, 324, 0, 1, 16384, 1),
+        ENTRY_NVD(CC, CC, &nvEvoCA, 324, 0, 1, 16384, 1, 1),
+        ENTRY_NVD(CB, CB, &nvEvoCA, 324, 0, 1, 16384, 1, 1),
         /* Blackwell GB20X */
-        ENTRY_NVD(CA, CA, &nvEvoCA, 324, 1, 1, 16384, 1),
+        ENTRY_NVD(CA, CA, &nvEvoCA, 324, 1, 1, 16384, 1, 1),
         /* Blackwell */
-        ENTRY_NVD(C9, C9, &nvEvoC9, 324, 1, 1, 16384, 1),
-        /* T239 */
-        ENTRY_NVD(C8, C8, &nvEvoC8, 324, 1, 0, 8192, 1),
+        ENTRY_NVD(C9, C9, &nvEvoC9, 324, 1, 1, 16384, 1, 1),
+        ENTRY_NVD(C8, C8, &nvEvoC8, 324, 1, 0, 8192, 1, 1),
         /* Ada */
-        ENTRY_NVD(C7, C6, &nvEvoC6, 324, 1, 1, 8192, 0),
+        ENTRY_NVD(C7, C6, &nvEvoC6, 324, 1, 1, 8192, 0, 0),
         /* Ampere */
-        ENTRY_NVD(C6, C6, &nvEvoC6, 324, 1, 0, 8192, 0),
+        ENTRY_NVD(C6, C6, &nvEvoC6, 324, 1, 0, 8192, 0, 0),
         /* Turing */
-        ENTRY_NVD(C5, C5, &nvEvoC5, 0,   1, 0, 8192, 0),
+        ENTRY_NVD(C5, C5, &nvEvoC5, 0,   1, 0, 8192, 0, 0),
         /* GRID displayless */
         {
             .class = NVA083_GRID_DISPLAYLESS,

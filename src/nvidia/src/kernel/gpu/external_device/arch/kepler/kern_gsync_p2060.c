@@ -4670,7 +4670,7 @@ gsyncGpuCanBeMaster_P2060
 }
 
 
-static POBJGPU
+static OBJGPU *
 GetP2060Gpu
 (
     OBJGPU *pGpu,

@@ -109,6 +109,10 @@ NV_STATUS   NV_API_CALL  os_pci_write_dword               (void *, NvU32, NvU32)
 NvBool      NV_API_CALL  os_pci_remove_supported          (void);
 void        NV_API_CALL  os_pci_remove                    (void *);
 void*       NV_API_CALL  os_map_kernel_space              (NvU64, NvU64, NvU32);
+#if defined(NV_LINUX)
+void*       NV_API_CALL  os_map_device_paddr_range_protected (NvU64, NvU64);
+NvBool      NV_API_CALL  os_is_tdisp_tdi_run_state        (void *nv_state);
+#endif
 void        NV_API_CALL  os_unmap_kernel_space            (void *, NvU64);
 #if defined(NV_VMWARE)
 void*       NV_API_CALL  os_map_user_space                (MemoryArea *, NvU32, NvU32, void **);
@@ -236,6 +240,16 @@ NV_STATUS   NV_API_CALL  os_iommu_sva_bind(void *arg, void **handle, NvU32 *pasi
 void        NV_API_CALL  os_iommu_sva_unbind(void *handle);
 NvBool      NV_API_CALL  os_supports_kernel_suspend_notifiers(void);
 
+NV_STATUS   NV_API_CALL  os_read_device_certificate(void  *nv_state,
+                                                    NvU8  *pBuffer,
+                                                    NvU32 *pBufferSize);
+NV_STATUS   NV_API_CALL  os_read_device_cert_digests(void       *nv_state,
+                                                     const NvU8 *pCertChain,
+                                                     NvU32       certChainSize,
+                                                     NvU8       *pTsmDigest,
+                                                     NvU8       *pLocalDigest,
+                                                     NvU32      *pDigestSize);
+
 extern NvU64 os_page_size;
 extern NvU64 os_max_page_size;
 extern NvU64 os_page_mask;
@@ -245,6 +259,7 @@ extern NvBool os_cc_sev_snp_enabled;
 extern NvBool os_cc_sme_enabled;
 extern NvBool os_cc_snp_vtom_enabled;
 extern NvBool os_cc_tdx_enabled;
+extern NvBool os_tdisp_enabled;
 extern NvBool os_dma_buf_enabled;
 extern NvBool os_imex_channel_is_supported;
 

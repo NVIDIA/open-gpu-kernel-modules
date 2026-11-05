@@ -28,6 +28,9 @@
 #include "gpu/gsp/kernel_gsp.h"
 #include "nvport/nvport.h"
 #include "nverror.h"
+#include "utils/nvassert.h"
+
+#define GSP_EVENTS_PROTOBUF_SUPPORTED 0
 
 #define GSP_RPC_TIMEOUT_XID_MESSAGE_FMT \
     "Timeout after %llus of waiting for RPC response from GPU%u GSP! Expected function %u (%s) sequence %u (0x%llx 0x%llx)."
@@ -39,27 +42,101 @@ static NV_STATUS _gspRpcTimeoutSerializeToEventBufferOpEventCtx
     EventContextHeader *pContextHeader,
     NV_OPERATIONAL_EVENT_CONTEXT *pOutput,
     NvU32 outputSize,
-    NvU32 *pBytesWritten
+    EventBufferOpEventCtxInfo *pInfo
 )
 {
     return gpuEventCtxSerializeToEventBufferGoeCtxType(
             pContextHeader,
             pOutput,
             outputSize,
-            pBytesWritten,
+            pInfo,
             GSP_EVENT_CTX_TYPE_RPC_TIMEOUT_DATA,
             GSP_RPC_TIMEOUT_DATA_VERSION);
+}
+
+static NV_STATUS _gspRpcTimeoutSerializeToProtobuf
+(
+    EventContextHeader *pContextHeader,
+    PRB_ENCODER         *pPrbEnc,
+    NvU32              *pContextType,
+    NvU32              *pDataFormatVersion
+)
+{
+    NV_ASSERT_OR_RETURN(pContextHeader != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pPrbEnc != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pContextType != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pDataFormatVersion != NULL, NV_ERR_INVALID_POINTER);
+
+    *pContextType = GSP_EVENT_CTX_TYPE_RPC_TIMEOUT_DATA;
+    *pDataFormatVersion = GSP_RPC_TIMEOUT_DATA_VERSION;
+
+#if GSP_EVENTS_PROTOBUF_SUPPORTED
+    GspRpcTimeoutCtx *pContext = (GspRpcTimeoutCtx *)pContextHeader;
+    NV_STATUS         status;
+
+    status = prbEncNestedStart(
+        pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_CONTEXT_GSP_RPC_TIMEOUT);
+    if (status != NV_OK)
+        return status;
+
+    status = prbEncAddUInt32(
+        pPrbEnc, GSPEVENTS_GSPRPCTIMEOUTCONTEXT_EXPECTED_FUNCTION,
+        pContext->data.expectedFunc);
+    if (status != NV_OK)
+        return status;
+
+    status = prbEncAddUInt32(
+        pPrbEnc, GSPEVENTS_GSPRPCTIMEOUTCONTEXT_EXPECTED_SEQUENCE,
+        pContext->data.expectedSequence);
+    if (status != NV_OK)
+        return status;
+
+    status = prbEncAddUInt32(
+        pPrbEnc, GSPEVENTS_GSPRPCTIMEOUTCONTEXT_GPU_INSTANCE,
+        pContext->data.gpuInstance);
+    if (status != NV_OK)
+        return status;
+
+    status = prbEncAddUInt64(
+        pPrbEnc, GSPEVENTS_GSPRPCTIMEOUTCONTEXT_HISTORY_DATA_0,
+        pContext->data.historyData0);
+    if (status != NV_OK)
+        return status;
+
+    status = prbEncAddUInt64(
+        pPrbEnc, GSPEVENTS_GSPRPCTIMEOUTCONTEXT_HISTORY_DATA_1,
+        pContext->data.historyData1);
+    if (status != NV_OK)
+        return status;
+
+    status = prbEncAddUInt64(
+        pPrbEnc, GSPEVENTS_GSPRPCTIMEOUTCONTEXT_WAITED_SECONDS,
+        pContext->data.waitedSeconds);
+    if (status != NV_OK)
+        return status;
+
+    status = prbEncAddString(
+        pPrbEnc, GSPEVENTS_GSPRPCTIMEOUTCONTEXT_RPC_NAME,
+        pContext->data.rpcName);
+    if (status != NV_OK)
+        return status;
+
+    return prbEncNestedEnd(pPrbEnc);
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
 }
 
 static void _rpcTimeoutDataEmitOsLogXid
 (
     EventContextHeader *pContextHeader,
-    OBJGPU *pGpu
+    OBJGPU *pGpu,
+    NvBool bSimulated
 )
 {
     GspRpcTimeoutCtx *pContext = (GspRpcTimeoutCtx *)pContextHeader;
 
-    NV_ERROR_LOG(pGpu, GSP_RPC_TIMEOUT, GSP_RPC_TIMEOUT_XID_MESSAGE_FMT,
+    OP_EVENT_XID_LOG(pGpu, bSimulated, GSP_RPC_TIMEOUT, GSP_RPC_TIMEOUT_XID_MESSAGE_FMT,
                  pContext->data.waitedSeconds,
                  pContext->data.gpuInstance,
                  pContext->data.expectedFunc,
@@ -72,6 +149,7 @@ static void _rpcTimeoutDataEmitOsLogXid
 static const EventContextOutputAdapters g_gspRpcTimeoutCtxOutputAdapters =
 {
     .serializeToEventBufferOpEventCtx = _gspRpcTimeoutSerializeToEventBufferOpEventCtx,
+    .serializeToProtobuf = _gspRpcTimeoutSerializeToProtobuf,
     .serializeToCperEventCtx = gpuEventCtxSerializeToCperOpaqueCtx,
     .emitToOsLogXid = _rpcTimeoutDataEmitOsLogXid,
 };
@@ -85,17 +163,44 @@ static const EventContextOutputAdapters g_gspRpcTimeoutCtxOutputAdapters =
 static const EventContextOutputAdapters g_xidOutputAdapters =
 {
     .serializeToEventBufferOpEventCtx = gpuXidEventCtxSerializeToEventBufferGoeCtx,
+    .serializeToProtobuf = gpuXidEventCtxSerializeToProtobuf,
     .serializeToCperEventCtx = gpuXidEventCtxSerializeToCperCtx,
     .emitToOsLogXid = NULL,
+};
+
+static void _gspFirmwareFaultEmitOsLogXid
+(
+    EventContextHeader *pContextHeader,
+    OBJGPU *pGpu,
+    NvBool bSimulated
+)
+{
+    GpuXidEventCtx *pContext = (GpuXidEventCtx *)pContextHeader;
+
+    // CrashCat emits Xid 120 for real faults before publishing this event.
+    if (!bSimulated)
+        return;
+
+    OP_EVENT_XID_LOG(pGpu, bSimulated, pContext->data.xidCode,
+                     "%s", pContext->data.message);
+}
+
+static const EventContextOutputAdapters g_gspFirmwareFaultXidOutputAdapters =
+{
+    .serializeToEventBufferOpEventCtx = gpuXidEventCtxSerializeToEventBufferGoeCtx,
+    .serializeToProtobuf = gpuXidEventCtxSerializeToProtobuf,
+    .serializeToCperEventCtx = gpuXidEventCtxSerializeToCperCtx,
+    .emitToOsLogXid = _gspFirmwareFaultEmitOsLogXid,
 };
 
 static void _gspPoisonEmitOsLogXid
 (
     EventContextHeader *pContextHeader,
-    OBJGPU *pGpu
+    OBJGPU *pGpu,
+    NvBool bSimulated
 )
 {
-    NV_ERROR_LOG(pGpu, UNRECOVERABLE_ECC_ERROR_ESCAPE, GSP_POISON_XID_MESSAGE_FMT);
+    OP_EVENT_XID_LOG(pGpu, bSimulated, UNRECOVERABLE_ECC_ERROR_ESCAPE, GSP_POISON_XID_MESSAGE_FMT);
 }
 
 static const EventContextOutputAdapters g_gspPoisonOutputAdapters =
@@ -158,11 +263,12 @@ NV_STATUS gsprpctoConstruct_IMPL
 static void _gspHeartbeatTimeoutEmitOsLogXid
 (
     EventContextHeader *pContextHeader,
-    OBJGPU *pGpu
+    OBJGPU *pGpu,
+    NvBool bSimulated
 )
 {
     GspHeartbeatTimeoutCtx *pContext = (GspHeartbeatTimeoutCtx *)pContextHeader;
-    NV_ERROR_LOG(pGpu, GSP_ERROR, "%s Heartbeat Timeout detected", pContext->pHeartbeatSource);
+    OP_EVENT_XID_LOG(pGpu, bSimulated, GSP_ERROR, "%s Heartbeat Timeout detected", pContext->pHeartbeatSource);
 }
 
 static const EventContextOutputAdapters g_gspHeartbeatTimeoutOutputAdapters =
@@ -208,7 +314,7 @@ NV_STATUS gspfwfaultConstruct_IMPL
 {
     // No GspFirmwareFaultCtx yet, to avoid duplicate Xid 120 emission.
 
-    pEvent->xid120.header.pOutputAdapters = &g_xidOutputAdapters;
+    pEvent->xid120.header.pOutputAdapters = &g_gspFirmwareFaultXidOutputAdapters;
     pEvent->xid120.header.dataSize = (NvU32)GPU_OPERATIONAL_EVENT_CTX_GPU_LEGACY_XID_SIZE(
         nvDbgSnprintf(pEvent->xid120.data.message,
                       sizeof(pEvent->xid120.data.message),

@@ -63,10 +63,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__ZbcApi;
 struct NVOC_METADATA__GpuResource;
-struct NVOC_VTABLE__ZbcApi;
 
 
 struct ZbcApi {
@@ -96,40 +95,10 @@ struct ZbcApi {
 };
 
 
-// Vtable with 25 per-class function pointers
-struct NVOC_VTABLE__ZbcApi {
-    NV_STATUS (*__zbcapiControl__)(struct ZbcApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__zbcapiMap__)(struct ZbcApi * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__zbcapiUnmap__)(struct ZbcApi * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__zbcapiShareCallback__)(struct ZbcApi * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__zbcapiGetRegBaseOffsetAndSize__)(struct ZbcApi * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__zbcapiGetMapAddrSpace__)(struct ZbcApi * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__zbcapiInternalControlForward__)(struct ZbcApi * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__zbcapiGetInternalObjectHandle__)(struct ZbcApi * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__zbcapiAccessCallback__)(struct ZbcApi * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__zbcapiGetMemInterMapParams__)(struct ZbcApi * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__zbcapiCheckMemInterUnmap__)(struct ZbcApi * /*this*/, NvBool);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__zbcapiGetMemoryMappingDescriptor__)(struct ZbcApi * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__zbcapiControlSerialization_Prologue__)(struct ZbcApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__zbcapiControlSerialization_Epilogue__)(struct ZbcApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__zbcapiControl_Prologue__)(struct ZbcApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__zbcapiControl_Epilogue__)(struct ZbcApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NvBool (*__zbcapiCanCopy__)(struct ZbcApi * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__zbcapiIsDuplicate__)(struct ZbcApi * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__zbcapiPreDestruct__)(struct ZbcApi * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__zbcapiControlFilter__)(struct ZbcApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (gpures)
-    NvBool (*__zbcapiIsPartialUnmapSupported__)(struct ZbcApi * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__zbcapiMapTo__)(struct ZbcApi * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__zbcapiUnmapFrom__)(struct ZbcApi * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__zbcapiGetRefCount__)(struct ZbcApi * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__zbcapiAddAdditionalDependants__)(struct RsClient *, struct ZbcApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__ZbcApi {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResource metadata__GpuResource;
-    const struct NVOC_VTABLE__ZbcApi vtable;
 };
 
 #ifndef __nvoc_class_id_ZbcApi
@@ -235,13 +204,13 @@ static inline NV_STATUS zbcapiCtrlCmdGetZbcClearTableEntry(struct ZbcApi *pZbcAp
 #define zbcapiCtrlCmdGetZbcClearTableSize_FNPTR(pZbcApi) pZbcApi->__zbcapiCtrlCmdGetZbcClearTableSize__
 #define zbcapiCtrlCmdGetZbcClearTableSize(pZbcApi, pGetZBCClearTableSizeParams) zbcapiCtrlCmdGetZbcClearTableSize_DISPATCH(pZbcApi, pGetZBCClearTableSizeParams)
 #define zbcapiCtrlCmdGetZbcClearTableSize_HAL(pZbcApi, pGetZBCClearTableSizeParams) zbcapiCtrlCmdGetZbcClearTableSize_DISPATCH(pZbcApi, pGetZBCClearTableSizeParams)
-#define zbcapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define zbcapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define zbcapiControl(pGpuResource, pCallContext, pParams) zbcapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define zbcapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
+#define zbcapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define zbcapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) zbcapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define zbcapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
+#define zbcapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define zbcapiUnmap(pGpuResource, pCallContext, pCpuMapping) zbcapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define zbcapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define zbcapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define zbcapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) zbcapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define zbcapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define zbcapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) zbcapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -251,7 +220,7 @@ static inline NV_STATUS zbcapiCtrlCmdGetZbcClearTableEntry(struct ZbcApi *pZbcAp
 #define zbcapiInternalControlForward(pGpuResource, command, pParams, size) zbcapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define zbcapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define zbcapiGetInternalObjectHandle(pGpuResource) zbcapiGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define zbcapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define zbcapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define zbcapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) zbcapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define zbcapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define zbcapiGetMemInterMapParams(pRmResource, pParams) zbcapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -259,13 +228,13 @@ static inline NV_STATUS zbcapiCtrlCmdGetZbcClearTableEntry(struct ZbcApi *pZbcAp
 #define zbcapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) zbcapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define zbcapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define zbcapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) zbcapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define zbcapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define zbcapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define zbcapiControlSerialization_Prologue(pResource, pCallContext, pParams) zbcapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define zbcapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define zbcapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define zbcapiControlSerialization_Epilogue(pResource, pCallContext, pParams) zbcapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define zbcapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define zbcapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define zbcapiControl_Prologue(pResource, pCallContext, pParams) zbcapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define zbcapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define zbcapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define zbcapiControl_Epilogue(pResource, pCallContext, pParams) zbcapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define zbcapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define zbcapiCanCopy(pResource) zbcapiCanCopy_DISPATCH(pResource)
@@ -292,103 +261,103 @@ static inline NV_STATUS zbcapiCtrlCmdGetZbcClearTableSize_DISPATCH(struct ZbcApi
 }
 
 static inline NV_STATUS zbcapiControl_DISPATCH(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__zbcapiControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS zbcapiMap_DISPATCH(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__zbcapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pGpuResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS zbcapiUnmap_DISPATCH(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__zbcapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pGpuResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool zbcapiShareCallback_DISPATCH(struct ZbcApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__zbcapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS zbcapiGetRegBaseOffsetAndSize_DISPATCH(struct ZbcApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__zbcapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS zbcapiGetMapAddrSpace_DISPATCH(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__zbcapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pGpuResource, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS zbcapiInternalControlForward_DISPATCH(struct ZbcApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__zbcapiInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle zbcapiGetInternalObjectHandle_DISPATCH(struct ZbcApi *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__zbcapiGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool zbcapiAccessCallback_DISPATCH(struct ZbcApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__zbcapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS zbcapiGetMemInterMapParams_DISPATCH(struct ZbcApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__zbcapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS zbcapiCheckMemInterUnmap_DISPATCH(struct ZbcApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__zbcapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS zbcapiGetMemoryMappingDescriptor_DISPATCH(struct ZbcApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__zbcapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS zbcapiControlSerialization_Prologue_DISPATCH(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__zbcapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void zbcapiControlSerialization_Epilogue_DISPATCH(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__zbcapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS zbcapiControl_Prologue_DISPATCH(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__zbcapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void zbcapiControl_Epilogue_DISPATCH(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__zbcapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool zbcapiCanCopy_DISPATCH(struct ZbcApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__zbcapiCanCopy__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS zbcapiIsDuplicate_DISPATCH(struct ZbcApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__zbcapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void zbcapiPreDestruct_DISPATCH(struct ZbcApi *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__zbcapiPreDestruct__(pResource);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS zbcapiControlFilter_DISPATCH(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__zbcapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool zbcapiIsPartialUnmapSupported_DISPATCH(struct ZbcApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__zbcapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS zbcapiMapTo_DISPATCH(struct ZbcApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__zbcapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS zbcapiUnmapFrom_DISPATCH(struct ZbcApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__zbcapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 zbcapiGetRefCount_DISPATCH(struct ZbcApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__zbcapiGetRefCount__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void zbcapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ZbcApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__zbcapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions
@@ -419,10 +388,6 @@ static inline NV_STATUS zbcapiConstructHal_ac1694(struct ZbcApi *pZbcApi, struct
 
 static inline void zbcapiDestruct_d44104(struct ZbcApi *pZbcApi){
     return;
-}
-
-static inline NV_STATUS zbcapiCtrlCmdGetZbcClearTableSize_5baef9(struct ZbcApi *pZbcApi, NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS *pGetZBCClearTableSizeParams){
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
 // Static dispatch method declarations

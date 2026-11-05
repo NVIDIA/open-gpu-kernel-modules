@@ -580,7 +580,7 @@ nvConstructNvModeTimingsFromHwModeTimings(const NVHwModeTimingsEvo *pTimings,
         return;
     }
 
-    pModeTimings->pixelClockHz  = KHzToHz(pTimings->pixelClock);
+    pModeTimings->pixelClockHz  = pTimings->pixelClockHz;
     pModeTimings->hVisible      = nvEvoVisibleWidth(pTimings);
     pModeTimings->hSyncStart    = pTimings->rasterSize.x -
                                   pTimings->rasterBlankEnd.x - 1;
@@ -628,7 +628,6 @@ nvConstructNvModeTimingsFromHwModeTimings(const NVHwModeTimingsEvo *pTimings,
     }
 
     pModeTimings->hdmi3D = pTimings->hdmi3D;
-    pModeTimings->yuv420Mode = pTimings->yuv420Mode;
 }
 
 
@@ -680,7 +679,7 @@ static void TweakTimingsForGsync(const NVDpyEvoRec *pDpyEvo,
             NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_ADJUST_DEFAULT_CRT;
     }
 
-    gsyncOptTimingParams.pixelClockHz = KHzToHz(pTimings->pixelClock);
+    gsyncOptTimingParams.pixelClockHz = pTimings->pixelClockHz;
 
     gsyncOptTimingParams.structure =
         NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_STRUCTURE_PROGRESSIVE;
@@ -773,7 +772,7 @@ static void TweakTimingsForGsync(const NVDpyEvoRec *pDpyEvo,
     pTimings->rasterSize.x              = gsyncOptTimingParams.hTotal;
     pTimings->rasterSize.y              = gsyncOptTimingParams.vTotal;
 
-    pTimings->pixelClock = HzToKHz(gsyncOptTimingParams.pixelClockHz); // Hz to KHz
+    pTimings->pixelClockHz = gsyncOptTimingParams.pixelClockHz;
 
     nvConstructNvModeTimingsFromHwModeTimings(pTimings, &modeTimings);
 
@@ -892,7 +891,7 @@ static NvBool RasterLockPossible(const NVDevEvoRec *pDevEvo,
             (pTimings1->rasterBlankEnd.y   == pTimings2->rasterBlankEnd.y) &&
             (pTimings1->rasterBlankStart.x == pTimings2->rasterBlankStart.x) &&
             (pTimings1->rasterBlankStart.y == pTimings2->rasterBlankStart.y) &&
-            (pTimings1->pixelClock         == pTimings2->pixelClock) &&
+            (pTimings1->pixelClockHz       == pTimings2->pixelClockHz) &&
             (pTimings1->hSyncPol           == pTimings2->hSyncPol) &&
             (pTimings1->vSyncPol           == pTimings2->vSyncPol) &&
             (pTimings1->doubleScan         == pTimings2->doubleScan));
@@ -1684,7 +1683,7 @@ static NvBool ProhibitLockIfNecessary(NVDispEvoRec *pDispEvo)
         if (nvHeadIsActive(pDispEvo, head)) {
             activeHeads[numActiveHeads++] = head;
             if ((pDispEvo->headState[head].timings.vrr.type !=
-                 NVKMS_DPY_VRR_TYPE_NONE)) {
+                 NVKMS_VRR_TYPE_NONE)) {
                 prohibitLock = TRUE;
             }
 
@@ -1831,11 +1830,37 @@ static void FinishModesetOneDev(
 static void EnableLockGroupFlipLock(NVLockGroup *pLockGroup)
 {
     const RasterLockGroup *pRasterLockGroup = &pLockGroup->rasterLockGroup;
+    NvU32 serverHead = NV_INVALID_HEAD;
     NvU32 i;
 
-    if (pRasterLockGroup->numDisps < 2) {
-        /* TODO: enable fliplock for single GPUs */
+    if (!nvkms_opportunistic_flip_sync()) {
         return;
+    }
+
+    if (pRasterLockGroup->numDisps < 2) {
+
+        NVDispEvoPtr pDispEvo = pRasterLockGroup->pDispEvoOrder[0];
+        NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+        NvU32 activeHeadsMask = 0;
+        NvU32 head;
+
+        for (head = 0; head < pDevEvo->numHeads; head++) {
+            if (nvHeadIsActive(pDispEvo, head)) {
+                if (pDispEvo->headState[head].mergeMode !=
+                        NV_EVO_MERGE_MODE_DISABLED) {
+                    return;
+                }
+                activeHeadsMask |= NVBIT(head);
+            }
+        }
+        if (nvPopCount32(activeHeadsMask) < 2) {
+            return;
+        }
+        serverHead = nvGetPrimaryHwHeadFromMask(activeHeadsMask);
+        if (serverHead == NV_INVALID_HEAD) {
+            return;
+        }
+
     }
 
     pLockGroup->flipLockEnabled = TRUE;
@@ -1847,16 +1872,17 @@ static void EnableLockGroupFlipLock(NVLockGroup *pLockGroup)
         NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
         NvU32 head;
 
+        NVEvoLockPin pin = (pRasterLockGroup->numDisps < 2)
+                         ? NV_EVO_LOCK_PIN_INTERNAL(serverHead)
+                         : nvEvoGetPinForSignal(pDispEvo, &pDevEvo->gpus[sd],
+                           NV_EVO_LOCK_SIGNAL_FLIP_LOCK);
+
         for (head = 0; head < pDevEvo->numHeads; head++) {
             NvU64 startTime = 0;
 
             if (!nvHeadIsActive(pDispEvo, head)) {
                 continue;
             }
-
-            NVEvoLockPin pin =
-                nvEvoGetPinForSignal(pDispEvo, &pDevEvo->gpus[sd],
-                                     NV_EVO_LOCK_SIGNAL_FLIP_LOCK);
 
             /* Wait for the raster lock to sync in.. */
             if (pin == NV_EVO_LOCK_PIN_ERROR ||
@@ -2824,6 +2850,18 @@ NvBool nvChooseCurrentColorFormatAndRangeEvo(
         return FALSE;
     }
 
+    if ((requestedColorFormat != NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_UNKNOWN) &&
+        (newColorFormat != nvGetCurrentColorFormatFromRequested(requestedColorFormat))) {
+
+        return FALSE;
+    }
+
+    if ((requestedColorBpc != NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) &&
+        (newColorBpc != requestedColorBpc)) {
+        
+        return FALSE;
+    } 
+
     nvChooseColorRangeEvo(requestedColorRange, newColorFormat,
                           newColorBpc, &newColorRange);
 
@@ -3374,16 +3412,16 @@ static NvU32 GpuIndex(const NVDevEvoRec *pDevEvo, NvU32 sd)
     return 0;
 }
 
-NvU32 nvGetRefreshRate10kHz(const NVHwModeTimingsEvo *pTimings)
+NvU32 nvGetRefreshRatex10K(const NVHwModeTimingsEvo *pTimings)
 {
     const NvU32 totalPixels = pTimings->rasterSize.x * pTimings->rasterSize.y;
 
     /*
-     * pTimings->pixelClock is in 1000/s
+     * pTimings->pixelClock is in 1/s (Hz)
      * we want 0.0001/s
-     * factor = 1000/0.0001 = 10000000.
+     * factor = 1/0.0001 = 10000.
      */
-    NvU32 factor = 10000000;
+    NvU32 factor = 10000;
 
     if (pTimings->doubleScan) factor /= 2;
 
@@ -3391,15 +3429,15 @@ NvU32 nvGetRefreshRate10kHz(const NVHwModeTimingsEvo *pTimings)
         return 0;
     }
 
-    return nvAxBDivC(pTimings->pixelClock, factor, totalPixels);
+    return (NvU32) axb_div_c_64(pTimings->pixelClockHz, factor, totalPixels);
 }
 
 /*!
  * Get the current refresh rate for the heads in headMask, in 0.0001 Hz units.
  * All heads in headMask are expected to have the same refresh rate.
  */
-static NvU32 GetRefreshRateHeadMask10kHz(const NVDispEvoRec *pDispEvo,
-                                         NvU32 headMask)
+static NvU32 GetRefreshRateHeadMaskx10K(const NVDispEvoRec *pDispEvo,
+                                        NvU32 headMask)
 {
     const NVHwModeTimingsEvo *pTimings = NULL;
     NvU32 head;
@@ -3421,7 +3459,7 @@ static NvU32 GetRefreshRateHeadMask10kHz(const NVDispEvoRec *pDispEvo,
             nvAssert(pTimings->rasterSize.y ==
                         pHeadState->timings.rasterSize.y);
             nvAssert(pTimings->doubleScan == pHeadState->timings.doubleScan);
-            nvAssert(pTimings->pixelClock == pHeadState->timings.pixelClock);
+            nvAssert(pTimings->pixelClockHz == pHeadState->timings.pixelClockHz);
         }
     }
 
@@ -3429,7 +3467,7 @@ static NvU32 GetRefreshRateHeadMask10kHz(const NVDispEvoRec *pDispEvo,
         return 0;
     }
 
-    return nvGetRefreshRate10kHz(pTimings);
+    return nvGetRefreshRatex10K(pTimings);
 }
 
 /*!
@@ -3472,7 +3510,7 @@ static NvBool FramelockSetControlSync(NVDispEvoPtr pDispEvo, const NvU32 headMas
     }
 
     gsyncSetControlSyncParams.refresh =
-        GetRefreshRateHeadMask10kHz(pDispEvo, headMask);
+        GetRefreshRateHeadMaskx10K(pDispEvo, headMask);
 
     ret = nvRmApiControl(nvEvoGlobal.clientHandle,
                          pFrameLockEvo->device,
@@ -5982,6 +6020,7 @@ done:
 
 static void
 ConstructHwModeTimingsFromNvModeTimings(const NvModeTimings *pModeTimings,
+                                        const enum NvYuv420Mode yuv420Mode,
                                         NVHwModeTimingsEvoPtr pTimings)
 {
     NvU32 hBlankStart;
@@ -6014,14 +6053,14 @@ ConstructHwModeTimingsFromNvModeTimings(const NvModeTimings *pModeTimings,
      *
      * In either case, only modes with even width are allowed in YUV 420 mode.
      */
-    if (modeTimings.yuv420Mode != NV_YUV420_MODE_NONE) {
+    if (yuv420Mode != NV_YUV420_MODE_NONE) {
         nvAssert(((modeTimings.pixelClockHz & 1) == 0) &&
                  ((modeTimings.hVisible & 1) == 0) &&
                  ((modeTimings.hSyncStart & 1) == 0) &&
                  ((modeTimings.hSyncEnd & 1) == 0) &&
                  ((modeTimings.hTotal & 1) == 0) &&
                  ((modeTimings.vVisible & 1) == 0));
-        if (modeTimings.yuv420Mode == NV_YUV420_MODE_SW) {
+        if (yuv420Mode == NV_YUV420_MODE_SW) {
             modeTimings.pixelClockHz /= 2;
             modeTimings.hVisible /= 2;
             modeTimings.hSyncStart /= 2;
@@ -6035,9 +6074,7 @@ ConstructHwModeTimingsFromNvModeTimings(const NvModeTimings *pModeTimings,
     pTimings->doubleScan = modeTimings.doubleScan;
     nvAssert(!modeTimings.interlaced);
 
-    /* pTimings->pixelClock are in KHz but modeTimings.pixelClock are in Hz */
-
-    pTimings->pixelClock = HzToKHz(modeTimings.pixelClockHz);
+    pTimings->pixelClockHz = modeTimings.pixelClockHz;
 
     pTimings->rasterSize.x = modeTimings.hTotal;
     pTimings->rasterSize.y = modeTimings.vTotal;
@@ -6078,7 +6115,7 @@ ConstructHwModeTimingsFromNvModeTimings(const NvModeTimings *pModeTimings,
     pTimings->rasterBlankEnd.y          = vBlankEnd - 1;
 
     pTimings->hdmi3D = modeTimings.hdmi3D;
-    pTimings->yuv420Mode = modeTimings.yuv420Mode;
+    pTimings->yuv420Mode = yuv420Mode;
 }
 
 
@@ -6248,7 +6285,7 @@ NvBool nvComputeScalingUsageBounds(const NVEvoScalerCaps *pScalerCaps,
         }
     }
 
-    if (outWidth < inWidth) {
+    if (outWidth != inWidth) {
         pTapsCaps = &pScalerCaps->taps[hTaps];
         if (!ComputeScalingFactor(pTapsCaps->maxHDownscaleFactor,
                                   inWidth, outWidth,
@@ -6666,7 +6703,8 @@ static NvBool GetDfpHdmiProtocol(
     if (((pValidationParams->overrides &
           NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS) == 0) &&
         (!nvHdmiIsTmdsPossible(pDpyEvo, pTimings, pDpyColor) ||
-         nvGetPreferHdmiFrlMode(pDevEvo, pValidationParams)) &&
+         nvGetPreferHdmiFrlMode(pDevEvo, pValidationParams) ||
+         nvHdmiScdcWantsForceFrl(pDpyEvo)) &&
          /* If FRL is possible... */
          nvHdmiIsFrlPossible(pDpyEvo)) {
 
@@ -6818,6 +6856,7 @@ static NvBool GetDfpProtocol(const NVDpyEvoRec *pDpyEvo,
  */
 NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
                                    const struct NvKmsMode *pKmsMode,
+                                   const enum NvYuv420Mode yuv420Mode,
                                    const struct NvKmsSize *pViewPortSizeIn,
                                    const struct NvKmsRect *pViewPortOut,
                                    const NvBool dscPassThrough,
@@ -6831,7 +6870,8 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
 {
     NvBool ret;
 
-    ConstructHwModeTimingsFromNvModeTimings(&pKmsMode->timings, pTimings);
+    ConstructHwModeTimingsFromNvModeTimings(&pKmsMode->timings, yuv420Mode,
+                                            pTimings);
 
     pTimings->dscPassThrough = dscPassThrough;
     if (pTimings->dscPassThrough &&
@@ -8513,7 +8553,7 @@ void nvEvoSetLut(NVDispEvoPtr pDispEvo, NvU32 apiHead, NvBool kickoff,
         }
 
         // Fill in the new LUT buffer.
-        nvUploadDataToLutSurfaceEvo(pSurfEvo, pLUTBuffer, pDispEvo);
+        nvUploadDataToLutSurfaceEvo(pSurfEvo, pLUTBuffer);
 
         nvFree(pLUTBuffer);
     }
@@ -8659,15 +8699,13 @@ static NvU32 CalculateSwapLockoutStartP2060(NVDispEvoPtr pDispEvo,
      * = TswapRdyHi * (pclk / Htotal)
      * = TswapRdyHiUs * 1e-6 * pclk / Htotal
      * = TswapRdyHiUs * pclk / (Htotal * 1000000)
-     * = TswapRdyHiUs * (pclkKhz * 1000) / (Htotal * 1000000)
-     * = TswapRdyHiUs * pclkKhz / (Htotal * 1000)
      *
      * Since SWAP_LOCKOUT_START must be higher than LSR_MIN_TIME, round this
      * result up to the nearest integer.
      */
 
-    return NV_ROUNDUP_DIV(tSwapRdyHiUs * pTimings->pixelClock,
-                          pTimings->rasterSize.x * 1000);
+    return NV_ROUNDUP_DIV(tSwapRdyHiUs * pTimings->pixelClockHz,
+                          pTimings->rasterSize.x * 1000000ULL);
 }
 
 /**
@@ -9676,7 +9714,7 @@ void nvEvoEnableMergeModePreModeset(NVDispEvoRec *pDispEvo,
         } else {
             pHC->clientLock = NV_EVO_RASTER_LOCK;
             pHC->clientLockPin = NV_EVO_LOCK_PIN_INTERNAL(primaryHead);
-            if (pTimings->vrr.type != NVKMS_DPY_VRR_TYPE_NONE) {
+            if (pTimings->vrr.type == NVKMS_VRR_TYPE_GAMING) {
                 pHC->clientLockoutWindow = 4;
                 pHC->useStallLockPin = TRUE;
                 pHC->stallLockPin = NV_EVO_LOCK_PIN_INTERNAL(primaryHead);
@@ -9684,7 +9722,7 @@ void nvEvoEnableMergeModePreModeset(NVDispEvoRec *pDispEvo,
                 pHC->clientLockoutWindow = 2;
             }
             pHC->crashLockUnstallMode =
-                (pTimings->vrr.type != NVKMS_DPY_VRR_TYPE_NONE);
+                (pTimings->vrr.type == NVKMS_VRR_TYPE_GAMING);
         }
 
         pHC->stereoLocked = FALSE;
@@ -9791,7 +9829,7 @@ NvBool nvEvoGetSingleMergeHeadSectionHwModeTimings(
             (((pSrc->rasterSyncEnd.x + 1) % numMergeHeadSections) != 0) ||
             (((pSrc->rasterBlankEnd.x + 1) % numMergeHeadSections) != 0) ||
             (((pSrc->rasterBlankStart.x + 1) % numMergeHeadSections) != 0) ||
-            ((pSrc->pixelClock % numMergeHeadSections) != 0) ||
+            ((pSrc->pixelClockHz % numMergeHeadSections) != 0) ||
             ((pSrc->viewPort.in.width % numMergeHeadSections) != 0)) {
         return FALSE;
     }
@@ -9803,7 +9841,7 @@ NvBool nvEvoGetSingleMergeHeadSectionHwModeTimings(
     pDst->rasterBlankEnd.x /= numMergeHeadSections;
     pDst->rasterBlankStart.x /= numMergeHeadSections;
 
-    pDst->pixelClock /= numMergeHeadSections;
+    pDst->pixelClockHz /= numMergeHeadSections;
 
     pDst->viewPort.out.width /= numMergeHeadSections;
     pDst->viewPort.in.width /= numMergeHeadSections;
@@ -9841,14 +9879,14 @@ NvBool nvEvoUse2Heads1OR(const NVDpyEvoRec *pDpyEvo,
             ((pTimings->rasterSyncEnd.x & 1) != 1) ||
             ((pTimings->rasterBlankEnd.x & 1) != 1) ||
             ((pTimings->rasterBlankStart.x & 1) != 1) ||
-            ((pTimings->pixelClock & 1) != 0) ||
+            ((pTimings->pixelClockHz & 1) != 0) ||
             ((pTimings->viewPort.in.width & 1) != 0)) {
         return FALSE;
     }
 
     /* Use 2Heads1OR mode only if the required pixel clock is greater than the
      * maximum pixel clock support by a head. */
-    return (pTimings->pixelClock > pHeadCaps->maxPClkKHz);
+    return (pTimings->pixelClockHz > KHzToHz(pHeadCaps->maxPClkKHz));
 }
 
 NvBool nvIsLockGroupFlipLocked(const NVLockGroup *pLockGroup)
@@ -9888,4 +9926,3 @@ NvBool nvEvoIsConsoleActive(const NVDevEvoRec *pDevEvo)
 
     return FALSE;
 }
-

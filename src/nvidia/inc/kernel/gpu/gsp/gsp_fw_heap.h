@@ -30,7 +30,7 @@
 
 // Static defines for the GSP FW WPR Heap
 #define GSP_FW_HEAP_PARAM_OS_SIZE_LIBOS2                   (0 << 20)   // No FB heap usage
-#define GSP_FW_HEAP_PARAM_OS_SIZE_LIBOS3_BAREMETAL        (22 << 20)
+#define GSP_FW_HEAP_PARAM_OS_SIZE_LIBOS3_BAREMETAL         (7 << 20)
 #define GSP_FW_HEAP_PARAM_OS_SIZE_LIBOS3_VGPU             (36 << 20)
 
 //
@@ -68,9 +68,15 @@
 // exceed the amount we can carve out for GSP-RM's heap (max ChID will no longer
 // be the limiter).
 //
-#define GSP_FW_HEAP_PARAM_CLIENT_ALLOC_SIZE      ((48 << 10) * 2048)   // Support 2048 channels
+#define GSP_FW_HEAP_PARAM_MAX_SUPPORTED_CHANNELS  2048   // Support 2048 channels
+#define GSP_FW_HEAP_PARAM_CLIENT_ALLOC_SIZE      ((48 << 10) * GSP_FW_HEAP_PARAM_MAX_SUPPORTED_CHANNELS)
+
+#define GSP_FW_HEAP_PARAM_UCODE_RECLAIM_TU10X     (7 << 20)
+#define GSP_FW_HEAP_PARAM_UCODE_RECLAIM_GA10X     (55 << 20)
 
 #if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
+// TODO: Remove BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA.
+// This memory is either dead or being used by something (vGPU heap?) unintentionally.
 #define BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA         (18u)
 #define BULLSEYE_ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE_DELTA    (16u)
 #define GSP_FW_HEAP_SIZE_VGPU_DEFAULT \
@@ -95,42 +101,40 @@
 #endif // RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
 
 // Min/max bounds for heap size override by regkey
-#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS2_MIN_MB                (64u)
+#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS2_MIN_MB                (28u)
 #define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS2_MAX_MB               (256u)
 
 #if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
 // Size increased for compatibility reasons with ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE
 // and ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE in init_partition.h
 #define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MIN_MB \
-                                    (88u + (BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA) + \
-                                    (BULLSEYE_ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE_DELTA))
+                                    (37u + BULLSEYE_ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE_DELTA)
 #define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MAX_MB \
-                                    (280u + (BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA) + \
-                                    (BULLSEYE_ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE_DELTA))
+                                    (265u + BULLSEYE_ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE_DELTA)
 
 #define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MIN_MB \
-                                    (353u + ((BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA)*8u) + \
+                                    (348u + ((BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA)*8u) + \
                                     (BULLSEYE_ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE_DELTA))
 
 #define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MAX_MB \
-                                    (1093u + ((BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA)*8u) + \
+                                    (1088u + ((BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA)*8u) + \
                                     (BULLSEYE_ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE_DELTA))
 
 // 1VM has 2 RM data sections (PF + 1 VF)
 #define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_1VM_MIN_MB \
-                                    (69u + ((BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA)*2u) + \
+                                    (64u + ((BULLSEYE_ROOT_HEAP_ALLOC_RM_DATA_SECTION_SIZE_DELTA)*2u) + \
                                     (BULLSEYE_ROOT_HEAP_ALLOC_BAREMETAL_LIBOS_HEAP_SIZE_DELTA))
 #define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_1VM_MAX_MB \
                                     GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MAX_MB
-#else
-#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MIN_MB      (88u)
-#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MAX_MB     (280u)
+#else // RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
+#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MIN_MB      (37u)
+#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MAX_MB      (265u)
 
-#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MIN_MB          (353u)
-#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MAX_MB          (1093u)
+#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MIN_MB           (348u)
+#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MAX_MB           (1088u)
 
-#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_1VM_MIN_MB                       (69u)
-#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_1VM_MAX_MB                       GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MAX_MB
+#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_1VM_MIN_MB       (64u)
+#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_1VM_MAX_MB       GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MAX_MB
 #endif // RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
 
 #endif // GSP_FW_HEAP_H

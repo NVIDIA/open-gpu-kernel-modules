@@ -83,17 +83,22 @@ _goeimportRawSerializeToEventBufferGoeCtx
     EventContextHeader               *pCtxHeader,
     NV_OPERATIONAL_EVENT_CONTEXT     *pOutput,
     NvU32                             outputSize,
-    NvU32                            *pBytesWritten
+    EventBufferOpEventCtxInfo        *pInfo
 )
 {
     GoeImportRawCtx *pRaw = (GoeImportRawCtx *)pCtxHeader;
     NvU32            totalSize;
 
+    NV_ASSERT_OR_RETURN(pInfo != NULL, NV_ERR_INVALID_POINTER);
+
     if (pRaw->payloadBytes > NV_U32_MAX - sizeof(*pOutput))
         return NV_ERR_INVALID_ARGUMENT;
 
-    totalSize       = sizeof(*pOutput) + pRaw->payloadBytes;
-    *pBytesWritten  = totalSize;
+    totalSize = sizeof(*pOutput) + pRaw->payloadBytes;
+    pInfo->wireSize = totalSize;
+    pInfo->contextType = pRaw->contextType;
+    pInfo->dataFormatVersion = pRaw->dataFormatVersion;
+    pInfo->dataSize = pRaw->payloadBytes;
 
     if (pOutput == NULL)
     {
@@ -315,7 +320,8 @@ _goeimportAllocSysmemRegion
     // In a confidential-compute guest, default sysmem is CPU-private
     // (encrypted) and inaccessible to the GPU, so request unprotected memory
     // like the other GSP-shared buffers (message queue, logging buffers).
-    // The attribute is honored only when CC is enabled; no-op otherwise.
+    // Reached only in CC devtools mode -- CC production mode skips construction --
+    // or with CC disabled, where the attribute is a no-op.
     //
     memAllocParams.attr2 = DRF_DEF(OS32, _ATTR2, _REGISTER_MEMDESC_TO_PHYS_RM, _TRUE)
                          | DRF_DEF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED);
@@ -845,6 +851,18 @@ gpuOpEventImportConstruct_IMPL
     NV_ASSERT_OR_RETURN_VOID(pGpu != NULL);
     NV_ASSERT_OR_RETURN_VOID(pGpu->pGpuOpEventImport == NULL);
 
+    //
+    // The import transport requires unprotected sysmem shared with GSP. CC
+    // devtools mode permits this transport, but CC production mode does not.
+    //
+    if (gpuIsCCFeatureEnabled(pGpu) &&
+        !gpuIsCCDevToolsModeEnabled(pGpu))
+    {
+        NV_PRINTF(LEVEL_NOTICE,
+                  "GSP operational-event import is disabled in CC production mode.\n");
+        return;
+    }
+
     status = objCreate(&pGpu->pGpuOpEventImport, pGpu,
                        GpuOpEventImport, pGpu);
     if (status != NV_OK || pGpu->pGpuOpEventImport == NULL)
@@ -1019,7 +1037,7 @@ _goeimportCloseSpan
 
     if (opEventLog != NULL)
     {
-        NV_STATUS s = opevtlogAppendEventGroup(opEventLog,
+        NV_STATUS s = opevtlogAppendEventGroup(opEventLog, pImporter->pGpu,
             staticCast(pImporter->pSpanGroup, EventGroup));
         if (s != NV_OK)
         {
@@ -1098,7 +1116,9 @@ _goeimportBuildGpuOpEvent
     // Override the freshly-minted identity scalars with producer values.
     pOp = staticCast(pEvent, OperationalEvent);
     pOp->instanceId = pRec->event.instanceId;
-    pOp->timestamp  = pRec->event.timestamp;
+
+    // Override the timestamp with a timestamp in the host domain. See bug 6757783.
+    pOp->timestamp  = portTimeGetMicroseconds();
 
     portMemCopy(pEvent->deviceUuid, sizeof(pEvent->deviceUuid),
                 pRec->deviceUuid, sizeof(pRec->deviceUuid));
@@ -1162,10 +1182,11 @@ _goeimportOpenSpan
         return (status != NV_OK) ? status : NV_ERR_NO_MEMORY;
 
     //
-    // opevtlogAppendEventGroup dynamicCasts to ImportEventGroup and
-    // adopts pGroup->cursor into pEntry->groupCursor.
+    // opevtlogAppendEventGroup adopts the producer's cursor, group size, and
+    // observed event indices from ImportEventGroup.
     //
     pGroup->cursor = pRec->event.cursorValue;
+    pGroup->producerGroupSize = pRec->event.groupSize;
     eventgroupSetTraceId(staticCast(pGroup, EventGroup), pRec->event.traceId);
     eventgroupSetAttributes(staticCast(pGroup, EventGroup), pRec->event.groupAttributes);
 
@@ -1242,6 +1263,11 @@ _goeimportProcessRecord
 
     eventgroupAddEvent(staticCast(pImporter->pSpanGroup, EventGroup),
                        staticCast(pEvent, Event));
+    NV_ASSERT_OR_RETURN(pImporter->pSpanGroup->producerEventCount <
+                            pImporter->pSpanGroup->producerGroupSize,
+                        NV_ERR_INVALID_STATE);
+    pImporter->pSpanGroup->producerGroupIndices[
+        pImporter->pSpanGroup->producerEventCount++] = pRec->event.groupIndex;
     pImporter->spanLastIndex     = (NvS16)pRec->event.groupIndex;
     pImporter->spanObservedCount += 1U;
 

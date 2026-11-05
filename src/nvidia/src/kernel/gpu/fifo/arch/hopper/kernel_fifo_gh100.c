@@ -32,7 +32,6 @@
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/dev_ram.h"
 #include "published/hopper/gh100/dev_esched_pbdma.h"
-#include "published/hopper/gh100/dev_ctrl.h"
 #include "published/hopper/gh100/dev_gin_zb.h"
 
 #include "kernel/gpu/conf_compute/conf_compute.h"

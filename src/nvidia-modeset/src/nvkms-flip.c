@@ -114,14 +114,13 @@ NvBool nvCheckFlipPermissions(
 
 static void FillPostSyncptReplyOneApiHead(
     NVDevEvoRec *pDevEvo,
-    const NvU32 sd,
     const NvU32 apiHead,
     const struct NvKmsFlipCommonParams *pRequestParams,
     struct NvKmsFlipCommonReplyOneHead *pReplyParams,
     const struct NvKmsFlipWorkArea *pWorkArea)
 {
     /* XXX[2Heads1OR] Return per hardware-head post syncpt */
-    const NvU32 head = nvGetPrimaryHwHead(pDevEvo->gpus[sd].pDispEvo, apiHead);
+    const NvU32 head = nvGetPrimaryHwHead(pDevEvo->gpus[0].pDispEvo, apiHead);
     NvU32 layer;
 
     /*! check for valid config */
@@ -131,7 +130,7 @@ static void FillPostSyncptReplyOneApiHead(
 
     for (layer = 0; layer < ARRAY_LEN(pRequestParams->layer); layer++) {
         const NVFlipEvoHwState *pFlipState =
-            &pWorkArea->sd[sd].head[head].newState;
+            &pWorkArea->sd[0].head[head].newState;
 
         if (!pRequestParams->layer[layer].syncObjects.specified ||
             !pRequestParams->layer[layer].syncObjects.val.useSyncpt) {
@@ -188,6 +187,23 @@ static NvBool UpdateProposedFlipStateOneApiHead(
             pParams->hdmiVsifMetadata.vsifMetadata.payloadSize != 0;
     }
 
+    if (pParams->allmMode.specified) {
+        if (pParams->allmMode.mode > NVKMS_ALLM_MODE_ENABLED_FORCED) {
+            return FALSE;
+        }
+
+        if (pParams->allmMode.mode != NVKMS_ALLM_MODE_DISABLED) {
+            const NVDpyEvoRec *pDpyEvoIter;
+            FOR_ALL_EVO_DPYS(pDpyEvoIter, pApiHeadState->activeDpys, pDispEvo) {
+                if (!pDpyEvoIter->allmCapable) {
+                    return FALSE;
+                }
+            }
+        }
+        pProposedApiHead->dirty.allmMode = TRUE;
+        pProposedApiHead->allmMode = pParams->allmMode.mode;
+    }
+
     for (layer = 0; layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
         if (pParams->layer[layer].hdr.specified) {
             pProposedApiHead->dirty.hdr = TRUE;
@@ -204,12 +220,6 @@ static NvBool UpdateProposedFlipStateOneApiHead(
     if (pProposedApiHead->dirty.hdr) {
         // If enabling HDR output TF...
         if (pProposedApiHead->hdr.tf == NVKMS_OUTPUT_TF_PQ) {
-            // Cannot be an SLI configuration.
-            // XXX HDR TODO: Test SLI Mosaic + HDR and remove this check
-            if (pDevEvo->numSubDevices > 1) {
-                return FALSE;
-            }
-
             /* NVKMS_OUTPUT_TF_PQ requires the RGB color format */
             if (pProposedApiHead->hdr.dpyColor.format !=
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_RGB) {
@@ -275,22 +285,16 @@ static void FillNvKmsFlipReply(NVDevEvoRec *pDevEvo,
     }
 
     for (i = 0; i < numFlipHeads; i++) {
-        const NvU32 sd = pFlipHead[i].sd;
         const NvU32 apiHead = pFlipHead[i].head;
 
         FillPostSyncptReplyOneApiHead(pDevEvo,
-                                      sd,
                                       apiHead,
                                       &pFlipHead[i].flip,
                                       &reply->flipHead[i],
                                       pWorkArea);
     }
 
-    if (applyAllowVrr) {
-        reply->vrrFlipType = nvGetActiveVrrType(pDevEvo);
-    } else {
-        reply->vrrFlipType = NV_KMS_VRR_FLIP_NON_VRR;
-    }
+    reply->vrrFlip = nvAnyActiveVrrHeads(pDevEvo) && applyAllowVrr;
 }
 
 static void InitNvKmsFlipWorkArea(const NVDevEvoRec *pDevEvo,
@@ -330,6 +334,8 @@ static void InitNvKmsFlipWorkArea(const NVDevEvoRec *pDevEvo,
                 pApiHeadState->hdrStaticMetadataLayerMask;
             pProposedApiHead->hdmiVsifMetadataEnabled =
                 pApiHeadState->hdmiVsifMetadataEnabled;
+
+            pProposedApiHead->allmMode = pApiHeadState->allmMode;
 
             pProposedApiHead->viewPortPointIn =
                 pApiHeadState->viewPortPointIn;
@@ -428,6 +434,12 @@ static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
     if (pProposedApiHead->dirty.hdmiVsifMetadata) {
         pApiHeadState->hdmiVsifMetadataEnabled =
             pProposedApiHead->hdmiVsifMetadataEnabled;
+
+        updateInfoFrames = TRUE;
+    }
+
+    if (pProposedApiHead->dirty.allmMode) {
+        pApiHeadState->allmMode = pProposedApiHead->allmMode;
 
         updateInfoFrames = TRUE;
     }
@@ -578,16 +590,14 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
 
     for (NvU32 i = 0; i < numFlipHeads; i++) {
         const NvU32 apiHead = pFlipHead[i].head;
-        const NvU32 sd = pFlipHead[i].sd;
         NvU32 head;
 
         const NvBool allowVrrHead = pFlipHead[i].flip.allowVrr;
         const NvBool dirtyMainLayer = nvIsLayerDirty(&pFlipHead[i].flip, NVKMS_MAIN_LAYER);
         const NvBool allowVrr = pDevEvo->vrr.enabled && allowVrrHead;
 
-        const NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[sd];
+        const NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
         const NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
-
 
         if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
             goto done;
@@ -602,18 +612,18 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
                 pDispEvo,
                 apiHead,
                 &pFlipHead[i].flip,
-                &pWorkArea->disp[sd].apiHead[apiHead].proposedFlipState)) {
+                &pWorkArea->disp[0].apiHead[apiHead].proposedFlipState)) {
             goto done;
         }
 
         FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
             if (!nvAssignNVFlipEvoHwState(pDevEvo,
                                           pOpenDev,
-                                          sd,
+                                          0 /* sd */,
                                           head,
                                           &pFlipHead[i].flip,
                                           allowVrr,
-                                          &pWorkArea->sd[sd].head[head].newState)) {
+                                          &pWorkArea->sd[0].head[head].newState)) {
                 goto done;
             }
         }
@@ -623,7 +633,7 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
                 allowVrrApiHeadMask |= (1 << apiHead);
             }
         }
-        pWorkArea->sd[sd].changed = TRUE;
+        pWorkArea->sd[0].changed = TRUE;
         changed = TRUE;
     }
 

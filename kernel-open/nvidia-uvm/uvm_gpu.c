@@ -99,6 +99,10 @@ static void fill_parent_gpu_info(uvm_parent_gpu_t *parent_gpu, const UvmGpuInfo 
 
     parent_gpu->rm_info = *gpu_info;
 
+    parent_gpu->cant_access_fault_clear_register = g_uvm_global.conf_computing_enabled;
+    if (gpu_info->gpuConfComputeCaps.bmsaiEnabled)
+        parent_gpu->cant_access_fault_clear_register = true;
+
     parent_gpu->system_bus.link = get_gpu_link_type(gpu_info->sysmemLink);
     UVM_ASSERT(parent_gpu->system_bus.link != UVM_GPU_LINK_INVALID);
 
@@ -4056,14 +4060,11 @@ NV_STATUS uvm_gpu_map_cpu_pages_for_egm(uvm_parent_gpu_t *parent_gpu,
                                         NvU64 *dma_address_out)
 {
     unsigned long node_start = node_start_pfn(page_to_nid(page)) << PAGE_SHIFT;
-    dma_addr_t dma_addr = 0;
     NV_STATUS status = NV_OK;
 
     // This function only actually needs the parent GPU, but it takes in the
     // sub GPU for API symmetry with uvm_gpu_map_cpu_pages().
     UVM_ASSERT(PAGE_ALIGNED(size));
-
-    *dma_address_out = dma_addr;
 
     // If EGM is not enabled, we don't create any mappings. They shouldn't
     // be needed in such a case anyway.
@@ -4075,46 +4076,39 @@ NV_STATUS uvm_gpu_map_cpu_pages_for_egm(uvm_parent_gpu_t *parent_gpu,
 
     if (uvm_parent_gpu_egm_iommu_is_identity(parent_gpu)) {
         phys_addr_t phys_addr = page_to_phys(page);
-        dma_addr = phys_addr - node_start;
+        *dma_address_out = phys_addr - node_start;
+        return NV_OK;
     }
-    else {
+
 #if UVM_USE_DMA_IOVA_API()
-        // Note that the check below also implies kernels >= 6.17+, where
-        // the DMA IOVA API is available. RM will only enable EGM with FLA
-        // mappings and create DMA IOVA windows only on those kernel.
-        struct dma_iova_state state = {.addr = uvm_parent_gpu_egm_iova_address(parent_gpu),
-                                       .__size = uvm_parent_gpu_egm_window_size(parent_gpu)};
-        phys_addr_t phys_addr = page_to_phys(page);
-        NvU64 offset = phys_addr - node_start;
-        int ret;
+    // Note that the check below also implies kernels >= 6.17+, where
+    // the DMA IOVA API is available. RM will only enable EGM with FLA
+    // mappings and create DMA IOVA windows only on those kernel.
+    struct dma_iova_state state = {.addr = uvm_parent_gpu_egm_iova_address(parent_gpu),
+                                   .__size = uvm_parent_gpu_egm_window_size(parent_gpu)};
+    phys_addr_t phys_addr = page_to_phys(page);
+    NvU64 offset = phys_addr - node_start;
+    int ret;
 
-        UVM_ASSERT(page_to_nid(page) == parent_gpu->closest_cpu_numa_node);
-        UVM_ASSERT(size <= uvm_parent_gpu_egm_window_size(parent_gpu));
-        ret = dma_iova_link(&parent_gpu->pci_dev->dev, &state, phys_addr, offset, size, DMA_BIDIRECTIONAL, 0);
-        if (ret != 0) {
-            status = errno_to_nv_status(ret);
-            goto done;
-        }
+    UVM_ASSERT(page_to_nid(page) == parent_gpu->closest_cpu_numa_node);
+    UVM_ASSERT(size <= uvm_parent_gpu_egm_window_size(parent_gpu));
+    ret = dma_iova_link(&parent_gpu->pci_dev->dev, &state, phys_addr, offset, size, DMA_BIDIRECTIONAL, 0);
+    if (ret != 0)
+        return errno_to_nv_status(ret);
 
-        ret = dma_iova_sync(&parent_gpu->pci_dev->dev, &state, offset, size);
-        if (ret != 0) {
-            dma_iova_unlink(&parent_gpu->pci_dev->dev, &state, offset, size, DMA_BIDIRECTIONAL, 0);
-            status = errno_to_nv_status(ret);
-            goto done;
-        }
-
-        dma_addr = offset;
-
-        atomic64_add(size, &parent_gpu->mapped_cpu_pages_size);
-
-done:
-#else
-        status = NV_ERR_NOT_SUPPORTED;
-#endif
+    ret = dma_iova_sync(&parent_gpu->pci_dev->dev, &state, offset, size);
+    if (ret != 0) {
+        dma_iova_unlink(&parent_gpu->pci_dev->dev, &state, offset, size, DMA_BIDIRECTIONAL, 0);
+        return errno_to_nv_status(ret);
     }
 
-    *dma_address_out = dma_addr;
-    return NV_OK;
+    atomic64_add(size, &parent_gpu->mapped_cpu_pages_size);
+    *dma_address_out = offset;
+#else
+    status = NV_ERR_NOT_SUPPORTED;
+#endif
+
+    return status;
 }
 
 NV_STATUS uvm_gpu_map_cpu_pages(uvm_gpu_t *gpu, struct page *page, size_t size, NvU64 *dma_address_out)

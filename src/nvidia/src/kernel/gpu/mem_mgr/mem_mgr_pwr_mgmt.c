@@ -37,6 +37,38 @@
 static NV_STATUS _memmgrWalkHeap(OBJGPU *pGpu, MemoryManager *pMemoryManager, OBJFBSR *pFbsr);
 static NV_STATUS _memmgrAllocFbsrReservedRanges(OBJGPU *pGpu, MemoryManager *pMemoryManager);
 
+static NV_STATUS
+_memmgrRunFbsrOperation
+(
+    OBJGPU        *pGpu,
+    MemoryManager *pMemoryManager,
+    OBJFBSR       *pFbsr,
+    FBSR_OP_TYPE   op
+)
+{
+    NV_STATUS status;
+    NV_STATUS endStatus;
+
+    status = fbsrBegin_HAL(pGpu, pFbsr, op);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    if (op != FBSR_OP_DESTROY)
+    {
+        status = _memmgrWalkHeap(pGpu, pMemoryManager, pFbsr);
+        if (status != NV_OK)
+        {
+            pFbsr->bOperationFailed = NV_TRUE;
+        }
+    }
+
+    endStatus = fbsrEnd_HAL(pGpu, pFbsr);
+
+    return (status != NV_OK) ? status : endStatus;
+}
+
 /*!
  * Save video memory
  */
@@ -169,17 +201,8 @@ memmgrSavePowerMgmtState_KERNEL
         //
         // Determine size of buffer needed
         //
-        if (fbsrBegin_HAL(pGpu, pFbsr, FBSR_OP_SIZE_BUF) != NV_OK)
-        {
-            continue;
-        }
-
-        if (_memmgrWalkHeap(pGpu, pMemoryManager, pFbsr) != NV_OK)
-        {
-            continue;
-        }
-
-        if (fbsrEnd_HAL(pGpu, pFbsr) != NV_OK)
+        if (_memmgrRunFbsrOperation(pGpu, pMemoryManager, pFbsr,
+                                    FBSR_OP_SIZE_BUF) != NV_OK)
         {
             continue;
         }
@@ -187,17 +210,8 @@ memmgrSavePowerMgmtState_KERNEL
         //
         // Perform the copy
         //
-        if (fbsrBegin_HAL(pGpu, pFbsr, FBSR_OP_SAVE) != NV_OK)
-        {
-            continue;
-        }
-
-        if (_memmgrWalkHeap(pGpu, pMemoryManager, pFbsr) != NV_OK)
-        {
-            continue;
-        }
-
-        if (fbsrEnd_HAL(pGpu, pFbsr) != NV_OK)
+        if (_memmgrRunFbsrOperation(pGpu, pMemoryManager, pFbsr,
+                                    FBSR_OP_SAVE) != NV_OK)
         {
             continue;
         }
@@ -264,17 +278,9 @@ memmgrRestorePowerMgmtState_KERNEL
         bIsGpuLost = NV_TRUE;
     }
 
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                        fbsrBegin_HAL(pGpu, pFbsr, bIsGpuLost ? FBSR_OP_DESTROY : FBSR_OP_RESTORE),
-                        done);
-    if (!bIsGpuLost)
-    {
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                            _memmgrWalkHeap(pGpu, pMemoryManager, pFbsr), done);
-    }
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, fbsrEnd_HAL(pGpu, pFbsr), done);
+    status = _memmgrRunFbsrOperation(pGpu, pMemoryManager, pFbsr,
+                                     bIsGpuLost ? FBSR_OP_DESTROY : FBSR_OP_RESTORE);
 
-done:
     // Cleanup
     if (pMemoryManager->hGspHeapSysMemHandle)
     {
@@ -446,6 +452,11 @@ _memmgrWalkHeap(OBJGPU *pGpu, MemoryManager *pMemoryManager, OBJFBSR *pFbsr)
     while (pMemNode)
     {
         fbsrCopyMemoryMemDesc_HAL(pGpu, pFbsr, pMemNode->pMemDesc);
+        if (pFbsr->bOperationFailed)
+        {
+            status = NV_ERR_GENERIC;
+            goto done;
+        }
         pMemNode = pMemNode->pNext;
     }
 
@@ -482,6 +493,10 @@ _memmgrWalkHeap(OBJGPU *pGpu, MemoryManager *pMemoryManager, OBJFBSR *pFbsr)
                                   pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_BEFORE_BAR2PTE]);
     }
 done:
+    if ((status == NV_OK) && pFbsr->bOperationFailed)
+    {
+        status = NV_ERR_GENERIC;
+    }
     return status;
 }
 
@@ -516,17 +531,15 @@ memmgrAddMemNode_IMPL
 
     pNode->pNext = NULL;
     pNode->pMemDesc = pMemDesc;
-    pNode->bFreeDescriptor = bFreeDescriptor;
     //
     // Hold this memory descriptor till we fully restore all GPUs.
     // This is needed for a few RM allocations to prevent them from
     // being freed after adding them to this list
     // Note: Allocated flag is set only for RM internal allocations.
     //
-    if (pMemDesc->Allocated)
+    if (!bFreeDescriptor)
     {
         memdescAddRef(pMemDesc);
-        pMemDesc->Allocated++;
     }
 
     if (pMemoryManager->pMemHeadNode == NULL)
@@ -637,16 +650,8 @@ void memmgrRemoveMemNodes_IMPL
         // to prevent them from being freed till resume completes
         // Free such allocations now to avoid leaks
         //
-        if (pMemNodeTmp->pMemDesc->Allocated)
-        {
-            memdescFree(pMemNodeTmp->pMemDesc);
-            memdescDestroy(pMemNodeTmp->pMemDesc);
-        }
-        else if (pMemNodeTmp->bFreeDescriptor)
-        {
-            // Temporary descriptor -- free it
-            memdescDestroy(pMemNodeTmp->pMemDesc);
-        }
+        memdescFree(pMemNodeTmp->pMemDesc);
+        memdescDestroy(pMemNodeTmp->pMemDesc);
         portMemFree(pMemNodeTmp);
     }
 

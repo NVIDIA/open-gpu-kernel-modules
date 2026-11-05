@@ -1477,7 +1477,9 @@ NV_STATUS rpcInitGspTraceCrashBuffer_STUB(
     POBJGPU       pGpu,
     POBJRPC       pRpc,
     NvU64         arg3,
-    NvU32         arg4
+    NvU32         arg4,
+    NvU64         arg5,
+    NvU32         arg6
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
@@ -1585,6 +1587,17 @@ NV_STATUS rpcCtrlDbgSuspendContext_STUB(
     NvHandle      arg3,
     NvHandle      arg4,
     void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:SEND_GUEST_STUN_COMPLETION  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD10X, GH10X, GB10X, GB202, GB203, GB205, GB206, GB207, GB20B, GB20C, GR10X, T23XD, T26XD
+NV_STATUS rpcSendGuestStunCompletion_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvU32         arg3,
+    NvU32         arg4
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;

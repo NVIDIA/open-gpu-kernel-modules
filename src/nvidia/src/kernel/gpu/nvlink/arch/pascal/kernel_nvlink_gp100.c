@@ -284,8 +284,8 @@ knvlinkSetupPeerMapping_GP100
             portMemSet(&preSetupNvlinkPeerParams, 0, sizeof(preSetupNvlinkPeerParams));
             preSetupNvlinkPeerParams.peerId        = peerId;
             NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
-                convertBitVectorToLinkMasks(&peerLinkMaskVec, &preSetupNvlinkPeerParams.peerLinkMask, 
-                                    sizeof(preSetupNvlinkPeerParams.peerLinkMask), NULL), return; );
+                convertBitVectorToLinkMasks(&peerLinkMaskVec, NULL, 0,
+                                    &preSetupNvlinkPeerParams.peerLinkMask), return; );
             preSetupNvlinkPeerParams.bEgmPeer      = GPU_GET_KERNEL_BUS(pGpu)->p2p.bEgmPeer[peerId];
             preSetupNvlinkPeerParams.bNvswitchConn = knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink);
 

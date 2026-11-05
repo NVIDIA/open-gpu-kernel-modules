@@ -34,7 +34,6 @@
 #include "published/blackwell/gb100/dev_ram.h"
 #include "published/blackwell/gb100/dev_esched_pbdma.h"
 #include "published/blackwell/gb100/hwproject.h"
-#include "published/blackwell/gb100/dev_ctrl.h"
 #include "published/blackwell/gb100/dev_gin_zb.h"
 
 #include "kernel/gpu/conf_compute/conf_compute.h"

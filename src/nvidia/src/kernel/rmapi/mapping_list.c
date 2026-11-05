@@ -168,45 +168,22 @@ intermapRegisterDmaMapping
     RsClient              *pClient,
     VirtualMemory         *pVirtualMemory,
     PCLI_DMA_MAPPING_INFO  pDmaMapping,
-    NvU64                  dmaOffset,
-    NvU32                  gpuMask
+    NvU64                  dmaOffset
 )
 {
+    Device               *pDevice = staticCast(pVirtualMemory, Memory)->pDevice;
     NV_STATUS             rmStatus = NV_OK;
     PNODE                 pNode;
     NvU64 alignment = 0;
 
-    pDmaMapping->gpuMask = gpuMask;
-
-    if (FLD_TEST_DRF(OS46, _FLAGS, _DMA_UNICAST_REUSE_ALLOC, _TRUE, pDmaMapping->Flags))
-    {
-        CLI_DMA_MAPPING_INFO *pDmaMappingFirst;
-        CLI_DMA_MAPPING_INFO *pDmaMappingCurrent;
-
-        // The node for this DMA offset should be already created
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, btreeSearch(dmaOffset, &pNode, pVirtualMemory->pDmaMappingList));
-        pDmaMappingFirst = (CLI_DMA_MAPPING_INFO *)pNode->Data;
-
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pDmaMappingFirst->DmaOffset == pDmaMapping->DmaOffset &&
-                                        pDmaMappingFirst->pMemDesc->Size ==  pDmaMapping->pMemDesc->Size,
-                           NV_ERR_INVALID_ARGUMENT);
-
-        // Check gpuMasks for consistency
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, (pDmaMappingFirst->gpuMask & (pDmaMappingFirst->gpuMask - 1)) == 0, NV_ERR_INVALID_ARGUMENT);
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, (pDmaMapping->gpuMask & (pDmaMapping->gpuMask - 1)) == 0, NV_ERR_INVALID_ARGUMENT);
-        pDmaMappingCurrent = pDmaMappingFirst;
-        while (pDmaMappingCurrent != NULL)
-        {
-            NV_CHECK_OR_RETURN(LEVEL_ERROR, (pDmaMapping->gpuMask & pDmaMappingCurrent->gpuMask) == 0, NV_ERR_INVALID_ARGUMENT);
-            pDmaMappingCurrent = pDmaMappingCurrent->pNext;
-        }
-
-        // Insert the gpuMask element to the list
-        pDmaMapping->pNext = pDmaMappingFirst;
-        pNode->Data = pDmaMapping;
-
-        return NV_OK;
-    }
+    //
+    // OS46_FLAGS_DMA_UNICAST_REUSE_ALLOC asked for one more mapping of a VA that
+    // is already mapped for a different subdevice, which cannot happen with a
+    // single GPU per device.
+    //
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                       FLD_TEST_DRF(OS46, _FLAGS, _DMA_UNICAST_REUSE_ALLOC, _FALSE, pDmaMapping->Flags),
+                       NV_ERR_INVALID_ARGUMENT);
 
     if (pDmaMapping->pMemDesc->pGpu != NULL)
     {
@@ -220,14 +197,13 @@ intermapRegisterDmaMapping
         if (IS_VIRTUAL_WITH_SRIOV(pGpu)
             && RMCFG_FEATURE_PLATFORM_MODS
             && FLD_TEST_DRF(OS46, _FLAGS, _PAGE_SIZE, _4KB, pDmaMapping->Flags)
-            && kgmmuIsVaspaceInteropSupported(GPU_GET_KERNEL_GMMU(pGpu))
             )
         {
             alignment = RM_PAGE_SIZE;
         }
         else
         {
-            alignment = memdescGetPageSize(memdescGetMemDescFromGpu(pDmaMapping->pMemDesc, pGpu),
+            alignment = memdescGetPageSize(pDmaMapping->pMemDesc,
                                              pDmaMapping->addressTranslation);
         }
     }
@@ -272,6 +248,15 @@ intermapRegisterDmaMapping
                                   alignment) - 1;
     pNode->Data     = pDmaMapping;
 
+    if (pVirtualMemory->pDmaMappingList == NULL)
+    {
+        pVirtualMemory->devMemoryTableNode.keyStart = RES_GET_HANDLE(pVirtualMemory);
+        pVirtualMemory->devMemoryTableNode.keyEnd = RES_GET_HANDLE(pVirtualMemory);
+        pVirtualMemory->devMemoryTableNode.Data = pVirtualMemory;
+
+        NV_ASSERT_OK_OR_RETURN(btreeInsert(&pVirtualMemory->devMemoryTableNode, &pDevice->DevMemoryTable));
+    }
+
     // register the 'dmaOffset' list itself
     rmStatus = btreeInsert(pNode, &pVirtualMemory->pDmaMappingList);
     if (rmStatus != NV_OK)
@@ -280,6 +265,7 @@ intermapRegisterDmaMapping
                   "Failed to insert new mapping node for range 0x%llX-0x%llX!\n",
                   pNode->keyStart, pNode->keyEnd);
         DBG_BREAKPOINT();
+        btreeUnlink(&pVirtualMemory->devMemoryTableNode, &pDevice->DevMemoryTable);
         portMemFree(pNode);
         return rmStatus;
     }
@@ -292,51 +278,29 @@ intermapDelDmaMapping
 (
     RsClient *pClient,
     VirtualMemory *pVirtualMemory,
-    NvU64    dmaOffset,
-    NvU32    gpuMask
+    NvU64    dmaOffset
 )
 {
+    Device                 *pDevice = staticCast(pVirtualMemory, Memory)->pDevice;
     PNODE                   pNode;
     CLI_DMA_MAPPING_INFO   *pDmaMapping;
-    CLI_DMA_MAPPING_INFO   *pDmaMappingPrev = NULL;
 
     // then get the node belonging to the search offset
     NV_ASSERT_OK_OR_RETURN(btreeSearch(dmaOffset, &pNode, pVirtualMemory->pDmaMappingList));
 
     pDmaMapping = (CLI_DMA_MAPPING_INFO *)pNode->Data;
-    while (pDmaMapping != NULL)
+    NV_ASSERT_OR_RETURN(pDmaMapping != NULL, NV_ERR_OBJECT_NOT_FOUND);
+
+    NV_ASSERT_OK_OR_RETURN(btreeUnlink(pNode, &pVirtualMemory->pDmaMappingList));
+    portMemFree(pNode);
+    if (pVirtualMemory->pDmaMappingList == NULL)
     {
-        if (pDmaMapping->gpuMask & gpuMask)
-        {
-            CLI_DMA_MAPPING_INFO *pDmaMappingNext = pDmaMapping->pNext;
-
-            NV_ASSERT_OR_RETURN(pDmaMapping->gpuMask == gpuMask, NV_ERR_INVALID_ARGUMENT);
-
-            // Remove the element
-            if (pDmaMappingPrev != NULL)
-            {
-                pDmaMappingPrev->pNext = pDmaMappingNext;
-            }
-            else if (pDmaMappingNext != NULL)
-            {
-                pNode->Data = pDmaMappingNext;
-            }
-            else
-            {
-                NV_ASSERT_OK_OR_RETURN(btreeUnlink(pNode, &pVirtualMemory->pDmaMappingList));
-                portMemFree(pNode);
-            }
-
-            intermapFreeDmaMapping(pDmaMapping);
-            return NV_OK;
-        }
-        pDmaMappingPrev = pDmaMapping;
-        pDmaMapping = pDmaMapping->pNext;
+        NV_ASSERT_OK_OR_RETURN(btreeUnlink(&pVirtualMemory->devMemoryTableNode, &pDevice->DevMemoryTable));
     }
 
-    // mapping with the right gpuMask was not found
-    NV_ASSERT(0);
-    return NV_ERR_OBJECT_NOT_FOUND;
+    intermapFreeDmaMapping(pDmaMapping);
+
+    return NV_OK;
 }
 
 void
@@ -358,28 +322,16 @@ CLI_DMA_MAPPING_INFO *
 intermapGetDmaMapping
 (
     VirtualMemory         *pVirtualMemory,
-    NvU64                  dmaOffset,
-    NvU32                  gpuMask
+    NvU64                  dmaOffset
 )
 {
     PNODE pNode;
-    CLI_DMA_MAPPING_INFO *pDmaMapping;
 
     // get the node belonging to the search offset
     if (btreeSearch(dmaOffset, &pNode, pVirtualMemory->pDmaMappingList) != NV_OK)
         return NULL;
 
-    pDmaMapping = pNode->Data;
-
-    while (pDmaMapping != NULL)
-    {
-        if (pDmaMapping->gpuMask & gpuMask)
-            return pDmaMapping;
-
-        pDmaMapping = pDmaMapping->pNext;
-    }
-
-    return pDmaMapping;
+    return pNode->Data;
 }
 
 /*!
@@ -394,7 +346,6 @@ CliGetDmaMappingInfo
     NvHandle               hDevice,
     NvHandle               hMemCtx,
     NvU64                  dmaOffset,
-    NvU32                  gpuMask,
     PCLI_DMA_MAPPING_INFO *ppDmaMappingInfo
 )
 {
@@ -417,7 +368,7 @@ CliGetDmaMappingInfo
         if (pVirtualMemory != NULL)
         {
 
-            *ppDmaMappingInfo = intermapGetDmaMapping(pVirtualMemory, dmaOffset, gpuMask);
+            *ppDmaMappingInfo = intermapGetDmaMapping(pVirtualMemory, dmaOffset);
             return *ppDmaMappingInfo != NULL;
         }
     }
@@ -429,14 +380,13 @@ CliGetDmaMappingInfo
     btreeEnumStart(0, &pNode, pDevice->DevMemoryTable);
     while (pNode != NULL)
     {
-        Memory *pMemory = pNode->Data;
-        VirtualMemory *pVirtualMemory = dynamicCast(pMemory, VirtualMemory);
+        VirtualMemory *pVirtualMemory = pNode->Data;
         btreeEnumNext(&pNode, pDevice->DevMemoryTable);
 
         if ((pVirtualMemory != NULL) &&
              virtmemMatchesVASpace(pVirtualMemory, pClient->hClient, hMemCtx))
         {
-            *ppDmaMappingInfo = intermapGetDmaMapping(pVirtualMemory, dmaOffset, gpuMask);
+            *ppDmaMappingInfo = intermapGetDmaMapping(pVirtualMemory, dmaOffset);
 
             if (*ppDmaMappingInfo != NULL)
                 return NV_TRUE;

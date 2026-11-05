@@ -1179,7 +1179,7 @@ typedef struct tagNVT_5BYTES
 #define NVT_CEA861_EOTF_GAMMA_SDR                   0x01  // ET_0 Traditional gamma - SDR Luminance Range
 #define NVT_CEA861_EOTF_GAMMA_HDR                   0x02  // ET_1 Traditional gamma - HDR Luminance Range
 #define NVT_CEA861_EOTF_SMPTE_ST2084                0x04  // ET_2 SMPTE ST2084 EOTF (a.k.a PQ - Perceptual Quantizer EOTF)
-#define NVT_CEA861_EOTF_FUTURE                      0x08  // ET_3 Future EOTF
+#define NVT_CEA861_EOTF_HLG                         0x08  // ET_3 Hybrid Log Gamma
 
 //
 // Supported Static Metadata Descriptor - byte 4
@@ -2417,7 +2417,7 @@ typedef struct tagNVT_HDR_STATIC_METADATA
         NvU8 trad_gamma_sdr_eotf : 1;
         NvU8 trad_gamma_hdr_eotf : 1;
         NvU8 smpte_st_2084_eotf : 1;
-        NvU8 future_eotf : 1;
+        NvU8 hybrid_log_gamma_eotf : 1;
     } supported_eotf;
 
     NvU8 static_metadata_type;      // set to 1 if the sink support for static meta data type 1

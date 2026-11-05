@@ -58,21 +58,22 @@ namespace DisplayPort
         List    incompleteMessages;
         Timer * timer;
         NvU64   incompleteMessageTimeoutMs;
-        IncompleteMessage * freeOnNextCall; // we don't need to delete it on destruct
-                                            // since this is ALSO a member of the list we own
 
         IncompleteMessage * getTransactionRecord(const Address & address, unsigned messageNumber);
     public:
         MessageTransactionMerger(Timer * timer, unsigned incompleteMessageTimeoutMs)
-            : timer(timer), incompleteMessageTimeoutMs(incompleteMessageTimeoutMs), freeOnNextCall(0)
+            : timer(timer), incompleteMessageTimeoutMs(incompleteMessageTimeoutMs)
         {
         }
 
         //
-        //  Pushes data into the queue and returns an encoded
-        //  message if an entire message is assembled.
+        //  Pushes data into the queue. If the transaction completes a message,
+        //  ownership of the assembled message is moved into 'out' (caller's
+        //  stack frame) and the function returns true. The internal storage
+        //  is released before return, so re-entrant calls into pushTransaction
+        //  cannot reach a buffer the caller still references.
         //
-        EncodedMessage * pushTransaction(MessageHeader * header, Buffer * data);
+        bool pushTransaction(MessageHeader * header, Buffer * data, EncodedMessage * out);
     };
 
     class IncomingTransactionManager : virtual public Object

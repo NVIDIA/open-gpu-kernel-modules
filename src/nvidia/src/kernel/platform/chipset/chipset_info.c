@@ -468,6 +468,11 @@ Intel_4003_setupFunc
     if (clPcieReadDword(pCl, pCl->FHBAddr.domain, pCl->FHBAddr.bus, pCl->FHBAddr.device, pCl->FHBAddr.func, 0)
             != (NvU32)(pCl->FHBBusInfo.vendorID | pCl->FHBBusInfo.deviceID << 16))
     {
+        if (pCl->pPcieConfigSpaceBase == NULL)
+        {
+            return NV_ERR_GENERIC;
+        }
+
         pCl->pPcieConfigSpaceBase->baseAddress = INTEL_4003_CONFIG_SPACE_BASE_ADDRESS_E;
         if (clPcieReadDword(pCl, pCl->FHBAddr.domain, pCl->FHBAddr.bus, pCl->FHBAddr.device, pCl->FHBAddr.func, 0)
                 != (NvU32)(pCl->FHBBusInfo.vendorID | pCl->FHBBusInfo.deviceID << 16))
@@ -1331,7 +1336,8 @@ Ampere_Altra_setupFunc
     pCl->setProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT, NV_TRUE);
 
     // WAR bug 2915474: Ampere Altra rev0 does not correctly handle UC/WC iomaps.
-    if (pCl->pBusTopologyInfo->busInfo.revisionID == 0x0)
+    if ((pCl->pBusTopologyInfo != NULL) &&
+        (pCl->pBusTopologyInfo->busInfo.revisionID == 0x0))
     {
         pCl->setProperty(pCl, PDB_PROP_CL_DISABLE_IOMAP_WC, NV_TRUE);
     }

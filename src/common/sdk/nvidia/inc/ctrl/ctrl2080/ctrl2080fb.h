@@ -2956,7 +2956,7 @@ typedef struct NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS {
 /* valid values for source */
 
 
-#define NV2080_CTRL_FB_REMAPPED_BANK_SOURCE_FIELD          (0x00000002U)
+#define NV2080_CTRL_FB_REMAPPED_BANK_SOURCE_FIELD          (0x00000001U)
 
 #define NV2080_CTRL_FB_REMAPPED_BANKS_MAX_BANKS            (0x00000200U)
 
@@ -3091,5 +3091,27 @@ typedef struct NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 wpr2End, 8);
     NV_DECLARE_ALIGNED(NvU64 fbRegionOfWpr2Start, 8);
 } NV2080_CTRL_FB_GET_WPR_REGION_INFO_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_PROGRAM_SEGMENT_PROTECTION_BITMASK
+ *
+ * This command programs the SPB bits for toggling vidmem segments b/w protected and unprotected
+ *
+ *   bMarkUnprotected
+ *     Set to NV_TRUE for toggling from protected to unprotected, NV_FALSE for vice versa
+ *   startAddress
+ *     FB offset of the start of the segment
+ *   length
+ *     Length of the segment
+ */
+#define NV2080_CTRL_CMD_FB_PROGRAM_SEGMENT_PROTECTION_BITMASK (0x20801365U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_PROGRAM_SEGMENT_PROTECTION_BITMASK_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FB_PROGRAM_SEGMENT_PROTECTION_BITMASK_PARAMS_MESSAGE_ID (0x65U)
+
+typedef struct NV2080_CTRL_FB_PROGRAM_SEGMENT_PROTECTION_BITMASK_PARAMS {
+    NvBool bMarkUnprotected;
+    NV_DECLARE_ALIGNED(NvU64 startAddress, 8);
+    NV_DECLARE_ALIGNED(NvU64 length, 8);
+} NV2080_CTRL_FB_PROGRAM_SEGMENT_PROTECTION_BITMASK_PARAMS;
 
 /* _ctrl2080fb_h_ */

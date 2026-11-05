@@ -100,8 +100,6 @@ struct NvKmsKapiDevice {
     NvKmsDispHandle hKmsDisp;
     NvU32 dispIdx;
 
-    NvU32 subDeviceMask;
-
     NvBool isSOC;
     NvBool isSOCDisplay;
     NvBool isSocDgpuDisplayNeedingWar;

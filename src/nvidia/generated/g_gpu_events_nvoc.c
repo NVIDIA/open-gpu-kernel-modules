@@ -1931,6 +1931,486 @@ NV_STATUS __nvoc_objCreateDynamic_GpuResourceRetirement(Dynamic **__nvoc_ppThis,
 
 
 #ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__1ab651 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuStateChanged;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+
+// Forward declarations for GpuStateChanged
+void __nvoc_init__GpuOperationalEvent(GpuOperationalEvent*);
+void __nvoc_init__GpuStateChanged(GpuStateChanged*);
+void __nvoc_init_funcTable_GpuStateChanged(GpuStateChanged*);
+NV_STATUS __nvoc_ctor_GpuStateChanged(GpuStateChanged*, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);
+void __nvoc_init_dataField_GpuStateChanged(GpuStateChanged*);
+void __nvoc_dtor_GpuStateChanged(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__GpuStateChanged;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuStateChanged;
+
+// Down-thunk(s) to bridge GpuStateChanged methods from ancestors (if any)
+
+// Up-thunk(s) to bridge GpuStateChanged methods to ancestors (if any)
+
+// Class-specific details for GpuStateChanged
+const struct NVOC_CLASS_DEF __nvoc_class_def_GpuStateChanged = 
+{
+    .classInfo.size =               sizeof(GpuStateChanged),
+    .classInfo.classId =            classId(GpuStateChanged),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "GpuStateChanged",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_GpuStateChanged,
+    .pCastInfo =          &__nvoc_castinfo__GpuStateChanged,
+    .pExportInfo =        &__nvoc_export_info__GpuStateChanged
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__GpuStateChanged __nvoc_metadata__GpuStateChanged = {
+    .rtti.pClassDef = &__nvoc_class_def_GpuStateChanged,    // (gpustatechanged) this
+    .rtti.dtor      = &__nvoc_dtor_GpuStateChanged,
+    .rtti.offset    = 0,
+    .metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super
+    .metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(GpuStateChanged, __nvoc_base_GpuOperationalEvent),
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^2
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(GpuStateChanged, __nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^3
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(GpuStateChanged, __nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^4
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(GpuStateChanged, __nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__GpuStateChanged = {
+    .numRelatives = 5,
+    .relatives = {
+        &__nvoc_metadata__GpuStateChanged.rtti,    // [0]: (gpustatechanged) this
+        &__nvoc_metadata__GpuStateChanged.metadata__GpuOperationalEvent.rtti,    // [1]: (gpuopevt) super
+        &__nvoc_metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [2]: (opevt) super^2
+        &__nvoc_metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [3]: (event) super^3
+        &__nvoc_metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [4]: (obj) super^4
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuStateChanged = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct GpuStateChanged object.
+void __nvoc_dtor_GpuOperationalEvent(Dynamic*);
+void __nvoc_dtor_GpuStateChanged(Dynamic* pThis) {
+
+    GpuStateChanged *__nvoc_this = (GpuStateChanged *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuOperationalEvent((Dynamic *) &__nvoc_this->__nvoc_base_GpuOperationalEvent);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_GpuStateChanged(GpuStateChanged *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct GpuStateChanged object.
+NV_STATUS __nvoc_ctor_GpuOperationalEvent(GpuOperationalEvent *pEvent, struct EventBus *pEventBus, NvU32 category, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_GpuStateChanged(GpuStateChanged *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuOperationalEvent(&pEvent->__nvoc_base_GpuOperationalEvent, pEventBus, GPU_OPERATIONAL_EVENT_CATEGORY_STATE_CHANGED, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel);
+    if (status != NV_OK) goto __nvoc_ctor_GpuStateChanged_fail_GpuOperationalEvent;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_GpuStateChanged(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_gpustatechangedConstruct(pEvent, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel);
+    if (status != NV_OK) goto __nvoc_ctor_GpuStateChanged_fail__init;
+    goto __nvoc_ctor_GpuStateChanged_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_GpuStateChanged_fail__init:
+    __nvoc_dtor_GpuOperationalEvent((Dynamic *)&pEvent->__nvoc_base_GpuOperationalEvent);
+__nvoc_ctor_GpuStateChanged_fail_GpuOperationalEvent:
+__nvoc_ctor_GpuStateChanged_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_GpuStateChanged_1(GpuStateChanged *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_GpuStateChanged_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_GpuStateChanged(GpuStateChanged *pThis) {
+    __nvoc_init_funcTable_GpuStateChanged_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__GpuStateChanged(GpuStateChanged *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^4
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^3
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^2
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super
+    pThis->__nvoc_pbase_GpuStateChanged = pThis;    // (gpustatechanged) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuOperationalEvent(&pThis->__nvoc_base_GpuOperationalEvent);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^4
+    pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^3
+    pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^2
+    pThis->__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GpuStateChanged.metadata__GpuOperationalEvent;    // (gpuopevt) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__GpuStateChanged;    // (gpustatechanged) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_GpuStateChanged(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_GpuStateChanged(GpuStateChanged **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    GpuStateChanged *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(GpuStateChanged));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(GpuStateChanged));
+
+    __nvoc_pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__GpuStateChanged(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_GpuStateChanged(__nvoc_pThis, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_GpuStateChanged_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_GpuStateChanged_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(GpuStateChanged));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_GpuStateChanged(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    const char *pModuleSignature = va_arg(__nvoc_args, const char *);
+    NvU32 eventCode = va_arg(__nvoc_args, NvU32);
+    NvU32 severity = va_arg(__nvoc_args, NvU32);
+    NvU32 attributes = va_arg(__nvoc_args, NvU32);
+    NvU32 scope = va_arg(__nvoc_args, NvU32);
+    NvU32 reportingSource = va_arg(__nvoc_args, NvU32);
+    NvU32 logLevel = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_GpuStateChanged((GpuStateChanged **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__0e6f48 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResourceThreshold;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+
+// Forward declarations for GpuResourceThreshold
+void __nvoc_init__GpuOperationalEvent(GpuOperationalEvent*);
+void __nvoc_init__GpuResourceThreshold(GpuResourceThreshold*);
+void __nvoc_init_funcTable_GpuResourceThreshold(GpuResourceThreshold*);
+NV_STATUS __nvoc_ctor_GpuResourceThreshold(GpuResourceThreshold*, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);
+void __nvoc_init_dataField_GpuResourceThreshold(GpuResourceThreshold*);
+void __nvoc_dtor_GpuResourceThreshold(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__GpuResourceThreshold;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuResourceThreshold;
+
+// Down-thunk(s) to bridge GpuResourceThreshold methods from ancestors (if any)
+
+// Up-thunk(s) to bridge GpuResourceThreshold methods to ancestors (if any)
+
+// Class-specific details for GpuResourceThreshold
+const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResourceThreshold = 
+{
+    .classInfo.size =               sizeof(GpuResourceThreshold),
+    .classInfo.classId =            classId(GpuResourceThreshold),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "GpuResourceThreshold",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_GpuResourceThreshold,
+    .pCastInfo =          &__nvoc_castinfo__GpuResourceThreshold,
+    .pExportInfo =        &__nvoc_export_info__GpuResourceThreshold
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__GpuResourceThreshold __nvoc_metadata__GpuResourceThreshold = {
+    .rtti.pClassDef = &__nvoc_class_def_GpuResourceThreshold,    // (gpuresthreshold) this
+    .rtti.dtor      = &__nvoc_dtor_GpuResourceThreshold,
+    .rtti.offset    = 0,
+    .metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super
+    .metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(GpuResourceThreshold, __nvoc_base_GpuOperationalEvent),
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^2
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(GpuResourceThreshold, __nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^3
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(GpuResourceThreshold, __nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^4
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(GpuResourceThreshold, __nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__GpuResourceThreshold = {
+    .numRelatives = 5,
+    .relatives = {
+        &__nvoc_metadata__GpuResourceThreshold.rtti,    // [0]: (gpuresthreshold) this
+        &__nvoc_metadata__GpuResourceThreshold.metadata__GpuOperationalEvent.rtti,    // [1]: (gpuopevt) super
+        &__nvoc_metadata__GpuResourceThreshold.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [2]: (opevt) super^2
+        &__nvoc_metadata__GpuResourceThreshold.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [3]: (event) super^3
+        &__nvoc_metadata__GpuResourceThreshold.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [4]: (obj) super^4
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__GpuResourceThreshold = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct GpuResourceThreshold object.
+void __nvoc_dtor_GpuOperationalEvent(Dynamic*);
+void __nvoc_dtor_GpuResourceThreshold(Dynamic* pThis) {
+
+    GpuResourceThreshold *__nvoc_this = (GpuResourceThreshold *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuOperationalEvent((Dynamic *) &__nvoc_this->__nvoc_base_GpuOperationalEvent);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_GpuResourceThreshold(GpuResourceThreshold *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct GpuResourceThreshold object.
+NV_STATUS __nvoc_ctor_GpuOperationalEvent(GpuOperationalEvent *pEvent, struct EventBus *pEventBus, NvU32 category, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_GpuResourceThreshold(GpuResourceThreshold *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuOperationalEvent(&pEvent->__nvoc_base_GpuOperationalEvent, pEventBus, GPU_OPERATIONAL_EVENT_CATEGORY_RESOURCE_THRESHOLD, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel);
+    if (status != NV_OK) goto __nvoc_ctor_GpuResourceThreshold_fail_GpuOperationalEvent;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_GpuResourceThreshold(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_gpuresthresholdConstruct(pEvent, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel);
+    if (status != NV_OK) goto __nvoc_ctor_GpuResourceThreshold_fail__init;
+    goto __nvoc_ctor_GpuResourceThreshold_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_GpuResourceThreshold_fail__init:
+    __nvoc_dtor_GpuOperationalEvent((Dynamic *)&pEvent->__nvoc_base_GpuOperationalEvent);
+__nvoc_ctor_GpuResourceThreshold_fail_GpuOperationalEvent:
+__nvoc_ctor_GpuResourceThreshold_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_GpuResourceThreshold_1(GpuResourceThreshold *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_GpuResourceThreshold_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_GpuResourceThreshold(GpuResourceThreshold *pThis) {
+    __nvoc_init_funcTable_GpuResourceThreshold_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__GpuResourceThreshold(GpuResourceThreshold *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^4
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^3
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^2
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super
+    pThis->__nvoc_pbase_GpuResourceThreshold = pThis;    // (gpuresthreshold) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuOperationalEvent(&pThis->__nvoc_base_GpuOperationalEvent);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__GpuResourceThreshold.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^4
+    pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__GpuResourceThreshold.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^3
+    pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GpuResourceThreshold.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^2
+    pThis->__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GpuResourceThreshold.metadata__GpuOperationalEvent;    // (gpuopevt) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__GpuResourceThreshold;    // (gpuresthreshold) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_GpuResourceThreshold(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_GpuResourceThreshold(GpuResourceThreshold **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    GpuResourceThreshold *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(GpuResourceThreshold));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(GpuResourceThreshold));
+
+    __nvoc_pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__GpuResourceThreshold(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_GpuResourceThreshold(__nvoc_pThis, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_GpuResourceThreshold_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_GpuResourceThreshold_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(GpuResourceThreshold));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_GpuResourceThreshold(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    const char *pModuleSignature = va_arg(__nvoc_args, const char *);
+    NvU32 eventCode = va_arg(__nvoc_args, NvU32);
+    NvU32 severity = va_arg(__nvoc_args, NvU32);
+    NvU32 attributes = va_arg(__nvoc_args, NvU32);
+    NvU32 scope = va_arg(__nvoc_args, NvU32);
+    NvU32 reportingSource = va_arg(__nvoc_args, NvU32);
+    NvU32 logLevel = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_GpuResourceThreshold((GpuResourceThreshold **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, pModuleSignature, eventCode, severity, attributes, scope, reportingSource, logLevel);
+}
+
+
+#ifdef DEBUG
 char __nvoc_class_id_uniqueness_check__94f24e = 1;
 #endif
 

@@ -76,10 +76,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelIoctrl;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__KernelIoctrl;
 
 
 struct KernelIoctrl {
@@ -156,29 +155,10 @@ struct KernelIoctrl_PRIVATE {
 };
 
 
-// Vtable with 14 per-class function pointers
-struct NVOC_VTABLE__KernelIoctrl {
-    NV_STATUS (*__kioctrlConstructEngine__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    void (*__kioctrlInitMissing__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreInitLocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreInitUnlocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateInitLocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateInitUnlocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreLoad__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateLoad__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePostLoad__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreUnload__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateUnload__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePostUnload__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__kioctrlStateDestroy__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kioctrlIsPresent__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelIoctrl {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__KernelIoctrl vtable;
 };
 
 #ifndef __nvoc_class_id_KernelIoctrl
@@ -229,7 +209,7 @@ static inline void kioctrlDestructEngine(struct KernelIoctrl *arg_this) {
 
 
 // Wrapper macros for halified functions
-#define kioctrlConstructEngine_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kioctrlConstructEngine__
+#define kioctrlConstructEngine_FNPTR(arg_this) arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define kioctrlConstructEngine(arg1, arg_this, arg3) kioctrlConstructEngine_DISPATCH(arg1, arg_this, arg3)
 #define kioctrlGetMinionEnableDefault_FNPTR(pKernelIoctrl) pKernelIoctrl->__kioctrlGetMinionEnableDefault__
 #define kioctrlGetMinionEnableDefault(pGpu, pKernelIoctrl) kioctrlGetMinionEnableDefault_DISPATCH(pGpu, pKernelIoctrl)
@@ -237,6 +217,10 @@ static inline void kioctrlDestructEngine(struct KernelIoctrl *arg_this) {
 #define kioctrlMinionConstruct_FNPTR(pKernelIoctrl) pKernelIoctrl->__kioctrlMinionConstruct__
 #define kioctrlMinionConstruct(pGpu, pKernelIoctrl) kioctrlMinionConstruct_DISPATCH(pGpu, pKernelIoctrl)
 #define kioctrlMinionConstruct_HAL(pGpu, pKernelIoctrl) kioctrlMinionConstruct_DISPATCH(pGpu, pKernelIoctrl)
+#define kioctrlConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define kioctrlConstructApertures(pGpu, pEngstate) kioctrlConstructApertures_DISPATCH(pGpu, pEngstate)
+#define kioctrlDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define kioctrlDestructApertures(pGpu, pEngstate) kioctrlDestructApertures_DISPATCH(pGpu, pEngstate)
 #define kioctrlInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define kioctrlInitMissing(pGpu, pEngstate) kioctrlInitMissing_DISPATCH(pGpu, pEngstate)
 #define kioctrlStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -266,7 +250,7 @@ static inline void kioctrlDestructEngine(struct KernelIoctrl *arg_this) {
 
 // Dispatch functions
 static inline NV_STATUS kioctrlConstructEngine_DISPATCH(struct OBJGPU *arg1, struct KernelIoctrl *arg_this, NvU32 arg3) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__kioctrlConstructEngine__(arg1, arg_this, arg3);
+    return arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(arg1, staticCast(arg_this, OBJENGSTATE), arg3);
 }
 
 static inline NvBool kioctrlGetMinionEnableDefault_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pKernelIoctrl) {
@@ -277,56 +261,64 @@ static inline NV_STATUS kioctrlMinionConstruct_DISPATCH(struct OBJGPU *pGpu, str
     return pKernelIoctrl->__kioctrlMinionConstruct__(pGpu, pKernelIoctrl);
 }
 
+static inline NV_STATUS kioctrlConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
+static inline void kioctrlDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
 static inline void kioctrlInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kioctrlStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kioctrlStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kioctrlStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kioctrlStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kioctrlStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kioctrlStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kioctrlStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kioctrlStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kioctrlStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kioctrlStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline void kioctrlStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlStateDestroy__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NvBool kioctrlIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kioctrlIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions

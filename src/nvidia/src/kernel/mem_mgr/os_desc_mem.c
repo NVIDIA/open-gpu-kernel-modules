@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -165,6 +165,19 @@ osdescConstruct_IMPL
         pUserParams->attr = FLD_SET_DRF(OS32, _ATTR, _PHYSICALITY, _NONCONTIGUOUS, pUserParams->attr);
     }
 
+    //
+    // SKIP_IOMMU_MAPPING is honored when NV_VERIF_FEATURES is enabled (MODS builds)
+    // or when RM test-only code is enabled via registry key (rmtest)
+    //
+    if (FLD_TEST_DRF(OS32, _ATTR2, _SKIP_IOMMU_MAPPING, _YES, pUserParams->attr2))
+    {
+        OBJSYS *pSys = SYS_GET_INSTANCE();
+        if (pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE))
+        {
+            memdescSetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_IOMMU_MAPPING, NV_TRUE);
+        }
+    }
+
     // Allow user space mapping support only for FILE_HANDLE type OS_DESCRIPTOR
     if (pUserParams->descriptorType == NVOS32_DESCRIPTOR_TYPE_OS_FILE_HANDLE)
     {
@@ -209,7 +222,7 @@ osdescConstruct_IMPL
     // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
     // do an RPC to the host to do the hardware update.
     //
-    if (IS_VIRTUAL(pGpu))
+    if (memNeedRpcAlloc(pMemory))
     {
         NV_RM_RPC_ALLOC_MEMORY(pGpu,
                                 hClient,
@@ -222,6 +235,10 @@ osdescConstruct_IMPL
         NV_CHECK_OK_OR_GOTO(status, LEVEL_INFO, status, failure);
 
         pMemory->bRpcAlloc = NV_TRUE;
+    }
+
+    if (IS_VIRTUAL(pGpu))
+    {
         NV_ASSERT_OK_OR_GOTO(status, vgpuUpdateGuestSysmemPfnBitMap(pGpu, pMemDesc, NV_TRUE), failure);
     }
 
@@ -273,7 +290,8 @@ osdescConstruct_IMPL
 
 failure:
     memdescFree(pMemDesc);
-    memdescDestroy(pMemDesc);
+    if (!pMemory->bConstructed)
+        memdescDestroy(pMemDesc);
 
     return status;
 }

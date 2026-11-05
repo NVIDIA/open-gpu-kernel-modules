@@ -39,20 +39,14 @@
 using namespace DisplayPort;
 
 
-EncodedMessage * MessageTransactionMerger::pushTransaction(MessageHeader * header, Buffer * data)
+bool MessageTransactionMerger::pushTransaction(MessageHeader * header, Buffer * data, EncodedMessage * out)
 {
-    if (freeOnNextCall)
-    {
-        delete freeOnNextCall;
-        freeOnNextCall = 0;
-    }
-
     IncompleteMessage * imsg = getTransactionRecord(header->address, header->messageNumber);
 
     if (!imsg)
     {
         DP_PRINTF(DP_WARNING, "DP-MM> Ignore message due to OOM");
-        return 0;
+        return false;
     }
 
     if (header->isTransactionStart)
@@ -65,10 +59,10 @@ EncodedMessage * MessageTransactionMerger::pushTransaction(MessageHeader * heade
         if (imsg->message.buffer.length == 0)
         {
             DP_PRINTF(DP_NOTICE, "DP-MM> Expected transaction-start, ignoring message transaction");
-            return 0;
+            return false;
         }
 
-        if (imsg->message.isPathMessage != header->isPathMessage || 
+        if (imsg->message.isPathMessage != header->isPathMessage ||
             imsg->message.isBroadcast != header->isBroadcast)
         {
             DP_ASSERT(0 && "Message type changed during transmission");
@@ -92,10 +86,9 @@ EncodedMessage * MessageTransactionMerger::pushTransaction(MessageHeader * heade
     //
     if (header->payloadBytes > data->length)
     {
-        freeOnNextCall = imsg;
-        imsg->message.buffer.reset();
         DP_PRINTF(DP_ERROR, "DP-MM> Received truncated or corrupted message transaction");
-        return 0;
+        delete imsg;
+        return false;
     }
 
     //
@@ -110,19 +103,22 @@ EncodedMessage * MessageTransactionMerger::pushTransaction(MessageHeader * heade
         header->payloadBytes == 0)
     {
         DP_PRINTF(DP_ERROR, "DP-MM> Received corruption message transactions");
-        freeOnNextCall = imsg;
-        imsg->message.buffer.reset();
-        return 0;
+        delete imsg;
+        return false;
     }
 
     // Discount the processed CRC from the payload count
-    header->payloadBytes--; 
+    header->payloadBytes--;
 
     //
     //  Append active buffer
     //
     unsigned i = imsg->message.buffer.length;
-    imsg->message.buffer.resize(i + header->payloadBytes);
+    if (!imsg->message.buffer.resize(i + header->payloadBytes))
+    {
+        delete imsg;
+        return false;
+    }
     dpMemCopy(&imsg->message.buffer.data[i], &data->data[header->headerSizeBits/8], header->payloadBytes);
 
     //
@@ -130,12 +126,12 @@ EncodedMessage * MessageTransactionMerger::pushTransaction(MessageHeader * heade
     //
     if (header->isTransactionEnd)
     {
-        freeOnNextCall = imsg;
-
-        return &imsg->message;
+        out->swap(imsg->message);
+        delete imsg;
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 MessageTransactionMerger::IncompleteMessage * MessageTransactionMerger::getTransactionRecord(const Address & address, unsigned messageNumber)
@@ -247,11 +243,11 @@ void IncomingTransactionManager::mailboxInterrupt()
 
     clearMessageBoxInterrupt();
 
-    EncodedMessage * em = incompleteMessages.pushTransaction(&msg, &this->localWindow);
-  
-    if (em)
+    EncodedMessage em;
+
+    if (incompleteMessages.pushTransaction(&msg, &this->localWindow, &em))
     {
-        this->sink->messagedReceived(this, em);
+        this->sink->messagedReceived(this, &em);
     }
 }
 

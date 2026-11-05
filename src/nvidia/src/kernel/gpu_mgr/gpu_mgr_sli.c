@@ -32,6 +32,7 @@
 #include "core/locks.h"
 #include "os/os.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/bus/kern_bus.h"
 #include "kernel/gpu/intr/intr.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"

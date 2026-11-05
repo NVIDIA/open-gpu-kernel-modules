@@ -67,9 +67,8 @@ vaspaceFillAllocParams_IMPL
 {
     NvBool bRestrictedVaRange = NV_FALSE;
     NvBool bEnforce32bitPtr   = NV_FALSE;
-    NvU32 vasFlags            =  vaspaceGetFlags(pVAS);
 
-    OBJGPU             *pGpu     = gpumgrGetGpu(gpumgrGetDefaultPrimaryGpu(pVAS->gpuMask));
+    OBJGPU             *pGpu     = pVAS->pGpu;
     VirtMemAllocator   *pDma     = GPU_GET_DMA(pGpu);
     bRestrictedVaRange           = pDma->bDmaRestrictVaRange;
     bEnforce32bitPtr             = pDma->bDmaEnforce32BitPointer;
@@ -99,7 +98,7 @@ vaspaceFillAllocParams_IMPL
         // access 40b VA. MODS must use range/fixed address allocations to
         // get a VA above 40 bits in this mode.
         //
-        if (bRestrictedVaRange && !(vasFlags & VASPACE_FLAGS_FLA))
+        if (bRestrictedVaRange)
         {
             *pRangeHi = NV_MIN(*pRangeHi, NVBIT64(40) - 1);
         }
@@ -121,8 +120,7 @@ vaspaceFillAllocParams_IMPL
     else if (bEnforce32bitPtr &&
              !(pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE) &&
              !(pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_USE_BEGIN_END) &&
-             ((*pRangeHi - *pRangeLo + 1 - *pSize) > NVBIT64(32)) &&
-             !(vasFlags & VASPACE_FLAGS_FLA))
+             ((*pRangeHi - *pRangeLo + 1 - *pSize) > NVBIT64(32)))
     {
         *pRangeLo = NV_MAX(*pRangeLo, NVBIT64(32));
     }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,7 @@ fbsrObjectInit_IMPL(OBJFBSR *pFbsr, NvU32 type)
 {
     pFbsr->type   = type;
     pFbsr->bValid = NV_FALSE;
+    pFbsr->bSysMemLocked = NV_FALSE;
     pFbsr->bInitialized = NV_FALSE;
     pFbsr->pRegionRecords = NULL;
     pFbsr->numRegions = 0;

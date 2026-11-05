@@ -550,6 +550,111 @@ struct drm_nvidia_plane_telltales {
 };
 
 /**
+ * Maximum subframes in the NV_DRM_CRTC_SUPERFRAME_CONFIG blob (array size). This
+ * value should remain stable for UAPI compatibility.
+ */
+#define NV_DRM_MAX_SUBFRAMES_IN_SUPERFRAME 16U
+
+/**
+ * @brief Per-plane asymmetric superframe mode
+ *
+ * Used with the atomic range property NV_DRM_PLANE_ASYMMETRIC_SUPERFRAME_MODE
+ * (values 0..2). Selects whether this plane applies HW or SW asymmetric
+ * padding, or neither. Use NV_DRM_PLANE_ASYMMETRIC_SUPERFRAME_MODE_NO_PADDING
+ * when this plane does not use asymmetric padding (default); use HW_PADDING or
+ * SW_PADDING when the CRTC superframe layout requires it for this plane.
+ *
+ * Prefer HW_PADDING whenever display HW can match the serializer's asymmetric
+ * layout; use SW_PADDING when it cannot (e.g. a SerDes-specific superframe
+ * format the display hardware does not emit natively). If NV_DRM_CRTC_SUPERFRAME_CONFIG
+ * sets sw_superframe_required for a subframe, use SW padding: compositor
+ * supplies the padded plane (often an alpha-capable format), and this property
+ * must match the prepared buffer on commit. Use HW_PADDING otherwise so the
+ * pipeline applies padding_ratio_* from the blob.
+ *
+ * Clients must set this property on commit so the driver's plane programming
+ * matches how the buffer was prepared.
+ */
+enum nv_drm_plane_asymmetric_superframe_mode {
+    /*! This plane does not use HW or SW asymmetric padding (default). */
+    NV_DRM_PLANE_ASYMMETRIC_SUPERFRAME_MODE_NO_PADDING = 0,
+    /*!
+     * HW padding: the display precomp path for this plane inserts or generates
+     * pad lines per the CRTC superframe blob (padding_ratio_*). The plane surface
+     * is typically active content only; the pipeline expands to the common
+     * padded height for the serializer.
+     */
+    NV_DRM_PLANE_ASYMMETRIC_SUPERFRAME_MODE_HW_PADDING = 1,
+    /*!
+     * SW padding: use when display HW cannot emit the serializer's asymmetric
+     * superframe format (see sw_superframe_required in the CRTC superframe
+     * blob). Compositor builds the padded plane in memory; prefer HW padding
+     * when supported (see brief above).
+     */
+    NV_DRM_PLANE_ASYMMETRIC_SUPERFRAME_MODE_SW_PADDING = 2,
+};
+
+/**
+ * @brief One subframe entry within NV_DRM_CRTC_SUPERFRAME_CONFIG
+ *
+ * Describes geometry and padding metadata for a single logical subframe within
+ * the CRTC's full superframe viewport. Symmetric layouts report
+ * padding_required and padding_ratio_* as zero / unused.
+ *
+ * Layout: pixel box (four u32), HW padding ratios (three u32), flags (two u8),
+ * explicit alignment padding, then uint64 growth space.
+ *
+ * @param[out] x_pos Left (X) origin of this subframe in full-viewport coordinates
+ * @param[out] y_pos Top (Y) origin of this subframe in full-viewport coordinates
+ * @param[out] width Width in pixels of this subframe's content region
+ * @param[out] height Height in pixels of this subframe's content region (before padding)
+ * @param[out] padding_ratio_input_lines When padding_required, input line count for the HW padding ratio (zero if unused)
+ * @param[out] padding_ratio_output_lines When padding_required, output line count for the HW padding ratio (zero if unused)
+ * @param[out] padding_ratio_start_count Zero for fixed-ratio padding; non-zero for dynamic fractional padding counter seed
+ * @param[out] padding_required Non-zero if asymmetric padding applies to this subframe; zero if symmetric
+ * @param[out] sw_superframe_required Non-zero if this subframe must be constructed with SW superframe only
+ * @param[out] _reserved_align Structure padding; must be zero; pads to 8-byte alignment for reserved[]
+ * @param[out] reserved Reserved for UAPI growth; zero
+ */
+struct drm_nvidia_subframe_config {
+    uint32_t x_pos;                        /* OUT */
+    uint32_t y_pos;                        /* OUT */
+    uint32_t width;                        /* OUT */
+    uint32_t height;                       /* OUT */
+    uint32_t padding_ratio_input_lines;    /* OUT */
+    uint32_t padding_ratio_output_lines;   /* OUT */
+    uint32_t padding_ratio_start_count;    /* OUT */
+    uint8_t  padding_required;             /* OUT */
+    uint8_t  sw_superframe_required;       /* OUT */
+    uint8_t  _reserved_align[2];           /* OUT */
+    uint64_t reserved[4];                  /* OUT */
+};
+
+/**
+ * @brief Blob property structure for NV_DRM_CRTC_SUPERFRAME_CONFIG
+ *
+ * Read-only blob on the CRTC reporting the platform superframe layout for that
+ * CRTC (symmetric and asymmetric). UMD uses this to position planes and to
+ * interpret padding fields; num_subframes must not exceed
+ * NV_DRM_MAX_SUBFRAMES_IN_SUPERFRAME.
+ *
+ * Layout: num_subframes, a single reserved u32 (zero), subframes array, then
+ * top-level reserved u64 words for UAPI growth.
+ *
+ * @param[out] num_subframes Number of valid entries in the subframes array
+ * @param[out] _reserved Must be zero; reserved for UAPI growth and 8-byte alignment before subframes[]
+ * @param[out] subframes Per-subframe geometry and padding metadata (see drm_nvidia_subframe_config)
+ * @param[out] reserved Reserved for UAPI growth; zero
+ */
+struct drm_nvidia_superframe_config {
+    uint32_t num_subframes;          /* OUT */
+    uint32_t _reserved;              /* OUT */
+    struct drm_nvidia_subframe_config \
+        subframes[NV_DRM_MAX_SUBFRAMES_IN_SUPERFRAME]; /* OUT */
+    uint64_t reserved[4];            /* OUT */
+};
+
+/**
  * @brief ROI CRC data structure
  *
  * This structure contains the CRC value for a specific ROI region. It is used
@@ -621,6 +726,30 @@ struct drm_nvidia_read_crc_params {
  */
 struct drm_nvidia_hdmi_vsif_metadata {
     uint8_t payload[NV_DRM_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE];
+};
+
+/**
+ * @brief Per-plane scaling capabilities blob data
+ *
+ * This structure defines the content of the NV_DRM_PLANE_SCALING_CAPS
+ * immutable blob property. Each scale factor is represented as a 1024-based
+ * fixed-point value, where 1024 is 1.0x.
+ *
+ * Downscale factors use source size divided by destination size. Upscale
+ * factors use destination size divided by source size.
+ *
+ * @param[out] max_h_downscale Max horizontal downscale factor.
+ * @param[out] max_v_downscale Max vertical downscale factor.
+ * @param[out] max_h_upscale Max horizontal upscale factor.
+ * @param[out] max_v_upscale Max vertical upscale factor.
+ * @param[out] reserved Reserved for future expansion. Must be zero.
+ */
+struct drm_nvidia_plane_scaling_caps {
+    __u32 max_h_downscale;  /* OUT */
+    __u32 max_v_downscale;  /* OUT */
+    __u32 max_h_upscale;    /* OUT */
+    __u32 max_v_upscale;    /* OUT */
+    __u32 reserved[4];      /* OUT: reserved, must be zero */
 };
 
 #endif /* _NV_DRM_COMMON_IOCTL_H_ */

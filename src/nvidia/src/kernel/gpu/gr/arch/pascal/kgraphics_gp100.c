@@ -145,7 +145,8 @@ kgraphicsInitFecsRegistryOverrides_GP100
     // CTXSW logging is not supported when HCC prod settings are enabled.
     // However, the same is supported when HCC is enabled in devtools mode
     //
-    if (gpuIsCCFeatureEnabled(pGpu) && !gpuIsCCDevToolsModeEnabled(pGpu))
+    if ((gpuIsBaremetalSecureAiEnabled(pGpu) || gpuIsCCFeatureEnabled(pGpu)) &&
+        !gpuIsCCDevToolsModeEnabled(pGpu))
     {
         kgraphicsSetCtxswLoggingSupported(pGpu, pKernelGraphics, NV_FALSE);
     }

@@ -47,22 +47,18 @@ static void CpuUnmapSurface(
     NVSurfaceEvoPtr pSurfaceEvo)
 {
     const NvU32 planeIndex = 0;
-    NvU32 sd;
 
     if (pSurfaceEvo->planes[planeIndex].rmHandle == 0) {
         return;
     }
 
-    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-
-        if (pSurfaceEvo->cpuAddress[sd] != NULL) {
-            nvRmApiUnmapMemory(nvEvoGlobal.clientHandle,
-                               pDevEvo->pSubDevices[sd]->handle,
-                               pSurfaceEvo->planes[planeIndex].rmHandle,
-                               pSurfaceEvo->cpuAddress[sd],
-                               0);
-            pSurfaceEvo->cpuAddress[sd] = NULL;
-        }
+    if (pSurfaceEvo->cpuAddress[0] != NULL) {
+        nvRmApiUnmapMemory(nvEvoGlobal.clientHandle,
+                           pDevEvo->pSubDevices[0]->handle,
+                           pSurfaceEvo->planes[planeIndex].rmHandle,
+                           pSurfaceEvo->cpuAddress[0],
+                           0);
+        pSurfaceEvo->cpuAddress[0] = NULL;
     }
 }
 
@@ -71,28 +67,24 @@ NvBool nvEvoCpuMapSurface(
     NVSurfaceEvoPtr pSurfaceEvo)
 {
     const NvU32 planeIndex = 0;
-    NvU32 sd;
 
     /*
      * We should only be called here with surfaces that contain a single plane.
      */
     nvAssert(nvKmsGetSurfaceMemoryFormatInfo(pSurfaceEvo->format)->numPlanes == 1);
 
-    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+    NvU32 result = nvRmApiMapMemory(
+                    nvEvoGlobal.clientHandle,
+                    pDevEvo->pSubDevices[0]->handle,
+                    pSurfaceEvo->planes[planeIndex].rmHandle,
+                    0,
+                    pSurfaceEvo->planes[planeIndex].rmObjectSizeInBytes,
+                    (void **) &pSurfaceEvo->cpuAddress[0],
+                    0);
 
-        NvU32 result = nvRmApiMapMemory(
-                        nvEvoGlobal.clientHandle,
-                        pDevEvo->pSubDevices[sd]->handle,
-                        pSurfaceEvo->planes[planeIndex].rmHandle,
-                        0,
-                        pSurfaceEvo->planes[planeIndex].rmObjectSizeInBytes,
-                        (void **) &pSurfaceEvo->cpuAddress[sd],
-                        0);
-
-        if (result != NVOS_STATUS_SUCCESS) {
-            CpuUnmapSurface(pDevEvo, pSurfaceEvo);
-            return FALSE;
-        }
+    if (result != NVOS_STATUS_SUCCESS) {
+        CpuUnmapSurface(pDevEvo, pSurfaceEvo);
+        return FALSE;
     }
 
     return TRUE;
@@ -875,7 +867,6 @@ ClearSurfaceUsageApply(NVDevEvoPtr pDevEvo,
         }
 
         if (found) {
-            pFlipApiHead[numFlipApiHeads].sd = 0;
             pFlipApiHead[numFlipApiHeads].head = apiHead;
             numFlipApiHeads++;
             nvAssert(numFlipApiHeads <= maxApiHeads);
@@ -937,7 +928,6 @@ ClearSurfaceUsageApply(NVDevEvoPtr pDevEvo,
         }
 
         if (found) {
-            pFlipApiHead[numFlipApiHeads].sd = 0;
             pFlipApiHead[numFlipApiHeads].head = apiHead;
             numFlipApiHeads++;
             nvAssert(numFlipApiHeads <= maxApiHeads);
@@ -985,7 +975,6 @@ ClearSurfaceUsageApply(NVDevEvoPtr pDevEvo,
 
         if (pCache->apiHead[apiHead].flipCursorToNull) {
             pFlipApiHead[numFlipApiHeads].flip.cursor.imageSpecified = TRUE;
-            pFlipApiHead[numFlipApiHeads].sd = 0;
             pFlipApiHead[numFlipApiHeads].head = apiHead;
             numFlipApiHeads++;
             nvAssert(numFlipApiHeads <= maxApiHeads);

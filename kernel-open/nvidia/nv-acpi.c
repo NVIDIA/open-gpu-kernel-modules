@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -255,7 +255,7 @@ static void nv_acpi_notify_event(acpi_handle handle, u32 event_type, void *data)
 
     /*
      * Function to handle device specific ACPI events such as display hotplug,
-     * GPS and D-notifier events.
+     * PRH and D-notifier events.
      */
     rm_acpi_notify(pNvAcpiObject->sp, NV_STATE_PTR(nvl), event_type);
 }

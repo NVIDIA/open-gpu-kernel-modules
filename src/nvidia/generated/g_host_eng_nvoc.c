@@ -94,7 +94,7 @@ void __nvoc_init_dataField_OBJHOSTENG(OBJHOSTENG *pThis, GpuHalspecOwner *pGpuha
 
     // NVOC Property Hal field -- PDB_PROP_HOSTENG_ENSURE_HALT_SUCCEEDS_BEFORE_RESET
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xfc000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060ffUL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_HOSTENG_ENSURE_HALT_SUCCEEDS_BEFORE_RESET, NV_TRUE);
     }

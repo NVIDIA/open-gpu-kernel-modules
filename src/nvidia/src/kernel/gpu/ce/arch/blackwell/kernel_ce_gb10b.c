@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 #include "gpu/ce/kernel_ce.h"
 #include "gpu/ce/kernel_ce_private.h"
 
-#include "published/blackwell/gb10b/dev_ce_base.h"
+#include "published/blackwell/gb10b/dev_ce_zb.h"
 
 /*!
  * @brief Returns the size of the PCE2LCE register array
@@ -34,7 +34,7 @@
  * @param[in] pGpu  OBJGPU pointer
  * @param[in] pCe   OBJCE pointer
  *
- * @return  NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1
+ * @return  NV_CE_ZB_PCE2LCE_CONFIG__SIZE_1
  *
  */
 NvU32
@@ -43,7 +43,7 @@ kceGetPce2lceConfigSize1_GB10B
     KernelCE *pKCe
 )
 {
-    return NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1;
+    return NV_CE_ZB_PCE2LCE_CONFIG__SIZE_1;
 }
 
 /**
@@ -191,8 +191,8 @@ kceMapPceLceForGRCE_GB10B
 
     if (pLocalPceLceMap[pceIndex] != NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_INVALID_LCE)
     {
-        pLocalGrceMap[grceIdx] = DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED, 1) |
-                                 DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED_LCE, pLocalPceLceMap[pceIndex]);
+        pLocalGrceMap[grceIdx] = DRF_NUM(_CE_ZB, _GRCE_CONFIG, _SHARED, 1) |
+                                 DRF_NUM(_CE_ZB, _GRCE_CONFIG, _SHARED_LCE, pLocalPceLceMap[pceIndex]);
         NV_PRINTF(LEVEL_INFO,
                   "GRCE %d is shared and mapped to LCE Index: %d.\n", grceIdx, pLocalPceLceMap[pceIndex]);
     }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,7 +23,7 @@
 
 #include "kernel/gpu/ce/kernel_ce.h"
 
-#include "published/rubin/gr100/dev_ce_base.h"
+#include "published/rubin/gr100/dev_ce_zb.h"
 
 NvU32
 kceGetPce2lceConfigSize1_GR100
@@ -31,5 +31,5 @@ kceGetPce2lceConfigSize1_GR100
     KernelCE *pKCe
 )
 {
-    return NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1;
+    return NV_CE_ZB_PCE2LCE_CONFIG__SIZE_1;
 }

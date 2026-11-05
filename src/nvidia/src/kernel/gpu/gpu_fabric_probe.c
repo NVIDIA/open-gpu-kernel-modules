@@ -39,6 +39,8 @@
 #include "ctrl/ctrl2080/ctrl2080internal.h"
 #include "nvrm_registry.h"
 
+#include "gpu/conf_compute/conf_compute.h"
+
 #include "compute/fabric.h"
 #include "class/cl00f1.h"
 #include "vgpu/rpc.h"
@@ -311,6 +313,13 @@ _gpuFabricProbeRbmCheckLinkWake1HzCallback
         KNVLINK_SET_BW_MODE_STATUS(pKernelNvlink, NVLINK_BW_MODE_STATUS_ERROR_TIMEOUT_LINK_WAKE);
         osRemove1HzCallback(pGpu, _gpuFabricProbeRbmCheckLinkWake1HzCallback, pData);
         portMemFree(pData);
+
+        if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_RBM_RESTART_PROBES_AFTER_LINK_WAKE_TIMEOUT))
+        {
+            knvlinkSetBWMode(pGpu, pKernelNvlink, 0U);
+            pGpuFabricProbeInfoKernel->bwMode = 0U;
+            NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, NV_OK == gpuFabricProbeResume(pGpuFabricProbeInfoKernel));
+        }
     }
 }
 
@@ -857,7 +866,7 @@ _gpuFabricProbeSetupFlaRange
         //     for EGM mappings, keeping it in the pointer heap rather than
         //     rolling it into the emu heap.
         //
-        // SKU breakdown (flaSize → ptr / emu):
+        // SKU breakdown (flaSize ??? ptr / emu):
         //   Blackwell     EGM-off (6 TiB):  1 TiB / 5 TiB
         //   Blackwell     EGM-on  (7 TiB):  2 TiB / 5 TiB
         //   Blackwell 576 EGM-off (2 TiB):  1 TiB / 1 TiB
@@ -1315,7 +1324,7 @@ gpuFabricProbeReceiveKernelCallback
     {
         _gpuFabricProbeProcessV2Response(pGpuFabricProbeInfoKernel, pInbandRcvParams);
 
-        if (pGpuFabricProbeInfoKernel->fmCaps0 & NVLINK_INBAND_GPU_PROBE_CAPS_NON_DISRUPTIVE_LINK_MASK_CHANGE)
+        if (pKernelNvlink != NULL && knvlinkGetAbmEnabled(pGpu, pKernelNvlink))
         {
             knvlinkSetAmapUpdateStatus(pGpu, pKernelNvlink,
                     NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_READY_FOR_TRAFFIC_FALSE,
@@ -1361,6 +1370,17 @@ gpuFabricProbeReceiveKernelCallback
     {
         if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_RBM_LINK_COUNT_ENABLED))
         {
+            NVLINK_BIT_VECTOR activeLinkMask = {0};
+
+            // Update PMGR with the latest set of links to use for traffic
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                        bitVectorComplement(&activeLinkMask, &pGpuFabricProbeInfoKernel->linkMaskToBeReduced));
+
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                        bitVectorAnd(&activeLinkMask, &activeLinkMask, knvlinkGetEnabledLinkMask(pGpu, pKernelNvlink)));
+
+            (void)knvlinkSetPmgrLinkMask_HAL(pGpu, pKernelNvlink, &activeLinkMask);
+
             // Set links to sleep based on probe response
             _gpuFabricProbeRbmSleepLinks(pGpu, pGpuFabricProbeInfoKernel);
         }
@@ -1472,7 +1492,6 @@ _gpuFabricProbeUpdateABMLinkMask
     bitVectorInvAll(&invertedLinkMask);
     bitVectorAnd(&pendingAbmLinkMaskToBeReduced, pEnabledLinksVec, &invertedLinkMask);
 
-
     //
     //  If RBM is enabled and the pending ABM linkMaskToBeReduced is not equal to the current linkMaskToBeReduced,
     //  then wake all the sleeping links that are not part of the pending ABM linkMaskToBeReduced
@@ -1527,11 +1546,58 @@ _gpuFabricProbeUpdateABMLinkMask
         return;
     }
 
+    // ABM is not supported with NVLE, so mark the GPU for reset.
+    if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED))
+    {
+        NvU32 fabricHealthMask = FLD_SET_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _CONNECTION_UNHEALTHY, _TRUE,
+                                                pGpuFabricProbeInfoKernel->fabricHealthMask);
+
+        NV_ASSERT_OK(knvlinkFatalErrorRecovery_IMPL(pGpu, pKernelNvlink, NV_FALSE, NV_FALSE));
+        if (gpuIsCCFeatureEnabled(pGpu)
+            || gpuIsBaremetalSecureAiEnabled(pGpu)
+           )
+        {
+            //
+            // Set CC to NOT READY state manually instead of calling confComputeSetErrorState()
+            // to avoid collision with RAS error handling.
+            //
+            OBJSYS *pSys = SYS_GET_INSTANCE();
+            OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+            ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+            NV_STATUS status = NV_OK;
+            RM_API *pRmApi = NULL;
+            NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE_PARAMS params = {0};
+      
+            pConfCompute->bAcceptClientRequest   = NV_FALSE;
+            pGpuMgr->ccCaps.bAcceptClientRequest = NV_FALSE;
+            pGpuMgr->ccCaps.bFatalFailure        = NV_TRUE;
+            pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+            status = pRmApi->Control(pRmApi,
+                                     pGpu->hInternalClient,
+                                     pGpu->hInternalSubdevice,
+                                     NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE,
+                                     &params,
+                                     sizeof(params));
+        
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "ConfCompute: Failed setting GPU state to not ready!\n");
+            }
+        }
+        gpuFabricProbeOverrideFabricHealthStatus(pGpuFabricProbeInfoKernel, fabricHealthMask);
+        gpuFabricProbeDegradeCliques(pGpu);
+        return;
+    }
+
     // Store linkmask to be updated after P2P is idle
     knvlinkSetPendingAbmLinkMaskToBeReduced(pGpu, pKernelNvlink, &pendingAbmLinkMaskToBeReduced);
 
     NV_PRINTF(LEVEL_NOTICE, "GPU%u Queing ABM linkmask via probe update: linkMask="NV_BITVECTOR_INLINE_FMTX"\n",
                 pGpu->gpuInstance, NV_BITVECTOR_INLINE_PRINTF_ARG(pLinkMask));
+
+
+    // Update PMGR with the latest set of links to be used for traffic
+    (void)knvlinkSetPmgrLinkMask_HAL(pGpu, pKernelNvlink, pLinkMask);
 
     bNeedsRCRecovery = (action == NVLINK_INBAND_GPU_PROBE_UPDATE_ACTION_CHANGE_AMAP_AND_QUIESCE);
     knvlinkABMLinkMaskUpdate(pGpu, pKernelNvlink, bNeedsRCRecovery);
@@ -1754,10 +1820,14 @@ gpuFabricProbeReceiveUpdateKernelCallback
             "GPU%u Probe update version mismatch: activeProbeVersion=0x%x, updateMsgType=0x%x\n",
             gpuGetInstance(pGpu), pGpuFabricProbeInfoKernel->activeProbeVersion, pUpdateMsgHdr->type);
 
-        knvlinkSetAmapUpdateStatus(pGpu, pKernelNvlink,
-            NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_READY_FOR_TRAFFIC_FALSE,
-            NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_PENDING_FALSE,
-            NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_FAILED_TRUE);
+        if (bEnableABM)
+        {
+            knvlinkSetAmapUpdateStatus(pGpu, pKernelNvlink, 
+                NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_READY_FOR_TRAFFIC_FALSE, 
+                NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_PENDING_FALSE, 
+                NVLINK_INBAND_GPU_GET_CURRENT_STATE_GPU_STATE_FLAGS_AMAP_UPDATE_FAILED_TRUE);   
+        }
+        
         return NV_OK;
     }
 
@@ -2218,6 +2288,11 @@ gpuFabricProbeSetBwModePerGpu
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
     NvU16 *pMode;
+
+    if (knvlinkIsP2PActive(pGpu, pKernelNvlink))
+    {
+        return NV_ERR_IN_USE;
+    }
 
     // Function assumes caller has checked requested mode is supported
     pGpuFabricProbeInfoKernel->bwMode = mode;

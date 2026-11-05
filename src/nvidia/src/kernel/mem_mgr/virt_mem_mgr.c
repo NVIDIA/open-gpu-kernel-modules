@@ -45,7 +45,7 @@ vmmCreateVaspace_IMPL
     OBJVMM     *pVmm,
     NvU32       classId,
     NvU32       vaspaceId,
-    NvU32       gpuMask,
+    OBJGPU     *pGpu,
     NvU64       vaStart,
     NvU64       vaLimit,
     NvU64       vaStartInternal,
@@ -68,7 +68,7 @@ vmmCreateVaspace_IMPL
     // cases, the vaspaceId is used to correlate the vaspace with the GPU (it
     // is the GPU ID).
     //
-    if (gpuMask == 0)
+    if (pGpu == NULL)
     {
         NV_ASSERT_OR_RETURN(IO_VASPACE_A == classId, NV_ERR_INVALID_ARGUMENT);
     }
@@ -128,7 +128,7 @@ vmmCreateVaspace_IMPL
 
     (*ppVAS)->addressTranslation = addressTranslation;
     (*ppVAS)->vaspaceId          = vaspaceId;
-    (*ppVAS)->gpuMask            = gpuMask;
+    (*ppVAS)->pGpu               = pGpu;
 
     vaspaceIncRefCnt(*ppVAS);
 

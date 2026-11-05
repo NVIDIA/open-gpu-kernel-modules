@@ -58,6 +58,7 @@
 #include "compute/fabric.h"
 #include "gpu_mgr/gpu_db.h"
 #include "core/bin_data.h"
+#include "gpu/mem_mgr/carveout_mgr.h"
 
 #if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
 #include "diagnostics/instrumentation_manager.h"
@@ -87,6 +88,7 @@ static sysChildObject sysChildObjects[] =
     { NV_OFFSETOF(OBJSYS, pHypervisor),     classInfo(OBJHYPERVISOR),   NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pOS),             classInfo(OBJOS),           NV_FALSE }, //  OS: Wrapper macros must be enabled to use :CONSTRUCT.
     { NV_OFFSETOF(OBJSYS, pCl),             classInfo(OBJCL),           NV_TRUE },
+    { NV_OFFSETOF(OBJSYS, pCarveoutMgr),    classInfo(CarveoutMgr), NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuMgr),         classInfo(OBJGPUMGR),       NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGsyncMgr),       classInfo(OBJGSYNCMGR),     NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuAcct),        classInfo(GpuAccounting),   NV_TRUE },
@@ -816,10 +818,10 @@ sysInitRegistryOverrides_IMPL
         pSys->setProperty(pSys, PDB_PROP_SYS_ALLOW_UNKNOWN_4PART_IDS, !!data32);
     }
 
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR,
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DXGKRNL_NUDGE_BUG_5785851_WAR,
                             &data32) == NV_OK)
     {
-        pSys->setProperty(pSys, PDB_PROP_SYS_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR, !!data32);
+        pSys->setProperty(pSys, PDB_PROP_SYS_DXGKRNL_NUDGE_BUG_5785851_WAR, !!data32);
     }
 
     gpumgrSetGpuNvlinkBwModeFromRegistry(pGpu);
@@ -910,4 +912,3 @@ sysSetRecoverySystemRebootRequired_IMPL
         osQueueSystemWorkItem(_sysRefreshAllGpuRecoveryAction, NULL);
     }
 }
-

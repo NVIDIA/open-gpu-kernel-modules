@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -86,6 +86,14 @@ typedef struct
                                // difference of
                                // (Current total sample count - Start sample count).
     NvU64  maxFbUsage;  // Process's high watermark FB allocated (in bytes).
+    NvU64  curFbUsage;  // Process's current FB usage (in bytes), maintained
+                        // incrementally on alloc/free so maxFbUsage can be
+                        // updated without re-walking all client resources.
+    NvU64  sessionId;   // Accounting session ID assigned when this entry is
+                        // created. Copied onto each VideoMemory object counted
+                        // into this entry's curFbUsage, so that a free of an
+                        // allocation not counted by this session is ignored
+                        // rather than incorrectly decrementing curFbUsage.
     NvU64  startTime;   // Time when accounting is started for the process.
     NvU64  endTime;     // Time when accounting is stopped for the process.
     NvU32  refCount;    // Count to keep track of accounting requests.
@@ -131,6 +139,9 @@ typedef struct
     GPU_ACCT_PROC_DATA_STORE  deadProcAcctInfo; // Pointer to list of dead processes
                                                 // running on this GPU.
     GPUACCT_VM_INSTANCE_INFO  vmInstanceInfo[MAX_VGPU_DEVICES_PER_PGPU];
+    NvU64                     nextSessionId;    // Monotonically incrementing counter;
+                                                // assigned to each new proc entry so
+                                                // 0 is reserved as "no session".
 } GPUACCT_GPU_INSTANCE_INFO;
 
 
@@ -267,14 +278,24 @@ static inline NV_STATUS gpuacctStopGpuAccounting(struct GpuAccounting *arg_this,
 #define gpuacctStopGpuAccounting(arg_this, arg2, arg3, arg4) gpuacctStopGpuAccounting_IMPL(arg_this, arg2, arg3, arg4)
 #endif // __nvoc_gpu_acct_h_disabled
 
-NV_STATUS gpuacctUpdateProcPeakFbUsage_IMPL(struct GpuAccounting *arg_this, NvU32 arg2, NvU32 arg3, NvU32 arg4, NvU64 arg5);
+NV_STATUS gpuacctIncrementProcFbUsage_IMPL(struct GpuAccounting *arg_this, NvU32 arg2, NvU32 arg3, NvU32 arg4, NvU64 arg5, NvU64 *arg6);
 #ifdef __nvoc_gpu_acct_h_disabled
-static inline NV_STATUS gpuacctUpdateProcPeakFbUsage(struct GpuAccounting *arg_this, NvU32 arg2, NvU32 arg3, NvU32 arg4, NvU64 arg5) {
+static inline NV_STATUS gpuacctIncrementProcFbUsage(struct GpuAccounting *arg_this, NvU32 arg2, NvU32 arg3, NvU32 arg4, NvU64 arg5, NvU64 *arg6) {
     NV_ASSERT_FAILED_PRECOMP("GpuAccounting was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_gpu_acct_h_disabled
-#define gpuacctUpdateProcPeakFbUsage(arg_this, arg2, arg3, arg4, arg5) gpuacctUpdateProcPeakFbUsage_IMPL(arg_this, arg2, arg3, arg4, arg5)
+#define gpuacctIncrementProcFbUsage(arg_this, arg2, arg3, arg4, arg5, arg6) gpuacctIncrementProcFbUsage_IMPL(arg_this, arg2, arg3, arg4, arg5, arg6)
+#endif // __nvoc_gpu_acct_h_disabled
+
+NV_STATUS gpuacctDecrementProcFbUsage_IMPL(struct GpuAccounting *arg_this, NvU32 arg2, NvU32 arg3, NvU32 arg4, NvU64 arg5, NvU64 arg6);
+#ifdef __nvoc_gpu_acct_h_disabled
+static inline NV_STATUS gpuacctDecrementProcFbUsage(struct GpuAccounting *arg_this, NvU32 arg2, NvU32 arg3, NvU32 arg4, NvU64 arg5, NvU64 arg6) {
+    NV_ASSERT_FAILED_PRECOMP("GpuAccounting was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_gpu_acct_h_disabled
+#define gpuacctDecrementProcFbUsage(arg_this, arg2, arg3, arg4, arg5, arg6) gpuacctDecrementProcFbUsage_IMPL(arg_this, arg2, arg3, arg4, arg5, arg6)
 #endif // __nvoc_gpu_acct_h_disabled
 
 NV_STATUS gpuacctGetProcAcctInfo_IMPL(struct GpuAccounting *arg_this, NV0000_CTRL_GPUACCT_GET_PROC_ACCOUNTING_INFO_PARAMS *arg2);

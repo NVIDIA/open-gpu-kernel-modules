@@ -97,6 +97,7 @@ engstateLogStateTransitionPost_IMPL
     {
         "Undefined",
         "Construct",
+        "Construct Apertures",
         "Pre-Init",
         "Init",
         "Pre-Load",
@@ -105,9 +106,10 @@ engstateLogStateTransitionPost_IMPL
         "Pre-Unload",
         "Unload",
         "Post-Unload",
-        "Destroy"
+        "Destroy",
+        "Destruct Apertures"
     };
-    ct_assert(ENGSTATE_STATE_COUNT == 11);
+    ct_assert(ENGSTATE_STATE_COUNT == 13);
 
     NV_PRINTF(LEVEL_INFO,
         "Engine %s state change: %s -> %s, took %uus\n",
@@ -163,6 +165,31 @@ engstateConstructEngine_IMPL
 )
 {
     return NV_OK;
+}
+
+/*!
+ * @brief generic engine aperture constructor after floorsweeping
+ */
+NV_STATUS
+engstateConstructApertures_IMPL
+(
+    OBJGPU       *pGpu,
+    OBJENGSTATE  *pEngstate
+)
+{
+    return NV_OK;
+}
+
+/*!
+ * @brief destruct apertures
+ */
+void
+engstateDestructApertures_IMPL
+(
+    OBJGPU       *pGpu,
+    OBJENGSTATE  *pEngstate
+)
+{
 }
 
 /*!

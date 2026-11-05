@@ -198,7 +198,7 @@ typedef NV_STATUS      RpcRestoreHibernationData(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcCtrlFlaSetupInstanceMemBlock(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlInternalSriovPromotePmaStream(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlFbGetFsInfo(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
-typedef NV_STATUS      RpcInitGspTraceCrashBuffer(POBJGPU, POBJRPC, NvU64, NvU32);
+typedef NV_STATUS      RpcInitGspTraceCrashBuffer(POBJGPU, POBJRPC, NvU64, NvU32, NvU64, NvU32);
 typedef NV_STATUS      RpcCtrlSetChannelInterleaveLevel(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlDbgResumeContext(POBJGPU, POBJRPC, NvHandle, NvHandle);
 typedef NV_STATUS      RpcAllocRoot(POBJGPU, POBJRPC, NvHandle);
@@ -209,6 +209,7 @@ typedef NV_STATUS      RpcGetEngineUtilization(POBJGPU, POBJRPC, NvHandle,
 typedef NV_STATUS      RpcCtrlGetZbcClearTableEntry(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlNvencSwSessionUpdateInfo(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlDbgSuspendContext(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
+typedef NV_STATUS      RpcSendGuestStunCompletion(POBJGPU, POBJRPC, NvU32, NvU32);
 typedef NV_STATUS      RpcCtrlGetP2pCapsMatrix(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlDbgExecRegOps(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlFreePmaStream(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
@@ -366,6 +367,7 @@ typedef struct RPC_HAL_IFACES {
     RpcCtrlGetZbcClearTableEntry  *rpcCtrlGetZbcClearTableEntry; /* CTRL_GET_ZBC_CLEAR_TABLE_ENTRY */
     RpcCtrlNvencSwSessionUpdateInfo  *rpcCtrlNvencSwSessionUpdateInfo; /* CTRL_NVENC_SW_SESSION_UPDATE_INFO */
     RpcCtrlDbgSuspendContext    *rpcCtrlDbgSuspendContext;    /* CTRL_DBG_SUSPEND_CONTEXT */
+    RpcSendGuestStunCompletion  *rpcSendGuestStunCompletion;  /* SEND_GUEST_STUN_COMPLETION */
     RpcCtrlGetP2pCapsMatrix     *rpcCtrlGetP2pCapsMatrix;     /* CTRL_GET_P2P_CAPS_MATRIX */
     RpcCtrlDbgExecRegOps        *rpcCtrlDbgExecRegOps;        /* CTRL_DBG_EXEC_REG_OPS */
     RpcCtrlFreePmaStream        *rpcCtrlFreePmaStream;        /* CTRL_FREE_PMA_STREAM */
@@ -633,8 +635,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlInternalSriovPromotePmaStream(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlFbGetFsInfo_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlFbGetFsInfo(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
-#define rpcInitGspTraceCrashBuffer_HAL(_pGpu, _pRpc, _arg0, _arg1)  \
-        (_pRpc)->_hal.rpcInitGspTraceCrashBuffer(_pGpu, _pRpc, _arg0, _arg1)
+#define rpcInitGspTraceCrashBuffer_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3)  \
+        (_pRpc)->_hal.rpcInitGspTraceCrashBuffer(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3)
 #define rpcCtrlSetChannelInterleaveLevel_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlSetChannelInterleaveLevel(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlDbgResumeContext_HAL(_pGpu, _pRpc, _arg0, _arg1)  \
@@ -653,6 +655,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlNvencSwSessionUpdateInfo(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlDbgSuspendContext_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlDbgSuspendContext(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
+#define rpcSendGuestStunCompletion_HAL(_pGpu, _pRpc, _arg0, _arg1)  \
+        (_pRpc)->_hal.rpcSendGuestStunCompletion(_pGpu, _pRpc, _arg0, _arg1)
 #define rpcCtrlGetP2pCapsMatrix_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlGetP2pCapsMatrix(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlDbgExecRegOps_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \

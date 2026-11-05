@@ -34,6 +34,7 @@
 #include <nvmisc.h>
 
 NV_STATUS  NV_API_CALL  rm_gpu_ops_create_session (nvidia_stack_t *, nvgpuSessionHandle_t *);
+NV_STATUS  NV_API_CALL  rm_gpu_ops_is_tdisp_enabled (nvidia_stack_t *, NvBool *);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_destroy_session (nvidia_stack_t *, nvgpuSessionHandle_t);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_device_create (nvidia_stack_t *, nvgpuSessionHandle_t, const nvgpuInfo_t *, const NvProcessorUuid *, nvgpuDeviceHandle_t *, NvBool);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_device_destroy (nvidia_stack_t *, nvgpuDeviceHandle_t);

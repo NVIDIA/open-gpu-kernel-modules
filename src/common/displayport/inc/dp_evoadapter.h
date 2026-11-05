@@ -301,7 +301,7 @@ namespace DisplayPort
         {
             return _bPollingEnabledForDpMstDetection && !_bPollingDpMstDisabledByRegkey;
         }
-        
+
         virtual bool isDpTunnelingHwBugWarEnabled()
         {
             return _bIsDpTunnelingHwBugWarEnabled;

@@ -64,8 +64,7 @@
 #define SRC_TEST_CONFIG_FRL_MAX_OFFSET     7
 
 static enum NvKmsFrlRateForce GetForceMaxFrlRateType(
-    const NVDpyEvoRec *pDpyEvo,
-    const NVDpyId displayId);
+    const NVDpyEvoRec *pDpyEvo);
 
 static inline const NVT_EDID_CEA861_INFO *GetExt861(const NVParsedEdidEvoRec *pParsedEdid,
                                                     int extIndex)
@@ -542,6 +541,136 @@ static void SendVideoInfoFrame(const NVDispEvoRec *pDispEvo,
     UpdateInfoFrameFlipStatePost(currentTransmitCtrl);
 }
 
+static NvBool GetAllmActive(const NVDispEvoRec *pDispEvo,
+                            const NVDpyEvoRec *pDpyEvo,
+                            NvU32 apiHead)
+{
+    const NVDispApiHeadStateEvoRec *pApiHeadState;
+
+    if ((pDpyEvo == NULL) ||
+        !pDpyEvo->allmCapable ||
+        (apiHead == NV_INVALID_HEAD)) {
+        return NV_FALSE;
+    }
+
+    pApiHeadState = &pDispEvo->apiHeadState[apiHead];
+
+    if (pApiHeadState->allmMode == NVKMS_ALLM_MODE_ENABLED_FORCED) {
+        return NV_TRUE;
+    }
+
+    if (pApiHeadState->allmMode == NVKMS_ALLM_MODE_ENABLED_DYNAMIC) {
+        return pApiHeadState->vrr.active;
+    }
+
+    return NV_FALSE;
+}
+
+static NvBool IsHdmi3DVendorSpecificInfoFrameEnabled(
+    const NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVendorCtrl,
+    const NVT_EDID_INFO *pEdidInfo)
+{
+    return (pVendorCtrl->HDMIFormat == NVT_HDMI_VS_BYTE4_HDMI_VID_FMT_3D) &&
+           pEdidInfo->HDMI3DSupported;
+}
+
+static void
+UpdateVendorSpecificInfoFrame(
+    const NVDispEvoRec *pDispEvo,
+    const NvU32 head,
+    NvEvoInfoFrameTransmitControl *currentTransmitCtrl,
+    NvEvoInfoFrameTransmitControl *newTransmitCtrl,
+    NVT_EDID_INFO *pEdidInfo,
+    NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVendorCtrl,
+    const NVT_INFOFRAME_HEADER *pHeader,
+    NvU32 size,
+    NvBool enable)
+{
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NVT_VENDOR_SPECIFIC_INFOFRAME vendorInfoFrame;
+    NVT_STATUS status;
+
+    if (enable) {
+        /*
+         * User-defined VSIF callers pass a prebuilt header. Otherwise,
+         * construct the VSIF from the requested vendor control state.
+         */
+        if (pHeader == NULL) {
+            nvAssert(pEdidInfo != NULL);
+            nvAssert(pVendorCtrl != NULL);
+
+            status = NvTiming_ConstructVendorSpecificInfoframe(pEdidInfo,
+                                                               pVendorCtrl,
+                                                               &vendorInfoFrame);
+            if (status != NVT_STATUS_SUCCESS) {
+                nvEvoLogDispDebug(pDispEvo, EVO_LOG_ERROR,
+                    "Error in constructing Vendor Specific InfoFrame");
+                return;
+            }
+
+            pHeader = &vendorInfoFrame.Header;
+            size = (/* header length */ sizeof(vendorInfoFrame.Header) +
+                    /* payload length */ vendorInfoFrame.Header.length);
+        }
+
+        nvAssert(size != 0);
+    }
+
+    UpdateInfoFrameFlipStatePre(currentTransmitCtrl, newTransmitCtrl,
+        NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_EVERY_FRAME, enable);
+
+    if (enable) {
+        pDevEvo->hal->SendHdmiInfoFrame(
+            pDispEvo,
+            head,
+            currentTransmitCtrl,
+            pHeader,
+            size,
+            TRUE /* needChecksum */);
+    } else {
+        pDevEvo->hal->DisableHdmiInfoFrame(
+            pDispEvo,
+            head,
+            currentTransmitCtrl,
+            NVT_INFOFRAME_TYPE_VENDOR_SPECIFIC);
+    }
+
+    UpdateInfoFrameFlipStatePost(currentTransmitCtrl);
+}
+
+static void
+SendUserDefinedVSIF(const NVDispEvoRec *pDispEvo,
+                    const NvU32 head,
+                    NvEvoInfoFrameTransmitControl *currentTransmitCtrl,
+                    NvEvoInfoFrameTransmitControl *newTransmitCtrl)
+{
+    const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+    NVT_VENDOR_SPECIFIC_INFOFRAME vendorInfoFrame;
+
+    vendorInfoFrame.Header.type = NVT_INFOFRAME_TYPE_VENDOR_SPECIFIC;
+    vendorInfoFrame.Header.version = NVT_VIDEO_INFOFRAME_VERSION_1;
+    vendorInfoFrame.Header.length = pHeadState->hdmiVsifMetadata.payloadSize;
+
+    ct_assert(sizeof(vendorInfoFrame.Data) >=
+              sizeof(pHeadState->hdmiVsifMetadata.payload));
+
+    nvkms_memcpy(&vendorInfoFrame.Data,
+                 pHeadState->hdmiVsifMetadata.payload,
+                 pHeadState->hdmiVsifMetadata.payloadSize);
+
+    UpdateVendorSpecificInfoFrame(
+        pDispEvo,
+        head,
+        currentTransmitCtrl,
+        newTransmitCtrl,
+        NULL,
+        NULL,
+        &vendorInfoFrame.Header,
+        (/* header length */ sizeof(vendorInfoFrame.Header) +
+         /* payload length */ vendorInfoFrame.Header.length),
+        NV_TRUE);
+}
+
 /*
  * SendVendorSpecificInfoFrame() - Construct vendor specific infoframe using
  * provided EDID and call ->SendHdmiInfoFrame() to send it to RM.
@@ -553,41 +682,38 @@ SendVendorSpecificInfoFrame(const NVDispEvoRec *pDispEvo,
                             const NVDispHeadInfoFrameStateEvoRec *pInfoFrameState,
                             NvEvoInfoFrameTransmitControl *currentTransmitCtrl,
                             NvEvoInfoFrameTransmitControl *newTransmitCtrl,
-                            NVT_EDID_INFO *pEdidInfo)
+                            NVT_EDID_INFO *pEdidInfo,
+                            NvBool allmActive)
 {
-    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
     NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL vendorCtrl = pInfoFrameState->vendorSpecificCtrl;
-    NVT_VENDOR_SPECIFIC_INFOFRAME vendorInfoFrame;
-    NVT_STATUS status;
 
     if (pHeadState->hdmiVsifMetadata.payloadSize != 0) {
-        vendorInfoFrame.Header.type = NVT_INFOFRAME_TYPE_VENDOR_SPECIFIC;
-        vendorInfoFrame.Header.version = NVT_VIDEO_INFOFRAME_VERSION_1;
-        vendorInfoFrame.Header.length = pHeadState->hdmiVsifMetadata.payloadSize;
-
-        ct_assert(sizeof(vendorInfoFrame.Data) >= sizeof(pHeadState->hdmiVsifMetadata.payload));
-
-        nvkms_memcpy(&vendorInfoFrame.Data,
-                     pHeadState->hdmiVsifMetadata.payload,
-                     pHeadState->hdmiVsifMetadata.payloadSize);
-
-        UpdateInfoFrameFlipStatePre(currentTransmitCtrl, newTransmitCtrl, NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_EVERY_FRAME, NV_TRUE);
-
-        pDevEvo->hal->SendHdmiInfoFrame(
-            pDispEvo,
-            head,
-            currentTransmitCtrl,
-            &vendorInfoFrame.Header,
-            (/* header length */ sizeof(vendorInfoFrame.Header) +
-             /* payload length */ vendorInfoFrame.Header.length),
-            TRUE /* needChecksum */);
-
-        UpdateInfoFrameFlipStatePost(currentTransmitCtrl);
+        SendUserDefinedVSIF(pDispEvo,
+                            head,
+                            currentTransmitCtrl,
+                            newTransmitCtrl);
         return;
     }
 
-    /* No user-provided VSIF metadata, fallback to default behavior. */
+    if (vendorCtrl.Enable &&
+        IsHdmi3DVendorSpecificInfoFrameEnabled(&vendorCtrl, pEdidInfo)) {
+        goto send_vsif;
+    }
+
+    /*
+     * If ALLM is capable and requested, override vendorCtrl
+     * to send an HF-VSIF (HDMI 2.1 Forum Vendor-Specific InfoFrame) with
+     * the ALLM bit set.
+     */
+    if (allmActive) {
+        vendorCtrl.Enable        = 1;
+        vendorCtrl.VSIFVersion   = NVT_VSIF_VERSION_HF_VSIF;
+        vendorCtrl.ALLMEnable    = 1;
+        vendorCtrl.HDMIFormat    = NVT_HDMI_VS_BYTE4_HDMI_VID_FMT_NONE;
+
+        goto send_vsif;
+    }
 
     /*
      * Disable the vendor specific infoframe if not requested to be
@@ -597,56 +723,46 @@ SendVendorSpecificInfoFrame(const NVDispEvoRec *pDispEvo,
         ((vendorCtrl.HDMIFormat == NVT_HDMI_VS_BYTE4_HDMI_VID_FMT_3D) &&
          !pEdidInfo->HDMI3DSupported)) {
 
-        UpdateInfoFrameFlipStatePre(currentTransmitCtrl, newTransmitCtrl,
-            NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_EVERY_FRAME, NV_FALSE);
-        pDevEvo->hal->DisableHdmiInfoFrame(pDispEvo, head,
-                                           currentTransmitCtrl,
-                                           NVT_INFOFRAME_TYPE_VENDOR_SPECIFIC);
-        UpdateInfoFrameFlipStatePost(currentTransmitCtrl);
+        UpdateVendorSpecificInfoFrame(pDispEvo,
+                                      head,
+                                      currentTransmitCtrl,
+                                      newTransmitCtrl,
+                                      NULL,
+                                      NULL,
+                                      NULL,
+                                      0,
+                                      NV_FALSE);
         return;
     }
 
-    status = NvTiming_ConstructVendorSpecificInfoframe(pEdidInfo,
-                                                       &vendorCtrl,
-                                                       &vendorInfoFrame);
-    if (status != NVT_STATUS_SUCCESS) {
-        nvEvoLogDispDebug(pDispEvo, EVO_LOG_ERROR,
-                "Error in constructing Vendor Specific InfoFrame");
-        return;
-    }
-
-    UpdateInfoFrameFlipStatePre(currentTransmitCtrl, newTransmitCtrl, NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_EVERY_FRAME, NV_TRUE);
-
-    pDevEvo->hal->SendHdmiInfoFrame(
-        pDispEvo,
-        head,
-        currentTransmitCtrl,
-        &vendorInfoFrame.Header,
-        (/* header length */ sizeof(vendorInfoFrame.Header) +
-         /* payload length */ vendorInfoFrame.Header.length),
-        TRUE /* needChecksum */);
-
-    UpdateInfoFrameFlipStatePost(currentTransmitCtrl);
+send_vsif:
+    UpdateVendorSpecificInfoFrame(pDispEvo,
+                                  head,
+                                  currentTransmitCtrl,
+                                  newTransmitCtrl,
+                                  pEdidInfo,
+                                  &vendorCtrl,
+                                  NULL,
+                                  0,
+                                  NV_TRUE);
 }
 
 static void
-SendHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head,
+SendHDRInfoFrame(const NVDpyEvoRec *pDpyEvo, const NvU32 head,
+                 const NVDispHeadInfoFrameStateEvoRec *pInfoFrameState,
                  NvEvoInfoFrameTransmitControl *currentTransmitCtrl,
-                 NvEvoInfoFrameTransmitControl *newTransmitCtrl,
-                 NVT_EDID_INFO *pEdidInfo)
+                 NvEvoInfoFrameTransmitControl *newTransmitCtrl)
 {
+    const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     const NVDispHeadStateEvoRec *pHeadState =
                                  &pDispEvo->headState[head];
+    const NVT_EDID_INFO *pEdidInfo = &pDpyEvo->parsedEdid.info;
     NVT_HDR_INFOFRAME hdrInfoFrame = { 0 };
-    const NVT_HDR_STATIC_METADATA *pHdrInfo =
-        &pEdidInfo->hdr_static_metadata_info;
     NvEvoInfoFrameTransmitFrequency frequency =
         NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_INIT;
 
-    // Only send the HDMI HDR infoframe if the display supports HDR
-    if (!pHdrInfo->supported_eotf.smpte_st_2084_eotf ||
-        (pHdrInfo->static_metadata_type != 1)) {
+    if (!nvDpyIsHDRCapable(pDpyEvo)) {
         return;
     }
 
@@ -656,7 +772,8 @@ SendHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head,
      * HDMI 3D is supported or user VSIF override is enabled.
      */
     if (!pDevEvo->caps.supportsGenericSharedInfoFrames &&
-        (pEdidInfo->HDMI3DSupported ||
+        (IsHdmi3DVendorSpecificInfoFrameEnabled(
+             &pInfoFrameState->vendorSpecificCtrl, pEdidInfo) ||
          pHeadState->hdmiVsifMetadata.payloadSize != 0)) {
         return;
     }
@@ -718,6 +835,8 @@ void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
                             NvEvoInfoFrameTransmitControl *newTransmitCtrl,
                             NVDpyEvoRec *pDpyEvo)
 {
+    NvBool allmActive;
+
     if (!nvDpyIsHdmiEvo(pDpyEvo)) {
         return;
     }
@@ -741,18 +860,21 @@ void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
                        newTransmitCtrl,
                        &pDpyEvo->parsedEdid.info);
 
+    allmActive = GetAllmActive(pDispEvo, pDpyEvo, pDpyEvo->apiHead);
+
     SendVendorSpecificInfoFrame(pDispEvo,
                                 head,
                                 pInfoFrameState,
                                 &flipState->vendorSpecificInfoframeTransmitCtrl,
                                 newTransmitCtrl,
-                                &pDpyEvo->parsedEdid.info);
+                                &pDpyEvo->parsedEdid.info,
+                                allmActive);
 
-    SendHDRInfoFrame(pDispEvo,
+    SendHDRInfoFrame(pDpyEvo,
                      head,
+                     pInfoFrameState,
                      &flipState->hdrStaticMetadataTransmitCtrl,
-                     newTransmitCtrl,
-                     &pDpyEvo->parsedEdid.info);
+                     newTransmitCtrl);
 }
 
 static void SetDpAudioMute(const NVDispEvoRec *pDispEvo,
@@ -1428,6 +1550,43 @@ void nvDpyUpdateHdmiPreModesetEvo(NVDpyEvoPtr pDpyEvo)
 }
 
 /*
+ * Parse HDMI 2.1 ALLM capability from the EDID HF-VSDB.
+ * Report ALLM only when the display advertises ALLM support and the HW has
+ * separate generic shared infoframe slots.
+ */
+void nvDpyUpdateHdmiAllmCaps(NVDpyEvoPtr pDpyEvo)
+{
+    const NVParsedEdidEvoRec *pParsedEdid = &pDpyEvo->parsedEdid;
+    const NVDevEvoRec *pDevEvo = pDpyEvo->pDispEvo->pDevEvo;
+    NvBool edidAllmCapable;
+
+    nvAssert(pParsedEdid->valid);
+
+    edidAllmCapable =
+        nvDpyIsHdmiEvo(pDpyEvo) &&
+        (pParsedEdid->info.hdmiForumInfo.allm != 0);
+
+    /*
+     * Some HW shares the HDR and vendor-specific infoframe slot unless
+     * generic shared infoframes are supported. Do not advertise ALLM on those
+     * platforms so userspace cannot enable ALLM in a configuration that may
+     * conflict with HDR signaling.
+     */
+    pDpyEvo->allmCapable =
+        edidAllmCapable &&
+        pDevEvo->caps.supportsGenericSharedInfoFrames;
+
+    nvEvoLogDispDebug(pDpyEvo->pDispEvo, EVO_LOG_INFO,
+                      "ALLM capability: edid=%d genericSharedInfoFrames=%d "
+                      "reported=%d (isHdmi=%d, HF-VSDB allm=0x%x)",
+                      edidAllmCapable,
+                      pDevEvo->caps.supportsGenericSharedInfoFrames,
+                      pDpyEvo->allmCapable,
+                      nvDpyIsHdmiEvo(pDpyEvo),
+                      pParsedEdid->info.hdmiForumInfo.allm);
+}
+
+/*
  * Parse HDMI 2.1 VRR capabilities from the EDID and GPU.
  */
 void nvDpyUpdateHdmiVRRCaps(NVDpyEvoPtr pDpyEvo)
@@ -1870,29 +2029,29 @@ NvBool nvHdmi204k60HzRGB444Allowed(const NVDpyEvoRec *pDpyEvo,
 void nvHdmiSetVRR(const NVDispEvoPtr pDispEvo,
                   NvU32 head,
                   NvBool enable,
-                  NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *empCtrl)
+                  NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *empCtrl,
+                  NVEvoUpdateState *updateState)
 {
-    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     NVT_EXTENDED_METADATA_PACKET_INFOFRAME empInfoFrame = { 0 };
-
     NvEvoInfoFrameTransmitControl transmitCtrl = { 0 };
-    NVT_STATUS status;
+
+    nvAssert(empCtrl != NULL);
+    empCtrl->EnableVRR = enable;
+
+    if (pDevEvo->hal->SendHdmiVrrVtem != NULL) {
+        pDevEvo->hal->SendHdmiVrrVtem(pDevEvo, head, empCtrl, updateState); 
+        return;
+    }
 
     transmitCtrl.frequency = enable ?
         NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_EVERY_FRAME :
         NV_EVO_INFOFRAME_TRANSMIT_FREQUENCY_SINGLE_FRAME;
     transmitCtrl.newEnabled = NV_TRUE;
 
-    empCtrl->EnableVRR = enable;
-
-    status = NvTiming_ConstructExtendedMetadataPacketInfoframe(empCtrl,
-                                                               &empInfoFrame);
-    if (status != NVT_STATUS_SUCCESS) {
-        nvEvoLogDispDebug(pDispEvo, EVO_LOG_ERROR,
-                "Error in constructing Extended Metadata Packet InfoFrame");
-        return;
-    }
-
+    NvTiming_ConstructExtendedMetadataPacketInfoframe(empCtrl,
+                                                      &empInfoFrame);
+ 
     // XXX Extended metadata infoframes do not contain a length header field.
     pDevEvo->hal->SendHdmiInfoFrame(
         pDispEvo,
@@ -2361,16 +2520,16 @@ NvBool nvEvoHdmiTmdsMaxPixelClockCheck(
     const NvKmsDpyOutputColorFormatInfo colorFormatsInfo =
         nvDpyGetOutputColorFormatInfo(pDpyEvo);
     /* For YUV420 HW mode, divide pixel clock by 2. */
-    const NvU32 pixelClock = (pTimings->yuv420Mode == NV_YUV420_MODE_HW) ?
-        (pTimings->pixelClock / 2) : pTimings->pixelClock;
+    const NvU64 pixelClock = (pTimings->yuv420Mode == NV_YUV420_MODE_HW) ?
+        (pTimings->pixelClockHz / 2) : pTimings->pixelClockHz;
 
     if ((pValidationParams->overrides &
          NVKMS_MODE_VALIDATION_NO_MAX_PCLK_CHECK) != 0x0) {
         return TRUE;
     }
 
-    NvU32 maxPossiblePixelClock =
-        GetMaxPossibleTmdsPixelClockKHz(pDpyEvo, pDpyColor);
+    NvU64 maxPossiblePixelClock =
+        KHzToHz(GetMaxPossibleTmdsPixelClockKHz(pDpyEvo, pDpyColor));
     while (pixelClock > maxPossiblePixelClock) {
         if (nvIs3DVisionStereoEvo(pValidationParams->stereoMode) &&
                 pDpyEvo->stereo3DVision.requiresModetimingPatching &&
@@ -2378,8 +2537,8 @@ NvBool nvEvoHdmiTmdsMaxPixelClockCheck(
             nvAssert(!pTimings->hdmi3D);
             nvEvoLogInfoString(pInfoString,
                 "PixelClock (" NV_FMT_DIV_1000_POINT_1 " MHz) is slightly higher than Display Device maximum (" NV_FMT_DIV_1000_POINT_1 " MHz), but is within tolerance for 3D Vision Stereo.",
-                NV_VA_DIV_1000_POINT_1(pixelClock),
-                 NV_VA_DIV_1000_POINT_1(maxPossiblePixelClock));
+                NV_VA_DIV_1000_POINT_1(HzToKHz(pixelClock)),
+                 NV_VA_DIV_1000_POINT_1(HzToKHz(maxPossiblePixelClock)));
             break;
         }
 
@@ -2392,15 +2551,15 @@ NvBool nvEvoHdmiTmdsMaxPixelClockCheck(
                 pTimings->hdmi3D ? (pixelClock / 2) : pixelClock;
             nvEvoLogInfoString(pInfoString,
                 "PixelClock (" NV_FMT_DIV_1000_POINT_1 " MHz%s) too high for Display Device (Max: " NV_FMT_DIV_1000_POINT_1 " MHz)",
-                NV_VA_DIV_1000_POINT_1(hdmi3DPixelClock),
+                NV_VA_DIV_1000_POINT_1(HzToKHz(hdmi3DPixelClock)),
                 pTimings->hdmi3D ?
                 ", doubled for HDMI 3D" : "",
-                NV_VA_DIV_1000_POINT_1(maxPossiblePixelClock));
+                NV_VA_DIV_1000_POINT_1(HzToKHz(maxPossiblePixelClock)));
             return FALSE;
         }
 
         maxPossiblePixelClock =
-            GetMaxPossibleTmdsPixelClockKHz(pDpyEvo, pDpyColor);
+            KHzToHz(GetMaxPossibleTmdsPixelClockKHz(pDpyEvo, pDpyColor));
 
     }
 
@@ -2412,15 +2571,15 @@ NvBool nvHdmiIsTmdsPossible(const NVDpyEvoRec *pDpyEvo,
                             const NVDpyAttributeColor *pDpyColor)
 {
     /* For YUV420 HW mode, divide pixel clock by 2. */
-    const NvU32 pixelClock = (pHwTimings->yuv420Mode == NV_YUV420_MODE_HW) ?
-        (pHwTimings->pixelClock / 2) : pHwTimings->pixelClock;
+    const NvU64 pixelClock = (pHwTimings->yuv420Mode == NV_YUV420_MODE_HW) ?
+        (pHwTimings->pixelClockHz / 2) : pHwTimings->pixelClockHz;
 
     nvAssert((pHwTimings->yuv420Mode == NV_YUV420_MODE_NONE) ||
                 (pDpyColor->format ==
                  NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr420));
 
-    return pixelClock <= GetMaxPossibleTmdsPixelClockKHz(pDpyEvo,
-                                                         pDpyColor);
+    return pixelClock <= KHzToHz(GetMaxPossibleTmdsPixelClockKHz(pDpyEvo,
+                                                                 pDpyColor));
 }
 
 static NvU64 GetHdmiFrlLinkRate(HDMI_FRL_DATA_RATE frlRate)
@@ -2459,6 +2618,7 @@ static NvU64 GetHdmiFrlLinkRate(HDMI_FRL_DATA_RATE frlRate)
 NvBool nvHdmiFrlQueryConfigOneColorFormatAndBpc(
     const NVDpyEvoRec *pDpyEvo,
     const NvModeTimings *pModeTimings,
+    const enum NvYuv420Mode yuv420Mode,
     const NVHwModeTimingsEvo *pHwTimings,
     const NVDpyAttributeColor *pDpyColor,
     const NvBool b2Heads1Or,
@@ -2466,11 +2626,10 @@ NvBool nvHdmiFrlQueryConfigOneColorFormatAndBpc(
     HDMI_FRL_CONFIG *pConfig,
     NVDscInfoEvoRec *pDscInfo)
 {
-    const NVConnectorEvoRec *pConnectorEvo = pDpyEvo->pConnectorEvo;
     const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     const enum NvKmsFrlRateForce forceMaxFrlType =
-        GetForceMaxFrlRateType(pDpyEvo, pConnectorEvo->displayId);
+        GetForceMaxFrlRateType(pDpyEvo);
     HDMI_VIDEO_TRANSPORT_INFO videoTransportInfo = { };
     HDMI_QUERY_FRL_CLIENT_CONTROL clientControl = { };
     const NVT_TIMING *pNvtTiming;
@@ -2490,7 +2649,11 @@ NvBool nvHdmiFrlQueryConfigOneColorFormatAndBpc(
              nvGetPreferHdmiFrlMode(pDevEvo, pValidationParams));
 
     /* See if we can find an NVT_TIMING for this mode from the EDID. */
-    pNvtTiming = nvFindEdidNVT_TIMING(pDpyEvo, pModeTimings, pValidationParams);
+    pNvtTiming = nvFindEdidNVT_TIMING(pDpyEvo, pModeTimings,
+                                      TRUE /* yuv420ModeSpecified */,
+                                      yuv420Mode,
+                                      NULL /* pYuv420ModeOut */,
+                                      pValidationParams);
 
     if (pNvtTiming == NULL) {
         /*
@@ -2510,9 +2673,10 @@ NvBool nvHdmiFrlQueryConfigOneColorFormatAndBpc(
          * - NVT_GET_CEA_FORMAT(pVidTransInfo->pTiming->etc.status)
          */
 
-        /* Convert from KHz to 10KHz; round up for the purposes of determining a
+        /* Convert from Hz to 10kHz/kHz; round up for the purposes of determining a
          * minimum FRL rate. */
-        nvtTiming.pclk = (pHwTimings->pixelClock + 9) / 10;
+        nvtTiming.pclk = (pHwTimings->pixelClockHz + 9999) / 10000;
+        nvtTiming.pclk1khz = (pHwTimings->pixelClockHz + 999) / 1000;
         nvtTiming.HVisible = pHwTimings->rasterBlankStart.x -
                              pHwTimings->rasterBlankEnd.x;
         nvtTiming.HTotal = pHwTimings->rasterSize.x;
@@ -2556,7 +2720,7 @@ NvBool nvHdmiFrlQueryConfigOneColorFormatAndBpc(
             videoTransportInfo.packing = HDMI_PIXEL_PACKING_YCbCr444;
             break;
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_FORMAT_YCbCr420:
-            switch (pModeTimings->yuv420Mode) {
+            switch (yuv420Mode) {
                 case NV_YUV420_MODE_NONE:
                 case NV_YUV420_MODE_SW:
                     /*
@@ -2609,7 +2773,7 @@ NvBool nvHdmiFrlQueryConfigOneColorFormatAndBpc(
      * 2Heads1Or requires either YUV420 or DSC; if b2Heads1Or is enabled
      * but YUV420 is not, force DSC.
      */
-    if (b2Heads1Or && (pHwTimings->yuv420Mode != NV_YUV420_MODE_HW)) {
+    if (b2Heads1Or && (yuv420Mode != NV_YUV420_MODE_HW)) {
         if (clientControl.forceDisableDSC) {
             return FALSE;
         }
@@ -2635,7 +2799,7 @@ NvBool nvHdmiFrlQueryConfigOneColorFormatAndBpc(
          * is assigned by NvHdmi_QueryFRLConfig().
          */
         nvAssert(pConfig->dscInfo.bEnableDSC ||
-                    (pHwTimings->yuv420Mode == NV_YUV420_MODE_HW));
+                    (yuv420Mode == NV_YUV420_MODE_HW));
     }
 
     if (ret == NVHDMIPKT_SUCCESS) {
@@ -2686,7 +2850,7 @@ NvBool nvHdmiFrlQueryConfigOneColorFormatAndBpc(
                 pDscInfo->hdmi.dscTBlankToTTotalRatioX1k =
                     pConfig->dscInfo.dscTBlankToTTotalRatioX1k;
                 pDscInfo->hdmi.hblankMin =
-                    NV_UNSIGNED_DIV_CEIL(((pHwTimings->pixelClock * 1000) *
+                    NV_UNSIGNED_DIV_CEIL((pHwTimings->pixelClockHz *
                                               pConfig->dscInfo.dscHBlankTriBytes),
                                          (hdmiLinkRate / 6));
             } else {
@@ -2711,32 +2875,30 @@ void nvHdmiFrlClearConfig(NVDispEvoRec *pDispEvo, NvU32 activeRmId)
     }
 }
 
-static enum NvKmsFrlRateForce GetForceMaxFrlRateType(
-    const NVDpyEvoRec *pDpyEvo,
-    const NVDpyId displayId)
+/*
+ * Refresh the cached value of SCDC offset 0x35 (Source Test Configuration
+ * Request).
+ */
+void nvHdmiRefreshScdcSrcTestConfig(NVDpyEvoPtr pDpyEvo)
 {
     const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     const NVParsedEdidEvoRec *pParsedEdid = &pDpyEvo->parsedEdid;
     const NVT_HDMI_FORUM_INFO *pHdmiInfo = &pParsedEdid->info.hdmiForumInfo;
-
-    NvBool bTestMaxFrlRate;
-    NvBool bTestMaxDscFrlRate;
+    NV0073_CTRL_SPECIFIC_GET_HDMI_SCDC_DATA_PARAMS scdcParams;
     NvU32 ret;
 
-    if (nvkms_force_frl_rate() != NVKMS_FRL_RATE_FORCE_NONE) {
-        return nvkms_force_frl_rate();
+    pDpyEvo->hdmi.scdcSrcTestConfig = 0;
+
+    if (!pParsedEdid->valid || !pHdmiInfo->scdc_present) {
+        return;
     }
 
-    if (!pHdmiInfo->scdc_present) {
-        return NVKMS_FRL_RATE_FORCE_NONE;
-    }
-
-    NV0073_CTRL_SPECIFIC_GET_HDMI_SCDC_DATA_PARAMS scdcParams;
     nvkms_memset(&scdcParams, 0, sizeof(scdcParams));
-
-    scdcParams.displayId = nvDpyIdToNvU32(displayId);
-    scdcParams.offset = NV0073_CTRL_CMD_SPECIFIC_GET_HDMI_SCDC_DATA_OFFSET_SOURCE_TEST_CONFIGURATION;
+    scdcParams.displayId =
+        nvDpyIdToNvU32(pDpyEvo->pConnectorEvo->displayId);
+    scdcParams.offset =
+        NV0073_CTRL_CMD_SPECIFIC_GET_HDMI_SCDC_DATA_OFFSET_SOURCE_TEST_CONFIGURATION;
 
     ret = nvRmApiControl(nvEvoGlobal.clientHandle,
                          pDevEvo->displayCommonHandle,
@@ -2745,16 +2907,49 @@ static enum NvKmsFrlRateForce GetForceMaxFrlRateType(
                          sizeof(scdcParams));
 
     if (ret != NVOS_STATUS_SUCCESS) {
-        return NVKMS_FRL_RATE_FORCE_NONE;
+        /*
+        * There's no need to log the failure here as in majority of sinks this failure
+        * does not matter, and when a monitor is faked, it can lead to log spamming
+        * as physical SCDC registers aren't present there. This codepath only matters
+        * for HDMI FRL CTS tests, debug instrumentation can be added here temporarily if needed.
+        */
+        return;
     }
 
-    bTestMaxFrlRate = !!(scdcParams.data & NVBIT(SRC_TEST_CONFIG_FRL_MAX_OFFSET));
-    bTestMaxDscFrlRate = !!(scdcParams.data & NVBIT(SRC_TEST_CONFIG_DSC_FRL_MAX_OFFSET));
+    pDpyEvo->hdmi.scdcSrcTestConfig = scdcParams.data;
+}
+
+NvBool nvHdmiScdcWantsForceFrl(const NVDpyEvoRec *pDpyEvo)
+{
+    const NvU8 cfg = pDpyEvo->hdmi.scdcSrcTestConfig;
+    const NvBool bFrlMax = !!(cfg & NVBIT(SRC_TEST_CONFIG_FRL_MAX_OFFSET));
+    const NvBool bDscFrlMax =
+        !!(cfg & NVBIT(SRC_TEST_CONFIG_DSC_FRL_MAX_OFFSET));
+    return (bFrlMax != bDscFrlMax);
+}
+
+/*
+ * Decide the FRL rate-force policy for the upcoming modeset.
+ */
+static enum NvKmsFrlRateForce GetForceMaxFrlRateType(
+    const NVDpyEvoRec *pDpyEvo)
+{
+    const NvU8 cfg = pDpyEvo->hdmi.scdcSrcTestConfig;
+    const NvBool bTestMaxFrlRate =
+        !!(cfg & NVBIT(SRC_TEST_CONFIG_FRL_MAX_OFFSET));
+    const NvBool bTestMaxDscFrlRate =
+        !!(cfg & NVBIT(SRC_TEST_CONFIG_DSC_FRL_MAX_OFFSET));
+    
+    if (nvkms_force_frl_rate() != NVKMS_FRL_RATE_FORCE_NONE) {
+        return nvkms_force_frl_rate();
+    }
 
     if (bTestMaxFrlRate != bTestMaxDscFrlRate) {
-        return bTestMaxFrlRate ? NVKMS_FRL_RATE_FORCE_MAX : NVKMS_FRL_RATE_FORCE_MAX_DSC;
+        const enum NvKmsFrlRateForce force =
+            bTestMaxFrlRate ? NVKMS_FRL_RATE_FORCE_MAX :
+                              NVKMS_FRL_RATE_FORCE_MAX_DSC;
+        return force;
     }
-
     return NVKMS_FRL_RATE_FORCE_NONE;
 }
 

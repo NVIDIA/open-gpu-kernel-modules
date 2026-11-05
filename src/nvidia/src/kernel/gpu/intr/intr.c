@@ -133,7 +133,7 @@ intrServiceStall_IMPL(OBJGPU *pGpu, Intr *pIntr)
         // GPU is recovered.
         //
 
-        NvU32 regReadValue = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+        NvU32 regReadValue = GPU_REG_RD32(pGpu, gpuGetPmcBoot0Addr_HAL(pGpu));
 
         if (regReadValue == GPU_REG_VALUE_INVALID)
         {
@@ -322,6 +322,11 @@ intrGetGmmuInterrupts_IMPL
 void
 intrSetIntrEn_IMPL(Intr *pIntr, NvU32 intrEn0)
 {
+    if (pIntr == NULL)
+    {
+        return;
+    }
+
     if ( pIntr->halIntrEnabled == NV_FALSE )
     {
         // Interrupts cannot be enabled as long as the freeze is true
@@ -337,6 +342,11 @@ intrSetIntrEn_IMPL(Intr *pIntr, NvU32 intrEn0)
 NvU32
 intrGetIntrEn_IMPL(Intr *pIntr)
 {
+    if (pIntr == NULL)
+    {
+        return INTERRUPT_TYPE_DISABLED;
+    }
+
     if ( pIntr->halIntrEnabled == NV_FALSE )
     {
         NV_PRINTF(LEVEL_INFO,
@@ -817,6 +827,7 @@ intrStatePreInitLocked_IMPL
     }
 
     NV_ASSERT_OK_OR_GOTO(status, intrInitInterruptTable_HAL(pGpu, pIntr), exit);
+
     _intrInitServiceTable(pGpu, pIntr);
 
 exit:
@@ -1135,6 +1146,8 @@ intrInitInterruptTable_KERNEL
     portMemCopy(pIntr->subtreeMap,   sizeof pIntr->subtreeMap,
                 pParams->subtreeMap, sizeof pParams->subtreeMap);
 
+    pIntr->disabledGinMessage = pParams->disabledGinMessage;
+
 exit:
     portMemFree(pParams);
     return status;
@@ -1195,9 +1208,9 @@ NvU32 intrServiceInterruptRecords_IMPL
     {
         osGetPerformanceCounter(&intrTiming);
 
-        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_START, pGpu, (NvU32) engineIdx);
+        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_START, (NvU32) engineIdx, 0);
         ret = intrservServiceInterrupt(pGpu, pIntrService, &serviceParams);
-        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_END, pGpu, (NvU32) engineIdx);
+        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_END, (NvU32) engineIdx, 0);
 
         osGetPerformanceCounter(&intrTiming2);
         intrTiming = intrTiming2 - intrTiming;
@@ -1623,7 +1636,7 @@ _intrServiceStallCommonCheckBegin
         // GPU is recovered.
         //
 
-        NvU32 regReadValue = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+        NvU32 regReadValue = GPU_REG_RD32(pGpu, gpuGetPmcBoot0Addr_HAL(pGpu));
 
         if (regReadValue == GPU_REG_VALUE_INVALID)
         {

@@ -25,10 +25,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
 // Forward declarations for KernelGsplite
 void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_init__KernelGsplite(KernelGsplite*, GpuHalspecOwner *pGpuhalspecowner);
-void __nvoc_init_funcTable_KernelGsplite(KernelGsplite*, GpuHalspecOwner *pGpuhalspecowner);
-NV_STATUS __nvoc_ctor_KernelGsplite(KernelGsplite*, GpuHalspecOwner *pGpuhalspecowner);
-void __nvoc_init_dataField_KernelGsplite(KernelGsplite*, GpuHalspecOwner *pGpuhalspecowner);
+void __nvoc_init__KernelGsplite(KernelGsplite*);
+void __nvoc_init_funcTable_KernelGsplite(KernelGsplite*);
+NV_STATUS __nvoc_ctor_KernelGsplite(KernelGsplite*);
+void __nvoc_init_dataField_KernelGsplite(KernelGsplite*);
 void __nvoc_dtor_KernelGsplite(Dynamic*);
 
 // Structures used within RTTI (run-time type information)
@@ -41,17 +41,6 @@ NV_STATUS __nvoc_down_thunk_KernelGsplite_engstateStateInitUnlocked(struct OBJGP
 NV_STATUS __nvoc_down_thunk_KernelGsplite_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelGsplite);    // this
 
 // Up-thunk(s) to bridge KernelGsplite methods to ancestors (if any)
-void __nvoc_up_thunk_OBJENGSTATE_kgspliteInitMissing(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreInitLocked(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreLoad(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStateLoad(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePostLoad(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreUnload(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStateUnload(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePostUnload(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3);    // this
-void __nvoc_up_thunk_OBJENGSTATE_kgspliteStateDestroy(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate);    // this
-NvBool __nvoc_up_thunk_OBJENGSTATE_kgspliteIsPresent(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate);    // this
 
 // Class-specific details for KernelGsplite
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGsplite = 
@@ -69,7 +58,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGsplite =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__KernelGsplite __nvoc_metadata__KernelGsplite = {
     .rtti.pClassDef = &__nvoc_class_def_KernelGsplite,    // (kgsplite) this
     .rtti.dtor      = &__nvoc_dtor_KernelGsplite,
@@ -81,33 +70,21 @@ static const struct NVOC_METADATA__KernelGsplite __nvoc_metadata__KernelGsplite 
     .metadata__OBJENGSTATE.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__OBJENGSTATE.metadata__Object.rtti.offset    = NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
 
-    .vtable.__kgspliteConstructEngine__ = &kgspliteConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelGsplite_engstateConstructEngine,    // virtual
-    .vtable.__kgspliteStateInitUnlocked__ = &kgspliteStateInitUnlocked_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &__nvoc_down_thunk_KernelGsplite_engstateStateInitUnlocked,    // virtual
-    .vtable.__kgspliteStateInitLocked__ = &kgspliteStateInitLocked_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &__nvoc_down_thunk_KernelGsplite_engstateStateInitLocked,    // virtual
-    .vtable.__kgspliteInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kgspliteInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-    .vtable.__kgspliteStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-    .vtable.__kgspliteStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .vtable.__kgspliteStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-    .vtable.__kgspliteStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kgspliteStateLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
-    .vtable.__kgspliteStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kgspliteStatePostLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-    .vtable.__kgspliteStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-    .vtable.__kgspliteStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kgspliteStateUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
-    .vtable.__kgspliteStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kgspliteStatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__kgspliteStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_kgspliteStateDestroy,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &engstateStateDestroy_IMPL,    // virtual
-    .vtable.__kgspliteIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kgspliteIsPresent,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
 };
 
@@ -126,75 +103,17 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelGsplite = {
 
 // kgspliteConstructEngine: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelGsplite_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelGsplite, ENGDESCRIPTOR engDesc) {
-    return kgspliteConstructEngine(pGpu, (struct KernelGsplite *)(((unsigned char *) pKernelGsplite) - NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)), engDesc);
+    return kgspliteConstructEngine_IMPL(pGpu, (struct KernelGsplite *)(((unsigned char *) pKernelGsplite) - NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)), engDesc);
 }
 
 // kgspliteStateInitUnlocked: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelGsplite_engstateStateInitUnlocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelGsplite) {
-    return kgspliteStateInitUnlocked(pGpu, (struct KernelGsplite *)(((unsigned char *) pKernelGsplite) - NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)));
+    return kgspliteStateInitUnlocked_IMPL(pGpu, (struct KernelGsplite *)(((unsigned char *) pKernelGsplite) - NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)));
 }
 
 // kgspliteStateInitLocked: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelGsplite_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelGsplite) {
-    return kgspliteStateInitLocked(pGpu, (struct KernelGsplite *)(((unsigned char *) pKernelGsplite) - NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)));
-}
-
-
-// 11 up-thunk(s) defined to bridge methods in KernelGsplite to superclasses
-
-// kgspliteInitMissing: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_kgspliteInitMissing(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)));
-}
-
-// kgspliteStatePreInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreInitLocked(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)));
-}
-
-// kgspliteStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)));
-}
-
-// kgspliteStatePreLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreLoad(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgspliteStateLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStateLoad(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgspliteStatePostLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePostLoad(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgspliteStatePreUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePreUnload(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgspliteStateUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStateUnload(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgspliteStatePostUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspliteStatePostUnload(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate, NvU32 arg3) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kgspliteStateDestroy: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_kgspliteStateDestroy(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)));
-}
-
-// kgspliteIsPresent: virtual inherited (engstate) base (engstate)
-NvBool __nvoc_up_thunk_OBJENGSTATE_kgspliteIsPresent(struct OBJGPU *pGpu, struct KernelGsplite *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)));
+    return kgspliteStateInitLocked_IMPL(pGpu, (struct KernelGsplite *)(((unsigned char *) pKernelGsplite) - NV_OFFSETOF(KernelGsplite, __nvoc_base_OBJENGSTATE)));
 }
 
 
@@ -220,31 +139,16 @@ void __nvoc_dtor_KernelGsplite(Dynamic* pThis) {
 
     PORT_UNREFERENCED_VARIABLE(__nvoc_this);
 }
-void __nvoc_init_dataField_KernelGsplite(KernelGsplite *pThis, GpuHalspecOwner *pGpuhalspecowner) {
-    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
-    const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
+void __nvoc_init_dataField_KernelGsplite(KernelGsplite *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
-    PORT_UNREFERENCED_VARIABLE(chipHal);
-    PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
-
-    // NVOC Property Hal field -- PDB_PROP_KGSPLITE_IS_MISSING
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
-    {
-        pThis->setProperty(pThis, PDB_PROP_KGSPLITE_IS_MISSING, NV_TRUE);
-    }
-    // default
-    else
-    {
-        pThis->setProperty(pThis, PDB_PROP_KGSPLITE_IS_MISSING, NV_FALSE);
-    }
+    pThis->setProperty(pThis, PDB_PROP_KGSPLITE_IS_MISSING, NV_FALSE);
     pThis->setProperty(pThis, PDB_PROP_KGSPLITE_ENABLE_CMC_NVLOG, NV_FALSE);
 }
 
 
 // Construct KernelGsplite object.
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE *);
-NV_STATUS __nvoc_ctor_KernelGsplite(KernelGsplite *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+NV_STATUS __nvoc_ctor_KernelGsplite(KernelGsplite *pThis) {
     NV_STATUS status = NV_OK;
 
     // Recurse to ancestor constructor(s).
@@ -252,7 +156,7 @@ NV_STATUS __nvoc_ctor_KernelGsplite(KernelGsplite *pThis, GpuHalspecOwner *pGpuh
     if (status != NV_OK) goto __nvoc_ctor_KernelGsplite_fail_OBJENGSTATE;
 
     // Initialize data fields.
-    __nvoc_init_dataField_KernelGsplite(pThis, pGpuhalspecowner);
+    __nvoc_init_dataField_KernelGsplite(pThis);
     goto __nvoc_ctor_KernelGsplite_exit; // Success
 
     // Unwind on error.
@@ -262,23 +166,18 @@ __nvoc_ctor_KernelGsplite_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_KernelGsplite_1(KernelGsplite *pThis, GpuHalspecOwner *pGpuhalspecowner) {
-    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
-    const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
+static void __nvoc_init_funcTable_KernelGsplite_1(KernelGsplite *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
-    PORT_UNREFERENCED_VARIABLE(chipHal);
-    PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 } // End __nvoc_init_funcTable_KernelGsplite_1
 
 
-// Initialize vtable(s) for 14 virtual method(s).
-void __nvoc_init_funcTable_KernelGsplite(KernelGsplite *pThis, GpuHalspecOwner *pGpuhalspecowner) {
-    __nvoc_init_funcTable_KernelGsplite_1(pThis, pGpuhalspecowner);
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_KernelGsplite(KernelGsplite *pThis) {
+    __nvoc_init_funcTable_KernelGsplite_1(pThis);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__KernelGsplite(KernelGsplite *pThis, GpuHalspecOwner *pGpuhalspecowner) {
+void __nvoc_init__KernelGsplite(KernelGsplite *pThis) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
@@ -294,7 +193,7 @@ void __nvoc_init__KernelGsplite(KernelGsplite *pThis, GpuHalspecOwner *pGpuhalsp
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelGsplite;    // (kgsplite) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_KernelGsplite(pThis, pGpuhalspecowner);
+    __nvoc_init_funcTable_KernelGsplite(pThis);
 }
 
 NV_STATUS __nvoc_objCreate_KernelGsplite(KernelGsplite **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags)
@@ -302,7 +201,6 @@ NV_STATUS __nvoc_objCreate_KernelGsplite(KernelGsplite **__nvoc_ppThis, Dynamic 
     NV_STATUS __nvoc_status;
     Object *__nvoc_pParentObj = NULL;
     KernelGsplite *__nvoc_pThis;
-    GpuHalspecOwner *pGpuhalspecowner;
 
     // Don't allocate memory if the caller has already done so.
     if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
@@ -323,11 +221,8 @@ NV_STATUS __nvoc_objCreate_KernelGsplite(KernelGsplite **__nvoc_ppThis, Dynamic 
 
     __nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
-    // pParent must be a valid object that derives from a halspec owner class.
-    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, __nvoc_pParent != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGsplite_cleanup);
-
-    // Link the child into the parent unless flagged not to do so.
-    if (!(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
         objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
@@ -337,14 +232,9 @@ NV_STATUS __nvoc_objCreate_KernelGsplite(KernelGsplite **__nvoc_ppThis, Dynamic 
         __nvoc_pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
-    // HALs are defined by the parent or the first super class.
-    if ((pGpuhalspecowner = dynamicCast(__nvoc_pParent, GpuHalspecOwner)) == NULL)
-        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, __nvoc_pParent);
-    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelGsplite_cleanup);
-
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__KernelGsplite(__nvoc_pThis, pGpuhalspecowner);
-    __nvoc_status = __nvoc_ctor_KernelGsplite(__nvoc_pThis, pGpuhalspecowner);
+    __nvoc_init__KernelGsplite(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_KernelGsplite(__nvoc_pThis);
     if (__nvoc_status != NV_OK) goto __nvoc_objCreate_KernelGsplite_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

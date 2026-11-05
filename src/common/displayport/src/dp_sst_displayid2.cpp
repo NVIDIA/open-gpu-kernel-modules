@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -147,8 +147,8 @@ static bool sstReadDid2Block
             if (retries >= NV_DISPLAYID2_MAX_AUX_RETRIES)
                 return false;
 
-            DP_PRINTF(DP_WARNING, "DisplayPort: %s: Retrying at totalRead 0x%08x (replyType %x, size %x)",
-                  __FUNCTION__, totalRead, auxStatus, sizeRequested);
+            DP_PRINTF(DP_WARNING, "DisplayPort: Retrying at totalRead 0x%08x (replyType %x, size %x)",
+                  totalRead, auxStatus, sizeRequested);
 
             // Wait for sometime between retries
             timer->sleep(NV_DISPLAYID2_AUX_WAIT_TIME);
@@ -161,8 +161,8 @@ static bool sstReadDid2Block
         if ((sizeRequested != sizeCompleted) &&
             (totalRead + transactionSize < NV_DISPLAYID2_BLOCK_SIZE))
         {
-            DP_PRINTF(DP_ERROR, "DisplayPort: %s: dpAux returned edid block smaller than expected. Read from totalRead 0x%08x (replyType %x, size %x)",
-                  __FUNCTION__, totalRead, auxStatus, sizeRequested);
+            DP_PRINTF(DP_ERROR, "DisplayPort: dpAux returned edid block smaller than expected. Read from totalRead 0x%08x (replyType %x, size %x)",
+                  totalRead, auxStatus, sizeRequested);
             DP_ASSERT(0);
         }
 
@@ -243,12 +243,31 @@ static bool sstReadDid2(DisplayID2x & did2x, AuxBus * aux, Timer * timer, MainLi
                 }
 
                 // Read the bytes in section of this section.
-                sectionLength = GET_DISPLAYID2_SECTION_LENGTH(pSection);
+                {
+                    NvU32 sectionBytes =
+                        pSection[NV_DISPLAYID2_IDX_BYTES_IN_SECTION];
+                    if (sectionBytes > NV_DISPLAYID2_BYTES_IN_SECTION_MAX)
+                    {
+                        sectionBytes = NV_DISPLAYID2_BYTES_IN_SECTION_MAX;
+                    }
+                    sectionLength = NV_DISPLAYID2_SECTION_SIZE_MIN + sectionBytes;
+                }
 
                 // Only read the total extension count from Base section.
                 if ((segment == 0) && (offset == 0))
                 {
                     extensionCount = GET_DISPLAYID2_EXTENSION_COUNT(pSection);
+
+                    //
+                    // Clamp extensionCount to the spec / driver block-count
+                    // ceiling so the worst-case allocation below cannot be
+                    // driven past Buffer's allocated capacity by a malicious
+                    // sink advertising 0xFF extensions.
+                    //
+                    if (extensionCount > NV_DISPLAYID2_MAX_BLOCK_COUNT)
+                    {
+                        extensionCount = NV_DISPLAYID2_MAX_BLOCK_COUNT;
+                    }
 
                     //
                     // The initial buffer size sets to a 256-byte data section,
@@ -323,8 +342,17 @@ static bool sstReadDid2(DisplayID2x & did2x, AuxBus * aux, Timer * timer, MainLi
 
     if (status)
     {
+        if (vesaDisplayIdSize > buffer->capacity)
+        {
+            DP_PRINTF(DP_ERROR, "DID2 oversized; rejecting");
+            return false;
+        }
         status = buffer->resize(vesaDisplayIdSize);
-        did2x.setDisplayId2xSize(vesaDisplayIdSize);
+        if (!status)
+        {
+            return false;
+        }
+        did2x.setDisplayId2xSize(DP_MIN(vesaDisplayIdSize, buffer->length));
     }
 
     return status;
@@ -355,7 +383,7 @@ bool DisplayPort::DisplayId2ReadSST(DisplayID2x & did2x, AuxBus * aux, Timer * t
     return status;
 }
 
-NvU8 DisplayPort::getDID2BlockChecksum(NvU8 * buffer, NvU8 blockSize)
+NvU8 DisplayPort::getDID2BlockChecksum(NvU8 * buffer, NvU32 blockSize)
 {
     unsigned chksum = 0;
     for (unsigned i = 0; i < blockSize; i++)

@@ -62,9 +62,17 @@ namespace DisplayPort
             DisplayID2x             displayId2x;
             Edid                    edid;
 
+            //
+            // RECEIVE_PORT0_CAP_0 [0] - LOCAL_NATIVE_DISPLAYID_PRESENT, read from the
+            // Receiver by DiscoveryManager::readNativeDisplayIdCap(). Tells us whether a
+            // Native DisplayID structure is present at DDC A4h/A5h.
+            //
+            bool                    bLocalNativeDisplayIdPresent;
+
             Device():peerDevice(None),SDPStreams(0),SDPStreamSinks(0),dirty(false),videoSink(false),maxTmdsClkRate(0)
             {
                 portMap.validMap = portMap.inputMap = portMap.internalMap = 0;
+                bLocalNativeDisplayIdPresent = false;
             }
 
             ~Device(){}
@@ -189,7 +197,8 @@ namespace DisplayPort
         };
 
         enum {
-            maximumTopologyNodes =  128
+            maximumTopologyNodes =  128,
+            maximumOutstandingBranchDetections = 128
         };
 
         Device  currentDevices[maximumTopologyNodes];
@@ -201,6 +210,8 @@ namespace DisplayPort
         void removeDevice(Device * device);
         void removeDeviceTree(const Address & prefix);
         Device * findChildDeviceForBranchWithGuid(GUID guid, unsigned port, Address & childAddr);
+        bool shouldReadNativeDisplayIdCap(const Device & device, bool bRevisionKnown);
+        bool readNativeDisplayIdCap(const Address & address);
 
         //
         //  This is responsible for a "complete" detection of a sink. Specifically using remote dpcd reads and writes

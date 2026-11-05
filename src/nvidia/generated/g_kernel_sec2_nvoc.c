@@ -57,7 +57,7 @@ NvU32 __nvoc_down_thunk_KernelFalcon_kcrashcatEngineRegRead(struct OBJGPU *pGpu,
 void __nvoc_down_thunk_KernelFalcon_kcrashcatEngineRegWrite(struct OBJGPU *pGpu, struct KernelCrashCatEngine *pKernelFlcn, NvU32 offset, NvU32 data);    // super
 NvU32 __nvoc_down_thunk_KernelFalcon_kcrashcatEngineMaskDmemAddr(struct OBJGPU *pGpu, struct KernelCrashCatEngine *pKernelFlcn, NvU32 addr);    // super
 NV_STATUS __nvoc_down_thunk_KernelSec2_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelSec2, ENGDESCRIPTOR arg3);    // this
-void __nvoc_down_thunk_KernelSec2_intrservRegisterIntrService(struct OBJGPU *pGpu, struct IntrService *pKernelSec2, IntrServiceRecord pRecords[181]);    // this
+void __nvoc_down_thunk_KernelSec2_intrservRegisterIntrService(struct OBJGPU *pGpu, struct IntrService *pKernelSec2, IntrServiceRecord pRecords[320]);    // this
 NV_STATUS __nvoc_down_thunk_KernelSec2_intrservServiceNotificationInterrupt(struct OBJGPU *arg1, struct IntrService *arg_this, IntrServiceServiceNotificationInterruptArguments *arg3);    // this
 NV_STATUS __nvoc_down_thunk_KernelSec2_engstateStateUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelSec2, NvU32 flags);    // this
 NV_STATUS __nvoc_down_thunk_KernelSec2_kflcnResetHw(struct OBJGPU *pGpu, struct KernelFalcon *pKernelSec2);    // this
@@ -65,47 +65,6 @@ NV_STATUS __nvoc_down_thunk_KernelSec2_engstateStateLoad(struct OBJGPU *pGpu, st
 void __nvoc_down_thunk_KernelSec2_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelSec2);    // this
 
 // Up-thunk(s) to bridge KernelSec2 methods to ancestors (if any)
-NvBool __nvoc_up_thunk_KernelCrashCatEngine_kflcnConfigured(struct KernelFalcon *arg_this);    // super
-void __nvoc_up_thunk_KernelCrashCatEngine_kflcnUnload(struct KernelFalcon *arg_this);    // super
-void __nvoc_up_thunk_KernelCrashCatEngine_kflcnResetLog(struct KernelFalcon *arg_this);    // super
-void __nvoc_up_thunk_KernelCrashCatEngine_kflcnVprintf(struct KernelFalcon *arg_this, NvU64 errorId, const char *fmt, va_list args);    // super
-NvU32 __nvoc_up_thunk_KernelCrashCatEngine_kflcnPriRead(struct KernelFalcon *arg_this, NvU32 offset);    // super
-void __nvoc_up_thunk_KernelCrashCatEngine_kflcnPriWrite(struct KernelFalcon *arg_this, NvU32 offset, NvU32 data);    // super
-void * __nvoc_up_thunk_KernelCrashCatEngine_kflcnMapBufferDescriptor(struct KernelFalcon *arg_this, CrashCatBufferDescriptor *pBufDesc);    // super
-void __nvoc_up_thunk_KernelCrashCatEngine_kflcnUnmapBufferDescriptor(struct KernelFalcon *arg_this, CrashCatBufferDescriptor *pBufDesc);    // super
-void __nvoc_up_thunk_KernelCrashCatEngine_kflcnSyncBufferDescriptor(struct KernelFalcon *arg_this, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size);    // super
-void __nvoc_up_thunk_KernelCrashCatEngine_kflcnReadDmem(struct KernelFalcon *arg_this, NvU32 offset, NvU32 size, void *pBuf);    // super
-void __nvoc_up_thunk_KernelCrashCatEngine_kflcnReadEmem(struct KernelFalcon *arg_this, NvU64 offset, NvU64 size, void *pBuf);    // super
-const NvU32 * __nvoc_up_thunk_KernelCrashCatEngine_kflcnGetScratchOffsets(struct KernelFalcon *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId);    // super
-NvU32 __nvoc_up_thunk_KernelCrashCatEngine_kflcnGetWFL0Offset(struct KernelFalcon *arg_this);    // super
-void __nvoc_up_thunk_OBJENGSTATE_ksec2InitMissing(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreInitLocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StateInitLocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StateInitUnlocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreLoad(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePostLoad(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreUnload(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePostUnload(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3);    // this
-NvBool __nvoc_up_thunk_OBJENGSTATE_ksec2IsPresent(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate);    // this
-NvBool __nvoc_up_thunk_IntrService_ksec2ClearInterrupt(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceClearInterruptArguments *pParams);    // this
-NvU32 __nvoc_up_thunk_IntrService_ksec2ServiceInterrupt(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceServiceInterruptArguments *pParams);    // this
-NvU32 __nvoc_up_thunk_KernelFalcon_ksec2RegRead(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 offset);    // this
-void __nvoc_up_thunk_KernelFalcon_ksec2RegWrite(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 offset, NvU32 data);    // this
-NvU32 __nvoc_up_thunk_KernelFalcon_ksec2MaskDmemAddr(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 addr);    // this
-NvBool __nvoc_up_thunk_KernelCrashCatEngine_ksec2Configured(struct KernelSec2 *arg_this);    // this
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2Unload(struct KernelSec2 *arg_this);    // this
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2ResetLog(struct KernelSec2 *arg_this);    // this
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2Vprintf(struct KernelSec2 *arg_this, NvU64 errorId, const char *fmt, va_list args);    // this
-NvU32 __nvoc_up_thunk_KernelCrashCatEngine_ksec2PriRead(struct KernelSec2 *arg_this, NvU32 offset);    // this
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2PriWrite(struct KernelSec2 *arg_this, NvU32 offset, NvU32 data);    // this
-void * __nvoc_up_thunk_KernelCrashCatEngine_ksec2MapBufferDescriptor(struct KernelSec2 *arg_this, CrashCatBufferDescriptor *pBufDesc);    // this
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2UnmapBufferDescriptor(struct KernelSec2 *arg_this, CrashCatBufferDescriptor *pBufDesc);    // this
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2SyncBufferDescriptor(struct KernelSec2 *arg_this, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size);    // this
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2ReadDmem(struct KernelSec2 *arg_this, NvU32 offset, NvU32 size, void *pBuf);    // this
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2ReadEmem(struct KernelSec2 *arg_this, NvU64 offset, NvU64 size, void *pBuf);    // this
-const NvU32 * __nvoc_up_thunk_KernelCrashCatEngine_ksec2GetScratchOffsets(struct KernelSec2 *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId);    // this
-NvU32 __nvoc_up_thunk_KernelCrashCatEngine_ksec2GetWFL0Offset(struct KernelSec2 *arg_this);    // this
 
 // Class-specific details for KernelSec2
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelSec2 = 
@@ -123,7 +82,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelSec2 =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__KernelSec2 __nvoc_metadata__KernelSec2 = {
     .rtti.pClassDef = &__nvoc_class_def_KernelSec2,    // (ksec2) this
     .rtti.dtor      = &__nvoc_dtor_KernelSec2,
@@ -147,82 +106,39 @@ static const struct NVOC_METADATA__KernelSec2 __nvoc_metadata__KernelSec2 = {
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.rtti.offset    = NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_base_CrashCatEngine),
 
-    .vtable.__ksec2ConstructEngine__ = &ksec2ConstructEngine_IMPL,    // virtual halified (singleton optimized) override (engstate) base (engstate) body
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelSec2_engstateConstructEngine,    // virtual
-    .vtable.__ksec2RegisterIntrService__ = &ksec2RegisterIntrService_IMPL,    // virtual halified (singleton optimized) override (intrserv) base (intrserv) body
     .metadata__IntrService.vtable.__intrservRegisterIntrService__ = &__nvoc_down_thunk_KernelSec2_intrservRegisterIntrService,    // virtual
-    .vtable.__ksec2ServiceNotificationInterrupt__ = &ksec2ServiceNotificationInterrupt_IMPL,    // virtual halified (singleton optimized) override (intrserv) base (intrserv) body
     .metadata__IntrService.vtable.__intrservServiceNotificationInterrupt__ = &__nvoc_down_thunk_KernelSec2_intrservServiceNotificationInterrupt,    // virtual
-    .vtable.__ksec2StateUnload__ = &ksec2StateUnload_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &__nvoc_down_thunk_KernelSec2_engstateStateUnload,    // virtual
     .metadata__KernelFalcon.vtable.__kflcnResetHw__ = &__nvoc_down_thunk_KernelSec2_kflcnResetHw,    // pure virtual
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &__nvoc_down_thunk_KernelSec2_engstateStateLoad,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &__nvoc_down_thunk_KernelSec2_engstateStateDestroy,    // virtual
-    .vtable.__ksec2InitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_ksec2InitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-    .vtable.__ksec2StatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_ksec2StatePreInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-    .vtable.__ksec2StatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_ksec2StatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .vtable.__ksec2StateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_ksec2StateInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
-    .vtable.__ksec2StateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_ksec2StateInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-    .vtable.__ksec2StatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_ksec2StatePreLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-    .vtable.__ksec2StatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_ksec2StatePostLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-    .vtable.__ksec2StatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_ksec2StatePreUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-    .vtable.__ksec2StatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_ksec2StatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__ksec2IsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_ksec2IsPresent,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
-    .vtable.__ksec2ClearInterrupt__ = &__nvoc_up_thunk_IntrService_ksec2ClearInterrupt,    // virtual inherited (intrserv) base (intrserv)
     .metadata__IntrService.vtable.__intrservClearInterrupt__ = &intrservClearInterrupt_IMPL,    // virtual
-    .vtable.__ksec2ServiceInterrupt__ = &__nvoc_up_thunk_IntrService_ksec2ServiceInterrupt,    // virtual inherited (intrserv) base (intrserv)
     .metadata__IntrService.vtable.__intrservServiceInterrupt__ = &intrservServiceInterrupt_IMPL,    // virtual
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineRegRead__ = &__nvoc_down_thunk_KernelFalcon_kcrashcatEngineRegRead,    // pure virtual
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineRegWrite__ = &__nvoc_down_thunk_KernelFalcon_kcrashcatEngineRegWrite,    // pure virtual
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineMaskDmemAddr__ = &__nvoc_down_thunk_KernelFalcon_kcrashcatEngineMaskDmemAddr,    // pure virtual
-    .vtable.__ksec2Configured__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2Configured,    // virtual inherited (kcrashcatEngine) base (kflcn)
-    .metadata__KernelFalcon.vtable.__kflcnConfigured__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnConfigured,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
-    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineConfigured__ = &kcrashcatEngineConfigured_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineConfigured__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineConfigured,    // pure virtual
-    .vtable.__ksec2Unload__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2Unload,    // virtual inherited (kcrashcatEngine) base (kflcn)
-    .metadata__KernelFalcon.vtable.__kflcnUnload__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnUnload,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
-    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineUnload__ = &kcrashcatEngineUnload_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineUnload__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnload,    // virtual
-    .vtable.__ksec2ResetLog__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2ResetLog,    // virtual inherited (kcrashcatEngine) base (kflcn)
-    .metadata__KernelFalcon.vtable.__kflcnResetLog__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnResetLog,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
-    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineResetLog__ = &kcrashcatEngineResetLog_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineResetLog__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineResetLog,    // pure virtual
-    .vtable.__ksec2Vprintf__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2Vprintf,    // virtual inherited (kcrashcatEngine) base (kflcn)
-    .metadata__KernelFalcon.vtable.__kflcnVprintf__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnVprintf,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
-    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineVprintf__ = &kcrashcatEngineVprintf_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineVprintf__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineVprintf,    // pure virtual
-    .vtable.__ksec2PriRead__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2PriRead,    // virtual inherited (kcrashcatEngine) base (kflcn)
-    .metadata__KernelFalcon.vtable.__kflcnPriRead__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnPriRead,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
-    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEnginePriRead__ = &kcrashcatEnginePriRead_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEnginePriRead__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEnginePriRead,    // pure virtual
-    .vtable.__ksec2PriWrite__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2PriWrite,    // virtual inherited (kcrashcatEngine) base (kflcn)
-    .metadata__KernelFalcon.vtable.__kflcnPriWrite__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnPriWrite,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
-    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEnginePriWrite__ = &kcrashcatEnginePriWrite_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEnginePriWrite__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEnginePriWrite,    // pure virtual
-    .vtable.__ksec2MapBufferDescriptor__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2MapBufferDescriptor,    // virtual inherited (kcrashcatEngine) base (kflcn)
-    .metadata__KernelFalcon.vtable.__kflcnMapBufferDescriptor__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnMapBufferDescriptor,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
-    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineMapBufferDescriptor__ = &kcrashcatEngineMapBufferDescriptor_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineMapBufferDescriptor__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineMapBufferDescriptor,    // pure virtual
-    .vtable.__ksec2UnmapBufferDescriptor__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2UnmapBufferDescriptor,    // virtual inherited (kcrashcatEngine) base (kflcn)
-    .metadata__KernelFalcon.vtable.__kflcnUnmapBufferDescriptor__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnUnmapBufferDescriptor,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
-    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineUnmapBufferDescriptor__ = &kcrashcatEngineUnmapBufferDescriptor_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineUnmapBufferDescriptor__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineUnmapBufferDescriptor,    // pure virtual
-    .vtable.__ksec2SyncBufferDescriptor__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2SyncBufferDescriptor,    // virtual inherited (kcrashcatEngine) base (kflcn)
-    .metadata__KernelFalcon.vtable.__kflcnSyncBufferDescriptor__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnSyncBufferDescriptor,    // virtual inherited (kcrashcatEngine) base (kcrashcatEngine)
-    .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineSyncBufferDescriptor__ = &kcrashcatEngineSyncBufferDescriptor_IMPL,    // virtual override (crashcatEngine) base (crashcatEngine)
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineSyncBufferDescriptor__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineSyncBufferDescriptor,    // pure virtual
-    .vtable.__ksec2ReadEmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2ReadEmem,    // virtual halified (singleton) inherited (kcrashcatEngine) base (kflcn) body
-    .metadata__KernelFalcon.vtable.__kflcnReadEmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_kflcnReadEmem,    // virtual halified (singleton) inherited (kcrashcatEngine) base (kcrashcatEngine) body
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.vtable.__kcrashcatEngineReadEmem__ = &kcrashcatEngineReadEmem_f2d351,    // virtual halified (singleton optimized) body
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineGetScratchOffsets__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetScratchOffsets,    // pure virtual
     .metadata__KernelFalcon.metadata__KernelCrashCatEngine.metadata__CrashCatEngine.vtable.__crashcatEngineGetWFL0Offset__ = &__nvoc_down_thunk_KernelCrashCatEngine_crashcatEngineGetWFL0Offset,    // pure virtual
@@ -247,22 +163,22 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelSec2 = {
 
 // ksec2ConstructEngine: virtual halified (singleton optimized) override (engstate) base (engstate) body
 NV_STATUS __nvoc_down_thunk_KernelSec2_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelSec2, ENGDESCRIPTOR arg3) {
-    return ksec2ConstructEngine(pGpu, (struct KernelSec2 *)(((unsigned char *) pKernelSec2) - NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)), arg3);
+    return ksec2ConstructEngine_IMPL(pGpu, (struct KernelSec2 *)(((unsigned char *) pKernelSec2) - NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)), arg3);
 }
 
 // ksec2RegisterIntrService: virtual halified (singleton optimized) override (intrserv) base (intrserv) body
-void __nvoc_down_thunk_KernelSec2_intrservRegisterIntrService(struct OBJGPU *pGpu, struct IntrService *pKernelSec2, IntrServiceRecord pRecords[181]) {
-    ksec2RegisterIntrService(pGpu, (struct KernelSec2 *)(((unsigned char *) pKernelSec2) - NV_OFFSETOF(KernelSec2, __nvoc_base_IntrService)), pRecords);
+void __nvoc_down_thunk_KernelSec2_intrservRegisterIntrService(struct OBJGPU *pGpu, struct IntrService *pKernelSec2, IntrServiceRecord pRecords[320]) {
+    ksec2RegisterIntrService_IMPL(pGpu, (struct KernelSec2 *)(((unsigned char *) pKernelSec2) - NV_OFFSETOF(KernelSec2, __nvoc_base_IntrService)), pRecords);
 }
 
 // ksec2ServiceNotificationInterrupt: virtual halified (singleton optimized) override (intrserv) base (intrserv) body
 NV_STATUS __nvoc_down_thunk_KernelSec2_intrservServiceNotificationInterrupt(struct OBJGPU *arg1, struct IntrService *arg_this, IntrServiceServiceNotificationInterruptArguments *arg3) {
-    return ksec2ServiceNotificationInterrupt(arg1, (struct KernelSec2 *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelSec2, __nvoc_base_IntrService)), arg3);
+    return ksec2ServiceNotificationInterrupt_IMPL(arg1, (struct KernelSec2 *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelSec2, __nvoc_base_IntrService)), arg3);
 }
 
 // ksec2StateUnload: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelSec2_engstateStateUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelSec2, NvU32 flags) {
-    return ksec2StateUnload(pGpu, (struct KernelSec2 *)(((unsigned char *) pKernelSec2) - NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)), flags);
+    return ksec2StateUnload_IMPL(pGpu, (struct KernelSec2 *)(((unsigned char *) pKernelSec2) - NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)), flags);
 }
 
 // ksec2ResetHw: virtual halified (3 hals) override (kflcn) base (kflcn) body
@@ -278,149 +194,6 @@ NV_STATUS __nvoc_down_thunk_KernelSec2_engstateStateLoad(struct OBJGPU *pGpu, st
 // ksec2StateDestroy: virtual halified (2 hals) override (engstate) base (engstate) body
 void __nvoc_down_thunk_KernelSec2_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelSec2) {
     ksec2StateDestroy(pGpu, (struct KernelSec2 *)(((unsigned char *) pKernelSec2) - NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)));
-}
-
-
-// 28 up-thunk(s) defined to bridge methods in KernelSec2 to superclasses
-
-// ksec2InitMissing: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_ksec2InitMissing(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)));
-}
-
-// ksec2StatePreInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreInitLocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)));
-}
-
-// ksec2StatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)));
-}
-
-// ksec2StateInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StateInitLocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)));
-}
-
-// ksec2StateInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StateInitUnlocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)));
-}
-
-// ksec2StatePreLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreLoad(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// ksec2StatePostLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePostLoad(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// ksec2StatePreUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreUnload(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// ksec2StatePostUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePostUnload(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// ksec2IsPresent: virtual inherited (engstate) base (engstate)
-NvBool __nvoc_up_thunk_OBJENGSTATE_ksec2IsPresent(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE)));
-}
-
-// ksec2ClearInterrupt: virtual inherited (intrserv) base (intrserv)
-NvBool __nvoc_up_thunk_IntrService_ksec2ClearInterrupt(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return intrservClearInterrupt(pGpu, (struct IntrService *)(((unsigned char *) pIntrService) + NV_OFFSETOF(KernelSec2, __nvoc_base_IntrService)), pParams);
-}
-
-// ksec2ServiceInterrupt: virtual inherited (intrserv) base (intrserv)
-NvU32 __nvoc_up_thunk_IntrService_ksec2ServiceInterrupt(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceServiceInterruptArguments *pParams) {
-    return intrservServiceInterrupt(pGpu, (struct IntrService *)(((unsigned char *) pIntrService) + NV_OFFSETOF(KernelSec2, __nvoc_base_IntrService)), pParams);
-}
-
-// ksec2RegRead: virtual halified (3 hals) inherited (kflcn) base (kflcn) body
-NvU32 __nvoc_up_thunk_KernelFalcon_ksec2RegRead(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 offset) {
-    return kflcnRegRead(pGpu, (struct KernelFalcon *)(((unsigned char *) pKernelFlcn) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon)), offset);
-}
-
-// ksec2RegWrite: virtual halified (3 hals) inherited (kflcn) base (kflcn) body
-void __nvoc_up_thunk_KernelFalcon_ksec2RegWrite(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 offset, NvU32 data) {
-    kflcnRegWrite(pGpu, (struct KernelFalcon *)(((unsigned char *) pKernelFlcn) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon)), offset, data);
-}
-
-// ksec2MaskDmemAddr: virtual halified (4 hals) inherited (kflcn) base (kflcn) body
-NvU32 __nvoc_up_thunk_KernelFalcon_ksec2MaskDmemAddr(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 addr) {
-    return kflcnMaskDmemAddr(pGpu, (struct KernelFalcon *)(((unsigned char *) pKernelFlcn) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon)), addr);
-}
-
-// ksec2Configured: virtual inherited (kcrashcatEngine) base (kflcn)
-NvBool __nvoc_up_thunk_KernelCrashCatEngine_ksec2Configured(struct KernelSec2 *arg_this) {
-    return kcrashcatEngineConfigured((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)));
-}
-
-// ksec2Unload: virtual inherited (kcrashcatEngine) base (kflcn)
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2Unload(struct KernelSec2 *arg_this) {
-    kcrashcatEngineUnload((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)));
-}
-
-// ksec2ResetLog: virtual inherited (kcrashcatEngine) base (kflcn)
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2ResetLog(struct KernelSec2 *arg_this) {
-    kcrashcatEngineResetLog((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)));
-}
-
-// ksec2Vprintf: virtual inherited (kcrashcatEngine) base (kflcn)
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2Vprintf(struct KernelSec2 *arg_this, NvU64 errorId, const char *fmt, va_list args) {
-    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), errorId, fmt, args);
-}
-
-// ksec2PriRead: virtual inherited (kcrashcatEngine) base (kflcn)
-NvU32 __nvoc_up_thunk_KernelCrashCatEngine_ksec2PriRead(struct KernelSec2 *arg_this, NvU32 offset) {
-    return kcrashcatEnginePriRead((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), offset);
-}
-
-// ksec2PriWrite: virtual inherited (kcrashcatEngine) base (kflcn)
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2PriWrite(struct KernelSec2 *arg_this, NvU32 offset, NvU32 data) {
-    kcrashcatEnginePriWrite((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), offset, data);
-}
-
-// ksec2MapBufferDescriptor: virtual inherited (kcrashcatEngine) base (kflcn)
-void * __nvoc_up_thunk_KernelCrashCatEngine_ksec2MapBufferDescriptor(struct KernelSec2 *arg_this, CrashCatBufferDescriptor *pBufDesc) {
-    return kcrashcatEngineMapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), pBufDesc);
-}
-
-// ksec2UnmapBufferDescriptor: virtual inherited (kcrashcatEngine) base (kflcn)
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2UnmapBufferDescriptor(struct KernelSec2 *arg_this, CrashCatBufferDescriptor *pBufDesc) {
-    kcrashcatEngineUnmapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), pBufDesc);
-}
-
-// ksec2SyncBufferDescriptor: virtual inherited (kcrashcatEngine) base (kflcn)
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2SyncBufferDescriptor(struct KernelSec2 *arg_this, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size) {
-    kcrashcatEngineSyncBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), pBufDesc, offset, size);
-}
-
-// ksec2ReadDmem: virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2ReadDmem(struct KernelSec2 *arg_this, NvU32 offset, NvU32 size, void *pBuf) {
-    kcrashcatEngineReadDmem((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), offset, size, pBuf);
-}
-
-// ksec2ReadEmem: virtual halified (singleton) inherited (kcrashcatEngine) base (kflcn) body
-void __nvoc_up_thunk_KernelCrashCatEngine_ksec2ReadEmem(struct KernelSec2 *arg_this, NvU64 offset, NvU64 size, void *pBuf) {
-    kcrashcatEngineReadEmem((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), offset, size, pBuf);
-}
-
-// ksec2GetScratchOffsets: virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
-const NvU32 * __nvoc_up_thunk_KernelCrashCatEngine_ksec2GetScratchOffsets(struct KernelSec2 *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
-    return kcrashcatEngineGetScratchOffsets((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)), scratchGroupId);
-}
-
-// ksec2GetWFL0Offset: virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
-NvU32 __nvoc_up_thunk_KernelCrashCatEngine_ksec2GetWFL0Offset(struct KernelSec2 *arg_this) {
-    return kcrashcatEngineGetWFL0Offset((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine)));
 }
 
 
@@ -565,28 +338,28 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, GpuHalspecOwne
         pThis->__ksec2ConfigureFalcon__ = &ksec2ConfigureFalcon_TU102;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xfdf0f800UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060ffUL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->__ksec2ConfigureFalcon__ = &ksec2ConfigureFalcon_GA102;
     }
     // default
     else
     {
-        pThis->__ksec2ConfigureFalcon__ = &ksec2ConfigureFalcon_92bfc3;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
 
     // ksec2ResetHw -- virtual halified (3 hals) override (kflcn) base (kflcn) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__ksec2ResetHw__ = &ksec2ResetHw_5baef9;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
     else
     {
         if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x60000000UL) ) ||
             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000c0UL) ) ||
-            ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: GB10B | GB10C | GB20B | GB20C | T234D | T239D | T264D */ 
+            ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: GB10B | GB10C | GB20B | GB20C | T234D | T238D | T264D */ 
         {
-            pThis->__ksec2ResetHw__ = &ksec2ResetHw_5baef9;
+            // NVOC_UNREACHABLE, NULL-initialized.
         }
         else
         {
@@ -602,7 +375,7 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, GpuHalspecOwne
     else
     {
         if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xfc000000UL) ) ||
-            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060ffUL) )) /* ChipHal: GH100 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
         {
             pThis->__ksec2StateLoad__ = &ksec2StateLoad_GH100;
         }
@@ -628,19 +401,19 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, GpuHalspecOwne
     // ksec2ReadUcodeFuseVersion -- halified (6 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__ksec2ReadUcodeFuseVersion__ = &ksec2ReadUcodeFuseVersion_474d46;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
     else
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
+        if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T238D | T264D */ 
         {
-            pThis->__ksec2ReadUcodeFuseVersion__ = &ksec2ReadUcodeFuseVersion_474d46;
+            // NVOC_UNREACHABLE, NULL-initialized.
         }
         else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
         {
             pThis->__ksec2ReadUcodeFuseVersion__ = &ksec2ReadUcodeFuseVersion_b2b553;
         }
-        else if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000303eUL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
+        else if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000603eUL) )) /* ChipHal: GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
         {
             pThis->__ksec2ReadUcodeFuseVersion__ = &ksec2ReadUcodeFuseVersion_GB202;
         }
@@ -657,7 +430,7 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, GpuHalspecOwne
     // ksec2GetBinArchiveBlUcode -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__ksec2GetBinArchiveBlUcode__ = &ksec2GetBinArchiveBlUcode_80f438;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
     else
     {
@@ -667,14 +440,14 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, GpuHalspecOwne
         }
         else
         {
-            pThis->__ksec2GetBinArchiveBlUcode__ = &ksec2GetBinArchiveBlUcode_80f438;
+            // NVOC_UNREACHABLE, NULL-initialized.
         }
     }
 
     // ksec2GetGenericBlUcode -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__ksec2GetGenericBlUcode__ = &ksec2GetGenericBlUcode_5baef9;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
     else
     {
@@ -684,14 +457,14 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, GpuHalspecOwne
         }
         else
         {
-            pThis->__ksec2GetGenericBlUcode__ = &ksec2GetGenericBlUcode_5baef9;
+            // NVOC_UNREACHABLE, NULL-initialized.
         }
     }
 
     // ksec2GetBinArchiveSecurescrubUcode -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__ksec2GetBinArchiveSecurescrubUcode__ = &ksec2GetBinArchiveSecurescrubUcode_80f438;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
     else
     {
@@ -701,7 +474,7 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, GpuHalspecOwne
         }
         else
         {
-            pThis->__ksec2GetBinArchiveSecurescrubUcode__ = &ksec2GetBinArchiveSecurescrubUcode_80f438;
+            // NVOC_UNREACHABLE, NULL-initialized.
         }
     }
 
@@ -959,31 +732,13 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, GpuHalspecOwne
     {
         pThis->__ksec2ErrorCode2NvStatusMap__ = &ksec2ErrorCode2NvStatusMap_395e98;
     }
-
-    // ksec2RegRead -- virtual halified (3 hals) inherited (kflcn) base (kflcn) body
-    pThis->__ksec2RegRead__ = &__nvoc_up_thunk_KernelFalcon_ksec2RegRead;
-
-    // ksec2RegWrite -- virtual halified (3 hals) inherited (kflcn) base (kflcn) body
-    pThis->__ksec2RegWrite__ = &__nvoc_up_thunk_KernelFalcon_ksec2RegWrite;
-
-    // ksec2MaskDmemAddr -- virtual halified (4 hals) inherited (kflcn) base (kflcn) body
-    pThis->__ksec2MaskDmemAddr__ = &__nvoc_up_thunk_KernelFalcon_ksec2MaskDmemAddr;
-
-    // ksec2ReadDmem -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
-    pThis->__ksec2ReadDmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2ReadDmem;
-
-    // ksec2GetScratchOffsets -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
-    pThis->__ksec2GetScratchOffsets__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2GetScratchOffsets;
-
-    // ksec2GetWFL0Offset -- virtual halified (2 hals) inherited (kcrashcatEngine) base (kflcn) body
-    pThis->__ksec2GetWFL0Offset__ = &__nvoc_up_thunk_KernelCrashCatEngine_ksec2GetWFL0Offset;
-} // End __nvoc_init_funcTable_KernelSec2_1 with approximately 90 basic block(s).
+} // End __nvoc_init_funcTable_KernelSec2_1 with approximately 74 basic block(s).
 
 
-// Initialize vtable(s) for 61 virtual method(s).
+// Initialize vtable(s) for 29 virtual method(s).
 void __nvoc_init_funcTable_KernelSec2(KernelSec2 *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 35 per-object function pointer(s).
+    // Initialize vtable(s) with 29 per-object function pointer(s).
     __nvoc_init_funcTable_KernelSec2_1(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 

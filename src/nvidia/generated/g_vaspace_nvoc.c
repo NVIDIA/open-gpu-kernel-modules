@@ -82,6 +82,7 @@ static const struct NVOC_METADATA__OBJVASPACE __nvoc_metadata__OBJVASPACE = {
     .vtable.__vaspaceUnmap__ = &vaspaceUnmap_af5be7,    // inline virtual body
     .vtable.__vaspaceReserveMempool__ = &vaspaceReserveMempool_ac1694,    // inline virtual body
     .vtable.__vaspaceGetHeap__ = &vaspaceGetHeap_9451a7,    // inline virtual body
+    .vtable.__vaspaceGetFreeHeap__ = &vaspaceGetFreeHeap_14ee5e,    // inline virtual body
     .vtable.__vaspaceGetMapPageSize__ = &vaspaceGetMapPageSize_c26fae,    // inline virtual body
     .vtable.__vaspaceGetBigPageSize__ = &vaspaceGetBigPageSize_c26fae,    // inline virtual body
     .vtable.__vaspaceIsFaultCapable__ = &vaspaceIsFaultCapable_2fa1ff,    // inline virtual body
@@ -94,6 +95,8 @@ static const struct NVOC_METADATA__OBJVASPACE __nvoc_metadata__OBJVASPACE = {
     .vtable.__vaspacePinRootPageDir__ = &vaspacePinRootPageDir_14ee5e,    // inline virtual body
     .vtable.__vaspaceUnpinRootPageDir__ = &vaspaceUnpinRootPageDir_af5be7,    // inline virtual body
     .vtable.__vaspaceInvalidateTlb__ = &vaspaceInvalidateTlb_IMPL,    // virtual
+    .vtable.__vaspaceGetPageLevelInfo__ = &vaspaceGetPageLevelInfo_395e98,    // inline virtual body
+    .vtable.__vaspaceIsInUse__ = &vaspaceIsInUse_773c9d,    // inline virtual body
     .vtable.__vaspaceGetPageTableInfo__ = &vaspaceGetPageTableInfo_14ee5e,    // inline virtual body
     .vtable.__vaspaceGetPteInfo__ = &vaspaceGetPteInfo_14ee5e,    // inline virtual body
     .vtable.__vaspaceSetPteInfo__ = &vaspaceSetPteInfo_14ee5e,    // inline virtual body
@@ -158,7 +161,7 @@ static void __nvoc_init_funcTable_OBJVASPACE_1(OBJVASPACE *pThis) {
 } // End __nvoc_init_funcTable_OBJVASPACE_1
 
 
-// Initialize vtable(s) for 29 virtual method(s).
+// Initialize vtable(s) for 32 virtual method(s).
 void __nvoc_init_funcTable_OBJVASPACE(OBJVASPACE *pThis) {
     __nvoc_init_funcTable_OBJVASPACE_1(pThis);
 }

@@ -33,6 +33,7 @@
 #include "nvstatus.h"
 
 typedef struct OBJGPU OBJGPU;
+typedef struct _API_SECURITY_INFO API_SECURITY_INFO;
 
 typedef struct GMCAPI_CONTEXT
 {
@@ -45,6 +46,13 @@ typedef struct GMCAPI_CONTEXT
     // The GPU this GMCAPI is tied to
     //
     OBJGPU * const pGpu;
+    //
+    // The GFID that the call is being targetted to.  For calls into
+    // GSP-RM this is inferred from the source of the call.  For calls
+    // from GSP-RM to CPU-RM (generally for GMC events) it is set up
+    // by caller.
+    //
+    const NvU32 gfid;
     //
     // Command ID of the API being called.
     // Useful if the same handler function is used for multiple APIs
@@ -99,6 +107,17 @@ typedef struct GMCAPI_DYNAMIC { NvU8 x[0x10000008]; } GMCAPI_DYNAMIC;
 NvBool gmcapiIsValidNumericId(NvU32 id);
 NV_STATUS gmcapiDispatch(GMCAPI_CONTEXT *pCtx);
 
+//
+// gmcapiDispatchLocal: dispatch a GMCAPI command using the local GPU (g_pGpu).
+// This avoids callers needing to reference g_pGpu directly, which can cause
+// LTO type mismatches when compiled in different GSP task contexts.
+//
+NV_STATUS gmcapiDispatchLocal(NvU32 commandId,
+                              const void *pInParams, NvLength inParamSize,
+                              void *pOutParams, NvLength maxOutParamSize,
+                              NvLength *pOutParamSize, NV_STATUS *pGmcStatus,
+                              API_SECURITY_INFO *pSecInfo);
+
 // TODO: Avoid handler lookup costs if cmd is known at compile time
 static NV_INLINE NV_STATUS gmcapiCommand
 (
@@ -115,6 +134,7 @@ static NV_INLINE NV_STATUS gmcapiCommand
 
     GMCAPI_CONTEXT ctx = {
         .pGpu = pGpu,
+        .gfid = 0 /* GPU_GFID_PF */,
         .command = cmd,
         .inParamSize = inParamSize,
         .pInParams = pInParams,
@@ -129,4 +149,30 @@ static NV_INLINE NV_STATUS gmcapiCommand
     }
     return status;
 }
+
+static NV_INLINE NV_STATUS gmcapiEvent
+(
+    OBJGPU *pGpu,
+    NvU32 cmd,
+    NvU32 gfid,
+    const void *pInParams,
+    NvLength inParamSize
+)
+{
+    if (inParamSize >= sizeof(GMCAPI_NONE))
+        return NV_ERR_GMCAPI_REQUEST_SIZE_TOO_LARGE;
+
+    GMCAPI_CONTEXT ctx = {
+        .pGpu = pGpu,
+        .gfid = gfid,
+        .command = cmd,
+        .inParamSize = inParamSize,
+        .pInParams = pInParams,
+        .maxOutParamSize = 0,
+        .pOutParams = NULL,
+        .flags = 0  // Filled in by gmcapiDispatch
+    };
+    return gmcapiDispatch(&ctx);
+}
+
 #endif // _GMCAPI_IMPL_H_

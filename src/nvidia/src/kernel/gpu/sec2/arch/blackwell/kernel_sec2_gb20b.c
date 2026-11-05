@@ -1015,6 +1015,10 @@ ksec2PrepareBootCommands_GB20B
         portMemSet(pKernelSec2->pCotPayload, 0, sizeof(NVDM_PAYLOAD_COT));
     }
 
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                        (pKernelSec2->pCotPayload == NULL) ? NV_ERR_INVALID_STATE : NV_OK,
+                        failed);
+
     pKernelSec2->pCotPayload->version = pKernelSec2->cotPayloadVersion;
     pKernelSec2->pCotPayload->size = sizeof(NVDM_PAYLOAD_COT);
 

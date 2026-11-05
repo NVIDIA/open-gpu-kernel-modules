@@ -42,6 +42,8 @@
 
 #include "gpu/conf_compute/conf_compute.h"
 
+#include "gpu/tdisp/tdisp_mgr.h"
+
 #include "gpu/oob/kernel_oob.h"
 
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
@@ -114,6 +116,23 @@ kgspGetSignatureSectionNamePrefix_GB100
     {
         return GSP_CC_SIGNATURE_SECTION_NAME_PREFIX;
     }
+    if (gpuIsBaremetalSecureAiEnabled(pGpu))
+    {
+        return GSP_CC_SIGNATURE_SECTION_NAME_PREFIX;
+    }
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    // CC is not enabled at this point, check if NVLE standalone mode is allowed
+    if (pKernelNvlink != NULL &&
+        knvlinkIsNvleStandaloneModeEnabled(pGpu, pKernelNvlink))
+    {
+        return GSP_CC_SIGNATURE_SECTION_NAME_PREFIX;
+    }
+
+    TdispMgr *pTdispMgr = GPU_GET_TDISP_MGR(pGpu);
+    if (pTdispMgr != NULL && pTdispMgr->getProperty(pTdispMgr, PDB_PROP_TDISPMGR_TDISP_ENABLED))
+    {
+        return kgspGetTdispSignatureSectionNamePrefix_HAL(pGpu, pKernelGsp);
+    }
 
     return GSP_SIGNATURE_SECTION_NAME_PREFIX;
 }
@@ -137,6 +156,21 @@ kgspGetGspRmBootUcodeStorage_GB100
     {
         bLoadCcProfile = NV_TRUE;
     }
+    if (!bLoadCcProfile && gpuIsBaremetalSecureAiEnabled(pGpu))
+    {
+        bLoadCcProfile = NV_TRUE;
+    }
+
+    // CC is not enabled at this point, check if NVLE without CC is enabled
+    if (!bLoadCcProfile)
+    {
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+        if (pKernelNvlink != NULL &&
+            knvlinkIsNvleStandaloneModeEnabled(pGpu, pKernelNvlink))
+        {
+            bLoadCcProfile = NV_TRUE;
+        }
+    }
 
     if (bLoadCcProfile)
     {
@@ -157,12 +191,52 @@ kgspGetGspRmBootUcodeStorage_GB100
         return;
     }
 
+    {
+        TdispMgr *pTdispMgr = GPU_GET_TDISP_MGR(pGpu);
+        if (pTdispMgr != NULL && pTdispMgr->getProperty(pTdispMgr, PDB_PROP_TDISPMGR_TDISP_ENABLED))
+        {
+            const BINDATA_ARCHIVE *pBinArchiveConcatenatedFMCDesc = kgspGetBinArchiveConcatenatedFMCDescTdisp_HAL(pKernelGsp);
+            const BINDATA_ARCHIVE *pBinArchiveConcatenatedFMC     = kgspGetBinArchiveConcatenatedFMCTdisp_HAL(pKernelGsp);
+
+            if (kgspIsDebugModeEnabled(pGpu, pKernelGsp))
+            {
+                *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMC, BINDATA_LABEL_UCODE_IMAGE_DBG);
+                *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMCDesc, BINDATA_LABEL_UCODE_DESC_DBG);
+            }
+            else
+            {
+                *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMC, BINDATA_LABEL_UCODE_IMAGE_PROD);
+                *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMCDesc, BINDATA_LABEL_UCODE_DESC_PROD);
+
+                if (*ppBinStorageImage == NULL || *ppBinStorageDesc == NULL)
+                {
+                    // GB100 does not support TDISP on prod board yet.
+                    NV_ASSERT_FAILED("TDISP not supported on prod board yet.\n");
+                    *ppBinStorageImage = NULL;
+                    *ppBinStorageDesc  = NULL;
+                }
+            }
+
+            return;
+        }
+    }
+
     KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
     if (pKernelFsp != NULL)
     {
     }
 
     kgspGetGspRmBootUcodeStorage_GA102(pGpu, pKernelGsp, ppBinStorageImage, ppBinStorageDesc);
+}
+
+const char*
+kgspGetTdispSignatureSectionNamePrefix_GB100
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    return GSP_SPDM_LITE_SIGNATURE_SECTION_NAME_PREFIX;
 }
 
 /*!
@@ -362,8 +436,7 @@ kgspIsWpr2Up_GB100
 {
     NvU32 data = GPU_REG_RD32(pGpu, NV_HUBMMU0_PRI_BASE + NV_HUBMMU_PRI_MMU_WPR2_ADDR_HI);
     NvU32 wpr2HiVal = DRF_VAL(_HUBMMU, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
-    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
-    if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+    if (gpuIsCCFeatureEnabled(pGpu) || gpuIsBaremetalSecureAiEnabled(pGpu))
     {
         //
         // Due to BAR0 decoupler, we may not be able to read WPR2 MMU regs.

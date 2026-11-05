@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -63,7 +63,12 @@ subdeviceCtrlCmdMcGetArchInfo_IMPL
         pArchInfoParams->architecture = pGpu->chipInfo.pmcBoot42.arch;
         pArchInfoParams->implementation = pGpu->chipInfo.pmcBoot42.impl;
         pArchInfoParams->revision = (pGpu->chipInfo.pmcBoot42.majorRev << 4) | pGpu->chipInfo.pmcBoot42.minorRev;
-        pArchInfoParams->subRevision = gpuGetChipSubRev_HAL(pGpu);
+        //
+        // Read cached value (warmed in gpuStatePostLoad). Must NOT call
+        // gpuGetChipSubRev_HAL here — NO_GPUS_ACCESS forbids HW access and on
+        // monolithic the HAL reaches NV_FUSE_ZB_OPT_SUBREVISION via fuseReadZB.
+        //
+        pArchInfoParams->subRevision = pGpu->chipInfo.chipSubRev;
     }
 
     return NV_OK;

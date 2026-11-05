@@ -48,7 +48,13 @@
 
 #define portUtilGetReturnAddress() (NvUPtr)__builtin_return_address(0)
 
+#if defined(GSPRM_HWASAN_ENABLE) && !defined(__clang__)
+// GCC only permits no_sanitize attributes on functions, while NVOC uses this
+// annotation on both functions and data declarations.
+#define NVPORT_ATTRIBUTE_NO_ASAN
+#else
 #define NVPORT_ATTRIBUTE_NO_ASAN __attribute__((no_sanitize("address"), no_sanitize("hwaddress")))
+#endif
 #ifdef __clang__
 #define NVPORT_ATTRIBUTE_NO_COVSAN __attribute__((no_sanitize("coverage")))
 #else
@@ -160,6 +166,15 @@ PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter(void)
 {
     NvU64 ts = 0;
     __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r" (ts));
+    return ts;
+}
+#define portUtilExReadTimestampCounter_SUPPORTED 1
+
+#elif NVCPU_IS_RISCV64 && !defined(NV_MODS) && !NVOS_IS_LIBOS
+PORT_UTIL_INLINE NvU64 portUtilExReadTimestampCounter(void)
+{
+    NvU64 ts = 0;
+    __asm__ __volatile__ ("rdcycle %0" : "=r" (ts));
     return ts;
 }
 #define portUtilExReadTimestampCounter_SUPPORTED 1

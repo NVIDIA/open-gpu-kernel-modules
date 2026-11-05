@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -119,6 +119,7 @@ struct RsClient {
     NvBool bDisabled;
     NvBool bHighPriorityFreeDone;
     RsRefMap resourceMap;
+    struct PORT_MEM_ALLOCATOR *pAllocator;
     AccessBackRefList accessBackRefList;
     NvHandle handleRangeStart;
     NvHandle handleRangeSize;
@@ -459,12 +460,11 @@ MAKE_INTRUSIVE_LIST(RsDisabledClientList, RsClient, disabledClientNode);
  * @param[in] pClient
  * @param[in] pScopeRef Restrict the iteration based on this reference [optional]
  * @param[in] internalClassId Only iterate over resources with this class id [optional]
- * @param[in] type RS_ITERATE_CHILDREN, RS_ITERATE_DESCENDANTS, RS_ITERATE_CACHED, RS_ITERATE_DEPENDANTS
+ * @param[in] type RS_ITERATE_CHILDREN, RS_ITERATE_DESCENDANTS
  * @param[in] bExactMatch If true, internalClassId must match exactly; if false, also match classes derived from the internalClassId
  *
  * @note If type=RS_ITERATE_CHILDREN, pScopeRef will restrict iteration to children of the scope ref
  * @note If type=RS_ITERATE_DESCENDANTS, pScopeRef will restrict iteration to descendants of the scope ref
- * @note If type=RS_ITERATE_CACHED, pScopeRef will restrict iteration to references cached by the scope ref
  */
 RS_ITERATOR clientRefIter(struct RsClient *pClient, RsResourceRef *pScopeRef, NvU32 internalClassId, RS_ITER_TYPE type, NvBool bExactMatch);
 
@@ -529,10 +529,9 @@ NV_STATUS clientUnmapResourceRefMappings(struct RsClient *pClient, CALL_CONTEXT 
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__RsClientResource;
 struct NVOC_METADATA__RsResource;
-struct NVOC_VTABLE__RsClientResource;
 
 
 struct RsClientResource {
@@ -556,33 +555,10 @@ struct RsClientResource {
 };
 
 
-// Vtable with 18 per-class function pointers
-struct NVOC_VTABLE__RsClientResource {
-    NvBool (*__clientresCanCopy__)(struct RsClientResource * /*this*/);  // virtual inherited (res) base (res)
-    NV_STATUS (*__clientresIsDuplicate__)(struct RsClientResource * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (res)
-    void (*__clientresPreDestruct__)(struct RsClientResource * /*this*/);  // virtual inherited (res) base (res)
-    NV_STATUS (*__clientresControl__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
-    NV_STATUS (*__clientresControlFilter__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
-    NV_STATUS (*__clientresControlSerialization_Prologue__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
-    void (*__clientresControlSerialization_Epilogue__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
-    NV_STATUS (*__clientresControl_Prologue__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
-    void (*__clientresControl_Epilogue__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
-    NV_STATUS (*__clientresMap__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (res) base (res)
-    NV_STATUS (*__clientresUnmap__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (res) base (res)
-    NvBool (*__clientresIsPartialUnmapSupported__)(struct RsClientResource * /*this*/);  // inline virtual inherited (res) base (res) body
-    NV_STATUS (*__clientresMapTo__)(struct RsClientResource * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (res)
-    NV_STATUS (*__clientresUnmapFrom__)(struct RsClientResource * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (res)
-    NvU32 (*__clientresGetRefCount__)(struct RsClientResource * /*this*/);  // virtual inherited (res) base (res)
-    NvBool (*__clientresAccessCallback__)(struct RsClientResource * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (res) base (res)
-    NvBool (*__clientresShareCallback__)(struct RsClientResource * /*this*/, struct RsClient *, RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (res) base (res)
-    void (*__clientresAddAdditionalDependants__)(struct RsClient *, struct RsClientResource * /*this*/, RsResourceRef *);  // virtual inherited (res) base (res)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__RsClientResource {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__RsResource metadata__RsResource;
-    const struct NVOC_VTABLE__RsClientResource vtable;
 };
 
 #ifndef __nvoc_class_id_RsClientResource
@@ -658,75 +634,75 @@ void clientresDestruct_IMPL(struct RsClientResource *pClientRes);
 
 // Dispatch functions
 static inline NvBool clientresCanCopy_DISPATCH(struct RsClientResource *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresCanCopy__(pResource);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS clientresIsDuplicate_DISPATCH(struct RsClientResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void clientresPreDestruct_DISPATCH(struct RsClientResource *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__clientresPreDestruct__(pResource);
+    pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS clientresControl_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS clientresControlFilter_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS clientresControlSerialization_Prologue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void clientresControlSerialization_Epilogue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__clientresControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS clientresControl_Prologue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void clientresControl_Epilogue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__clientresControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS clientresMap_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS clientresUnmap_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool clientresIsPartialUnmapSupported_DISPATCH(struct RsClientResource *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS clientresMapTo_DISPATCH(struct RsClientResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS clientresUnmapFrom_DISPATCH(struct RsClientResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 clientresGetRefCount_DISPATCH(struct RsClientResource *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresGetRefCount__(pResource);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline NvBool clientresAccessCallback_DISPATCH(struct RsClientResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool clientresShareCallback_DISPATCH(struct RsClientResource *pResource, struct RsClient *pInvokingClient, RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_metadata_ptr->vtable.__clientresShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline void clientresAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct RsClientResource *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__clientresAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions
@@ -754,23 +730,40 @@ struct RS_CLIENT_FREE_PARAMS_INTERNAL
 };
 
 /**
- * Return an iterator to a resource reference multi-map
- * @param[in] pIndex The multi-map to iterate
- * @param[in] index Return only the references belonging to this index
+ * Return an iterator to a resource reference's children of a given class.
+ *
+ * Returns an empty iterator if the reference has no children of that class.
+ *
+ * @note This function is required over just mapIterRange since mapIterRange
+ *       has insufficient error checking to handle the cases when mapFindGEQ
+ *       and/or mapFindLEQ return NULL or members of a different class.
+ *
+ * @param[in] pParentRef The reference whose children are iterated
+ * @param[in] internalClassId Return only children of this class
  */
-RsIndexIter indexRefIter(RsIndex *pIndex, NvU32 index);
+RsRefChildMapIter childRefIter(RsResourceRef *pParentRef, NvU32 internalClassId);
 
 /**
- * Return an iterator to all resource references in a multi-map
- * @param[in] pIndex The multi-map to iterate
+ * Return an iterator to all of a resource reference's children
+ * @param[in] pParentRef The reference whose children are iterated
  */
-RsIndexIter indexRefIterAll(RsIndex *pIndex);
+RsRefChildMapIter childRefIterAll(RsResourceRef *pParentRef);
 
 /**
- * Get the next iterator in a resource reference multi-map
+ * Get the next iterator in a child reference map
  * @param[in] pIt Iterator
  */
-NvBool indexRefIterNext(RsIndexIter *pIt);
+NvBool childRefIterNext(RsRefChildMapIter *pIt);
+
+/**
+ * Return a reference's first child of a given class, in handle order.
+ *
+ * Returns NULL if the reference has no children of that class.
+ *
+ * @param[in] pParentRef The reference whose children are searched
+ * @param[in] internalClassId The class to search for
+ */
+RsResourceRef *childRefFindClass(RsResourceRef *pParentRef, NvU32 internalClassId);
 
 /* @} */
 

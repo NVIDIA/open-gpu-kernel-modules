@@ -1926,7 +1926,6 @@ enum NvKmsAllocDeviceStatus nvRmAllocDisplays(NVDevEvoPtr pDevEvo)
     NVDispEvoPtr pDispEvo;
     unsigned int sd;
     enum NvKmsAllocDeviceStatus status = NVKMS_ALLOC_DEVICE_STATUS_FATAL_ERROR;
-    NvU32 totalDispNumSubDevices = 0;
 
     if (!QueryGpuCapabilities(pDevEvo)) {
         nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
@@ -2030,19 +2029,6 @@ enum NvKmsAllocDeviceStatus nvRmAllocDisplays(NVDevEvoPtr pDevEvo)
     if (NoValidDisplays(pDevEvo)) {
         status = NVKMS_ALLOC_DEVICE_STATUS_NO_HARDWARE_AVAILABLE;
         goto fail;
-    }
-
-    /*
-     * The number of numSubDevices across disps should equal the
-     * device's numSubDevices.
-     */
-    totalDispNumSubDevices = 0;
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-        totalDispNumSubDevices++;
-    }
-
-    if (totalDispNumSubDevices != pDevEvo->numSubDevices) {
-        nvAssert(!"Number of disps' subdevices does not match device's");
     }
 
     /*

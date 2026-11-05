@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -72,6 +72,9 @@ static NvBool ConstructModeTimingsMetaData(
     NVDpyEvoRec *pDpyEvo,
     const struct NvKmsModeValidationParams *pParams,
     struct NvKmsMode *pKmsMode,
+    const NvBool yuv420ModeSpecified,
+    const enum NvYuv420Mode yuv420ModeIn,
+    enum NvYuv420Mode *pYuv420ModeOut,
     EvoValidateModeFlags *pFlags,
     NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
     NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
@@ -79,6 +82,7 @@ static NvBool ConstructModeTimingsMetaData(
 
 static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
                            const struct NvKmsMode *pKmsMode,
+                           const enum NvYuv420Mode yuv420Mode,
                            const EvoValidateModeFlags *flags,
                            const struct NvKmsModeValidationParams *pParams,
                            const struct NvKmsDpyOutputColorParams *pDpyOutputColorParams,
@@ -152,12 +156,22 @@ nvValidateModeEvo(NVDpyEvoPtr pDpyEvo,
         .timings = pRequest->mode.timings,
     };
     EvoValidateModeFlags evoFlags;
+    /*
+     * The validate-IOCTL request has no yuv420Mode sideband (only the
+     * set-mode request carries NvKmsSetModeOneHeadRequest::yuv420Mode);
+     * pass specified=FALSE so ConstructModeTimingsMetaData computes the
+     * decision via GetYUV420Value rather than cross-checking it.
+     */
+    enum NvYuv420Mode decidedYuv420Mode = NV_YUV420_MODE_NONE;
 
     nvkms_memset(pReply, 0, sizeof(*pReply));
 
     if (!ConstructModeTimingsMetaData(pDpyEvo,
                                       &pRequest->modeValidation,
                                       &kmsMode,
+                                      FALSE /* yuv420ModeSpecified */,
+                                      NV_YUV420_MODE_NONE /* yuv420ModeIn */,
+                                      &decidedYuv420Mode,
                                       &evoFlags,
                                       NULL /* pInfoFrameCtrl */,
                                       NULL /* pVSInfoFrameCtrl */,
@@ -171,12 +185,15 @@ nvValidateModeEvo(NVDpyEvoPtr pDpyEvo,
 
     pReply->valid = ValidateMode(pDpyEvo,
                                  &kmsMode,
+                                 decidedYuv420Mode,
                                  &evoFlags,
                                  &pRequest->modeValidation,
                                  &pRequest->dpyOutputColor,
                                  &infoString,
                                  &pReply->validSyncs,
                                  &pReply->modeUsage);
+
+    pReply->yuv420Mode = decidedYuv420Mode;
 
     if (infoString.length > 0) {
         /* Add 1 for the final '\0' */
@@ -316,6 +333,19 @@ static enum NvYuv420Mode GetYUV420Value(
 }
 
 
+static NvBool IsValidYuv420Mode(const enum NvYuv420Mode yuv420Mode)
+{
+    switch (yuv420Mode) {
+    case NV_YUV420_MODE_NONE:
+    case NV_YUV420_MODE_HW:
+    case NV_YUV420_MODE_SW:
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+
 /*!
  * Scan through the EDID-specified modes, counting each one.  If the
  * count reaches requestedModeIndex, then validate that mode.
@@ -414,12 +444,14 @@ ValidateModeIndexEdid(NVDpyEvoPtr pDpyEvo,
             flags.dscPassThrough = TRUE;
         }
 
-        kmsMode.timings.yuv420Mode = GetYUV420Value(pDpyEvo, pParams, &timing);
+        const enum NvYuv420Mode yuv420Mode =
+            GetYUV420Value(pDpyEvo, pParams, &timing);
 
         /* validate the mode */
 
         pReply->valid = ValidateMode(pDpyEvo,
                                      &kmsMode,
+                                     yuv420Mode,
                                      &flags,
                                      pParams,
                                      pDpyOutputColorParams,
@@ -460,6 +492,7 @@ ValidateModeIndexEdid(NVDpyEvoPtr pDpyEvo,
                 pReply->hdmi3DAvailable =
                     ValidateMode(pDpyEvo,
                                  &pWorkArea->stereoKmsMode,
+                                 yuv420Mode,
                                  &flags,
                                  pParams,
                                  pDpyOutputColorParams,
@@ -505,17 +538,16 @@ ValidateModeIndexEdid(NVDpyEvoPtr pDpyEvo,
          * performed again.
          */
         if (flags.patchedStereoTimings) {
-            enum NvYuv420Mode yuv420Mode = kmsMode.timings.yuv420Mode;
             hdmi3D = kmsMode.timings.hdmi3D;
 
             NVT_TIMINGtoNvModeTimings(&pDpyEvo->parsedEdid.info.timing[i],
                                       &kmsMode.timings);
-            kmsMode.timings.yuv420Mode = yuv420Mode;
 
             nvKmsUpdateNvModeTimingsForHdmi3D(&kmsMode.timings, hdmi3D);
         }
 
         pReply->mode.timings = kmsMode.timings;
+        pReply->yuv420Mode = yuv420Mode;
         pReply->source = NvKmsModeSourceEdid;
 
         if (description != NULL) {
@@ -560,8 +592,7 @@ static const NvModeTimings VesaModesTable[] = {
        .interlaced = FALSE, .doubleScan = FALSE,         \
        .hSyncPos = _hSyncPos, .hSyncNeg = _hSyncNeg,     \
        .vSyncPos = _vSyncPos, .vSyncNeg = _vSyncNeg,     \
-       .hdmi3D = FALSE,                                  \
-       .yuv420Mode = NV_YUV420_MODE_NONE, }
+       .hdmi3D = FALSE, }
 
     // VESA Standard 640x350 @ 85Hz
     VESA_MODES_TABLE_ENTRY(
@@ -850,9 +881,13 @@ ValidateModeIndexVesa(NVDpyEvoPtr pDpyEvo,
         nvkms_memset(&flags, 0, sizeof(flags));
         flags.source = NvKmsModeSourceVesa;
 
-        /* is this mode valid? */
+        /*
+         * VESA builtin modes are always non-YUV420; pass NONE explicitly
+         * through ValidateMode and report NONE on the reply.
+         */
         pReply->valid = ValidateMode(pDpyEvo,
                                      &kmsMode,
+                                     NV_YUV420_MODE_NONE,
                                      &flags,
                                      pParams,
                                      pDpyOutputColorParams,
@@ -861,6 +896,7 @@ ValidateModeIndexVesa(NVDpyEvoPtr pDpyEvo,
                                      &pReply->modeUsage);
 
         pReply->mode.timings = kmsMode.timings;
+        pReply->yuv420Mode = NV_YUV420_MODE_NONE;
         pReply->source = NvKmsModeSourceVesa;
 
         nvBuildModeName(VesaModesTable[i].hVisible,
@@ -893,6 +929,48 @@ static NvBool IsVesaMode(const NvModeTimings *pModeTimings,
     }
 
     return FALSE;
+}
+
+static NvBool IsDisplayPortFailSafeMode(
+    const NVDpyEvoRec *pDpyEvo,
+    const NvModeTimings *pModeTimings,
+    const EvoValidateModeFlags *flags,
+    const struct NvKmsModeValidationParams *pParams)
+{
+    const NvBool ignoreRRx1k =
+        ((pParams->overrides &
+          NVKMS_MODE_VALIDATION_NO_RRX1K_CHECK) != 0x0);
+
+    if (flags->source != NvKmsModeSourceVesa) {
+        return FALSE;
+    }
+
+    if (!nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo)) {
+        return FALSE;
+    }
+
+    /*
+     * DisplayPort requires the source to support this fail-safe mode even
+     * when it is not advertised in the EDID.
+     */
+    return ((pModeTimings->pixelClockHz == 25175000) &&
+            (ignoreRRx1k || (pModeTimings->RRx1k == 59940)) &&
+            (pModeTimings->hVisible == 640) &&
+            (pModeTimings->hSyncStart == 656) &&
+            (pModeTimings->hSyncEnd == 752) &&
+            (pModeTimings->hTotal == 800) &&
+            (pModeTimings->hSkew == 0) &&
+            (pModeTimings->vVisible == 480) &&
+            (pModeTimings->vSyncStart == 490) &&
+            (pModeTimings->vSyncEnd == 492) &&
+            (pModeTimings->vTotal == 525) &&
+            (pModeTimings->interlaced == FALSE) &&
+            (pModeTimings->doubleScan == FALSE) &&
+            (pModeTimings->hSyncPos == FALSE) &&
+            (pModeTimings->hSyncNeg == TRUE) &&
+            (pModeTimings->vSyncPos == FALSE) &&
+            (pModeTimings->vSyncNeg == TRUE) &&
+            (pModeTimings->hdmi3D == FALSE));
 }
 
 
@@ -1076,6 +1154,7 @@ RangesToString(const struct NvKmsModeValidationFrequencyRanges *pRanges,
 static NvBool ValidateModeTimings(
     NVDpyEvoPtr                             pDpyEvo,
     const struct NvKmsMode                 *pKmsMode,
+    const enum NvYuv420Mode                 yuv420Mode,
     const EvoValidateModeFlags             *flags,
     const struct NvKmsModeValidationParams *pParams,
     NVEvoInfoStringPtr                      pInfoString,
@@ -1088,6 +1167,8 @@ static NvBool ValidateModeTimings(
     const NvBool is3DVisionStereo = nvIs3DVisionStereoEvo(pParams->stereoMode);
     const char *modeName = pKmsMode->name;
     const NvModeTimings *pModeTimings = &pKmsMode->timings;
+    const NvBool isDPFailSafeMode =
+        IsDisplayPortFailSafeMode(pDpyEvo, pModeTimings, flags, pParams);
     char localModeName[NV_MAX_MODE_NAME_LEN];
 
     if (modeName[0] == '\0') {
@@ -1108,7 +1189,8 @@ static NvBool ValidateModeTimings(
     }
 
     if ((flags->source != NvKmsModeSourceEdid) &&
-        (overrides & NVKMS_MODE_VALIDATION_ALLOW_NON_EDID_MODES) == 0) {
+        (overrides & NVKMS_MODE_VALIDATION_ALLOW_NON_EDID_MODES) == 0 &&
+        !isDPFailSafeMode) {
 
         NvBool continuousFrequency = TRUE;
 
@@ -1221,10 +1303,15 @@ static NvBool ValidateModeTimings(
 
     /* check against the EDID's max pclk */
 
-    if ((overrides & NVKMS_MODE_VALIDATION_NO_EDID_MAX_PCLK_CHECK) == 0) {
+    /*
+     * DisplayPort requires the fail-safe mode to be available even when it is
+     * not advertised by EDID, so do not reject it against EDID-derived limits.
+     */
+    if (((overrides & NVKMS_MODE_VALIDATION_NO_EDID_MAX_PCLK_CHECK) == 0) &&
+        !isDPFailSafeMode) {
 
         NvU32 realPixelClock = HzToKHz(pModeTimings->pixelClockHz);
-        if (pModeTimings->yuv420Mode != NV_YUV420_MODE_NONE) {
+        if (yuv420Mode != NV_YUV420_MODE_NONE) {
             realPixelClock /= 2;
         }
 
@@ -1290,7 +1377,7 @@ static NvBool ValidateModeTimings(
         const NvU32 maxWidth = pDevEvo->caps.maxRasterWidth;
 
         NvU16 realHTotal = pModeTimings->hTotal;
-        if (pModeTimings->yuv420Mode == NV_YUV420_MODE_SW) {
+        if (yuv420Mode == NV_YUV420_MODE_SW) {
             realHTotal /= 2;
         }
 
@@ -1346,7 +1433,16 @@ static NvBool ValidateModeTimings(
                  * 336963); print a warning, but continue.
                  */
 
-                if ((flags->source == NvKmsModeSourceEdid) &&
+                if (isDPFailSafeMode &&
+                    (pValidSyncs->horizSyncHz.source ==
+                     NVKMS_MODE_VALIDATION_FREQUENCY_RANGE_SOURCE_EDID)) {
+
+                    nvEvoLogInfoString(pInfoString,
+                        "Ignoring EDID valid HorizSync range (%s kHz) for "
+                        "DisplayPort fail-safe mode \"%s\".",
+                        rangeString, modeName);
+
+                } else if ((flags->source == NvKmsModeSourceEdid) &&
                     (pValidSyncs->horizSyncHz.source ==
                      NVKMS_MODE_VALIDATION_FREQUENCY_RANGE_SOURCE_EDID) &&
                     ((overrides &
@@ -1413,7 +1509,16 @@ static NvBool ValidateModeTimings(
                  * bug 336963); print a warning, but continue.
                  */
 
-                if ((flags->source == NvKmsModeSourceEdid) &&
+                if (isDPFailSafeMode &&
+                    (pValidSyncs->vertRefreshHz1k.source ==
+                     NVKMS_MODE_VALIDATION_FREQUENCY_RANGE_SOURCE_EDID)) {
+
+                    nvEvoLogInfoString(pInfoString,
+                        "Ignoring EDID valid VertRefresh range (%s Hz) for "
+                        "DisplayPort fail-safe mode \"%s\".",
+                        rangeString, modeName);
+
+                } else if ((flags->source == NvKmsModeSourceEdid) &&
                     (pValidSyncs->vertRefreshHz1k.source ==
                      NVKMS_MODE_VALIDATION_FREQUENCY_RANGE_SOURCE_EDID) &&
                     ((overrides &
@@ -1613,6 +1718,7 @@ static NvBool ValidateDpyOutputColor(
  */
 static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
                            const struct NvKmsMode *pKmsMode,
+                           const enum NvYuv420Mode yuv420Mode,
                            const EvoValidateModeFlags *flags,
                            const struct NvKmsModeValidationParams *pParams,
                            const struct NvKmsDpyOutputColorParams *pDpyOutputColorParams,
@@ -1669,7 +1775,7 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
 
     LogModeValidationBegin(pInfoString, pModeTimings);
 
-    if (!ValidateModeTimings(pDpyEvo, pKmsMode, flags, pParams,
+    if (!ValidateModeTimings(pDpyEvo, pKmsMode, yuv420Mode, flags, pParams,
                              pInfoString, pValidSyncs)) {
         goto done;
     }
@@ -1678,7 +1784,7 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
             "DSCPassThrough: %s", flags->dscPassThrough ? "Yes" : "No");
 
     if (!GetDpyOutputColor(pDpyEvo,
-                           pModeTimings->yuv420Mode,
+                           yuv420Mode,
                            pDpyOutputColorParams,
                            &dpyColor)) {
         LogModeValidationEnd(pDispEvo, pInfoString, "Failed to select output color");
@@ -1706,6 +1812,7 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
 
     if (!nvConstructHwModeTimingsEvo(pDpyEvo,
                                      pKmsMode,
+                                     yuv420Mode,
                                      NULL, /* pViewPortSizeIn */
                                      NULL, /* pViewPortOut */
                                      flags->dscPassThrough,
@@ -1728,6 +1835,7 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
         do {
             if (nvHdmiFrlQueryConfigOneColorFormatAndBpc(pDpyEvo,
                                                         &pKmsMode->timings,
+                                                        yuv420Mode,
                                                         pTimingsEvo,
                                                         &dpyColor,
                                                         b2Heads1Or,
@@ -1735,7 +1843,7 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
                                                         pHdmiFrlConfig,
                                                         pDscInfo)) {
                 foundFrlConfig = TRUE;
-                break; 
+                break;
             }
         } while (nvDowngradeColorFormatAndBpc(pDpyEvo, &supportedColorFormats,
                                               pDpyOutputColorParams->formatSpecified,
@@ -1861,22 +1969,34 @@ static NvBool NVT_TIMINGmatchesNvModeTimings
 
 /*!
  * Find the NVT_TIMING from the dpy's EDID that matches the pModeTimings.
+ *
+ * Some EDIDs advertise the same timings twice, once as RGB/YUV444 and once as
+ * YUV420.  When yuv420ModeSpecified is TRUE, yuv420ModeIn disambiguates those
+ * timing siblings and the match must satisfy the requested disposition.  When
+ * yuv420ModeSpecified is FALSE, the caller has no YUV420 commitment; choose
+ * the preferred matching timing and report its resolved disposition through
+ * pYuv420ModeOut.
  */
 const NVT_TIMING *nvFindEdidNVT_TIMING
 (
     const NVDpyEvoRec *pDpyEvo,
     const NvModeTimings *pModeTimings,
+    const NvBool yuv420ModeSpecified,
+    const enum NvYuv420Mode yuv420ModeIn,
+    enum NvYuv420Mode *pYuv420ModeOut,
     const struct NvKmsModeValidationParams *pParams
 )
 {
     const NVParsedEdidEvoRec *pParsedEdid = &pDpyEvo->parsedEdid;
     const NVT_HDMI_FORUM_INFO *pHdmiInfo = &pParsedEdid->info.hdmiForumInfo;
     NvModeTimings tmpModeTimings;
+    const NVT_TIMING *pPreferredTiming = NULL;
+    enum NvYuv420Mode preferredYuv420Mode = NV_YUV420_MODE_NONE;
     int match861stOnly;
     int i;
 
     if (!pDpyEvo->parsedEdid.valid) {
-        return NULL;
+        goto found;
     }
 
     /*
@@ -1899,13 +2019,6 @@ const NVT_TIMING *nvFindEdidNVT_TIMING
      */
     nvKmsUpdateNvModeTimingsForHdmi3D(&tmpModeTimings, FALSE);
 
-    /*
-     * The NVT_TIMINGs we compare against below won't have hdmi3D or
-     * yuv420 set; clear those flags in tmpModeTimings so that we can
-     * do a more meaningful comparison.
-     */
-    tmpModeTimings.yuv420Mode = NV_YUV420_MODE_NONE;
-
     for (; match861stOnly >= 0; match861stOnly--) {
         for (i = 0; i < pDpyEvo->parsedEdid.info.total_timings; i++) {
             const NVT_TIMING *pTiming = &pDpyEvo->parsedEdid.info.timing[i];
@@ -1916,19 +2029,65 @@ const NVT_TIMING *nvFindEdidNVT_TIMING
                 continue;
             }
 
-            if (NVT_TIMINGmatchesNvModeTimings(pTiming, &tmpModeTimings, pParams) &&
-                /*
-                 * Only consider the mode a match if the yuv420
-                 * configuration of pTiming would match pModeTimings.
-                 */
-                (pModeTimings->yuv420Mode ==
-                 GetYUV420Value(pDpyEvo, pParams, pTiming))) {
-                return pTiming;
+            if (NVT_TIMINGmatchesNvModeTimings(pTiming, &tmpModeTimings, pParams)) {
+                enum NvYuv420Mode yuv420Mode =
+                    GetYUV420Value(pDpyEvo, pParams, pTiming);
+
+                if (yuv420ModeSpecified) {
+                    if ((yuv420ModeIn == NV_YUV420_MODE_NONE) &&
+                            (yuv420Mode != NV_YUV420_MODE_NONE)) {
+                        continue;
+                    }
+
+                    if ((yuv420ModeIn == NV_YUV420_MODE_HW) &&
+                            (yuv420Mode != NV_YUV420_MODE_HW)) {
+                        continue;
+                    }
+
+                    if ((yuv420ModeIn == NV_YUV420_MODE_SW) &&
+                            (yuv420Mode == NV_YUV420_MODE_NONE)) {
+                        continue;
+                    }
+
+                    if ((yuv420ModeIn == NV_YUV420_MODE_SW) &&
+                            (yuv420Mode != NV_YUV420_MODE_NONE)) {
+                        yuv420Mode = NV_YUV420_MODE_SW;
+                    }
+
+                    pPreferredTiming = pTiming;
+                    preferredYuv420Mode = yuv420Mode;
+                    goto found;
+                }
+
+                {
+                    const NvBool preferredModeFound =
+                        pParams->preferYUV420 ?
+                            (yuv420Mode != NV_YUV420_MODE_NONE) :
+                            (yuv420Mode == NV_YUV420_MODE_NONE);
+
+                    if (preferredModeFound || (pPreferredTiming == NULL)) {
+                        pPreferredTiming = pTiming;
+                        preferredYuv420Mode = yuv420Mode;
+                    }
+
+                    if (preferredModeFound) {
+                        goto found;
+                    }
+                }
             }
+        }
+
+        if (!pParams->preferYUV420 && (pPreferredTiming != NULL)) {
+            goto found;
         }
     }
 
-    return NULL;
+found:
+    if (pYuv420ModeOut != NULL) {
+        *pYuv420ModeOut = preferredYuv420Mode;
+    }
+
+    return pPreferredTiming;
 }
 
 static void ConstructEmpInfoFrameCtrl(
@@ -1975,13 +2134,29 @@ static void ConstructVSInfoFrameCtrl(
 /*!
  * Construct mode-timing's meta data required for mode validation
  * logic. This meta data involves EvoValidateModeFlags, patched stereo
- * vision timings, etc.
+ * vision timings, etc.  Also resolves the head's YUV 4:2:0 disposition:
  *
- * \param[in]       pDpyEvo         The dpy for whom the mode is considered.
- * \param[in]       pParams         The NvKmsModeValidationParams.
- * \param[in/out]   pKmsMode        The NVKMS mode to be considered.
- * \param[out]      pFlags          The EvoValidateModeFlags
- * \param[out]      pInfoFrameCtrl  InfoFrame control
+ *   yuv420ModeSpecified=TRUE  -> Caller commits to a specific YUV 4:2:0
+ *                                disposition.  Cross-check yuv420ModeIn
+ *                                against HW capability and the EDID-derived
+ *                                disposition; reject on mismatch.
+ *                                decidedYuv420Mode = the
+ *                                caller's val on acceptance.
+ *   yuv420ModeSpecified=FALSE -> Auto-discover from EDID, preferring RGB
+ *                                first, then HW (if HW supports it),
+ *                                then SW; fall back to NONE for
+ *                                non-EDID modes.
+ *
+ * In both cases, *pYuv420ModeOut receives the decided value.
+ *
+ * \param[in]       pDpyEvo            The dpy for whom the mode is considered.
+ * \param[in]       pParams            The NvKmsModeValidationParams.
+ * \param[in/out]   pKmsMode           The NVKMS mode to be considered.
+ * \param[in]       yuv420ModeSpecified See above.
+ * \param[in]       yuv420ModeIn       See above; ignored when specified=FALSE.
+ * \param[out]      pYuv420ModeOut     See above; may be NULL.
+ * \param[out]      pFlags             The EvoValidateModeFlags
+ * \param[out]      pInfoFrameCtrl     InfoFrame control
  *
  * \return  Return TRUE on success with patched mode timings,
  *          EvoValidateModeFlags and infoFrame controls etc.; otherwise
@@ -1991,6 +2166,9 @@ static NvBool ConstructModeTimingsMetaData(
     NVDpyEvoRec *pDpyEvo,
     const struct NvKmsModeValidationParams *pParams,
     struct NvKmsMode *pKmsMode,
+    const NvBool yuv420ModeSpecified,
+    const enum NvYuv420Mode yuv420ModeIn,
+    enum NvYuv420Mode *pYuv420ModeOut,
     EvoValidateModeFlags *pFlags,
     NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
     NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
@@ -2004,14 +2182,22 @@ static NvBool ConstructModeTimingsMetaData(
     NvModeTimings modeTimings = pKmsMode->timings;
     const NVT_TIMING *pTiming;
 
+    if (pYuv420ModeOut != NULL) {
+        *pYuv420ModeOut = NV_YUV420_MODE_NONE;
+    }
+
+    if (yuv420ModeSpecified && !IsValidYuv420Mode(yuv420ModeIn)) {
+        return FALSE;
+    }
+
     nvkms_memset(&infoFrameCtrl, NVT_INFOFRAME_CTRL_DONTCARE,
                  sizeof(infoFrameCtrl));
 
     flags.source = NvKmsModeSourceUnknown;
 
     /* Is this an EDID mode? */
-    pTiming = nvFindEdidNVT_TIMING(pDpyEvo, &modeTimings, pParams);
-
+    pTiming = nvFindEdidNVT_TIMING(pDpyEvo, &modeTimings, yuv420ModeSpecified,
+                                   yuv420ModeIn, pYuv420ModeOut, pParams);
     if (pTiming != NULL) {
         NVT_TIMING timing = *pTiming;
         const NvBool is3DVisionStereo =
@@ -2032,18 +2218,9 @@ static NvBool ConstructModeTimingsMetaData(
              */
             NVT_TIMINGtoNvModeTimings(&timing, &modeTimings);
 
-            /* Restore the yuv420 and hdmi3D flags from the client's mode. */
-            modeTimings.yuv420Mode = pKmsMode->timings.yuv420Mode;
-
             /* Re-apply adjustments for hdmi3D. */
             nvKmsUpdateNvModeTimingsForHdmi3D(&modeTimings, pKmsMode->timings.hdmi3D);
 
-        }
-
-        /* Validate yuv420. */
-        if (modeTimings.yuv420Mode !=
-            GetYUV420Value(pDpyEvo, pParams, &timing)) {
-            return FALSE;
         }
 
         /* Validate hdmi3D. */
@@ -2091,6 +2268,10 @@ static NvBool ConstructModeTimingsMetaData(
     /* Otherwise, is this a VESA mode? */
 
     if (IsVesaMode(&modeTimings, pParams)) {
+        if (yuv420ModeSpecified && (yuv420ModeIn != NV_YUV420_MODE_NONE)) {
+            return FALSE;
+        }
+
         flags.source = NvKmsModeSourceVesa;
         goto done;
     }
@@ -2099,6 +2280,9 @@ static NvBool ConstructModeTimingsMetaData(
      * Otherwise, this must be a user-specified mode; no metadata changes
      * are needed.
      */
+    if (yuv420ModeSpecified && (yuv420ModeIn != NV_YUV420_MODE_NONE)) {
+        return FALSE;
+    }
 
 done:
     *pFlags = flags;
@@ -2117,38 +2301,39 @@ done:
 }
 
 /*!
- * Validate the NvKmsMode.
+ * Patch NvKmsMode and validate the resulting NvKmsMode.
  *
- * \param[in]   pDpyEvo      The dpy for whom the mode is considered.
- * \param[in]   pParams      The NvKmsModeValidationParams.
- * \param[in]   pKmsMode     The mode to be considered.
- * \param[out]  pTimingsEvo  The EVO mode timings to be programmed in hardware.
+ * \param[in]   pDpyEvo          The dpy for whom the mode is considered.
+ * \param[in]   pParams          The NvKmsModeValidationParams.
+ * \param[in,out] pKmsMode       The mode to be considered. On success, this is
+ *                               the metadata-patched mode.
+ * \param[out]  pYuv420ModeOut   The resolved YUV 4:2:0 disposition.
+ * \param[out]  pDscPassThrough  Whether the mode is DSC pass-through.
  *
- * \return  If the mode is valid, return TRUE and populate pTimingsEvo.
- *          If the mode is not valid, return FALSE.
+ * \return  If the metadata-patched mode is valid, return TRUE and populate
+ *          the requested outputs. If the mode is not valid, return FALSE.
  */
 NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
                                 const struct NvKmsModeValidationParams *pParams,
-                                const struct NvKmsMode *pKmsMode,
-                                const struct NvKmsSize *pViewPortSizeIn,
-                                const struct NvKmsRect *pViewPortOut,
-                                const NvBool colorFormatSpecified,
-                                const NvBool colorBpcSpecified,
-                                NVDpyAttributeColor *pDpyColor,
-                                NVHwModeTimingsEvo *pTimingsEvo,
+                                struct NvKmsMode *pKmsMode,
+                                const NvBool yuv420ModeSpecified,
+                                const enum NvYuv420Mode yuv420ModeIn,
+                                enum NvYuv420Mode *pYuv420ModeOut,
+                                NvBool *pDscPassThrough,
                                 NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl,
                                 NVT_VENDOR_SPECIFIC_INFOFRAME_CTRL *pVSInfoFrameCtrl,
                                 NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpInfoFrameCtrl)
 {
     EvoValidateModeFlags flags;
-    struct NvKmsMode kmsMode = *pKmsMode;
     struct NvKmsModeValidationValidSyncs dummyValidSyncs;
-
-    nvkms_memset(pTimingsEvo, 0, sizeof(*pTimingsEvo));
+    enum NvYuv420Mode decidedYuv420Mode = NV_YUV420_MODE_NONE;
 
     if (!ConstructModeTimingsMetaData(pDpyEvo,
                                       pParams,
-                                      &kmsMode,
+                                      pKmsMode,
+                                      yuv420ModeSpecified,
+                                      yuv420ModeIn,
+                                      &decidedYuv420Mode,
                                       &flags,
                                       pInfoFrameCtrl,
                                       pVSInfoFrameCtrl,
@@ -2158,6 +2343,7 @@ NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
 
     if (!ValidateModeTimings(pDpyEvo,
                              pKmsMode,
+                             decidedYuv420Mode,
                              &flags,
                              pParams,
                              &dummyInfoString,
@@ -2165,18 +2351,12 @@ NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
         return FALSE;
     }
 
-    if (!nvConstructHwModeTimingsEvo(pDpyEvo,
-                                     &kmsMode,
-                                     pViewPortSizeIn,
-                                     pViewPortOut,
-                                     flags.dscPassThrough,
-                                     colorFormatSpecified,
-                                     colorBpcSpecified,
-                                     pDpyColor,
-                                     pTimingsEvo,
-                                     pParams,
-                                     &dummyInfoString)) {
-        return FALSE;
+    if (pYuv420ModeOut != NULL) {
+        *pYuv420ModeOut = decidedYuv420Mode;
+    }
+
+    if (pDscPassThrough != NULL) {
+        *pDscPassThrough = flags.dscPassThrough;
     }
 
     return TRUE;

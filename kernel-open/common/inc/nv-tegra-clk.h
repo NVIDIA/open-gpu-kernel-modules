@@ -19,80 +19,18 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- */
- 
- #ifndef _NV_TEGRA_CLK_H_
- #define _NV_TEGRA_CLK_H_
+*/
 
- #include "nv.h"
+#ifndef _NV_TEGRA_CLK_H_
+#define _NV_TEGRA_CLK_H_
 
- struct nv_pci_tegra_devfreq_data {
-     const char *clk_name;
-     const char *icc_name;
-     const unsigned int gpc_fuse_field;
-     const TEGRASOC_DEVFREQ_CLK devfreq_clk;
- };
+#include "nv.h"
 
-static const struct nv_pci_tegra_devfreq_data tegra_devfreq_tables[][6] = {
-    {
-        {
-            .clk_name = "gpc0clk",
-            .icc_name = "gpu-write",
-            .gpc_fuse_field = BIT(0),
-            .devfreq_clk = TEGRASOC_DEVFREQ_CLK_GPC,
-        },
-        {
-            .clk_name = "gpc1clk",
-            .icc_name = "gpu-write",
-            .gpc_fuse_field = BIT(1),
-            .devfreq_clk = TEGRASOC_DEVFREQ_CLK_GPC,
-        },
-        {
-            .clk_name = "gpc2clk",
-            .icc_name = "gpu-write",
-            .gpc_fuse_field = BIT(2),
-            .devfreq_clk = TEGRASOC_DEVFREQ_CLK_GPC,
-        },
-        {
-            .clk_name = "nvdclk",
-            .icc_name = "video-write",
-            .devfreq_clk = TEGRASOC_DEVFREQ_CLK_NVD,
-        },
-        {
-            .clk_name = "sysclk"
-        },
-        {
-            .clk_name = "uprocclk"
-        },
-    },
-    {
-        {
-            .clk_name = "gpc0clk",
-            .icc_name = "gpu-write",
-            .gpc_fuse_field = BIT(0),
-            .devfreq_clk = TEGRASOC_DEVFREQ_CLK_GPC,
-        },
-        {
-            .clk_name = "gpc1clk",
-            .icc_name = "gpu-write",
-            .gpc_fuse_field = BIT(1),
-            .devfreq_clk = TEGRASOC_DEVFREQ_CLK_GPC,
-        },
-        {
-            .clk_name = "nvdclk",
-            .icc_name = "video-write",
-            .devfreq_clk = TEGRASOC_DEVFREQ_CLK_NVD,
-        },
-        {
-            .clk_name = "sysclk"
-        },
-        {
-            .clk_name = "uprocclk"
-        },
-        {
-            .clk_name = NULL
-        },
-    },
- };
+struct pci_dev;
 
- #endif /* _NV_TEGRA_CLK_H_ */
+#if defined(CONFIG_PM_DEVFREQ)
+int nv_pci_tegra_register_devfreq(struct pci_dev *pdev);
+void nv_pci_tegra_unregister_devfreq(struct pci_dev *pdev);
+#endif /* CONFIG_PM_DEVFREQ */
+
+#endif /* _NV_TEGRA_CLK_H_ */

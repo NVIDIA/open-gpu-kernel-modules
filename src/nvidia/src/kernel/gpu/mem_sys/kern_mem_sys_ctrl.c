@@ -725,11 +725,16 @@ _kmemsysGetFbInfos
             }
             case NV2080_CTRL_FB_INFO_INDEX_PROTECTED_MEM_SIZE_TOTAL_KB:
             {
-                if (gpuIsCCFeatureEnabled(pGpu))
+                NvBool bCprMemEnabled = gpuIsCCFeatureEnabled(pGpu);
+
+                bCprMemEnabled = bCprMemEnabled || gpuIsTdispFeatureEnabled(pGpu);
+
+                if (bCprMemEnabled)
                 {
                     if (bIsPmaEnabled)
                     {
-                        pmaGetTotalProtectedMemory(pHeap->pPmaObject, &bytesTotal);
+                            pmaGetTotalProtectedMemory(pHeap->pPmaObject, &bytesTotal);
+
                         NV_ASSERT(NvU64_HI32(bytesTotal >> 10) == 0);
                         data = NvU64_LO32(bytesTotal >> 10);
                     }
@@ -752,11 +757,16 @@ _kmemsysGetFbInfos
             }
             case NV2080_CTRL_FB_INFO_INDEX_PROTECTED_MEM_SIZE_FREE_KB:
             {
-                if (gpuIsCCFeatureEnabled(pGpu))
+                NvBool bCprMemEnabled = gpuIsCCFeatureEnabled(pGpu);
+
+                bCprMemEnabled = bCprMemEnabled || gpuIsTdispFeatureEnabled(pGpu);
+
+                if (bCprMemEnabled)
                 {
                     if (bIsPmaEnabled)
                     {
-                        pmaGetFreeProtectedMemory(pHeap->pPmaObject, &bytesFree);
+                            pmaGetFreeProtectedMemory(pHeap->pPmaObject, &bytesFree);
+
                         NV_ASSERT(NvU64_HI32(bytesFree >> 10) == 0);
                         data = NvU64_LO32(bytesFree >> 10);
                     }
@@ -899,7 +909,9 @@ _kmemsysGetFbInfos
         physIdx = 0;
         FOR_EACH_IN_BITVECTOR(&fbInfoListIndicesUnset, i)
         {
-            NV_ASSERT(pFbInfos[i].index == pRpcParams->fbInfoList[physIdx].index);
+            NV_ASSERT_OR_ELSE(pFbInfos[i].index == pRpcParams->fbInfoList[physIdx].index,
+                              portMemFree(pRpcParams);
+                              return NV_ERR_INVALID_DATA;);
 
             pFbInfos[i].data = pRpcParams->fbInfoList[physIdx].data;
 
@@ -980,38 +992,42 @@ subdeviceCtrlCmdFbGetCliManagedOfflinedPages_IMPL
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
     if (!IsSLIEnabled(pGpu))
     {
-        if (memmgrIsPmaInitialized(pMemoryManager))
-        {
-            // If PMA is enabled Client pages are located here.
-            pmaGetClientBlacklistedPages(pHeap->pPmaObject, chunks, &pageSize, &numChunks);
+    if (memmgrIsPmaInitialized(pMemoryManager))
+    {
+        // If PMA is enabled Client pages are located here.
+        pmaGetClientBlacklistedPages(pHeap->pPmaObject, chunks, &pageSize, &numChunks);
 
-            NV_ASSERT(numChunks <= NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES);
+        NV_ASSERT_OR_RETURN(numChunks <= NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES,
+                            NV_ERR_INVALID_STATE);
 
-            for (chunk = 0; chunk < numChunks; chunk++)
-            {
-                pOsOfflinedParams->offlinedPages[chunk] = (NvU32)(chunks[chunk] >> RM_PAGE_SHIFT);
-            }
-            pOsOfflinedParams->validEntries = numChunks;
-            pOsOfflinedParams->pageSize     = (NvU32)pageSize;
-        }
-        else
+        for (chunk = 0; chunk < numChunks; chunk++)
         {
-            // Iterate over the heap blacklist array to get the OS blacklisted regions
-            for (i = 0; i < pHeap->blackList.count; i++)
-            {
-                // Extract only the globally excluded page offsets
-                if (!pBlacklistChunks[i].bIsValid)
-                {
-                    pageAddress = pBlacklistChunks[i].physOffset;
-                    pOsOfflinedParams->offlinedPages[osBlackListCount] = (NvU32) (pageAddress >> RM_PAGE_SHIFT);
-                    osBlackListCount++;
-                }
-            }
-            pOsOfflinedParams->validEntries = osBlackListCount;
-            pOsOfflinedParams->pageSize = RM_PAGE_SIZE;
+            pOsOfflinedParams->offlinedPages[chunk] = (NvU32)(chunks[chunk] >> RM_PAGE_SHIFT);
         }
-        return NV_OK;
+        pOsOfflinedParams->validEntries = numChunks;
+        pOsOfflinedParams->pageSize     = (NvU32)pageSize;
     }
+    else
+    {
+        // Iterate over the heap blacklist array to get the OS blacklisted regions
+        for (i = 0; i < pHeap->blackList.count; i++)
+        {
+            // Extract only the globally excluded page offsets
+            if (!pBlacklistChunks[i].bIsValid)
+            {
+                NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                    osBlackListCount < NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES,
+                    NV_ERR_INVALID_STATE);
+                pageAddress = pBlacklistChunks[i].physOffset;
+                pOsOfflinedParams->offlinedPages[osBlackListCount] = (NvU32) (pageAddress >> RM_PAGE_SHIFT);
+                osBlackListCount++;
+            }
+        }
+        pOsOfflinedParams->validEntries = osBlackListCount;
+        pOsOfflinedParams->pageSize = RM_PAGE_SIZE;
+    }
+    return NV_OK;
+}
     else
         return NV_ERR_NOT_SUPPORTED;
 }
@@ -1264,7 +1280,7 @@ subdeviceCtrlCmdFbGetUgpuMemoryInfo_IMPL
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
         NV_ERR_INVALID_LOCK_STATE);
-    
+
     MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     Heap               *pHeap = GPU_GET_HEAP(pGpu);
     NvBool              bIsPmaEnabled = memmgrIsPmaInitialized(pMemoryManager);

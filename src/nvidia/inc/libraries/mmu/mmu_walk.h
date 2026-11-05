@@ -114,7 +114,7 @@ extern "C" {
 
 /* --------------------------- Datatypes ------------------------------------ */
 
-#define MMU_WALK_MEMDESC_MAX_SIZE 432
+#define MMU_WALK_MEMDESC_MAX_SIZE 448
 
 /*!
  * Opaque library-defined state for a single page level hierarchy backing a VAS.

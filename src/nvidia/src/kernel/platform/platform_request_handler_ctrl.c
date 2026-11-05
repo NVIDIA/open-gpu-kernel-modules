@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,7 +37,7 @@
 #include "os/os.h"
 #include "gpu/timer/objtmr.h"
 #include "core/locks.h"
-#include "gps.h"
+#include "pfmReqHndlr.h"
 #include "rmapi/client_resource.h"
 
 /* ------------------------ Datatypes -------------------------------------- */
@@ -613,7 +613,7 @@ cliresCtrlCmdSystemPfmreqhndlrCtrl_IMPL
 
             if (pParams->cmd == NV0000_CTRL_PFM_REQ_HNDLR_CMD_TYPE_SET_CPU_PACKAGE_LIMITS)
             {
-                acpiParamsEx.pfmreqhndlrFunc = GPS_FUNC_SETPPL;
+                acpiParamsEx.pfmreqhndlrFunc = PFM_REQ_HNDLR_FUNC_SETPPL;
                 acpiParamsEx.input[NV0000_CTRL_PFM_REQ_HNDLR_PPL_ARGS_LIMIT1_IDX] =
                     pParams->input[NV0000_CTRL_PFM_REQ_HNDLR_CMD_TYPE_SET_CPU_PACKAGE_LIMITS_PL1];
                 acpiParamsEx.input[NV0000_CTRL_PFM_REQ_HNDLR_PPL_ARGS_LIMIT2_IDX] =
@@ -621,7 +621,7 @@ cliresCtrlCmdSystemPfmreqhndlrCtrl_IMPL
             }
             else
             {
-                acpiParamsEx.pfmreqhndlrFunc = GPS_FUNC_GETPPL;
+                acpiParamsEx.pfmreqhndlrFunc = PFM_REQ_HNDLR_FUNC_GETPPL;
             }
 
             status = pfmreqhndlrCallACPI_EX(pGpu, &acpiParamsEx);
@@ -657,13 +657,13 @@ cliresCtrlCmdSystemPfmreqhndlrCtrl_IMPL
 
             if (pParams->cmd == NV0000_CTRL_PFM_REQ_HNDLR_CMD_TYPE_SET_CPU_FREQ_LIMIT)
             {
-                acpiParamsEx.pfmreqhndlrFunc = GPS_FUNC_SETTRL;
+                acpiParamsEx.pfmreqhndlrFunc = PFM_REQ_HNDLR_FUNC_SETTRL;
                 acpiParamsEx.input[NV0000_CTRL_PFM_REQ_HNDLR_TRL_ARGS_FREQ_MHZ_IDX] =
                     pParams->input[NV0000_CTRL_PFM_REQ_HNDLR_CMD_TYPE_SET_CPU_FREQ_LIMIT_MHZ];
             }
             else
             {
-                acpiParamsEx.pfmreqhndlrFunc = GPS_FUNC_GETTRL;
+                acpiParamsEx.pfmreqhndlrFunc = PFM_REQ_HNDLR_FUNC_GETTRL;
                 acpiParamsEx.input[NV0000_CTRL_PFM_REQ_HNDLR_TRL_ARGS_FREQ_MHZ_IDX] = 0;
             }
 
@@ -915,7 +915,7 @@ pfmreqhndlrCallACPI
 
             if ((rc = osCallACPI_DSM(pGpu,
                             pPlatformRequestHandler->dsmVersion,
-                            GPS_FUNC_SUPPORT,
+                            PFM_REQ_HNDLR_FUNC_SUPPORT,
                             pParams->output.result,
                             &paramSize)) != NV_OK)
             {
@@ -923,10 +923,10 @@ pfmreqhndlrCallACPI
                           "Unable to retrieve PFM_REQ_HNDLR_SUPPORT. Possibly not supported/enabled by "
                           "CPU/ACPI? rc = %x\n", rc);
                 status =  NV_ERR_NOT_SUPPORTED;
-                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_SUPPORT, 0, 0, 0, 0, 0);
+                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_SUPPORT, 0, 0, 0, 0, 0);
                 break;
             }
-            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_SUPPORT, pParams->output.result[0], pParams->output.result[1], 0, 0, 0);
+            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_SUPPORT, pParams->output.result[0], pParams->output.result[1], 0, 0, 0);
             break;
         }
         case NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_CMD_PCONTROL:
@@ -937,7 +937,7 @@ pfmreqhndlrCallACPI
 
             if ((rc = osCallACPI_DSM(pGpu,
                             pPlatformRequestHandler->dsmVersion,
-                            GPS_FUNC_PCONTROL,
+                            PFM_REQ_HNDLR_FUNC_PCONTROL,
                             (NvU32 *) &pParams->output.result[0],
                             &paramSize)) != NV_OK)
             {
@@ -945,10 +945,10 @@ pfmreqhndlrCallACPI
                           "Unable to retrieve PFM_REQ_HNDLR_PCONTROL. Possibly not supported/enabled by "
                           "CPU/ACPI? rc = %x\n", rc);
                 status =  NV_ERR_NOT_SUPPORTED;
-                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_PCONTROL, 0, 0, 0, 0, 0);
+                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_PCONTROL, 0, 0, 0, 0, 0);
                 break;
             }
-            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_PCONTROL, pParams->ctrl.input, pParams->output.result[0], 0, 0, 0);
+            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_PCONTROL, pParams->ctrl.input, pParams->output.result[0], 0, 0, 0);
             break;
         }
         case NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_CMD_PSHARESTATUS:
@@ -959,7 +959,7 @@ pfmreqhndlrCallACPI
 
             if ((rc = osCallACPI_DSM(pGpu,
                             pPlatformRequestHandler->dsmVersion,
-                            GPS_FUNC_PSHARESTATUS,
+                            PFM_REQ_HNDLR_FUNC_PSHARESTATUS,
                             &pParams->output.result[0],
                             &paramSize)) != NV_OK)
             {
@@ -967,10 +967,10 @@ pfmreqhndlrCallACPI
                           "Unable to retrieve PFM_REQ_HNDLR_PSHARESTATUS. Possibly not supported/enabled by"
                           " CPU/ACPI? rc = %x\n", rc);
                 status =  NV_ERR_NOT_SUPPORTED;
-                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_PSHARESTATUS, 0, 0, 0, 0, 0);
+                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_PSHARESTATUS, 0, 0, 0, 0, 0);
                 break;
             }
-            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_PSHARESTATUS, pParams->ctrl.input, pParams->output.result[0], 0, 0, 0);
+            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_PSHARESTATUS, pParams->ctrl.input, pParams->output.result[0], 0, 0, 0);
             break;
         }
         case NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_CMD_PSHAREPARAMS:
@@ -985,7 +985,7 @@ pfmreqhndlrCallACPI
 
             if ((rc = osCallACPI_DSM(pGpu,
                             pPlatformRequestHandler->dsmVersion,
-                            GPS_FUNC_PSHAREPARAMS,
+                            PFM_REQ_HNDLR_FUNC_PSHAREPARAMS,
                             (NvU32 *) pParams->output.pBuffer,
                             &pParams->output.bufferSz)) != NV_OK)
             {
@@ -993,10 +993,10 @@ pfmreqhndlrCallACPI
                           "Unable to retrieve PFM_REQ_HNDLR_PSHAREPARAMS. Possibly not supported/enabled by"
                           " CPU/ACPI? rc = %x\n", rc);
                 status =  NV_ERR_NOT_SUPPORTED;
-                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_PSHAREPARAMS, 0, 0, 0, 0, 0);
+                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_PSHAREPARAMS, 0, 0, 0, 0, 0);
                 break;
             }
-            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_PSHAREPARAMS, ((NvU32 *) pParams->output.pBuffer)[0], ((NvU32 *) pParams->output.pBuffer)[3], ((NvU32 *) pParams->output.pBuffer)[6], 0, 0);
+            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_PSHAREPARAMS, ((NvU32 *) pParams->output.pBuffer)[0], ((NvU32 *) pParams->output.pBuffer)[3], ((NvU32 *) pParams->output.pBuffer)[6], 0, 0);
             break;
         }
         case NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_CMD_GETEDPPLIMIT:
@@ -1006,7 +1006,7 @@ pfmreqhndlrCallACPI
 
             if ((rc = osCallACPI_DSM(pGpu,
                         pPlatformRequestHandler->dsmVersion,
-                        GPS_FUNC_GETEDPPLIMIT,
+                        PFM_REQ_HNDLR_FUNC_GETEDPPLIMIT,
                         &pParams->output.result[0],
                         &paramSize)) != NV_OK)
             {
@@ -1014,17 +1014,17 @@ pfmreqhndlrCallACPI
                           "Unable to retrieve PFM_REQ_HNDLR_FUNC_GETEDPPLIMIT. Possibly not supported/enabled by "
                           "ACPI? rc = %x\n", rc);
                 status = NV_ERR_NOT_SUPPORTED;
-                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_GETEDPPLIMIT, 0, 0, 0, 0, 0);
+                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_GETEDPPLIMIT, 0, 0, 0, 0, 0);
                 break;
             }
-            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_GETEDPPLIMIT, pParams->output.result[0], pParams->output.result[1], 0, 0, 0);
+            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_GETEDPPLIMIT, pParams->output.result[0], pParams->output.result[1], 0, 0, 0);
             break;
         }
         case NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_CMD_SETEDPPLIMITINFO:
         {
             if ((rc = osCallACPI_DSM(pGpu,
                         pPlatformRequestHandler->dsmVersion,
-                        GPS_FUNC_SETEDPPLIMITINFO,
+                        PFM_REQ_HNDLR_FUNC_SETEDPPLIMITINFO,
                         (NvU32 *) pParams->output.pBuffer,
                         &pParams->output.bufferSz)) != NV_OK)
             {
@@ -1032,10 +1032,10 @@ pfmreqhndlrCallACPI
                           "Unable to retrieve PFM_REQ_HNDLR_FUNC_SETEDPPLIMITINFO. Possibly not supported/enabled by "
                           "ACPI? rc = %x\n", rc);
                 status = NV_ERR_NOT_SUPPORTED;
-                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_SETEDPPLIMITINFO, 0, 0, 0, 0, 0);
+                RMTRACE_SBIOS (_ACPI_DSM_ERROR, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_SETEDPPLIMITINFO, 0, 0, 0, 0, 0);
                 break;
             }
-            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, GPS_FUNC_SETEDPPLIMITINFO, pParams->output.result[0], pParams->output.result[1], 0, 0, 0);
+            RMTRACE_SBIOS (_ACPI_DSM_METHOD, pGpu->gpuId, pPlatformRequestHandler->dsmVersion, PFM_REQ_HNDLR_FUNC_SETEDPPLIMITINFO, pParams->output.result[0], pParams->output.result[1], 0, 0, 0);
             break;
         }
         default:
@@ -1122,7 +1122,7 @@ pfmreqhndlrInitSensors
     // Initialize a logical sw version based of ACPI dsm version
     //
     if ((pPlatformRequestHandler->getProperty(pPlatformRequestHandler, PDB_PROP_PFMREQHNDLR_IS_PLATFORM_LEGACY)) ||
-           (pPlatformRequestHandler->dsmVersion == ACPI_DSM_FUNCTION_GPS_2X))
+           (pPlatformRequestHandler->dsmVersion == ACPI_DSM_FUNCTION_PRH_2X))
     {
         pPfmreqhndlrData->PFMREQHNDLRACPIData.acpiVersionSw =
             NV0000_CTRL_PFM_REQ_HNDLR_ACPI_REVISION_SW_2X;
@@ -2260,7 +2260,7 @@ _pfmreqhndlrUpdatePlatformPowerModeWorkItem
             FLD_SET_DRF(0000_CTRL_PFM_REQ_HNDLR, _PPM_ARG0_VERSION, _MAJOR, _V1,
                 acpiParamsEx.input[NV0000_CTRL_PFM_REQ_HNDLR_PPM_ARGS_VERSION_IDX]);
         acpiParamsEx.outSize = NV0000_CTRL_PFM_REQ_HNDLR_PPM_ARGS_COUNT * sizeof(NvU32);
-        acpiParamsEx.pfmreqhndlrFunc = GPS_FUNC_SETPPM;
+        acpiParamsEx.pfmreqhndlrFunc = PFM_REQ_HNDLR_FUNC_SETPPM;
         acpiParamsEx.input[NV0000_CTRL_PFM_REQ_HNDLR_PPM_ARGS_IDX] =
             FLD_SET_DRF_NUM(0000_CTRL_PFM_REQ_HNDLR, _PPM_ARGS, _INDEX,
                 pPlatformRequestHandler->ppmData.ppmIdxRequested, acpiParamsEx.input[NV0000_CTRL_PFM_REQ_HNDLR_PPM_ARGS_IDX]);

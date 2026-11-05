@@ -175,7 +175,7 @@ static void __nvoc_init_funcTable_GpuArch_1(GpuArch *pThis) {
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
     // gpuarchGetSystemPhysAddrWidth -- halified (4 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T238D | T264D */ 
     {
         pThis->__gpuarchGetSystemPhysAddrWidth__ = &gpuarchGetSystemPhysAddrWidth_T234D;
     }

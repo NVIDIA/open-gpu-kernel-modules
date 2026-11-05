@@ -335,10 +335,12 @@ NV_STATUS deviceCtrlCmdOsUnixVTGetFBInfo_IMPL
 
         SLI_LOOP_START(SLI_LOOP_FLAGS_NONE)
 
-            MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
             nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+            MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+            PMEMORY_DESCRIPTOR pResConsoleMemDesc =
+                memmgrGetReservedConsoleMemDesc(pGpu, pMemoryManager);
 
-            if ((memmgrGetReservedConsoleMemDesc(pGpu, pMemoryManager) != NULL) && bContinue)
+            if ((pResConsoleMemDesc != NULL) && bContinue)
             {
                 NvU64 baseAddr, size;
                 NvU32 width, height, depth, pitch;

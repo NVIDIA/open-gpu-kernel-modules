@@ -39,6 +39,8 @@ NvU64 memUtilsLeastCommonAlignment(NvU64 align1, NvU64 align2);
 void memUtilsInitFBAllocInfo(NV_MEMORY_ALLOCATION_PARAMS *pAllocParams, FB_ALLOC_INFO *pFbAllocInfo,
                              NvHandle hClient, NvHandle hDevice);
 
+NvBool memUtilsShouldUseScanoutCarveout(OBJGPU *pGpu, NvU32 attr2);
+
 NV_STATUS memUtilsAllocMemDesc(OBJGPU *pGpu, MEMORY_ALLOCATION_REQUEST *pAllocRequest, FB_ALLOC_INFO *pFbAllocInfo,
                                MEMORY_DESCRIPTOR **ppMemDesc, Heap *pHeap, NV_ADDRESS_SPACE addrSpace,
                                NvBool bContig, NvBool *bAllocedMemDesc);

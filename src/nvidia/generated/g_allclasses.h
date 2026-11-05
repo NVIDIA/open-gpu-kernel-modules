@@ -63,6 +63,7 @@
 #include <class/clb0ce.h>               // PROFILER_CONTEXT_EVENT
 #include <class/clcdcd.h>               // TRACE_DEVICE_EVENT
 #include <class/cld0cd.h>               // WPPS_CONFIG_SESSION
+#include <class/cl77cc.h>               // NV_MNCC_SESSION
 #include <class/cl00e0.h>               // NV_MEMORY_EXPORT
 #include <class/cl0050.h>               // NV_CE_UTILS
 #include <class/cl00f8.h>               // NV_MEMORY_FABRIC
@@ -424,6 +425,10 @@
 
 #ifndef WPPS_CONFIG_SESSION
 #define WPPS_CONFIG_SESSION                      (0x0000d0cd)
+#endif
+
+#ifndef NV_MNCC_SESSION
+#define NV_MNCC_SESSION                          (0x000077cc)
 #endif
 
 #ifndef NV_MEMORY_EXPORT

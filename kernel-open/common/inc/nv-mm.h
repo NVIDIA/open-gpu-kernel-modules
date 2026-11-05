@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,6 +46,11 @@ typedef int vm_fault_t;
 #include <linux/sched.h>
 
 /*
+ * release_pages() is defined here on older kernels
+ */
+#include <linux/pagemap.h>
+
+/*
  * FreeBSD's pin_user_pages's conftest breaks since pin_user_pages is an inline
  * function. Because it simply maps to get_user_pages, we can just replace
  * NV_PIN_USER_PAGES with NV_GET_USER_PAGES on FreeBSD
@@ -58,10 +63,44 @@ typedef int vm_fault_t;
         #define NV_PIN_USER_PAGES pin_user_pages
     #endif // NV_PIN_USER_PAGES_HAS_ARGS_VMAS
     #define NV_UNPIN_USER_PAGE unpin_user_page
+/*
+ * unpin_user_pages*() was renamed from put_user_pages*() in f1f6a7dd9b53
+ * part of the same patch series that introduced pin_user_pages(). So, we can
+ * use it as the batch inverse of pin_user_pages() whenever the former exists.
+ */
+    #define NV_UNPIN_USER_PAGES_DIRTY unpin_user_pages_dirty_lock
 #else
     #define NV_PIN_USER_PAGES NV_GET_USER_PAGES
     #define NV_UNPIN_USER_PAGE put_page
+    #define NV_UNPIN_USER_PAGES_DIRTY nv_release_pages_dirty
+
+static inline void nv_release_pages_dirty(struct page **pages, NvU64 npages,
+                                          bool make_dirty)
+{
+    while (npages != 0)
+    {
+        int batch_count = (npages > NV_S32_MAX) ? NV_S32_MAX : (int)npages;
+        int i;
+
+        if (make_dirty)
+        {
+            for (i = 0; i < batch_count; i++)
+            {
+                set_page_dirty_lock(pages[i]);
+            }
+        }
+        release_pages(pages, batch_count);
+
+        pages += batch_count;
+        npages -= batch_count;
+        if (npages != 0)
+        {
+            cond_resched();
+        }
+    }
+}
 #endif // NV_PIN_USER_PAGES_PRESENT
+
 
 /*
  * get_user_pages()

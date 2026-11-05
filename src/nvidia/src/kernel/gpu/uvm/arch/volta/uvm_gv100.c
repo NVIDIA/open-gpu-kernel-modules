@@ -278,7 +278,6 @@ uvmInitAccessCntrBuffer_GV100
     NvP64               pAddr;
     NvP64               pPriv;
     MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    KernelGmmu         *pKernelGmmu    = GPU_GET_KERNEL_GMMU(pGpu);
 
     NvU32 accessCntrBufferAperture = 0;
     NvU32 accessCntrBufferAttr = 0;
@@ -308,8 +307,7 @@ uvmInitAccessCntrBuffer_GV100
     // ensure that GpuCacheAttr is set to UNCACHED as having a vol bit set in PTEs will ensure HUB
     // uses L2Bypass mode and it will save extra cycles to cache in L2 while MMU will write notification packets.
     //
-    if (accessCntrBufferAperture == ADDR_SYSMEM &&
-        pKernelGmmu->getProperty(pKernelGmmu, PDB_PROP_KGMMU_SYSMEM_FAULT_BUFFER_GPU_UNCACHED))
+    if (accessCntrBufferAperture == ADDR_SYSMEM)
     {
         memdescSetGpuCacheAttrib(pUvmAccessCntrBufferDesc, NV_MEMORY_UNCACHED);
     }

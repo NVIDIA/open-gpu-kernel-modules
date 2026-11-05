@@ -65,6 +65,8 @@
 
 #include "gpu/conf_compute/conf_compute.h"
 
+#include "gpu/tdisp/tdisp_mgr.h"
+
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 
 // Blocks are 64 DWORDS
@@ -816,12 +818,30 @@ kfspGetGspUcodeArchive
     NvBool        bLoadCcProfile          = NV_FALSE;
     NV_ASSERT(pCC != NULL);
 
+    KernelNvlink *pKernelNvlink           = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    if (pKernelNvlink != NULL &&
+        knvlinkIsNvleStandaloneModeEnabled(pGpu, pKernelNvlink))
+    {
+        bLoadCcProfile = NV_TRUE;
+    }
+
+    if (!bLoadCcProfile && gpuIsBaremetalSecureAiEnabled(pGpu))
+    {
+        bLoadCcProfile = NV_TRUE;
+    }
+
     if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM))
     {
         NV_PRINTF(LEVEL_NOTICE, "Loading GSP-RM image using FSP.\n");
 
         if (kgspIsDebugModeEnabled_HAL(pGpu, pKernelGsp))
         {
+            TdispMgr *pTdispMgr = GPU_GET_TDISP_MGR(pGpu);
+            if (pTdispMgr != NULL && pTdispMgr->getProperty(pTdispMgr, PDB_PROP_TDISPMGR_TDISP_ENABLED))
+            {
+                return NULL;
+            }
 
             if ((pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED)) || bLoadCcProfile)
             {
@@ -835,6 +855,11 @@ kfspGetGspUcodeArchive
         }
         else
         {
+            TdispMgr *pTdispMgrProd = GPU_GET_TDISP_MGR(pGpu);
+            if (pTdispMgrProd != NULL && pTdispMgrProd->getProperty(pTdispMgrProd, PDB_PROP_TDISPMGR_TDISP_ENABLED))
+            {
+                return kgspGetBinArchiveGspRmFmcTdispGfwProdSigned_HAL(pKernelGsp);
+            }
             if ((pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED)) || bLoadCcProfile)
             {
                 return kgspGetBinArchiveGspRmCcFmcGfwProdSigned_HAL(pKernelGsp);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,8 @@
 #include "gpu/ce/kernel_ce_private.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/device/device.h"
+#include "kernel/gpu/fifo/kernel_channel.h"
+#include "kernel/gpu/fifo/kernel_fifo.h"
 #include "os/os.h"
 #include "resserv/rs_client.h"
 
@@ -211,5 +213,7 @@ kcectxDestruct_IMPL
     if (IsAMODEL(pGpu) || IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
         return;
 
-    chandesIsolateOnDestruct(pChannelDescendant);
+    {
+        chandesIsolateOnDestruct(pChannelDescendant);
+    }
 }

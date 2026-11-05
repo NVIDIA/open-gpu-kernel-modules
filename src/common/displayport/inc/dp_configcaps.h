@@ -320,6 +320,12 @@ namespace DisplayPort
         virtual bool getSDPExtnForColorimetry() = 0;
         virtual bool getRootAsyncSDPSupported() = 0;
 
+        //
+        // DPCD offset 00008h[0] (or 02208h[0] when the Extended Receiver Capability
+        // field is present) - LOCAL_NATIVE_DISPLAYID_PRESENT.
+        //
+        virtual bool getLocalNativeDisplayIdPresent() = 0;
+
         bool isAtLeastVersion(unsigned major, unsigned minor)
         {
             if (getRevisionMajor() > major)
@@ -674,6 +680,13 @@ namespace DisplayPort
 
             bool      extendedRxCapsPresent;                        // DPCD offset 000Eh [7] - Extended Receiver Capability present
 
+            //
+            // DPCD offset 00008h [0] (02208h [0] when extendedRxCapsPresent) -
+            // LOCAL_NATIVE_DISPLAYID_PRESENT. Sink advertises a Native DisplayID
+            // structure at DDC addresses A4h/A5h.
+            //
+            bool      bLocalNativeDisplayIdPresent;
+
             // DPCD Offset 2211h;
             unsigned  extendedSleepWakeTimeoutRequestMs;
             // DPCD Offset 0119h [0] - If we grant the extendedSleepWakeTimeoutRequest
@@ -925,6 +938,12 @@ namespace DisplayPort
         virtual bool getNoLinkTraining()
         {
             return caps.noLinkTraining;
+        }
+
+        // DPCD offset 00008h [0] / 02208h [0]
+        virtual bool getLocalNativeDisplayIdPresent()
+        {
+            return caps.bLocalNativeDisplayIdPresent;
         }
 
         virtual unsigned getPhyRepeaterCount()

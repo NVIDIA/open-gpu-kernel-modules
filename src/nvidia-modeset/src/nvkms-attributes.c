@@ -1042,7 +1042,7 @@ static NvBool GetStereoEvo(const NVDpyEvoRec *pDpyEvo, NvS64 *pValue)
 
 static NvBool GetVrrMinRefreshRate(const NVDpyEvoRec *pDpyEvo, NvS64 *pValue)
 {
-    NvU32 timeoutMicroseconds;
+    NvU32 minRefreshRate;
     const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
     NvU32 head;
 
@@ -1052,20 +1052,19 @@ static NvBool GetVrrMinRefreshRate(const NVDpyEvoRec *pDpyEvo, NvS64 *pValue)
 
     head = nvGetPrimaryHwHead(pDispEvo, pDpyEvo->apiHead);
     nvAssert(head != NV_INVALID_HEAD);
-    timeoutMicroseconds =
-        pDispEvo->headState[head].timings.vrr.timeoutMicroseconds;
+    minRefreshRate =
+        pDispEvo->headState[head].timings.vrr.minRefreshRate;
 #if defined(DEBUG)
     {
         NvU32 h;
         FOR_EACH_EVO_HW_HEAD(pDispEvo, pDpyEvo->apiHead, h) {
-            nvAssert(timeoutMicroseconds ==
-                         pDispEvo->headState[h].timings.vrr.timeoutMicroseconds);
+            nvAssert(minRefreshRate ==
+                         pDispEvo->headState[h].timings.vrr.minRefreshRate);
         }
     }
 #endif
 
-    *pValue = timeoutMicroseconds ? (1000000 / timeoutMicroseconds) : 0;
-
+    *pValue = minRefreshRate;
     return TRUE;
 }
 
@@ -1088,8 +1087,8 @@ static NvBool GetVrrMinRefreshRateValidValues(
     pTimings = &pDispEvo->headState[head].timings;
 
     nvGetDpyMinRefreshRateValidValues(pTimings,
-                                      pTimings->vrr.type,
-                                      pTimings->vrr.timeoutMicroseconds,
+                                      pDpyEvo->vrr.type,
+                                      pTimings->vrr.minRefreshRate,
                                       &minMinRefreshRate,
                                       &maxMinRefreshRate);
 #if defined(DEBUG)
@@ -1101,8 +1100,8 @@ static NvBool GetVrrMinRefreshRateValidValues(
             pTimings = &pDispEvo->headState[h].timings;
 
             nvGetDpyMinRefreshRateValidValues(pTimings,
-                                              pTimings->vrr.type,
-                                              pTimings->vrr.timeoutMicroseconds,
+                                              pDpyEvo->vrr.type,
+                                              pTimings->vrr.minRefreshRate,
                                               &tmpMinMinRefreshRate,
                                               &tmpMaxMinRefreshRate);
 

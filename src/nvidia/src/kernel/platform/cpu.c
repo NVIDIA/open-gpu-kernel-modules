@@ -184,16 +184,9 @@ void RmInitCpuInfo(void)
         case AARCH64_VENDOR_PART(MARVELL, OCTEON_CN96XX):
         case AARCH64_VENDOR_PART(MARVELL, OCTEON_CN98XX):
         case AARCH64_VENDOR_PART(ARM, CORTEX_A57):
-            pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC;
-            break;
         case AARCH64_VENDOR_PART(ARM, NVIDIA_T254_P):
         case AARCH64_VENDOR_PART(ARM, NVIDIA_T254_E):
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC;
-            pSys->cpuInfo.family = 0x102;
-            pSys->cpuInfo.model  = 0;
-            pSys->cpuInfo.stepping = 0x1;
-            portMemSet(pSys->cpuInfo.name, 0, sizeof(pSys->cpuInfo.name));
-            portMemCopy(pSys->cpuInfo.name, sizeof(pSys->cpuInfo.name), "JMJWOA-Generic-CPU", sizeof("JMJWOA-Generic-CPU"));
             break;
         case AARCH64_VENDOR_PART(ARM, NEOVERSE_N2):
         case AARCH64_VENDOR_PART(ARM, NEOVERSE_V2):

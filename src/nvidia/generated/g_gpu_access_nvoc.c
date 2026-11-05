@@ -64,7 +64,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_IoAperture =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__IoAperture __nvoc_metadata__IoAperture = {
     .rtti.pClassDef = &__nvoc_class_def_IoAperture,    // (ioaprt) this
     .rtti.dtor      = &__nvoc_dtor_IoAperture,
@@ -76,21 +76,13 @@ static const struct NVOC_METADATA__IoAperture __nvoc_metadata__IoAperture = {
     .metadata__RegisterAperture.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__RegisterAperture.rtti.offset    = NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture),
 
-    .vtable.__ioaprtReadReg08__ = &ioaprtReadReg08_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtReadReg08__ = &__nvoc_down_thunk_IoAperture_regaprtReadReg08,    // pure virtual
-    .vtable.__ioaprtReadReg16__ = &ioaprtReadReg16_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtReadReg16__ = &__nvoc_down_thunk_IoAperture_regaprtReadReg16,    // pure virtual
-    .vtable.__ioaprtReadReg32__ = &ioaprtReadReg32_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtReadReg32__ = &__nvoc_down_thunk_IoAperture_regaprtReadReg32,    // pure virtual
-    .vtable.__ioaprtWriteReg08__ = &ioaprtWriteReg08_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtWriteReg08__ = &__nvoc_down_thunk_IoAperture_regaprtWriteReg08,    // pure virtual
-    .vtable.__ioaprtWriteReg16__ = &ioaprtWriteReg16_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtWriteReg16__ = &__nvoc_down_thunk_IoAperture_regaprtWriteReg16,    // pure virtual
-    .vtable.__ioaprtWriteReg32__ = &ioaprtWriteReg32_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtWriteReg32__ = &__nvoc_down_thunk_IoAperture_regaprtWriteReg32,    // pure virtual
-    .vtable.__ioaprtWriteReg32Uc__ = &ioaprtWriteReg32Uc_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtWriteReg32Uc__ = &__nvoc_down_thunk_IoAperture_regaprtWriteReg32Uc,    // pure virtual
-    .vtable.__ioaprtIsRegValid__ = &ioaprtIsRegValid_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtIsRegValid__ = &__nvoc_down_thunk_IoAperture_regaprtIsRegValid,    // pure virtual
 };
 
@@ -109,42 +101,42 @@ const struct NVOC_CASTINFO __nvoc_castinfo__IoAperture = {
 
 // ioaprtReadReg08: virtual override (regaprt) base (regaprt)
 NvU8 __nvoc_down_thunk_IoAperture_regaprtReadReg08(struct RegisterAperture *pAperture, NvU32 addr) {
-    return ioaprtReadReg08((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr);
+    return ioaprtReadReg08_IMPL((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr);
 }
 
 // ioaprtReadReg16: virtual override (regaprt) base (regaprt)
 NvU16 __nvoc_down_thunk_IoAperture_regaprtReadReg16(struct RegisterAperture *pAperture, NvU32 addr) {
-    return ioaprtReadReg16((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr);
+    return ioaprtReadReg16_IMPL((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr);
 }
 
 // ioaprtReadReg32: virtual override (regaprt) base (regaprt)
 NvU32 __nvoc_down_thunk_IoAperture_regaprtReadReg32(struct RegisterAperture *pAperture, NvU32 addr) {
-    return ioaprtReadReg32((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr);
+    return ioaprtReadReg32_IMPL((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr);
 }
 
 // ioaprtWriteReg08: virtual override (regaprt) base (regaprt)
 void __nvoc_down_thunk_IoAperture_regaprtWriteReg08(struct RegisterAperture *pAperture, NvU32 addr, NvV8 value) {
-    ioaprtWriteReg08((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr, value);
+    ioaprtWriteReg08_IMPL((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr, value);
 }
 
 // ioaprtWriteReg16: virtual override (regaprt) base (regaprt)
 void __nvoc_down_thunk_IoAperture_regaprtWriteReg16(struct RegisterAperture *pAperture, NvU32 addr, NvV16 value) {
-    ioaprtWriteReg16((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr, value);
+    ioaprtWriteReg16_IMPL((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr, value);
 }
 
 // ioaprtWriteReg32: virtual override (regaprt) base (regaprt)
 void __nvoc_down_thunk_IoAperture_regaprtWriteReg32(struct RegisterAperture *pAperture, NvU32 addr, NvV32 value) {
-    ioaprtWriteReg32((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr, value);
+    ioaprtWriteReg32_IMPL((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr, value);
 }
 
 // ioaprtWriteReg32Uc: virtual override (regaprt) base (regaprt)
 void __nvoc_down_thunk_IoAperture_regaprtWriteReg32Uc(struct RegisterAperture *pAperture, NvU32 addr, NvV32 value) {
-    ioaprtWriteReg32Uc((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr, value);
+    ioaprtWriteReg32Uc_IMPL((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr, value);
 }
 
 // ioaprtIsRegValid: virtual override (regaprt) base (regaprt)
 NvBool __nvoc_down_thunk_IoAperture_regaprtIsRegValid(struct RegisterAperture *pAperture, NvU32 addr) {
-    return ioaprtIsRegValid((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr);
+    return ioaprtIsRegValid_IMPL((struct IoAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(IoAperture, __nvoc_base_RegisterAperture)), addr);
 }
 
 
@@ -213,7 +205,7 @@ static void __nvoc_init_funcTable_IoAperture_1(IoAperture *pThis) {
 } // End __nvoc_init_funcTable_IoAperture_1
 
 
-// Initialize vtable(s) for 8 virtual method(s).
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_IoAperture(IoAperture *pThis) {
     __nvoc_init_funcTable_IoAperture_1(pThis);
 }
@@ -371,7 +363,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_SwBcAperture =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__SwBcAperture __nvoc_metadata__SwBcAperture = {
     .rtti.pClassDef = &__nvoc_class_def_SwBcAperture,    // (swbcaprt) this
     .rtti.dtor      = &__nvoc_dtor_SwBcAperture,
@@ -383,21 +375,13 @@ static const struct NVOC_METADATA__SwBcAperture __nvoc_metadata__SwBcAperture = 
     .metadata__RegisterAperture.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__RegisterAperture.rtti.offset    = NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture),
 
-    .vtable.__swbcaprtReadReg08__ = &swbcaprtReadReg08_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtReadReg08__ = &__nvoc_down_thunk_SwBcAperture_regaprtReadReg08,    // pure virtual
-    .vtable.__swbcaprtReadReg16__ = &swbcaprtReadReg16_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtReadReg16__ = &__nvoc_down_thunk_SwBcAperture_regaprtReadReg16,    // pure virtual
-    .vtable.__swbcaprtReadReg32__ = &swbcaprtReadReg32_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtReadReg32__ = &__nvoc_down_thunk_SwBcAperture_regaprtReadReg32,    // pure virtual
-    .vtable.__swbcaprtWriteReg08__ = &swbcaprtWriteReg08_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtWriteReg08__ = &__nvoc_down_thunk_SwBcAperture_regaprtWriteReg08,    // pure virtual
-    .vtable.__swbcaprtWriteReg16__ = &swbcaprtWriteReg16_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtWriteReg16__ = &__nvoc_down_thunk_SwBcAperture_regaprtWriteReg16,    // pure virtual
-    .vtable.__swbcaprtWriteReg32__ = &swbcaprtWriteReg32_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtWriteReg32__ = &__nvoc_down_thunk_SwBcAperture_regaprtWriteReg32,    // pure virtual
-    .vtable.__swbcaprtWriteReg32Uc__ = &swbcaprtWriteReg32Uc_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtWriteReg32Uc__ = &__nvoc_down_thunk_SwBcAperture_regaprtWriteReg32Uc,    // pure virtual
-    .vtable.__swbcaprtIsRegValid__ = &swbcaprtIsRegValid_IMPL,    // virtual override (regaprt) base (regaprt)
     .metadata__RegisterAperture.vtable.__regaprtIsRegValid__ = &__nvoc_down_thunk_SwBcAperture_regaprtIsRegValid,    // pure virtual
 };
 
@@ -416,42 +400,42 @@ const struct NVOC_CASTINFO __nvoc_castinfo__SwBcAperture = {
 
 // swbcaprtReadReg08: virtual override (regaprt) base (regaprt)
 NvU8 __nvoc_down_thunk_SwBcAperture_regaprtReadReg08(struct RegisterAperture *pAperture, NvU32 addr) {
-    return swbcaprtReadReg08((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr);
+    return swbcaprtReadReg08_IMPL((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr);
 }
 
 // swbcaprtReadReg16: virtual override (regaprt) base (regaprt)
 NvU16 __nvoc_down_thunk_SwBcAperture_regaprtReadReg16(struct RegisterAperture *pAperture, NvU32 addr) {
-    return swbcaprtReadReg16((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr);
+    return swbcaprtReadReg16_IMPL((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr);
 }
 
 // swbcaprtReadReg32: virtual override (regaprt) base (regaprt)
 NvU32 __nvoc_down_thunk_SwBcAperture_regaprtReadReg32(struct RegisterAperture *pAperture, NvU32 addr) {
-    return swbcaprtReadReg32((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr);
+    return swbcaprtReadReg32_IMPL((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr);
 }
 
 // swbcaprtWriteReg08: virtual override (regaprt) base (regaprt)
 void __nvoc_down_thunk_SwBcAperture_regaprtWriteReg08(struct RegisterAperture *pAperture, NvU32 addr, NvV8 value) {
-    swbcaprtWriteReg08((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr, value);
+    swbcaprtWriteReg08_IMPL((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr, value);
 }
 
 // swbcaprtWriteReg16: virtual override (regaprt) base (regaprt)
 void __nvoc_down_thunk_SwBcAperture_regaprtWriteReg16(struct RegisterAperture *pAperture, NvU32 addr, NvV16 value) {
-    swbcaprtWriteReg16((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr, value);
+    swbcaprtWriteReg16_IMPL((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr, value);
 }
 
 // swbcaprtWriteReg32: virtual override (regaprt) base (regaprt)
 void __nvoc_down_thunk_SwBcAperture_regaprtWriteReg32(struct RegisterAperture *pAperture, NvU32 addr, NvV32 value) {
-    swbcaprtWriteReg32((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr, value);
+    swbcaprtWriteReg32_IMPL((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr, value);
 }
 
 // swbcaprtWriteReg32Uc: virtual override (regaprt) base (regaprt)
 void __nvoc_down_thunk_SwBcAperture_regaprtWriteReg32Uc(struct RegisterAperture *pAperture, NvU32 addr, NvV32 value) {
-    swbcaprtWriteReg32Uc((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr, value);
+    swbcaprtWriteReg32Uc_IMPL((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr, value);
 }
 
 // swbcaprtIsRegValid: virtual override (regaprt) base (regaprt)
 NvBool __nvoc_down_thunk_SwBcAperture_regaprtIsRegValid(struct RegisterAperture *pAperture, NvU32 addr) {
-    return swbcaprtIsRegValid((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr);
+    return swbcaprtIsRegValid_IMPL((struct SwBcAperture *)(((unsigned char *) pAperture) - NV_OFFSETOF(SwBcAperture, __nvoc_base_RegisterAperture)), addr);
 }
 
 
@@ -516,7 +500,7 @@ static void __nvoc_init_funcTable_SwBcAperture_1(SwBcAperture *pThis) {
 } // End __nvoc_init_funcTable_SwBcAperture_1
 
 
-// Initialize vtable(s) for 8 virtual method(s).
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_SwBcAperture(SwBcAperture *pThis) {
     __nvoc_init_funcTable_SwBcAperture_1(pThis);
 }

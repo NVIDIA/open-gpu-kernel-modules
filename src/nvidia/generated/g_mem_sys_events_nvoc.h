@@ -148,6 +148,11 @@ NV_STATUS memsystoConstruct_IMPL(struct MemSysTimeout *pEvent, struct EventBus *
 #undef PRIVATE_FIELD
 
 
+NV_STATUS memsystoDeserialize(struct OBJGPU *pGpu,
+                              const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+                              const NvU8 *pContextData,
+                              NvU32 contextDataSize);
+
 #endif // _MEM_SYS_EVENTS_H_
 
 #ifdef __cplusplus

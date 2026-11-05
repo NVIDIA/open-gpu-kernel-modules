@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,8 @@
 
 #ifndef GR100_HWPROJECT_H
 #define GR100_HWPROJECT_H 1
+
+#define NV_PMC0_PRI_BASE                        0x0
 
 #define NV_LTC_PRI_BASE                     0x7400000
 #define NV_LTC_PRI_STRIDE                            0x2000

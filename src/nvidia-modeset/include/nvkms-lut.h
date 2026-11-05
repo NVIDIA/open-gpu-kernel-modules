@@ -44,8 +44,7 @@ NvBool nvAllocLutSurfacesEvo(NVDevEvoPtr pDevEvo);
 void nvFreeLutSurfacesEvo(NVDevEvoPtr pDevEvo);
 
 void nvUploadDataToLutSurfaceEvo(NVSurfaceEvoPtr pSurfEvo,
-                                 const NVEvoLutDataRec *pLUTBuffer,
-                                 NVDispEvoPtr pDispEvo);
+                                 const NVEvoLutDataRec *pLUTBuffer);
 
 static inline void nvCancelLutUpdateEvo(
     const NVDispEvoRec *pDispEvo,

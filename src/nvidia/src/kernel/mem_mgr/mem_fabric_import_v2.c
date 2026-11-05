@@ -455,7 +455,7 @@ _importDescriptorEnqueueWait
 
     if (pOsEvent != NULL)
     {
-        status = osUserHandleToKernelPtr(hClient, pOsEvent, &pValidatedOsEvent);
+        status = osGetAndRefEventFromUserHandle(hClient, pOsEvent, &pValidatedOsEvent);
         if (status != NV_OK)
         {
             goto fail;

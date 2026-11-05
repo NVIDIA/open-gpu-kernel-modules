@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,14 +38,14 @@
 // VAR NAME: N/A
 // COMPRESSION: YES
 // COMPLEX_STRUCT: NO
-// DATA SIZE (bytes): 92
-// COMPRESSED SIZE (bytes): 28
+// DATA SIZE (bytes): 96
+// COMPRESSED SIZE (bytes): 29
 // EXTERNAL: NO
 //
 static BINDATA_CONST NV_DECLARE_ALIGNED(NvU64, 8) kgspBinArchiveConcatenatedFMCDesc_GH100_BINDATA_LABEL_UCODE_DESC_PROD_data[] = 
 {
-    0x0af1417002206363ULL, 0x18191937c404de20ULL,
-    0xe71282030007d089ULL, 0x000000000000005cULL,
+    0x0af1417002206763ULL, 0x18191937c404de20ULL,
+    0xdc35d6000407d189ULL, 0x0000000000006048ULL,
 };
 #endif // defined(BINDATA_INCLUDE_DATA)
 
@@ -55,8 +55,8 @@ BINDATA_STORAGE_PVT kgspBinArchiveConcatenatedFMCDesc_GH100_BINDATA_LABEL_UCODE_
 
 #if defined(BINDATA_INCLUDE_STORAGE_PVT_DEFN)
 {
-    92,                                                                // uncompressed data size (bytes)
-    28,                                                                // compressed data size (bytes)
+    96,                                                                // uncompressed data size (bytes)
+    29,                                                                // compressed data size (bytes)
     kgspBinArchiveConcatenatedFMCDesc_GH100_BINDATA_LABEL_UCODE_DESC_PROD_data, // compressed data pointer
     BINDATA_FLAG_COMPRESSED | BINDATA_FLAG_EXTERNAL_VMWARE,            // u32 flags (see bin_data_pvt.h)
     0,                                                                 // Unused

@@ -353,3 +353,21 @@ kgmmuServiceMmuFault_GA100
 
     return status;
 }
+
+/*!
+ * @brief Check if the given MMU fault engine ID is the FLA fault engine.
+ *
+ * @param[in] pKernelGmmu  KernelGmmu object
+ * @param[in] engineID     MMU fault engine ID
+ *
+ * @return NV_TRUE if engineID is the FLA fault engine, NV_FALSE otherwise.
+ */
+NvBool
+kgmmuIsFaultEngineIdFla_GA100
+(
+    KernelGmmu *pKernelGmmu,
+    NvU32       engineID
+)
+{
+    return (engineID == NV_PFAULT_MMU_ENG_ID_FLA);
+}

@@ -22,6 +22,8 @@
  */
 
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "core/system.h"
+#include "gpu/mem_mgr/carveout_mgr.h"
 #include "gpu/mem_mgr/heap_base.h"
 #include "gpu/mem_mgr/mem_utils.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
@@ -573,7 +575,7 @@ memmgrMemCopyWithTransferType
     MemoryManager    *pMemoryManager,
     TRANSFER_SURFACE *pDstInfo,
     TRANSFER_SURFACE *pSrcInfo,
-    NvU32             size,
+    NvU64             size,
     TRANSFER_TYPE     transferType,
     NvU32             flags
 )
@@ -630,9 +632,6 @@ memmgrMemCopyWithTransferType
 
                 return ceutilsMemcopy(pMemoryManager->pCeUtils, &params);
             }
-            break;
-        case TRANSFER_TYPE_CE_PRI:
-            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
             break;
         case TRANSFER_TYPE_BAR0:
             NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
@@ -746,9 +745,6 @@ memmgrMemSetWithTransferType
                 return ceutilsMemset(pMemoryManager->pCeUtils, &params);
             }
             break;
-        case TRANSFER_TYPE_CE_PRI:
-            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
-            break;
         case TRANSFER_TYPE_BAR0:
             NV_PRINTF(LEVEL_ERROR, "BAR0 memset unimplemented\n");
             NV_ASSERT(0);
@@ -811,7 +807,6 @@ memmgrMemWriteWithTransferType
             }
             break;
         case TRANSFER_TYPE_CE:
-        case TRANSFER_TYPE_CE_PRI:
         case TRANSFER_TYPE_BAR0:
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                 _memmgrMemReadOrWriteUsingStagingBuffer(pMemoryManager, pDstInfo, pBuf, size,
@@ -874,7 +869,6 @@ memmgrMemReadWithTransferType
             }
             break;
         case TRANSFER_TYPE_CE:
-        case TRANSFER_TYPE_CE_PRI:
         case TRANSFER_TYPE_BAR0:
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                 _memmgrMemReadOrWriteUsingStagingBuffer(pMemoryManager, pSrcInfo, pBuf, size,
@@ -1082,7 +1076,7 @@ memmgrMemCopy_IMPL
     MemoryManager    *pMemoryManager,
     TRANSFER_SURFACE *pDstInfo,
     TRANSFER_SURFACE *pSrcInfo,
-    NvU32             size,
+    NvU64             size,
     NvU32             flags
 )
 {
@@ -1343,7 +1337,6 @@ memmgrMemBeginTransfer_IMPL
             break;
         case TRANSFER_TYPE_GSP_DMA:
         case TRANSFER_TYPE_CE:
-        case TRANSFER_TYPE_CE_PRI:
         case TRANSFER_TYPE_BAR0:
             if (flags & TRANSFER_FLAGS_SHADOW_ALLOC)
             {
@@ -1407,7 +1400,6 @@ memmgrMemEndTransfer_IMPL
             break;
         case TRANSFER_TYPE_GSP_DMA:
         case TRANSFER_TYPE_CE:
-        case TRANSFER_TYPE_CE_PRI:
         case TRANSFER_TYPE_BAR0:
             NV_ASSERT_OK(memmgrMemWrite(pMemoryManager, pTransferInfo, pTransferInfo->pMapping, memSz, flags));
             portMemFree(pTransferInfo->pMapping);
@@ -1671,6 +1663,41 @@ failed:
     return status;
 }
 
+NvBool
+memUtilsShouldUseScanoutCarveout
+(
+    OBJGPU *pGpu,
+    NvU32   attr2
+)
+{
+    CarveoutMgr *pCarveoutMgr = SYS_GET_CARVEOUT_MGR(SYS_GET_INSTANCE());
+    NvBool bIsSdm = pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM);
+
+    //
+    // Carveout heap management is handled by the Carveout manager.
+    // So if the carveout manager is not present or the GPU is not attached to it,
+    // do not use the scanout carveout.
+    //
+    if (!pCarveoutMgr || !carveoutmgrIsGpuAttached(pCarveoutMgr, pGpu))
+    {
+        return NV_FALSE;
+    }
+
+    if (bIsSdm && FLD_TEST_DRF(OS32, _ATTR2, _USE_SCANOUT_CARVEOUT, _TRUE, attr2))
+    {
+        return NV_TRUE;
+    }
+
+    if (!FLD_TEST_DRF(OS32, _ATTR2, _ISO, _YES, attr2))
+    {
+        return NV_FALSE;
+    }
+
+    // For MDM, if ISO flag is set, use carveout memory.
+    return bIsSdm ? pGpu->getProperty(pGpu, PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT) : NV_TRUE;
+    return NV_FALSE;
+}
+
 /*!
  * @brief This function is used to create a memory descriptor if needed.
  *
@@ -1707,16 +1734,21 @@ memUtilsAllocMemDesc
     {
         NvU64 memDescFlags = MEMDESC_FLAGS_SKIP_RESOURCE_COMPUTE;
 
-        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM))
+        if (memUtilsShouldUseScanoutCarveout(pGpu, pFbAllocInfo->retAttr2))
         {
-            if (FLD_TEST_DRF(OS32, _ATTR2, _USE_SCANOUT_CARVEOUT, _TRUE, pFbAllocInfo->retAttr2))
+            memDescFlags |= MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT;
+        }
+
+        //
+        // SKIP_IOMMU_MAPPING is honored when NV_VERIF_FEATURES is enabled (MODS builds)
+        // or when RM test-only code is enabled via registry key (rmtest)
+        //
+        if (FLD_TEST_DRF(OS32, _ATTR2, _SKIP_IOMMU_MAPPING, _YES, pFbAllocInfo->retAttr2))
+        {
+            OBJSYS *pSys = SYS_GET_INSTANCE();
+            if (pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE))
             {
-                memDescFlags |= MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT;
-            }
-            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT) &&
-                    FLD_TEST_DRF(OS32, _ATTR2, _ISO, _YES, pFbAllocInfo->retAttr2))
-            {
-                memDescFlags |= MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT;
+                memDescFlags |= MEMDESC_FLAGS_SKIP_IOMMU_MAPPING;
             }
         }
 

@@ -159,6 +159,17 @@ cperSeverityToString(NV_CPER_SEVERITY severity)
 #define NV_CPER_VALID_PARTITION_ID              NVBIT(2)
 
 /*
+ * CPER Error Record Header Flags
+ */
+#define NV_CPER_RECORD_FLAG_RECOVERED            NVBIT(0)
+#define NV_CPER_RECORD_FLAG_PREVERR              NVBIT(1)
+#define NV_CPER_RECORD_FLAG_SIMULATED            NVBIT(2)
+#define NV_CPER_RECORD_FLAG_VALID_MASK            \
+    (NV_CPER_RECORD_FLAG_RECOVERED |              \
+     NV_CPER_RECORD_FLAG_PREVERR |                \
+     NV_CPER_RECORD_FLAG_SIMULATED)
+
+/*
  * CPER Section Descriptor Flags
  */
 #define NV_CPER_SECTION_FLAG_PRIMARY            NVBIT(0)
@@ -311,6 +322,7 @@ typedef struct NV_CPER_INIT_PARAMS
     const NV_CPER_GUID    *pPartitionId;   ///< Partition ID (VM GUID), NULL if not applicable
     NvU64                  timestampUs;    ///< Microsecond wall clock timestamp, or 0 for current time
     NvU64                  recordId;       ///< CPER record ID, or 0 to generate one
+    NvU32                  recordFlags;    ///< Standard NV_CPER_RECORD_FLAG_* values
     NvBool                 bTimestampPrecise; ///< Whether timestamp is precise (vs. imprecise estimate)
     NvU16                  sectionCount;   ///< Number of section descriptors to pre-allocate
 } NV_CPER_INIT_PARAMS;
@@ -348,6 +360,7 @@ typedef struct NV_CPER_SECTION_PARAMS
  *
  * @return NV_OK on success
  * @return NV_ERR_INVALID_ARGUMENT if pBuffer or pParams is NULL
+ * @return NV_ERR_INVALID_ARGUMENT if recordFlags contains reserved bits
  * @return NV_ERR_BUFFER_TOO_SMALL if buffer is too small for the header
  */
 NV_STATUS cperInit(void *pBuffer, NvU32 bufferSize, const NV_CPER_INIT_PARAMS *pParams);

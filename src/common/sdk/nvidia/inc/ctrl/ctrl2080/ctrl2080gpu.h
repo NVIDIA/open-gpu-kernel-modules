@@ -76,6 +76,7 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GPU_INFO;
 
 
 #define NV2080_CTRL_GPU_INFO_INDEX_ECID_EXTENDED                                  (0x0000001bU)
+#define NV2080_CTRL_GPU_INFO_INDEX_GPU_UPTIME                                     (0x0000001cU)
 #define NV2080_CTRL_GPU_INFO_INDEX_SYSMEM_ACCESS                                  (0x0000001fU)
 
 
@@ -124,8 +125,9 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GPU_INFO;
 
 #define NV2080_CTRL_GPU_INFO_INDEX_CPU_COHERENT_CACHING_GPU_MEMORY_CAPABILITY     (0x00000046U)
 #define NV2080_CTRL_GPU_INFO_INDEX_GPU_COHERENT_CACHING_CPU_MEMORY_CAPABILITY     (0x00000047U)
+#define NV2080_CTRL_GPU_INFO_INDEX_GPU_CXL_DEVICE                                 (0x00000048U)
 
-#define NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE                                        (0x00000048U)
+#define NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE                                        (0x00000049U)
 
 #define NV2080_CTRL_GPU_INFO_INDEX_TYPE                    30:28
 #define NV2080_CTRL_GPU_INFO_INDEX_TYPE_SPECIFIC_ID        27:24
@@ -262,6 +264,10 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GPU_INFO;
 
 #define NV2080_CTRL_GPU_INFO_INDEX_GPU_COHERENT_CACHING_CPU_MEMORY_CAPABILITY_NO  (0x00000000U)
 #define NV2080_CTRL_GPU_INFO_INDEX_GPU_COHERENT_CACHING_CPU_MEMORY_CAPABILITY_YES (0x00000001U)
+
+/* valid CXL device values */
+#define NV2080_CTRL_GPU_INFO_INDEX_GPU_CXL_DEVICE_NO                              (0x00000000U)
+#define NV2080_CTRL_GPU_INFO_INDEX_GPU_CXL_DEVICE_YES                             (0x00000001U)
 
 
 /*
@@ -429,32 +435,6 @@ typedef struct NV2080_CTRL_GPU_SET_POWER_PARAMS {
 typedef struct NV2080_CTRL_GPU_GET_SDM_PARAMS {
     NvU32 subdeviceMask;
 } NV2080_CTRL_GPU_GET_SDM_PARAMS;
-
-/*
- * NV2080_CTRL_CMD_GPU_SET_SDM
- *
- * This command sets the subdevice instance and mask value for the associated subdevice.
- * The subdevice mask value can be used with the SET_SUBDEVICE_MASK instruction
- * provided by the NV36_CHANNEL_DMA and newer channel dma classes.
- * It must be called before the GPU HW is initialized otherwise
- * NV_ERR_INVALID_STATE is being returned.
- *
- *   subdeviceMask [in]
- *     This field configures the subdevice mask value for the GPU/Subdevice
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_STATE
- *   NV_ERR_INVALID_DATA
- *   NV_ERR_INVALID_PARAM_STRUCT
- */
-#define NV2080_CTRL_CMD_GPU_SET_SDM (0x20800120U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_SET_SDM_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_GPU_SET_SDM_PARAMS_MESSAGE_ID (0x20U)
-
-typedef struct NV2080_CTRL_GPU_SET_SDM_PARAMS {
-    NvU32 subdeviceMask;
-} NV2080_CTRL_GPU_SET_SDM_PARAMS;
 
 /*
  * NV2080_CTRL_CMD_GPU_GET_SIMULATION_INFO
@@ -914,6 +894,7 @@ typedef struct NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ENTRY {
 #define NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_PRIV_ACCESS_MAP              10U
 #define NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_UNRESTRICTED_PRIV_ACCESS_MAP 11U
 #define NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_GLOBAL_PRIV_ACCESS_MAP       12U
+#define NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_GTA_WORK_QUEUE               13U
 
 #define NV2080_CTRL_GPU_PROMOTE_CONTEXT_MAX_ENTRIES                        16U
 
@@ -1119,11 +1100,52 @@ typedef struct NV2080_CTRL_GPU_QUERY_ECC_INTR_PARAMS {
 
 #define NV2080_CTRL_CMD_GPU_QUERY_ECC_STATUS                   (0x2080012fU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_MESSAGE_ID" */
 
+/* ECC unit list */
+#define NV2080_CTRL_GPU_ECC_UNIT_FBPA                          (0x00000000U)
+#define NV2080_CTRL_GPU_ECC_UNIT_L2                            (0x00000001U)
+#define NV2080_CTRL_GPU_ECC_UNIT_L1                            (0x00000002U)
+#define NV2080_CTRL_GPU_ECC_UNIT_SM                            (0x00000003U)
+#define NV2080_CTRL_GPU_ECC_UNIT_SM_L1_DATA                    (0x00000004U)
+#define NV2080_CTRL_GPU_ECC_UNIT_SM_L1_TAG                     (0x00000005U)
+#define NV2080_CTRL_GPU_ECC_UNIT_SM_CBU                        (0x00000006U)
+#define NV2080_CTRL_GPU_ECC_UNIT_SHM                           (0x00000007U)
+#define NV2080_CTRL_GPU_ECC_UNIT_TEX                           (0x00000008U)
+#define NV2080_CTRL_GPU_ECC_UNIT_SM_ICACHE                     (0x00000009U)
+#define NV2080_CTRL_GPU_ECC_UNIT_GCC                           (0x0000000AU)
+#define NV2080_CTRL_GPU_ECC_UNIT_GPCMMU                        (0x0000000BU)
+#define NV2080_CTRL_GPU_ECC_UNIT_HUBMMU_L2TLB                  (0x0000000CU)
+#define NV2080_CTRL_GPU_ECC_UNIT_HUBMMU_HUBTLB                 (0x0000000DU)
+#define NV2080_CTRL_GPU_ECC_UNIT_HUBMMU_FILLUNIT               (0x0000000EU)
+#define NV2080_CTRL_GPU_ECC_UNIT_GPCCS                         (0x0000000FU)
+#define NV2080_CTRL_GPU_ECC_UNIT_FECS                          (0x00000010U)
+#define NV2080_CTRL_GPU_ECC_UNIT_PMU                           (0x00000011U)
+#define NV2080_CTRL_GPU_ECC_UNIT_SM_RAMS                       (0x00000012U)
 
+
+#define NV2080_CTRL_GPU_ECC_UNIT_HSHUBMMU                      (0x00000013U)
+#define NV2080_CTRL_GPU_ECC_UNIT_PCIE_REORDER                  (0x00000014U)
+#define NV2080_CTRL_GPU_ECC_UNIT_PCIE_P2PREQ                   (0x00000015U)
+#define NV2080_CTRL_GPU_ECC_UNIT_PCIE_RBUF                     (0x00000016U)
+#define NV2080_CTRL_GPU_ECC_UNIT_PCIE_SEQ_LUT                  (0x00000017U)
+#define NV2080_CTRL_GPU_ECC_UNIT_PCIE_XTL                      (0x00000018U)
+#define NV2080_CTRL_GPU_ECC_UNIT_LRC                           (0x00000019U)
+#define NV2080_CTRL_GPU_ECC_UNIT_SYSL2                         (0x0000001AU)
+#define NV2080_CTRL_GPU_ECC_UNIT_PCIE_CXL                      (0x0000001BU)
+#define NV2080_CTRL_GPU_ECC_UNIT_FE                            (0x0000001CU)
 #define NV2080_CTRL_GPU_ECC_UNIT_GSP                           (0x0000001DU)
+#define NV2080_CTRL_GPU_ECC_UNIT_PCIE_XPL                      (0x0000001EU)
+#define NV2080_CTRL_GPU_ECC_UNIT_SEC2                          (0x0000001FU)
+#define NV2080_CTRL_GPU_ECC_UNIT_MSE                           (0x00000020U)
+#define NV2080_CTRL_GPU_ECC_UNIT_NVLINK_SAW                    (0x00000021U)
+#define NV2080_CTRL_GPU_ECC_UNIT_NVLINK_RLW                    (0x00000022U)
+#define NV2080_CTRL_GPU_ECC_UNIT_NVLINK_TLW                    (0x00000023U)
+#define NV2080_CTRL_GPU_ECC_UNIT_NVLINK_MVB                    (0x00000024U)
+#define NV2080_CTRL_GPU_ECC_UNIT_CE                            (0x00000025U)
+#define NV2080_CTRL_GPU_ECC_UNIT_LPSEC                         (0x00000026U)
+#define NV2080_CTRL_GPU_ECC_UNIT_PCIE_TRS_P                    (0x00000027U)
 
 
-#define NV2080_CTRL_GPU_ECC_UNIT_COUNT                         (0x00000029U)
+#define NV2080_CTRL_GPU_ECC_UNIT_COUNT                         (0x0000002DU)
 
 
 
@@ -2209,7 +2231,7 @@ typedef struct NV2080_CTRL_GPU_GET_VPR_CAPS_PARAMS {
  */
 #define NV2080_CTRL_CMD_GPU_GET_PES_INFO                       (0x20800168U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_PES_INFO_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_CMD_GPU_GET_PES_INFO_MAX_TPC_PER_GPC_COUNT 15U
+#define NV2080_CTRL_CMD_GPU_GET_PES_INFO_MAX_TPC_PER_GPC_COUNT 32U
 
 #define NV2080_CTRL_GPU_GET_PES_INFO_PARAMS_MESSAGE_ID (0x68U)
 
@@ -2629,7 +2651,7 @@ typedef struct NV2080_CTRL_GPU_SET_PARTITION_INFO {
 
 
 
-#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE                7:5
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE                8:5
 #define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_FULL                                 0x00000001U
 #define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_HALF                                 0x00000002U
 #define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_MINI_HALF                            0x00000003U
@@ -2637,9 +2659,10 @@ typedef struct NV2080_CTRL_GPU_SET_PARTITION_INFO {
 #define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_EIGHTH                               0x00000005U
 #define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_RESERVED_INTERNAL_06                 0x00000006U
 #define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_RESERVED_INTERNAL_07                 0x00000007U
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_RESERVED_INTERNAL_08                 0x00000008U
 
 #define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_NONE                                 0x00000000U
-#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE__SIZE                                8U
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE__SIZE                                9U
 
 
 #define NV2080_CTRL_GPU_PARTITION_MAX_TYPES                                          90U
@@ -3691,9 +3714,20 @@ typedef struct NV2080_CTRL_CMD_GPU_HANDLE_VF_PRI_FAULT_PARAMS {
  *     Set the timeslice config for the requested GPU.
  *     Check @ref NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG_DATA_TIMESLICE for
  *     permissible timeslice values.
+ *
+ * _SCHEDULING_PRIORITY
+ *     Set the scheduling priority for compute work on the requested GPU.
+ *     Maps to runlist interleave levels.
+ *     Setting the policy is privileged (administrator) for every value.
+ *     While the policy is HIGH, unprivileged clients may set the HIGH
+ *     interleave level on their own TSGs; interleave levels already granted
+ *     are not revoked when the policy changes.
+ *     Check @ref NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG_DATA_SCHEDULING_PRIORITY
+ *     for permissible scheduling-priority values.
  */
-#define NV2080_CTRL_GPU_COMPUTE_POLICY_TIMESLICE      0U
-#define NV2080_CTRL_GPU_COMPUTE_POLICY_MAX            1U
+#define NV2080_CTRL_GPU_COMPUTE_POLICY_TIMESLICE           0U
+#define NV2080_CTRL_GPU_COMPUTE_POLICY_SCHEDULING_PRIORITY 1U
+#define NV2080_CTRL_GPU_COMPUTE_POLICY_MAX                 2U
 
 /*!
  * Enum consisting of permissible timeslice options that can configured
@@ -3708,6 +3742,22 @@ typedef enum NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG_DATA_TIMESLICE {
     NV2080_CTRL_CMD_GPU_COMPUTE_TIMESLICE_MAX = 4,
 } NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG_DATA_TIMESLICE;
 
+/*!
+ * Enum consisting of permissible scheduling-priority options that can be
+ * configured for a GPU. Compute clients map these to runlist interleave
+ * levels (DEFAULT/MEDIUM are equivalent -- both schedule at parity with
+ * graphics; LOW receives less scheduling weight than MEDIUM; HIGH receives
+ * more scheduling weight than MEDIUM/LOW by appearing more frequently in
+ * the runlist; already-running work is not preempted).
+ */
+typedef enum NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG_DATA_SCHEDULING_PRIORITY {
+    NV2080_CTRL_CMD_GPU_COMPUTE_SCHEDULING_PRIORITY_DEFAULT = 0,
+    NV2080_CTRL_CMD_GPU_COMPUTE_SCHEDULING_PRIORITY_LOW = 1,
+    NV2080_CTRL_CMD_GPU_COMPUTE_SCHEDULING_PRIORITY_MEDIUM = 2,
+    NV2080_CTRL_CMD_GPU_COMPUTE_SCHEDULING_PRIORITY_HIGH = 3,
+    NV2080_CTRL_CMD_GPU_COMPUTE_SCHEDULING_PRIORITY_MAX = 4,
+} NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG_DATA_SCHEDULING_PRIORITY;
+
 typedef struct NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG {
     /*!
      * NV2080_CTRL_GPU_COMPUTE_POLICY_<xyz>
@@ -3718,7 +3768,8 @@ typedef struct NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG {
      * Union of type-specific data
      */
     union {
-        NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG_DATA_TIMESLICE timeslice;
+        NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG_DATA_TIMESLICE           timeslice;
+        NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG_DATA_SCHEDULING_PRIORITY schedulingPriority;
     } data;
 } NV2080_CTRL_GPU_COMPUTE_POLICY_CONFIG;
 
@@ -3832,32 +3883,6 @@ typedef struct NV2080_CTRL_CMD_GPU_UPDATE_GFID_P2P_CAPABILITY_PARAMS {
     NvU32  fabricPartitionId;
 } NV2080_CTRL_CMD_GPU_UPDATE_GFID_P2P_CAPABILITY_PARAMS;
 
-/*!
- * NV2080_CTRL_CMD_GPU_VALIDATE_MEM_MAP_REQUEST
- *
- * @brief Validate the address range for memory map request by comparing the
- *        user supplied address range with GPU BAR0/BAR1 range.
- *
- * @param[in]   addressStart    Start address for memory map request
- * @param[in]   addressLength   Length for for memory map request
- * @param[out]  protection      NV_PROTECT_READ_WRITE, if both read/write is allowed
- *                              NV_PROTECT_READABLE, if only read is allowed
- *
- * Possible status values returned are:
- *     NV_OK
- *     NV_ERR_PROTECTION_FAULT
- *
- */
-#define NV2080_CTRL_CMD_GPU_VALIDATE_MEM_MAP_REQUEST (0x20800198U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS_MESSAGE_ID (0x98U)
-
-typedef struct NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS {
-    NV_DECLARE_ALIGNED(NvU64 addressStart, 8);
-    NV_DECLARE_ALIGNED(NvU64 addressLength, 8);
-    NvU32 protection;
-} NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS;
-
 /*
  * NV2080_CTRL_CMD_GPU_GET_ENGINE_LOAD_TIMES
  *
@@ -3881,7 +3906,7 @@ typedef struct NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS {
  */
 #define NV2080_CTRL_CMD_GPU_GET_ENGINE_LOAD_TIMES (0x2080019bU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_ENGINE_LOAD_TIMES_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_GPU_MAX_ENGINE_OBJECTS        0xC9U
+#define NV2080_CTRL_GPU_MAX_ENGINE_OBJECTS        0xCDU
 
 #define NV2080_CTRL_GPU_GET_ENGINE_LOAD_TIMES_PARAMS_MESSAGE_ID (0x9BU)
 
@@ -4160,6 +4185,8 @@ typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS {
 
 
 #define NV2080_CTRL_GPU_FABRIC_PROBE_CAP_UC_LOOPBACK_SUPPORTED  NVBIT64(2)
+
+
 
 #define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW                    1:0
 #define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW_NOT_SUPPORTED      0
@@ -4858,7 +4885,8 @@ typedef struct NV2080_CTRL_GPU_VGA_SR_READ_WRITE_PARAMS {
 
 typedef enum NV2080_CTRL_GPU_INJECT_ERROR_TYPE {
     NV2080_CTRL_GPU_INJECT_ERROR_MESSAGE_QUEUE = 0,
-    NV2080_CTRL_GPU_INJECT_ERROR__COUNT = 1,
+    NV2080_CTRL_GPU_INJECT_ERROR_MEMORY_SUBSYSTEM_TIMEOUT = 1,
+    NV2080_CTRL_GPU_INJECT_ERROR__COUNT = 2,
 } NV2080_CTRL_GPU_INJECT_ERROR_TYPE;
 
 #define NV2080_CTRL_CMD_GPU_ERROR_INJECTION_CONTROL (0x208001efU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_ERROR_INJECTION_CONTROL_PARAMS_MESSAGE_ID" */
@@ -5096,5 +5124,37 @@ typedef struct NV2080_CTRL_GPU_GET_EGM_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 egmSize, 8);
     NvS32 egmNodeId;
 } NV2080_CTRL_GPU_GET_EGM_INFO_PARAMS;
+
+
+
+/*!
+ * NV2080_CTRL_CMD_GPU_GET_ROP_INFO
+ *
+ * This command returns ROP throttle information for a given gpcId.
+ *
+ * If this API is supported, ropThrottleLimit and ropEntries will be populated and the call will return NV_OK.
+ * Else, return NV_ERR_NOT_SUPPORTED or NV_ERR_INVALID_ARGUMENT
+ */
+typedef struct NV2080_CTRL_GPU_ROP_THROTTLE_ENTRY {
+    NvU32 zropPerf;
+    NvU32 cropPerf;
+} NV2080_CTRL_GPU_ROP_THROTTLE_ENTRY;
+
+typedef enum NV2080_CTRL_GPU_ROP_TYPE {
+    NV2080_CTRL_GPU_ROP_TYPE_ZROP = 0,
+    NV2080_CTRL_GPU_ROP_TYPE_CROP = 1,
+} NV2080_CTRL_GPU_ROP_TYPE;
+
+#define NV2080_CTRL_GPU_NUM_ROP_ENTRIES           (2U)
+
+#define NV2080_CTRL_CMD_GPU_GET_ROP_THROTTLE_INFO (0x208001fd) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GR_GET_ROP_THROTTLE_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GR_GET_ROP_THROTTLE_INFO_PARAMS_MESSAGE_ID (0xfdU)
+
+typedef struct NV2080_CTRL_GR_GET_ROP_THROTTLE_INFO_PARAMS {
+    NvU32                              gpcId;
+    NvU32                              ropThrottleLimit;
+    NV2080_CTRL_GPU_ROP_THROTTLE_ENTRY ropEntries[NV2080_CTRL_GPU_NUM_ROP_ENTRIES];
+} NV2080_CTRL_GR_GET_ROP_THROTTLE_INFO_PARAMS;
 
 /* _ctrl2080gpu_h_ */

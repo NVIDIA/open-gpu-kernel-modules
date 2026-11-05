@@ -309,6 +309,7 @@ struct NvKmsKapiLayerConfig {
         NvU64 offset;
         NvU32 vssSegments;
         NvU32 lutEntries;
+        NvBool satCorrEnable;
     } tmo;
 
     struct NvKmsCscMatrix csc;
@@ -402,6 +403,8 @@ struct NvKmsKapiHeadModeSetConfig {
 
     struct NvKmsHdmiVsifMetadata hdmiVsifMetadata;
 
+    enum NvKmsAllmMode allmMode;
+
     enum NvKmsOutputColorimetry colorimetry;
 
     struct {
@@ -420,6 +423,22 @@ struct NvKmsKapiHeadModeSetConfig {
     } dithering;
 
     NvBool postcompColorPassthrough;
+
+    /*!
+     * Output color format selection. Maps to
+     * NvKmsDpyAttributeRequestedColorFormatValue.
+     * NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_UNKNOWN means "no
+     * preference" -- NVKMS chooses based on its own heuristics.
+     */
+    NvU32 colorFormat;
+
+    /*!
+     * Output color bit depth selection. Maps to
+     * NvKmsDpyAttributeColorBpcValue.
+     * NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN means "no
+     * preference" -- NVKMS chooses based on its own heuristics.
+     */
+    NvU32 colorBpc;
 };
 
 struct NvKmsKapiHeadRequestedConfig {
@@ -434,7 +453,11 @@ struct NvKmsKapiHeadRequestedConfig {
         NvBool olutFpNormScaleChanged          : 1;
         NvBool ditheringChanged                : 1;
         NvBool hdmiVsifMetadataChanged         : 1;
+        NvBool allmModeChanged                 : 1;
         NvBool postcompColorPassthroughChanged : 1;
+        NvBool colorFormatChanged              : 1;
+        NvBool colorBpcChanged                 : 1;
+        NvBool vrrEnabledChanged               : 1;
     } flags;
 
     struct NvKmsKapiCursorRequestedConfig cursorRequestedConfig;
@@ -536,6 +559,9 @@ struct NvKmsKapiDynamicDisplayParams {
 
     /* [OUT] VRR status */
     NvBool vrrSupported;
+
+    /* [OUT] ALLM capability (display advertises ALLM support in EDID) */
+    NvBool allmCapable;
 
     /* [IN/OUT] EDID of connected monitor/ Input to override EDID */
     struct {

@@ -143,7 +143,7 @@ typedef struct MEMORY_ALLOCATION_REQUEST
     NvU32                        internalflags;      // Extended flags ?! flags seem exhausted.
     HWRESOURCE_INFO             *pHwResource;        // out: data copied in if non-NULL
     MEMORY_DESCRIPTOR           *pMemDesc;           // in/out: allocate memdesc if NULL
-    PMA_ALLOC_INFO              *pPmaAllocInfo[NV_MAX_SUBDEVICES];      // out: tracks the pre-allocated memory per GPU.
+    PMA_ALLOC_INFO              *pPmaAllocInfo;      // out: tracks the pre-allocated memory.
     NvU32                        classNum;
     NvHandle                     hClient;
     NvHandle                     hParent;

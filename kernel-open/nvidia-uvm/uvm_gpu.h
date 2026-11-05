@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2025 NVIDIA Corporation
+    Copyright (c) 2015-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -127,6 +127,22 @@ struct uvm_service_block_context_struct
     // Number of pages that can be read-duplicated. This is the same value as
     // the result of bitmap_weight(read_duplicate_count_mask)
     unsigned read_duplicate_count;
+
+    // SMMU/ATS faults on a present CPU PTE that already permits the access,
+    // according to the snapshot taken by
+    // uvm_hmm_ats_pte_fixup_check_and_record():
+    // access flag faults (software must set AF in the CPU PTE) or permission
+    // faults used for software dirty-bit tracking (DBM==0, so hardware does
+    // not auto-upgrade AP). The SMMU cannot perform those table updates, so
+    // handle_mm_fault() has to fix the CPU PTE once the va_block lock has
+    // been dropped.
+    uvm_page_mask_t ats_pte_fixup_mask;
+
+    // SMMU/ATS write faults on a present CPU PTE without write permission,
+    // for example CoW. Block servicing does not change the CPU PTE of a page
+    // it does not move, so the page is faulted in for write with
+    // hmm_range_fault() once the va_block lock has been dropped.
+    uvm_page_mask_t ats_pte_write_mask;
 
     //
     // Fields used by the CPU fault handling routine
@@ -1081,6 +1097,10 @@ struct uvm_parent_gpu_struct
     //
     // This value is only defined for GPUs that support non-replayable faults.
     bool has_clear_faulted_channel_sw_method;
+
+    // If true, the BAR0 decoupler blocks access to the registers used to clear
+    // a faulted channel, so a SW method must be used instead.
+    bool cant_access_fault_clear_register;
 
     // Ampere(GA100) requires map->invalidate->remap->invalidate for page size
     // promotion

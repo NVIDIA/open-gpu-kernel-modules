@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,6 +48,7 @@
 #include "published/hopper/gh100/dev_falcon_v4.h"
 #include "nvmisc.h"
 #include "gpu/conf_compute/conf_compute.h"
+#include "sec2/sec2ifheartbeat.h"
 
 /* ------------------------ Macros ----------------------------------------- */
 //
@@ -75,6 +76,9 @@
         SPDM_GET_CAPABILITIES_RESPONSE_FLAGS_MUT_AUTH_CAP   | \
         SPDM_GET_CAPABILITIES_RESPONSE_FLAGS_HBEAT_CAP;
 
+// HW timer resolution is nanoseconds.
+#define SPDM_NSEC_TO_MSEC(x)                        ((x) / 1000000ULL)
+
 /* ------------------------ Static Variables ------------------------------- */
 static SPDM_ALGO_CHECK_ENTRY g_SpdmAlgoCheckTable_GH100[] =
 {
@@ -89,8 +93,10 @@ static SPDM_ALGO_CHECK_ENTRY g_SpdmAlgoCheckTable_GH100[] =
 };
 
 /* ------------------------ Static Function Prototypes --------------------- */
-static void _spdmSendHeartbeat(NvU32 gpuInstance, void *pArgs);
-static NV_STATUS _spdmTriggerHeartbeat(OBJGPU *pGpu, OBJTMR *pTmr, TMR_EVENT *pTmrEvent);
+static void      _spdmSendHeartbeat_workitem(NvU32 gpuInstance, void *pArgs);
+static NV_STATUS _spdmProcessHeartbeat(OBJGPU *pGpu, OBJTMR *pTmr, Spdm *pSpdm);
+static NV_STATUS _spdmTriggerHeartbeat_tmrCallback(OBJGPU *pGpu, OBJTMR *pTmr, TMR_EVENT *pTmrEvent);
+static void      _spdmHaltTransactionForFatalError_workitem(NvU32 gpuInstance, void *pArgs);
 
 //
 // Static transport layer functions which we pass to libspdm as function pointers.
@@ -142,118 +148,260 @@ _spdmGetSecuredMessageVersionGsp
 }
 
 /*!
- * @brief Work function scheduled by heartbeat callback in order to actually
- *        send the heartbeat to GSP-RM. Checks to ensure whether KEY_UPDATE
- *        is required before sending heartbeat.
+ * @brief Transition the GPU and confidential-compute stack to a fatal state
+ *        after an unrecoverable SPDM heartbeat failure.
  *
- * @param[in] gpuInstance : Instance number of the specific GPU
- * @param[in] pArgs       : Opaque pointer to the SPDM object
+ * Stops system-memory DMA requests, marks the GSP and CC capabilities as
+ * failed, disconnects the GPU, revokes its mappings, and records the
+ * confidential-compute error state.
+ *
+ * @param[in] gpuInstance  GPU instance whose transaction must be halted.
+ * @param[in] pArgs        SPDM object associated with the failed heartbeat.
  */
 static void
-_spdmSendHeartbeat
+_spdmHaltTransactionForFatalError_workitem
 (
-    NvU32  gpuInstance,
-    void  *pArgs
+    NvU32 gpuInstance,
+    void *pArgs
 )
 {
-    OBJGPU    *pGpu   = gpumgrGetGpu(gpuInstance);
-    OBJTMR    *pTmr   = NULL;
-    Spdm      *pSpdm  = NULL;
-    NV_STATUS  status = NV_OK;
+    OBJGPU     *pGpu  = gpumgrGetGpu(gpuInstance);
 
-    if (pGpu == NULL || pArgs == NULL)
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        goto ErrorExit;
-    }
-
-    pTmr  = GPU_GET_TIMER(pGpu);
-    pSpdm = (Spdm *)pArgs;
-    if (pSpdm == NULL || pSpdm->pLibspdmContext == NULL ||
-        pSpdm->sessionId == INVALID_SESSION_ID)
-    {
-        status = NV_ERR_NOT_READY;
-        goto ErrorExit;
-    }
-
-    //
-    // Check to see if KEY_UPDATE is required before using. As timer resets on
-    // every message sent, sending KEY_UPDATE shouldn't incur any timeout risk.
-    //
-    status = spdmCheckAndExecuteKeyUpdate(pGpu, pSpdm, NV_KEY_UPDATE_TRIGGER_ID_HEARTBEAT);
-    if (status != NV_OK)
-    {
-        goto ErrorExit;
-    }
-
-    CHECK_SPDM_STATUS(libspdm_heartbeat(pSpdm->pLibspdmContext, pSpdm->sessionId));
-
-    // Reschedule heartbeat only if successful
-    status = tmrEventScheduleRelSec(pTmr, pSpdm->pHeartbeatEvent, pSpdm->heartbeatPeriodSec);
-
-ErrorExit:
-    if (status != NV_OK && pGpu != NULL)
+    if (pGpu != NULL)
     {
         ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
-        //
-        // Set GPU Ready State to false. This will destroy the SPDM session as well.
-        // Ideally we don't have dependency on Confidential Compute object here,
-        // but that's the best we can do without unnecessary code duplication.
-        //
-        NV_PRINTF(LEVEL_FATAL, "SPDM: Fatal heartbeat failure detected 0x%x\n", status);
         confComputeSetErrorState(pGpu, pConfCompute);
     }
 }
 
 /*!
- * @brief Callback function scheduled when HEARTBEAT is enabled.
- *        Function will queue a work item to actually send the heartbeat,
- *        since we cannot do so in the callback interrupt context.
- *        Upon successful queueing of work item, schedules another heartbeat callback.
+ * @brief Process an SPDM heartbeat check and reschedule the next timer.
+ *        Validates the SPDM object, samples the current time, invokes
+ *        spdmCheckHeartbeat_HAL to verify the heartbeat match nonce + 1,
+ *        then schedules the next heartbeat timer event.
  *
- * @param[in] pGpu      : OBJGPU pointer
- * @param[in] pTmr      : OBJTMR pointer
- * @param[in] pTmrEvent : Pointer to the specific heartbeat timer event.
+ * @param[in] pGpu  : OBJGPU pointer.
+ * @param[in] pTmr  : OBJTMR pointer.
+ * @param[in] pSpdm : SPDM object associated with the heartbeat.
  *
  * @return NV_STATUS representing success or relevant failure.
  */
 static NV_STATUS
-_spdmTriggerHeartbeat
+_spdmProcessHeartbeat
 (
-    OBJGPU     *pGpu,
-    OBJTMR     *pTmr,
-    TMR_EVENT *pTmrEvent
+    OBJGPU *pGpu,
+    OBJTMR *pTmr,
+    Spdm   *pSpdm
 )
 {
-    NV_STATUS  status = NV_OK;
+    NV_STATUS  status = NV_OK, tmpStatus;
+    NvU32      gpuInst;
+    NvU64      callbackStart;
+    NvU32      retry = 0;
 
-    if (pGpu == NULL || pTmr == NULL || pTmrEvent == NULL)
+    if ((pGpu == NULL) || (pTmr == NULL) || (pSpdm == NULL))
     {
-        status = NV_ERR_INVALID_ARGUMENT;
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    gpuInst = gpuGetInstance(pGpu);
+    if (pSpdm != GPU_GET_SPDM(pGpu))
+    {
+        status = NV_ERR_INVALID_OBJECT;
         goto ErrorExit;
     }
 
-    // Some RM APIs call SPDM, ensure we do not conflict with them
-    status = osQueueWorkItem(pGpu,
-                             _spdmSendHeartbeat,
-                             pTmrEvent->pUserData,
-                             (OsQueueWorkItemFlags){
-                                 .bDontFreeParams = NV_TRUE,
-                                 .apiLock = WORKITEM_FLAGS_API_LOCK_READ_WRITE,
-                                 .bLockGpus = NV_TRUE});
-
-    ErrorExit:
+    status = tmrGetCurrentTime(pTmr, &callbackStart);
     if (status != NV_OK && pGpu != NULL)
     {
-        ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+        NV_PRINTF(LEVEL_ERROR,
+                  SPDM_HBEAT_LOG "GPU-%u: tmrGetCurrentTime failed 0x%x\n",
+                  gpuInst, status);
+        goto ErrorExit;
+    }
+
+    // read counter and check if it's in increasing
+    status = spdmCheckHeartbeat_HAL(pGpu, pSpdm, callbackStart);
+
+    if (status != NV_OK && status != NV_ERR_MORE_PROCESSING_REQUIRED)
+    {
+        goto ErrorExit;
+    }
+
+    status = tmrEventScheduleRel(pTmr, pSpdm->pHeartbeatEvent, pSpdm->heartbeatPeriodNsec);
+
+ErrorExit:
+    if (status != NV_OK && pGpu != NULL)
+    {
         //
         // Set GPU Ready State to false. This will destroy the SPDM session as well.
         // Ideally we don't have dependency on Confidential Compute object here,
         // but that's the best we can do without unnecessary code duplication.
         //
-        NV_PRINTF(LEVEL_FATAL, "SPDM: Fatal heartbeat failure detected 0x%x\n", status);
-        confComputeSetErrorState(pGpu, pConfCompute);
+        NV_PRINTF(LEVEL_ERROR,
+                  SPDM_HBEAT_LOG "SPDM: GPU-%u fatal heartbeat failure 0x%x\n",
+                  gpuInst, status);
+
+        //
+        // Becuase _spdmHaltTransactionForFatalError will destroy timer event.
+        // This will make pSpdm->pHeartbeatEvent as a dangling pointer.
+        // So RM always need to queue another workitem to clean up spdm/cc context.
+        //
+        tmpStatus = osQueueWorkItem(pGpu,
+                                    _spdmHaltTransactionForFatalError_workitem,
+                                    pSpdm,
+                                    (OsQueueWorkItemFlags){
+                                        .bDontFreeParams = NV_TRUE,
+                                        .bLockGpus       = NV_TRUE,
+                                   });
+
+        while (tmpStatus != NV_OK && (retry++ < RM_SEC2_HEARTBEAT_QUEUE_WORKITEM_RETRY_COUNT))
+        {
+            //
+            // If queue workitem failed, we just retry.
+            // TODO: Better to improve whole timer callback scheduing, add new flag to make timer
+            // object able to detect client timer event is destroyed.
+            //
+            NV_PRINTF(LEVEL_ERROR, SPDM_HBEAT_LOG "Queue workitem error for _spdmHaltTransactionForFatalError_workitem, retry = %d !!! \n", retry);
+
+            tmpStatus = osQueueWorkItem(pGpu,
+                                        _spdmHaltTransactionForFatalError_workitem,
+                                        pSpdm,
+                                        (OsQueueWorkItemFlags){
+                                            .bDontFreeParams = NV_TRUE,
+                                            .bLockGpus       = NV_TRUE,
+                                       });
+        }
+
+        if (tmpStatus != NV_OK)
+        {
+            // TODO : Retry still can't get workitem queue work, need to add error handler for such scenario
+            NV_PRINTF(LEVEL_ERROR, SPDM_HBEAT_LOG "Fatal error, can't queue _spdmHaltTransactionForFatalError_workitem after %d retry !!! \n", retry);
+        }
     }
+
+    return status;
+}
+
+/*!
+ * @brief Work item that processes a heartbeat while holding the GPU lock
+ *        requested by _spdmTriggerHeartbeat_tmrCallback.
+ *
+ * @param[in] gpuInstance : Instance number of the specific GPU.
+ * @param[in] pArgs       : SPDM object associated with the heartbeat.
+ */
+static void
+_spdmSendHeartbeat_workitem
+(
+    NvU32  gpuInstance,
+    void  *pArgs
+)
+{
+    OBJGPU     *pGpu  = gpumgrGetGpu(gpuInstance);
+    OBJTMR     *pTmr  = (pGpu != NULL) ? GPU_GET_TIMER(pGpu) : NULL;
+    Spdm       *pSpdm = (Spdm *)pArgs;
+
+    //
+    // Because running in workitem callback, we ignore return status here.
+    // The function itself will detect error & handle accordingly.
+    //
+    (void)_spdmProcessHeartbeat(pGpu, pTmr, pSpdm);
+}
+
+/*!
+ * @brief Callback function scheduled when HEARTBEAT is enabled.
+ *        Process the heartbeat directly when the required execution context
+ *        and locks are already present; otherwise defer it to one work item.
+ *
+ * @param[in] pGpu      : OBJGPU pointer.
+ * @param[in] pTmr      : OBJTMR pointer.
+ * @param[in] pTmrEvent : Pointer to the specific heartbeat timer event.
+ *
+ * @return NV_STATUS representing success or relevant failure.
+ */
+static NV_STATUS
+_spdmTriggerHeartbeat_tmrCallback
+(
+    OBJGPU     *pGpu,
+    OBJTMR     *pTmr,
+    TMR_EVENT  *pTmrEvent
+)
+{
+    NV_STATUS status;
+    NV_STATUS tmpStatus;
+    Spdm     *pSpdm;
+    NvU32     gpuMask = 0;
+    NvU32     gpuInst;
+    NvU32     retry = 0;
+
+    if ((pGpu == NULL) || (pTmr == NULL) || (pTmrEvent == NULL))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pSpdm = GPU_GET_SPDM(pGpu);
+    if ((pSpdm == NULL) || (pTmrEvent != pSpdm->pHeartbeatEvent))
+    {
+        return NV_ERR_INVALID_OBJECT;
+    }
+    gpuInst = gpuGetInstance(pGpu);
+
+
+    if (!osIsRaisedIRQL() &&
+        rmGpuGroupLockIsOwner(gpuGetInstance(pGpu),
+                              GPU_LOCK_GRP_SUBDEVICE,
+                              &gpuMask))
+    {
+        // The function itself will detect error & handle accordingly.
+        status = _spdmProcessHeartbeat(pGpu, pTmr, pSpdm);
+    }
+    else
+    {
+        status = osQueueWorkItem(pGpu,
+                                 _spdmSendHeartbeat_workitem,
+                                 pSpdm,
+                                 (OsQueueWorkItemFlags){
+                                     .bDontFreeParams = NV_TRUE,
+                                     .bLockGpus       = NV_TRUE,
+                                });
+
+        if (status != NV_OK)
+        {
+            tmpStatus = osQueueWorkItem(pGpu,
+                                        _spdmHaltTransactionForFatalError_workitem,
+                                        pSpdm,
+                                        (OsQueueWorkItemFlags){
+                                            .bDontFreeParams = NV_TRUE,
+                                            .bLockGpus       = NV_TRUE,
+                                       });
+
+            while (tmpStatus != NV_OK && (retry++ < RM_SEC2_HEARTBEAT_QUEUE_WORKITEM_RETRY_COUNT))
+            {
+                //
+                // If queue workitem failed, we just retry.
+                // TODO: Better to improve whole timer callback scheduing, add new flag to make timer
+                // object able to detect client timer event is destroyed.
+                //
+                NV_PRINTF(LEVEL_ERROR, SPDM_HBEAT_LOG "GPU-%d : Queue workitem error for _spdmHaltTransactionForFatalError_workitem, retry = %d !!! \n",
+				                                       gpuInst, retry);
+
+                tmpStatus = osQueueWorkItem(pGpu,
+                                            _spdmHaltTransactionForFatalError_workitem,
+                                            pSpdm,
+                                            (OsQueueWorkItemFlags){
+                                                .bDontFreeParams = NV_TRUE,
+                                                .bLockGpus       = NV_TRUE,
+                                            });
+            }
+
+            if (tmpStatus != NV_OK)
+            {
+                // TODO : Retry still can't get workitem queue work, need to add error handler for such scenario
+                NV_PRINTF(LEVEL_ERROR, SPDM_HBEAT_LOG "Fatal error, can't execute _spdmHaltTransactionForFatalError_workitem after %d retry !!! \n", retry);
+            }
+        }
+    }
+
     return status;
 }
 
@@ -725,6 +873,20 @@ ErrorExit:
 
 /* ------------------------ Public Functions ------------------------------- */
 /*!
+ * Returns the SPDM transport surface size for chips that route to the
+ * Hopper / Blackwell HAL implementation.
+ */
+NvU32
+spdmGetTransportSurfaceSize_GH100
+(
+    OBJGPU *pGpu,
+    Spdm   *pSpdm
+)
+{
+    return NV_SPDM_SYSMEM_SURFACE_SIZE_DEFAULT;
+}
+
+/*!
  * On Hopper, we use GSP as SPDM Responder. To initialize, we must allocate
  * a surface for SPDM communication, send initialization command to GSP-SPDM
  * partition, and register all transport-layer functionality with library.
@@ -750,9 +912,8 @@ spdmDeviceInit_GH100
     }
     pSpdm->transportBufferSize = pSpdm->payloadBufferSize;
 
-    // Register transport layer functionality with library.
     libspdm_register_transport_layer_func(pSpdm->pLibspdmContext,
-                                          NV_SPDM_MAX_SPDM_PAYLOAD_SIZE,
+                                          pSpdm->payloadBufferSize - sizeof(NV_SPDM_DESC_HEADER),
                                           sizeof(NV_SPDM_DESC_HEADER),
                                           0,
                                           _spdmEncodeMessageGsp,
@@ -1127,8 +1288,6 @@ spdmGetAttestationReport_GH100
         libspdm_reset_msg_log(pSpdm->pLibspdmContext);
         libspdm_set_msg_log_mode(pSpdm->pLibspdmContext, LIBSPDM_MSG_LOG_MODE_ENABLE);
 
-        numBlocks = SPDM_MAX_MEASUREMENT_BLOCK_COUNT;
-
         //
         // Use Attestation Report buffer temporarily to store measurements, we will replace
         // with the full Attestation Report from message transcripts. If the Attestation Report
@@ -1312,58 +1471,68 @@ spdmRegisterForHeartbeats_GH100
 (
     OBJGPU *pGpu,
     Spdm   *pSpdm,
-    NvU32   heartbeatPeriodSec
+    NvU32   heartbeatPeriodNsec
 )
 {
     NV_STATUS                                   status = NV_OK;
     OBJTMR                                     *pTmr;
-    RMTIMEOUT                                   timeout;
-    NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS  params;
-
-    // Basic parameter validation, make sure we are in a session
-    if (pGpu == NULL || pSpdm == NULL || pSpdm->sessionId == INVALID_SESSION_ID)
+    if (pSpdm->sessionId == INVALID_SESSION_ID)
     {
         return NV_ERR_NOT_READY;
     }
-    // Set minimum value to ensure we don't trigger unexpected behavior with small timer values.
-    else if (heartbeatPeriodSec < SPDM_DEFAULT_HEARTBEAT_PERIOD_IN_SEC)
+
+    if (pSpdm->pHeartbeatEvent != NULL)
     {
-        return NV_ERR_INVALID_ARGUMENT;
+        return NV_ERR_INVALID_STATE;
     }
 
+    //
+    // SEC2 polling handshake register every 2 ms; RM generate handshake signal every 2.5 ms.
+    //
     pTmr = GPU_GET_TIMER(pGpu);
 
-    // Create the timer event and schedule the first heartbeat callback
-    status = tmrEventCreate(pTmr, &pSpdm->pHeartbeatEvent, _spdmTriggerHeartbeat, pSpdm, TMR_FLAG_USE_OS_TIMER);
+    pSpdm->heartbeatPeriodNsec    = heartbeatPeriodNsec;
+
+    if (pSpdm->heartbeatResponder == SPDM_HEARTBEAT_RESPONDER_SEC2)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  SPDM_HBEAT_LOG "GPU-%u: creating SEC2 heartbeat timer (period=%llu ms)\n",
+                  gpuGetInstance(pGpu),
+                  SPDM_NSEC_TO_MSEC(SPDM_SEC2_HEARTBEAT_PERIOD_NSEC));
+    }
+    else
+    {
+       status = NV_ERR_NOT_SUPPORTED;
+       goto ErrorExit;
+    }
+    status = tmrEventCreate(pTmr, &pSpdm->pHeartbeatEvent, _spdmTriggerHeartbeat_tmrCallback, pSpdm,
+                            TMR_FLAG_USE_OS_TIMER);
     if (status != NV_OK)
     {
-        return status;
+        goto ErrorExit;
     }
 
-    pSpdm->heartbeatPeriodSec = heartbeatPeriodSec;
-    status = tmrEventScheduleRelSec(pTmr, pSpdm->pHeartbeatEvent, pSpdm->heartbeatPeriodSec);
 
-    // Tell GSP-RM to start expecting heartbeats.
-    portMemSet(&params, 0, sizeof(params));
-    params.cmd.cmdType                 = RM_GSP_SPDM_CMD_ID_CC_HEARTBEAT_CTRL;
-    params.cmd.ccHeartbeatCtrl.bEnable = NV_TRUE;
-
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-    status = spdmSendCtrlCall(pGpu, pSpdm, &params);
+    status = tmrGetCurrentTime(pTmr, &pSpdm->heartbeatLastProgressTime);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "SPDM: Send/receive error in CC_HEARTBEAT_CTRL command! Status = 0x%08x\n", status);
-        return status;
+        goto ErrorExit;
     }
 
-    // Perform basic validation of header returned.
-    status = params.msg.status;
+    status = tmrEventScheduleRel(pTmr, pSpdm->pHeartbeatEvent, pSpdm->heartbeatPeriodNsec);
+
+ErrorExit:
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "SPDM: RPC returned failure in CC_HEARTBEAT_CTRL command! status = 0x%08x\n",
-                  status);
-        DBG_BREAKPOINT();
-        return status;
+        pSpdm->heartbeatPeriodNsec        = 0;
+        pSpdm->heartbeatResponder         = SPDM_HEARTBEAT_RESPONDER_UNKNOWN;
+        portMemSet(pSpdm->heartbeatKey, 0, sizeof(pSpdm->heartbeatKey));
+
+        if (pSpdm->pHeartbeatEvent != NULL)
+        {
+            tmrEventDestroy(pTmr, pSpdm->pHeartbeatEvent);
+            pSpdm->pHeartbeatEvent = NULL;
+        }
     }
 
     return status;
@@ -1377,45 +1546,27 @@ spdmUnregisterFromHeartbeats_GH100
 )
 {
     NV_STATUS                                   status = NV_OK;
+    OBJTMR                                     *pTmr;
 
-    OBJTMR                                     *pTmr = GPU_GET_TIMER(pGpu);
-    RMTIMEOUT                                   timeout;
-    NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS  params;
-
-    if (pSpdm->pHeartbeatEvent == NULL)
+    if ((pGpu == NULL) || (pSpdm == NULL))
     {
-        // No timer exists, we never started sending heartbeats.
-        return NV_OK;
+        return NV_ERR_INVALID_ARGUMENT;
     }
 
-    // Tell GSP-RM to stop expecting heartbeats.
-    portMemSet(&params, 0, sizeof(params));
-    params.cmd.cmdType                 = RM_GSP_SPDM_CMD_ID_CC_HEARTBEAT_CTRL;
-    params.cmd.ccHeartbeatCtrl.bEnable = NV_FALSE;
-
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-    status = spdmSendCtrlCall(pGpu, pSpdm, &params);
-    if (status != NV_OK)
+    pTmr = GPU_GET_TIMER(pGpu);
+    if (pSpdm->pHeartbeatEvent != NULL)
     {
-        NV_PRINTF(LEVEL_ERROR, "SPDM: Send/receive error in CC_HEARTBEAT_CTRL command! Status = 0x%08x\n", status);
-        goto ErrorExit;
+        tmrEventDestroy(pTmr, pSpdm->pHeartbeatEvent);
+        pSpdm->pHeartbeatEvent = NULL;
     }
 
-    // Perform basic validation of header returned.
-    status = params.msg.status;
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "SPDM: RPC returned failure in CC_HEARTBEAT_CTRL command! status = 0x%08x\n",
-                  status);
-        DBG_BREAKPOINT();
-        goto ErrorExit;
-    }
-
-ErrorExit:
-    // In any case, cancel any further heartbeats that might occur. Handles NULL gracefully.
-    tmrEventDestroy(pTmr, pSpdm->pHeartbeatEvent);
-    pSpdm->pHeartbeatEvent    = NULL;
-    pSpdm->heartbeatPeriodSec = 0;
+    pSpdm->heartbeatLastProgressTime  = 0;
+    pSpdm->heartbeatPeriodNsec        = 0;
+    pSpdm->heartbeatResponder         = SPDM_HEARTBEAT_RESPONDER_UNKNOWN;
+    pSpdm->bRmHeartbeatContextReady   = NV_FALSE;
+    pSpdm->heartbeatRmReadyTime       = 0;
+    pSpdm->snapshotCount              = 0;
+    portMemSet(pSpdm->heartbeatKey, 0, sizeof(pSpdm->heartbeatKey));
 
     return status;
 }

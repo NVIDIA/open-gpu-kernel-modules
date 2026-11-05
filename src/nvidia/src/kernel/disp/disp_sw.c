@@ -147,7 +147,6 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
                                       RES_GET_HANDLE(pDevice),
                                       vaSpace,
                                       gpuVA,
-                                      gpumgrGetDeviceGpuMask(pGpu->deviceInstance),
                                       &pDmaMappingInfo);
         if (!bFound)
             return NV_ERR_INVALID_ADDRESS;
@@ -159,8 +158,7 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
                                      vaSpace,
                                      gpuVA,
                                      releasevalue,
-                                     0 /* Index */,
-                                     NV_TRUE);
+                                     0 /* Index */);
         return status;
     }
     else if (flags & F_NOTIFIER_FILL)

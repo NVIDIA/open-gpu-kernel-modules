@@ -116,7 +116,7 @@ _nv8deCtrlCmdReadWriteSurface
             // The memory has to be mapped in a single in a single call by the same client
             NV_CHECK_OR_RETURN(LEVEL_ERROR,
                 CliGetDmaMappingInfo(pClient, RES_GET_PARENT_HANDLE(pKernelSMDebuggerSession),  pKernelChannel->hVASpace,
-                                     virtAddr, gpumgrGetDeviceGpuMask(pGpu->deviceInstance), &pDmaMappingInfo),
+                                     virtAddr, &pDmaMappingInfo),
                 NV_ERR_INVALID_ARGUMENT);
 
             NvU64 offsetInMapping = virtAddr - pDmaMappingInfo->DmaOffset;
@@ -140,7 +140,7 @@ _nv8deCtrlCmdReadWriteSurface
                 // It won't respect PTE kind swizzling
                 // Don't set the flag on simulation, as it forces BAR0 path
                 //
-                if (gpuIsCCFeatureEnabled(pGpu))
+                if (gpuIsBaremetalSecureAiEnabled(pGpu) || gpuIsCCFeatureEnabled(pGpu))
                 {
                     transferFlags = TRANSFER_FLAGS_NONE;
                 }
@@ -550,7 +550,7 @@ cleanup_mapping:
         // Force BAR instead of GSP-DMA copy in CC case
         NvU32 transferFlags = TRANSFER_FLAGS_PREFER_PROCESSOR;
 
-        if (gpuIsCCFeatureEnabled(pTargetGpu))
+        if (gpuIsBaremetalSecureAiEnabled(pTargetGpu) || gpuIsCCFeatureEnabled(pTargetGpu))
         {
             if (!gpuIsCCDevToolsModeEnabled(pTargetGpu))
             {
@@ -874,3 +874,4 @@ ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL
 
     return NV_OK;
 }
+

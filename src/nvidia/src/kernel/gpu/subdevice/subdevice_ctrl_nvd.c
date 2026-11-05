@@ -220,7 +220,6 @@ subdeviceCtrlCmdNvdGetNocatJournalRpt_IMPL
     return status;
 }
 
-
 /*!
 * @brief Set the NOCAT TDR data collected by KMD in the NOCAT journal record
 *

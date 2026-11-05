@@ -23,12 +23,27 @@ else
   # to the source and output trees to NVIDIA's Kbuild file via
   # NV_KERNEL_{SOURCES,OUTPUT}.
 
+  # Locate a kernel source tree given a build/module directory $(1): prefer
+  # $(1)/source, then $(1)/build/source, and fall back to $(2) if neither exists.
+  find_source_from_build = $(shell ((test -d $(1)/source && echo $(1)/source) \
+                                     || (test -d $(1)/build/source && echo $(1)/build/source)) \
+                                     || echo $(2))
+
+  # When only SYSOUT is specified, derive the source tree from it instead of
+  # falling back to /lib/modules/$(uname -r): use $(SYSOUT)/source if it exists,
+  # otherwise use $(SYSOUT) itself.
+  ifndef SYSSRC
+    ifdef SYSOUT
+      SYSSRC := $(call find_source_from_build,$(SYSOUT),$(SYSOUT))
+    endif
+  endif
+
   ifdef SYSSRC
     KERNEL_SOURCES := $(SYSSRC)
   else
     KERNEL_UNAME ?= $(shell uname -r)
     KERNEL_MODLIB := /lib/modules/$(KERNEL_UNAME)
-    KERNEL_SOURCES := $(shell ((test -d $(KERNEL_MODLIB)/source && echo $(KERNEL_MODLIB)/source) || (test -d $(KERNEL_MODLIB)/build/source && echo $(KERNEL_MODLIB)/build/source)) || echo $(KERNEL_MODLIB)/build)
+    KERNEL_SOURCES := $(call find_source_from_build,$(KERNEL_MODLIB),$(KERNEL_MODLIB)/build)
   endif
 
   KERNEL_OUTPUT := $(KERNEL_SOURCES)
@@ -78,6 +93,7 @@ else
       -e 's/riscv64/riscv/' \
     )
   endif
+
 
   KERNEL_ARCH = $(ARCH)
 

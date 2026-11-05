@@ -26,6 +26,12 @@
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
+#include "kernel/gpu/rc/kernel_rc.h"
+
+#include "ctrl/ctrl906f.h"
+#include "core/gmcapi_impl.h"
+#include "gmcapi/gmcapi_sched.h"
+#include "vgpu/rpc.h"
 
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 
@@ -54,6 +60,10 @@
 #include "class/clc361.h"
 
 #include "ctrl/ctrl0080/ctrl0080fifo.h"
+#include "ctrl/ctrla06c.h"  // NVA06C_CTRL_INTERLEAVE_LEVEL_*
+#include "kernel/gpu_mgr/gpu_db.h"
+#include "ctrl/ctrl2080/ctrl2080gpu.h"
+#include "kernel/os/os.h"
 
 #define KFIFO_EHEAP_OWNER NvU32_BUILD('f','i','f','o')
 
@@ -791,7 +801,8 @@ kfifoChidMgrAllocChid_IMPL
         /* Channel USERD manipuliation only supported without GFID */
         if (bForceUserdPage)
         {
-            NV_ASSERT_OR_RETURN(!bForceInternalIdx, NV_ERR_INVALID_STATE);
+            NV_ASSERT_OR_ELSE(!bForceInternalIdx,
+                              status = NV_ERR_INVALID_STATE; goto fail);
             ChID64 = ((NvU64)userdPageIdx) *
                          pChidMgr->pGlobalChIDHeap->ownerGranularity +
                      internalIdx;
@@ -821,8 +832,14 @@ kfifoChidMgrAllocChid_IMPL
             }
         }
 
-        NV_ASSERT_OK_OR_RETURN(
-            pChidMgr->pGlobalChIDHeap->eheapSetAllocRange(pChidMgr->pGlobalChIDHeap, rangeLo, rangeHi));
+        status = pChidMgr->pGlobalChIDHeap->eheapSetAllocRange(
+                     pChidMgr->pGlobalChIDHeap,
+                     rangeLo,
+                     rangeHi);
+        if (status != NV_OK)
+        {
+            goto fail;
+        }
 
         status = pChidMgr->pGlobalChIDHeap->eheapAlloc(
             pChidMgr->pGlobalChIDHeap, // This Heap
@@ -2271,6 +2288,7 @@ kfifoGetHostDeviceInfoTable_KERNEL
     if (IS_VIRTUAL(pGpu))
     {
         _kfifoLocalizeGuestEngineData(pGpu, pKernelFifo, pEngineInfo);
+
     }
 
     pEngineInfo->numRunlists = numRunlists;
@@ -2619,6 +2637,104 @@ kfifoGetRunlistBufPool_IMPL
     return pKernelFifo->pRunlistBufPool[rmEngineType];
 }
 
+NvU32
+kfifoGetExtendedBestEffortRunlistEntryCapacity_IMPL
+(
+    OBJGPU        *pGpu,
+    KernelFifo    *pKernelFifo,
+    RM_ENGINE_TYPE rmEngineType
+)
+{
+    NvU32 entryCapacity;
+
+    if (!RM_ENGINE_TYPE_IS_GR(rmEngineType) ||
+        (gpuGetSchedulerPolicy(pGpu, rmEngineType) != SCHED_POLICY_BEST_EFFORT))
+    {
+        return 0;
+    }
+
+    entryCapacity = IS_MIG_IN_USE(pGpu) ?
+        VGPU_HWS_MIG_BEST_EFFORT_RUNLIST_MAX_ENTRIES :
+        VGPU_HWS_BEST_EFFORT_RUNLIST_MAX_ENTRIES;
+
+    return kfifoIsVgpuHwsExtendedRunlistSupported_HAL(
+               pKernelFifo, entryCapacity) ? entryCapacity : 0;
+}
+
+/**
+ * @brief Resolve the effective entry capacity for a runlist buffer
+ *
+ * A zero request selects the channel-derived capacity based on the channel and
+ * TSG limits. An explicit request at or below that capacity is honored directly.
+ * A larger request is accepted only for a best-effort GR runlist when the FIFO
+ * HAL supports the requested number of entries.
+ *
+ * @param[in]  pGpu              Pointer to OBJGPU
+ * @param[in]  pKernelFifo       Pointer to KernelFifo
+ * @param[in]  runlistId         Runlist ID
+ * @param[in]  requestedEntries  Requested entry capacity, or zero for the
+ *                               channel-derived capacity
+ * @param[out] pEntryCapacity    Resolved entry capacity
+ */
+NV_STATUS
+kfifoGetRunlistEntryCapacity_IMPL
+(
+    OBJGPU        *pGpu,
+    KernelFifo    *pKernelFifo,
+    NvU32          runlistId,
+    NvU32          requestedEntries,
+    NvU32         *pEntryCapacity
+)
+{
+    NvU32          channelDerivedEntryCapacity;
+    NvU32          extendedEntryCapacity;
+    CHID_MGR      *pChidMgr = kfifoGetChidMgr(pGpu, pKernelFifo, runlistId);
+    RM_ENGINE_TYPE rmEngineType;
+
+    NV_ASSERT_OR_RETURN(pEntryCapacity != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    if (kfifoIsPerRunlistChramEnabled(pKernelFifo))
+    {
+        NV_ASSERT_OR_RETURN(pChidMgr != NULL, NV_ERR_INVALID_ARGUMENT);
+
+        // One TSG wrapper per channel is the largest channel-derived layout.
+        channelDerivedEntryCapacity =
+            2 * kfifoChidMgrGetNumChannels(pGpu, pKernelFifo, pChidMgr);
+    }
+    else
+    {
+        channelDerivedEntryCapacity = kfifoGetMaxChannelsInSystem(pGpu, pKernelFifo) +
+                                      kfifoGetMaxChannelGroupsInSystem(pGpu, pKernelFifo);
+    }
+
+    // A zero request selects the channel-derived capacity.
+    if (requestedEntries == 0)
+    {
+        *pEntryCapacity = channelDerivedEntryCapacity;
+        return NV_OK;
+    }
+    // Honor explicit requests at or below the channel-derived capacity.
+    if (requestedEntries <= channelDerivedEntryCapacity)
+    {
+        *pEntryCapacity = requestedEntries;
+        return NV_OK;
+    }
+
+    NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
+                ENGINE_INFO_TYPE_RUNLIST, runlistId,
+                ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32 *)&rmEngineType));
+
+    // Verify eligibility and keep the request within the configured capacity.
+    extendedEntryCapacity = kfifoGetExtendedBestEffortRunlistEntryCapacity(
+                                pGpu, pKernelFifo, rmEngineType);
+    NV_ASSERT_OR_RETURN((extendedEntryCapacity != 0) &&
+                        (requestedEntries <= extendedEntryCapacity),
+                        NV_ERR_INVALID_ARGUMENT);
+
+    *pEntryCapacity = requestedEntries;
+    return NV_OK;
+}
+
 /**
  * @brief Get size and alignment requirements for runlist buffers
  *
@@ -2640,37 +2756,16 @@ kfifoGetRunlistBufInfo_IMPL
     NvU64        *pAlignment
 )
 {
-    NvU32           runlistEntrySize = 0;
-    NvU32           maxRunlistEntriesSupported = 0;
-    CHID_MGR       *pChidMgr = kfifoGetChidMgr(pGpu, pKernelFifo, runlistId);
+    NvU32           runlistEntrySize;
+    NvU32           entryCapacity;
     NvU32           runlistSizeMultiplier = 1;
+    NvBool          bAggregateVmsets = NV_FALSE;
     RM_ENGINE_TYPE  rmEngineType;
 
     NV_ASSERT_OR_RETURN(pSize != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pAlignment != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    if (kfifoIsPerRunlistChramEnabled(pKernelFifo))
-    {
-        NV_ASSERT_OR_RETURN(pChidMgr != NULL, NV_ERR_INVALID_ARGUMENT);
-        //
-        // We assume worst case of one TSG wrapper per channel, and
-        // the number of TSGs + number of channels is how we get
-        // the 2 x number of fifos.
-        //
-        maxRunlistEntriesSupported = 2 * kfifoChidMgrGetNumChannels(pGpu, pKernelFifo, pChidMgr);
-    }
-    else
-    {
-        maxRunlistEntriesSupported = kfifoGetMaxChannelsInSystem(pGpu, pKernelFifo);
-        maxRunlistEntriesSupported += kfifoGetMaxChannelGroupsInSystem(pGpu, pKernelFifo);
-    }
-
-    NV_ASSERT_OR_RETURN(maxRunlistEntries <= maxRunlistEntriesSupported, NV_ERR_INVALID_ARGUMENT);
-
-    if (maxRunlistEntries == 0)
-    {
-        maxRunlistEntries = maxRunlistEntriesSupported;
-    }
+    NV_ASSERT_OK_OR_RETURN(kfifoGetRunlistEntryCapacity(pGpu, pKernelFifo,
+                runlistId, maxRunlistEntries, &entryCapacity));
 
     NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo, ENGINE_INFO_TYPE_RUNLIST,
                 runlistId, ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32 *)&rmEngineType));
@@ -2678,12 +2773,41 @@ kfifoGetRunlistBufInfo_IMPL
     if (IS_MIG_IN_USE(pGpu) && IS_GSP_CLIENT(pGpu))
     {
         runlistSizeMultiplier = vgpuMgrGetVmsetCountToAllocate(pGpu, rmEngineType);
+        NV_ASSERT_OR_RETURN(runlistSizeMultiplier != 0, NV_ERR_INVALID_STATE);
+        bAggregateVmsets = NV_TRUE;
     }
 
     runlistEntrySize = kfifoRunlistGetEntrySize_HAL(pKernelFifo);
-    *pSize = (NvU64)runlistEntrySize * maxRunlistEntries * runlistSizeMultiplier;
-
     *pAlignment = NVBIT64(kfifoRunlistGetBaseShift_HAL(pKernelFifo));
+
+    if (bAggregateVmsets)
+    {
+        NvU32 channelDerivedEntryCapacity;
+
+        NV_ASSERT_OK_OR_RETURN(kfifoGetRunlistEntryCapacity(pGpu, pKernelFifo,
+                    runlistId, 0, &channelDerivedEntryCapacity));
+
+        if (entryCapacity > channelDerivedEntryCapacity)
+        {
+            NvU64 extendedRunlistSize = (NvU64)runlistEntrySize * entryCapacity;
+            NvU64 remainingVmsetRunlistSize =
+                (NvU64)runlistEntrySize * channelDerivedEntryCapacity;
+
+            NV_ASSERT_OR_RETURN(NV_IS_ALIGNED(extendedRunlistSize, *pAlignment) &&
+                                NV_IS_ALIGNED(remainingVmsetRunlistSize, *pAlignment),
+                                NV_ERR_INVALID_STATE);
+
+            // MIG GSP: size = extended DEFAULT + remaining VMSETs * (vmsetCount - 1).
+            // VMSET 0 is enlarged; remaining VMSETs use channel-derived capacity.
+            *pSize = extendedRunlistSize +
+                     (remainingVmsetRunlistSize * (runlistSizeMultiplier - 1));
+            return NV_OK;
+        }
+    }
+
+    // Non-MIG or uniform layout: size = entry size * capacity * multiplier.
+    *pSize = (NvU64)runlistEntrySize * entryCapacity * runlistSizeMultiplier;
+
     return NV_OK;
 }
 
@@ -2783,8 +2907,10 @@ kfifoRunlistAllocBuffers_IMPL
     NvU64     runlistAlign  = 0;
     NvU32     counter;
 
+    NV_ASSERT_OR_RETURN(maxRunlistEntries <= NV_U32_MAX, NV_ERR_INVALID_ARGUMENT);
+
     status = kfifoGetRunlistBufInfo(pGpu, pKernelFifo, runlistId,
-        maxRunlistEntries, &runlistSz, &runlistAlign);
+        (NvU32)maxRunlistEntries, &runlistSz, &runlistAlign);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "failed to get runlist buffer info 0x%08x\n",
@@ -4176,5 +4302,174 @@ kfifoRoundDownTimeSlice_IMPL
         // If the input fits in the timescale field, just program it and be done.
         *timescale = 0;
         *timeout = NvU64_LO32(timeInMicroSeconds);
+    }
+}
+
+/** 
+ * @brief Bringup RAMFC in a sane state for every new context
+ *
+ * Performs a memset of entire RAMFC.  Any values required to be non-zero need
+ * to be explicitly set.
+ *
+ * @param pGpu
+ * @param pKernelFifo
+ * @param[in/out] pInstMem
+ * @param[in] gpFifoOffset
+ * @param[in] gpFifoEntries
+ *
+ * @returns NV_OK if successful, error otherwise.
+ */
+NV_STATUS
+kfifoSetupRamfc_IMPL
+(
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    KernelChannel    *pKernelChannel,
+    NvU8             *pInstMem,
+    NvU64             gpFifoOffset,
+    NvU32             gpFifoEntries
+)
+{
+    NvU32      ramfcSize;
+    KernelBus  *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+
+    NV_ASSERT_OR_RETURN(pKernelChannel, NV_ERR_INVALID_ARGUMENT);
+
+    ramfcSize = kfifoGetRamfcSize_HAL(pGpu, pKernelFifo);
+    portMemSet(pInstMem, 0, ramfcSize);
+
+    kfifoWriteRamfcGpfifo_HAL(pGpu, pKernelFifo, pInstMem, gpFifoOffset, gpFifoEntries);
+
+    kfifoInitRamfcSignature_HAL(pGpu, pKernelFifo, pInstMem);
+
+    kfifoInitRamfcPbHeader_HAL(pGpu, pKernelFifo, pInstMem);
+
+    kfifoInitRamfcSubdevice_HAL(pGpu, pKernelFifo, pKernelChannel, pInstMem);
+
+    kfifoInitRamfcAcquireTimeout_HAL(pGpu, pKernelFifo, pKernelChannel, pInstMem);
+
+    NV_ASSERT_OK_OR_RETURN(kfifoInitRamfcChid_HAL(pGpu, pKernelFifo, pKernelChannel, pInstMem));
+
+    kfifoInitHceRamfcState_HAL(pGpu, pKernelFifo, pKernelChannel, pInstMem);
+
+    kfifoInitRamfcSubctx_HAL(pGpu, pKernelFifo, pKernelChannel, pInstMem);
+
+    kfifoInitAuthlevelRamfcConfig_HAL(pGpu, pKernelFifo, pKernelChannel, pInstMem);
+
+    kfifoInitRamfcFaultMethodBuffers_HAL(pGpu, pKernelFifo, pKernelChannel, pInstMem);
+
+    kfifoInitRamfcUserdWriteback_HAL(pKernelFifo, pInstMem, NV_TRUE);
+
+    kfifoInitRamfcCEThrottleMode_HAL(pGpu, pKernelFifo, pInstMem);
+
+    kfifoInitRamfcIntrNotify_HAL(pGpu, pKernelFifo, pKernelChannel, pInstMem);
+
+    kfifoInitRamfcEvictLastCopy_HAL(pKernelFifo, pGpu, pKernelChannel, pInstMem);
+
+    NV_ASSERT_OK_OR_RETURN(
+        kfifoInitRamfcCCState_HAL(pGpu, pKernelFifo, pKernelChannel, pInstMem, pKernelChannel->bCCSecureChannel));
+
+    kfifoInitCePrefetch_HAL(pGpu, pKernelFifo, pKernelChannel, pInstMem);
+
+    // Ensure that HW sees our write.
+    NV_ASSERT_OK_OR_RETURN(kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY));
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Whether the host defaults GR runlists to channel-interleaved
+ *        scheduling. CPU-RM variant: decided by the platform; the UCODE
+ *        (GSP-RM) variant instead returns the value the host pushed via
+ *        GspSystemInfo before GPU state init.
+ */
+NvBool
+kfifoIsDefaultChannelInterleavedSchedEnabled_IMPL
+(
+    OBJGPU *pGpu
+)
+{
+    // Unix hosts default GR runlists to channel-interleaved scheduling.
+    return RMCFG_FEATURE_PLATFORM_UNIX;
+}
+
+NvBool
+kfifoIsDefaultChannelInterleavedSchedEnabled_UCODE
+(
+    OBJGPU *pGpu
+)
+{
+    // Pushed from CPU-RM via GspSystemInfo before GPU state init.
+    return pGpu->bHostDefaultChannelInterleavedSched;
+}
+
+/*! Validate access to a client-requested TSG interleave level. */
+NV_STATUS
+kfifoValidateInterleaveLevelAccess_IMPL
+(
+    OBJGPU *pGpu,
+    NvU32   value
+)
+{
+    NvBool bGlobalHighPolicy = NV_FALSE;
+
+    if (value > NVA06C_CTRL_INTERLEAVE_LEVEL_HIGH)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if ((value != NVA06C_CTRL_INTERLEAVE_LEVEL_HIGH) ||
+        osCheckAccess(RS_ACCESS_NICE))
+    {
+        return NV_OK;
+    }
+
+    // GPUDB policies are keyed by initialized GPU UUIDs.
+    if (pGpu->gpuUuid.isInitialized)
+    {
+        GPU_COMPUTE_POLICY_INFO policyInfo = {0};
+
+        if ((gpudbGetGpuComputePolicyConfigs(pGpu->gpuUuid.uuid,
+                                             &policyInfo) == NV_OK) &&
+            (policyInfo.schedulingPriority ==
+                NV2080_CTRL_CMD_GPU_COMPUTE_SCHEDULING_PRIORITY_HIGH))
+        {
+            bGlobalHighPolicy = NV_TRUE;
+        }
+    }
+
+    if (!bGlobalHighPolicy)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "HIGH interleave requires global HIGH policy or CAP_SYS_NICE\n");
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+kfifoGuestRcRecoverChannel_IMPL
+(
+    OBJGPU        *pGpu,
+    KernelFifo    *pKernelFifo,
+    KernelChannel *pKernelChannel,
+    NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS *pResetParams,
+    FIFO_MMU_EXCEPTION_DATA              *pMmuExceptionData
+)
+{
+    NV_ASSERT_OR_RETURN(pResetParams != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    {
+        NV_STATUS status  = NV_OK;
+
+        NV_RM_RPC_CONTROL(pGpu,
+                          RES_GET_CLIENT_HANDLE(pKernelChannel),
+                          RES_GET_HANDLE(pKernelChannel),
+                          NV906F_CTRL_CMD_RESET_CHANNEL,
+                          pResetParams, sizeof(*pResetParams),
+                          status);
+
+        return status;
     }
 }

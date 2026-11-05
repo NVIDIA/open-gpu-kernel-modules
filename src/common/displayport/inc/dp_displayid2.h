@@ -107,7 +107,14 @@ namespace DisplayPort
     bool DisplayId2ReadSST(DisplayID2x & displayId2x, AuxBus * aux, Timer * timer, MainLink *main = NULL);
     bool DisplayId2ReadMST(DisplayID2x & displayId2x, AuxBus * aux, Timer * timer, MainLink *main = NULL);
 
-    NvU8 getDID2BlockChecksum(NvU8 * buffer, NvU8 size);
+    NvU8 getDID2BlockChecksum(NvU8 * buffer, NvU32 size);
+
+    enum class Did2ParseResult
+    {
+        NeedMore,
+        Complete,
+        Failed
+    };
 
     // Due to BUG# 6071201, reduce DID2 read retry time to 10ms from 100ms
     const NvU8 NV_DISPLAYID2_READ_RETRY_MS = 10;
@@ -130,7 +137,10 @@ namespace DisplayPort
 
         DID2ReadMultistream(Timer * timer, MessageManager * manager, DID2ReadMultistream::DID2ReadMultistreamEventSink * sink, Address topologyAddress)
            : topologyAddress(topologyAddress), manager(manager),
-             retries(0), timer(timer), sink(sink), stream(displayId2x.getBuffer())
+             retries(0), timer(timer), sink(sink), stream(displayId2x.getBuffer()),
+             loop(0), remainingBytes(0), pSection(0),
+             sectionLength(0), extensionCount(0),
+             displayId2xSize(0), retried(false)
         {
             timer->queueCallback(this, "DID2", NV_DISPLAYID2_READ_RETRY_MS);
         }
@@ -150,7 +160,7 @@ namespace DisplayPort
         Timer * timer;
 
         void readNextBlock();
-        bool readNextRequest();
+        Did2ParseResult readNextRequest();
         void failedToReadDid2();
         void expired(const void * tag);
 
@@ -172,7 +182,7 @@ namespace DisplayPort
         NvU8    *pSection;
 
         // Length of the current section of the DisplayID2x
-        NvU8    sectionLength;
+        NvU32   sectionLength;
 
         // Number of extension blocks. Only valid for the base section.
         NvU8    extensionCount;

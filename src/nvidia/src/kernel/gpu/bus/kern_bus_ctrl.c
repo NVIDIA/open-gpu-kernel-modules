@@ -36,7 +36,6 @@
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/subdevice/subdevice_diag.h"
-#include "platform/sli/sli.h"
 
 #include "ctrl/ctrl0080/ctrl0080host.h"
 #include "ctrl/ctrl2080/ctrl2080bus.h"
@@ -62,24 +61,16 @@ kbusControlGetCaps
 static NV_STATUS
 _kbusGetHostCaps(OBJGPU *pGpu, NvU8 *pHostCaps)
 {
-    NV_STATUS  status           = NV_OK;
-    NvBool     bCapsInitialized = NV_FALSE;
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
+    if (pKernelBus == NULL)
     {
-        KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-        if (pKernelBus == NULL)
-        {
-            status = NV_ERR_INVALID_POINTER;
-            SLI_LOOP_BREAK;
-        }
-
-        kbusGetDeviceCaps(pGpu, pKernelBus, pHostCaps, bCapsInitialized);
-        bCapsInitialized = NV_TRUE;
+        return NV_ERR_INVALID_POINTER;
     }
-    SLI_LOOP_END
 
-    return status;
+    kbusGetDeviceCaps(pGpu, pKernelBus, pHostCaps);
+
+    return NV_OK;
 }
 
 //
@@ -346,8 +337,17 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
             {
                 if (gpuIsPciBusFamily(pGpu) && IS_VIRTUAL(pGpu))
                 {
-                    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
-                    pBusInfos[i].data = pVSI->pcieGpuLinkCaps;
+                    /*
+                     * Prefer the guest-visible LinkCap for vGPU guests.
+                     * PCIe capability is exposed on certain vGPU configs.
+                     * Guests that do not expose a usable guest LinkCap retain
+                     * the RM-provided static vGPU LinkCap via the fallback.
+                     */
+                    pBusInfos[i].data = kbifGetGpuLinkCapabilities(pGpu, pKernelBif);
+                    if (pBusInfos[i].data == 0)
+                    {
+                        pBusInfos[i].data = GPU_GET_STATIC_INFO(pGpu)->pcieGpuLinkCaps;
+                    }
                     break;
                 }
             }
@@ -486,12 +486,14 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
             }
             case NV2080_CTRL_BUS_INFO_INDEX_GPU_GART_SIZE:
             {
-                pBusInfos[i].data = (NvU32)(kgmmuGetMaxVASize(pKernelGmmu) >> 20);
+                pBusInfos[i].data = (pKernelGmmu != NULL) ?
+                    (NvU32)(kgmmuGetMaxVASize(pKernelGmmu) >> 20) : 0;
                 break;
             }
             case NV2080_CTRL_BUS_INFO_INDEX_GPU_GART_SIZE_HI:
             {
-                pBusInfos[i].data = (NvU32)((kgmmuGetMaxVASize(pKernelGmmu) >> 20) >> 32);
+                pBusInfos[i].data = (pKernelGmmu != NULL) ?
+                    (NvU32)((kgmmuGetMaxVASize(pKernelGmmu) >> 20) >> 32) : 0;
                 break;
             }
             case NV2080_CTRL_BUS_INFO_INDEX_GPU_GART_FLAGS:

@@ -263,6 +263,24 @@ GMCAPI_PHYSICAL(
 /* flags        = */ 0,
 )
 
+GMCAPI_PHYSICAL(
+/* numeric_id   = */ GMCAPI_ID(SCHED, 0x0002),
+/* symbolic_id  = */ SCHED_RC_DONE,
+/* handler_func = */ gmcapiSchedRcDone,
+/* input_type   = */ GmcApiSchedRcDoneParams,
+/* output_type  = */ GMCAPI_NONE,
+/* flags        = */ 0,
+)
+
+GMCAPI_PHYSICAL(
+/* numeric_id   = */ GMCAPI_ID(SCHED, 0x0003),
+/* symbolic_id  = */ SCHED_RC_RECOVER_RUNLIST,
+/* handler_func = */ gmcapiSchedRcRecoverRunlist,
+/* input_type   = */ GmcApiSchedRcRecoverRunlistParams,
+/* output_type  = */ GMCAPI_NONE,
+/* flags        = */ 0,
+)
+
 #define GMCAPI_CATEGORY_MEMORY_MGMT  0x04u
 
 GMCAPI_KERNEL(
@@ -272,6 +290,26 @@ GMCAPI_KERNEL(
 /* input_type   = */ GMCAPI_NONE,
 /* output_type  = */ GMCAPI_NONE,
 /* flags        = */ GMCAPI_FLAGS_FIRE_AND_FORGET,
+)
+
+#define GMCAPI_CATEGORY_GR  0x05u
+
+GMCAPI_PHYSICAL(
+/* numeric_id   = */ GMCAPI_ID(GR, 0x0001),
+/* symbolic_id  = */ GR_GET_GOLDEN_CTX_IMAGE_INFO,
+/* handler_func = */ gmcapiGrGetGoldenCtxImageInfo,
+/* input_type   = */ GMCAPI_NONE,
+/* output_type  = */ GmcApiGrGoldenCtxImageInfo,
+/* flags        = */ 0,
+)
+
+GMCAPI_PHYSICAL(
+/* numeric_id   = */ GMCAPI_ID(GR, 0x0002),
+/* symbolic_id  = */ GR_COPY_GOLDEN_CTX_IMAGE,
+/* handler_func = */ gmcapiGrCopyGoldenCtxImage,
+/* input_type   = */ GMCAPI_DYNAMIC, /* NVKV encoded, see gmcapi_gr.h */
+/* output_type  = */ GMCAPI_NONE,
+/* flags        = */ 0,
 )
 
 #undef GMCAPI

@@ -1609,6 +1609,8 @@ plane_req_config_update(struct drm_plane *plane,
             }
         }
     }
+    req_config->config.tmo.satCorrEnable =
+        nv_drm_plane_state->tmo_sat_corr_enable;
 
     /*
      * Send TMO configuration to NVKMS if:
@@ -1998,6 +2000,12 @@ static int nv_drm_plane_set_vendor_color_property(
             nv_drm_plane_state->tmo_changed = true;
         }
         return ret;
+    } else if (property == nv_dev->nv_plane_tmo_sat_corr_enable_property) {
+        if (!!val != nv_drm_plane_state->tmo_sat_corr_enable) {
+            nv_drm_plane_state->tmo_sat_corr_enable = !!val;
+            nv_drm_plane_state->tmo_changed = true;
+        }
+        return 0;
     } else if (property == nv_dev->nv_plane_color_passthrough_property) {
         if (!!val != nv_drm_plane_state->precomp_color_passthrough) {
             nv_drm_plane_state->precomp_color_passthrough = !!val;
@@ -2092,6 +2100,9 @@ static int nv_drm_plane_get_vendor_color_property(
         } else if (property == nv_dev->nv_plane_degamma_multiplier_property) {
             *val = 1ULL << 32;  /* Default multiplier (1.0) */
             return 0;
+        } else if (property == nv_dev->nv_plane_tmo_sat_corr_enable_property) {
+            *val = NV_DRM_TMO_SAT_CORR_ENABLE_DEFAULT;
+            return 0;
         }
     }
 #endif
@@ -2125,6 +2136,9 @@ static int nv_drm_plane_get_vendor_color_property(
     } else if (property == nv_dev->nv_plane_tmo_lut_property) {
         *val = nv_drm_plane_state->tmo_lut ?
             nv_drm_plane_state->tmo_lut->base.id : 0;
+        return 0;
+    } else if (property == nv_dev->nv_plane_tmo_sat_corr_enable_property) {
+        *val = nv_drm_plane_state->tmo_sat_corr_enable;
         return 0;
     } else if ((property == nv_dev->nv_plane_degamma_lut_size_property) ||
                (property == nv_dev->nv_plane_tmo_lut_size_property)) {
@@ -2189,6 +2203,7 @@ static inline struct nv_drm_plane_state *nv_drm_plane_state_alloc(void)
 
     /* Default to 1 in S31.32 Sign-Magnitude Format */
     nv_plane_state->degamma_multiplier = NV_DRM_S31_32_ONE;
+    nv_plane_state->tmo_sat_corr_enable = NV_DRM_TMO_SAT_CORR_ENABLE_DEFAULT;
 
     return nv_plane_state;
 }
@@ -2312,6 +2327,8 @@ nv_drm_plane_atomic_duplicate_state(struct drm_plane *plane)
     if (nv_plane_state->tmo_lut) {
         drm_property_blob_get(nv_plane_state->tmo_lut);
     }
+    nv_plane_state->tmo_sat_corr_enable =
+        nv_old_plane_state->tmo_sat_corr_enable;
     nv_plane_state->tmo_changed = false;
     nv_plane_state->tmo_drm_lut_surface =
         nv_old_plane_state->tmo_drm_lut_surface;
@@ -2691,6 +2708,12 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
 #if defined(NV_DRM_CRTC_ATOMIC_CHECK_HAS_FULL_STATE_ARG)
     struct drm_crtc_state *crtc_state =
         drm_atomic_get_new_crtc_state(state, crtc);
+#if defined(NV_DRM_CRTC_STATE_HAS_VRR_ENABLED)
+    struct drm_crtc_state *old_crtc_state =
+        drm_atomic_get_old_crtc_state(state, crtc);
+#endif
+#elif defined(NV_DRM_CRTC_STATE_HAS_VRR_ENABLED)
+    struct drm_crtc_state *old_crtc_state = crtc->state;
 #endif
     struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
     struct nv_drm_device *nv_dev = to_nv_device(crtc->dev);
@@ -2738,6 +2761,8 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
 
 #if defined(NV_DRM_CRTC_STATE_HAS_VRR_ENABLED)
     req_config->modeSetConfig.vrrEnabled = crtc_state->vrr_enabled;
+    req_config->flags.vrrEnabledChanged =
+        old_crtc_state->vrr_enabled != crtc_state->vrr_enabled;
 #endif
 
     if (nv_crtc_state->regamma_changed || crtc_state->color_mgmt_changed) {
@@ -2918,6 +2943,12 @@ static void nv_drm_plane_install_properties(
                 drm_object_attach_property(
                     &plane->base, nv_dev->nv_plane_tmo_lut_size_property,
                     NVKMS_LUT_ARRAY_SIZE);
+            }
+            if (nv_dev->nv_plane_tmo_sat_corr_enable_property) {
+                drm_object_attach_property(
+                    &plane->base,
+                    nv_dev->nv_plane_tmo_sat_corr_enable_property,
+                    NV_DRM_TMO_SAT_CORR_ENABLE_DEFAULT);
             }
         }
 

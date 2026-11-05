@@ -33,7 +33,6 @@
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "platform/chipset/chipset.h"
 #include "rmapi/client.h"
-#include "platform/sli/sli.h"
 #include "nvdevid.h"
 #include "containers/eheap_old.h"
 #include "gpu/bus/p2p_api.h"
@@ -219,8 +218,7 @@ kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus)
         // Aligns to unlinked SLI: Volta and up
         // Next: Plan for all GPUs after validation
         //
-        pKernelBus->bP2pMailboxClientAllocated =
-            pKernelBus->bP2pMailboxClientAllocatedBug3466714VoltaAndUp;
+        pKernelBus->bP2pMailboxClientAllocated = NV_TRUE;
     }
 
     if (osReadRegistryDword(pGpu, NV_REG_STR_P2P_MAILBOX_CLIENT_ALLOCATED, &data32) == NV_OK)
@@ -237,6 +235,12 @@ kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus)
         data32 == NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC_YES  && gpuIsCCDevToolsModeEnabled(pGpu))
     {
         pKernelBus->bForceBarAccessOnHcc = NV_TRUE;
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_BMSAI_ALLOW_RDMA, &data32) == NV_OK &&
+        data32 == NV_REG_STR_RM_BMSAI_ALLOW_RDMA_YES)
+    {
+        pKernelBus->bBmsaiAllowRdma = NV_TRUE;
     }
 
     return NV_OK;
@@ -410,14 +414,10 @@ kbusSendSysmembar_IMPL
     }
 
     // Wait for the flush to flow through
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY);
-        pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-        if (kbusSendSysmembarSingle_HAL(pGpu, pKernelBus) == NV_ERR_TIMEOUT)
-        {
-            status = NV_ERR_TIMEOUT;
-        }
-    SLI_LOOP_END;
-    pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    if (kbusSendSysmembarSingle_HAL(pGpu, pKernelBus) == NV_ERR_TIMEOUT)
+    {
+        status = NV_ERR_TIMEOUT;
+    }
 
     return status;
 }
@@ -907,56 +907,36 @@ kbusPatchBar2Pdb_GSPCLIENT
 //
 // kbusGetDeviceCaps
 //
-// This routine gets cap bits in unicast. If bCapsInitialized is passed as
-// NV_FALSE, the caps will be copied into pHostCaps without OR/ANDing. Otherwise,
-// the caps bits for the current GPU will be OR/ANDed together with pHostCaps to
-// create a single set of caps that accurately represents the functionality of
-// the device.
+// This routine returns the cap bits of the device in pHostCaps.
 //
 void
 kbusGetDeviceCaps_IMPL
 (
     OBJGPU    *pGpu,
     KernelBus *pKernelBus,
-    NvU8      *pHostCaps,
-    NvBool     bCapsInitialized
+    NvU8      *pHostCaps
 )
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     OBJCL  *pCl  = SYS_GET_CL(pSys);
-    NvU8 tempCaps[NV0080_CTRL_HOST_CAPS_TBL_SIZE], temp;
     NvBool bExplicitCacheFlushRequired;
 
-    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
-
-    portMemSet(tempCaps, 0, NV0080_CTRL_HOST_CAPS_TBL_SIZE);
+    portMemSet(pHostCaps, 0, NV0080_CTRL_HOST_CAPS_TBL_SIZE);
 
     /*! DMAs to/from cached memory need to have the cache flushed explicitly */
     bExplicitCacheFlushRequired = NVCPU_IS_ARM &&
                                   (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_PLATFORM_MODS_UNIX);
     if (bExplicitCacheFlushRequired ||
         (!pCl->getProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT)))
-        RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_HOST_CAPS, _EXPLICIT_CACHE_FLUSH_REQD);
+        RMCTRL_SET_CAP(pHostCaps, NV0080_CTRL_HOST_CAPS, _EXPLICIT_CACHE_FLUSH_REQD);
 
     if ((pCl->FHBBusInfo.vendorID == PCI_VENDOR_ID_NVIDIA) &&
         ((pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_BR04_PRESENT)) ||
          ((pCl->FHBBusInfo.deviceID >= NVIDIA_C73_CPU_PCI_0_DEVICE_ID_SLI2) &&
           (pCl->FHBBusInfo.deviceID <= NVIDIA_C73_CPU_PCI_0_DEVICE_ID_RESERVED_3))))
     {
-        RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_HOST_CAPS, _CPU_WRITE_WAR_BUG_420495);
+        RMCTRL_SET_CAP(pHostCaps, NV0080_CTRL_HOST_CAPS, _CPU_WRITE_WAR_BUG_420495);
     }
-
-    // If we don't have existing caps with which to reconcile, then just return
-    if (!bCapsInitialized)
-    {
-        portMemCopy(pHostCaps, NV0080_CTRL_HOST_CAPS_TBL_SIZE, tempCaps, NV0080_CTRL_HOST_CAPS_TBL_SIZE);
-        return;
-    }
-
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _CPU_WRITE_WAR_BUG_420495);
-
-    return;
 }
 
 NvU32
@@ -1361,21 +1341,44 @@ NvBool kbusIsNvlinkPeerId_IMPL
 (
     OBJGPU    *pGpu,
     KernelBus *pKernelBus,
-    NvU32      remotePeerId
+    NvU32      remotePeerId,
+    OBJGPU    *pRemoteGpu
 )
 {
-    NvU32 gpuInstance = gpuGetInstance(pGpu);
-    NvU32 peerMask = pKernelBus->p2p.busNvlinkPeerNumberMask[gpuInstance];
-    NvU32 peerId;
+    //
+    // busNvlinkPeerNumberMask is keyed by the remote GPU instance.
+    //
+    // Fast path: caller knows the exact remote GPU - check only its slot.
+    // Slow path: caller passes NULL (e.g. decode paths that only have a peer ID).
+    // The slow path resolves to two cases:
+    // 1. The system is a direct connect system in which case a single GPU matches a single peer ID.
+    // 2. The system is nvswitch connected in which case any GPU's nvlink peer mask will return a match
+    //    since multiple GPU's share the same peer ID.
+    //
+    // In both cases this code only looks to determine whether the peer ID points to NvLink and does
+    // not manipulate the remote GPU object in any way.
+    //
+    NvU32 gpuInst;
+    NvU32 peerMask;
 
-    FOR_EACH_INDEX_IN_MASK(32, peerId, peerMask)
+    if (pRemoteGpu != NULL)
     {
-        if (peerId == remotePeerId)
+        peerMask = pKernelBus->p2p.busNvlinkPeerNumberMask[gpuGetInstance(pRemoteGpu)];
+        if ((peerMask & NVBIT(remotePeerId)) != 0)
+        {
+            return NV_TRUE;
+        }
+        return NV_FALSE;
+    }
+
+    for (gpuInst = 0; gpuInst < NV_MAX_DEVICES; gpuInst++)
+    {
+        peerMask = pKernelBus->p2p.busNvlinkPeerNumberMask[gpuInst];
+        if ((peerMask & NVBIT(remotePeerId)) != 0)
         {
             return NV_TRUE;
         }
     }
-    FOR_EACH_INDEX_IN_MASK_END;
 
     return NV_FALSE;
 }

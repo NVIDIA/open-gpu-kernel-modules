@@ -380,6 +380,7 @@ NV_STATUS RmIoctl(
 
     NV_STATUS            rmStatus = NV_ERR_GENERIC;
     API_SECURITY_INFO    secInfo = { };
+    nv_file_private_t  **ppFilePrivate = NULL;
 
     secInfo.privLevel = osIsAdministrator() ? RS_PRIV_LEVEL_USER_ROOT : RS_PRIV_LEVEL_USER;
     secInfo.paramLocation = PARAM_LOCATION_USER;
@@ -389,12 +390,20 @@ NV_STATUS RmIoctl(
     if (secInfo.clientOSInfo == NULL)
         secInfo.clientOSInfo = nvfp;
 
+    ppFilePrivate = (nv_file_private_t **) tlsEntryAcquire(TLS_ENTRY_ID_FILE_PRIVATE);
+    if (ppFilePrivate != NULL)
+    {
+        *ppFilePrivate = nvfp;
+    }
+
     switch (cmd)
     {
         case NV_ESC_RM_ALLOC_MEMORY:
         {
             nv_ioctl_nvos02_parameters_with_fd *pApi;
             NVOS02_PARAMETERS *pParms;
+            nv_file_private_t *map_nvfp = NULL;
+            void *priv = NULL;
 
             if (dataSize != sizeof(*pApi))
             {
@@ -407,36 +416,23 @@ NV_STATUS RmIoctl(
 
             NV_ACTUAL_DEVICE_ONLY(nv);
 
+            map_nvfp = nv_get_file_private(pApi->fd, &priv);
+
+            if (map_nvfp != NULL && ppFilePrivate != NULL)
+            {
+                *ppFilePrivate = map_nvfp;
+            }
+
             if (pParms->hClass == NV01_MEMORY_SYSTEM_OS_DESCRIPTOR)
                 RmAllocOsDescriptor(pParms, secInfo);
             else
             {
-                NvU32 flags = pParms->flags;
-
                 Nv01AllocMemoryWithSecInfo(pParms, secInfo);
+            }
 
-                //
-                // If the system memory is going to be mapped immediately,
-                // create the mmap context for it now.
-                //
-                if ((pParms->hClass == NV01_MEMORY_SYSTEM) &&
-                    (!FLD_TEST_DRF(OS02, _FLAGS, _ALLOC, _NONE, flags)) &&
-                    (!FLD_TEST_DRF(OS02, _FLAGS, _MAPPING, _NO_MAP, flags)) &&
-                    (pParms->status == NV_OK))
-                {
-                    if (rm_create_mmap_context(pParms->hRoot,
-                            pParms->hObjectParent, pParms->hObjectNew,
-                            pParms->pMemory, pParms->limit + 1, 0,
-                            NV_MEMORY_DEFAULT,
-                            pApi->fd) != NV_OK)
-                    {
-                        NV_PRINTF(LEVEL_WARNING,
-                                  "could not create mmap context for %p\n",
-                                  NvP64_VALUE(pParms->pMemory));
-                        rmStatus = NV_ERR_INVALID_ARGUMENT;
-                        goto done;
-                    }
-                }
+            if (map_nvfp != NULL)
+            {
+                nv_put_file_private(priv);
             }
 
             break;
@@ -588,6 +584,8 @@ NV_STATUS RmIoctl(
         {
             nv_ioctl_nvos33_parameters_with_fd *pApi;
             NVOS33_PARAMETERS *pParms;
+            nv_file_private_t *map_nvfp = NULL;
+            void *priv = NULL;
 
             if (dataSize != sizeof(*pApi))
             {
@@ -600,30 +598,20 @@ NV_STATUS RmIoctl(
 
             NV_CTL_DEVICE_ONLY(nv);
 
-            // Don't allow userspace to override the caching type
-            pParms->flags = FLD_SET_DRF(OS33, _FLAGS, _CACHING_TYPE, _DEFAULT, pParms->flags);
+            map_nvfp = nv_get_file_private(pApi->fd, &priv);
+
+            if (map_nvfp != NULL && ppFilePrivate != NULL)
+            {
+                *ppFilePrivate = map_nvfp;
+            }
+
             Nv04MapMemoryWithSecInfo(pParms, secInfo);
 
-            if (pParms->status == NV_OK)
+            if (map_nvfp != NULL)
             {
-                pParms->status = rm_create_mmap_context(pParms->hClient,
-                                 pParms->hDevice, pParms->hMemory,
-                                 pParms->pLinearAddress, pParms->length,
-                                 pParms->offset,
-                                 DRF_VAL(OS33, _FLAGS, _CACHING_TYPE, pParms->flags),
-                                 pApi->fd);
-                if (pParms->status != NV_OK)
-                {
-                    NVOS34_PARAMETERS params;
-                    portMemSet(&params, 0, sizeof(params));
-                    params.hClient        = pParms->hClient;
-                    params.hDevice        = pParms->hDevice;
-                    params.hMemory        = pParms->hMemory;
-                    params.pLinearAddress = pParms->pLinearAddress;
-                    params.flags          = pParms->flags;
-                    Nv04UnmapMemoryWithSecInfo(&params, secInfo);
-                }
+                nv_put_file_private(priv);
             }
+
             break;
         }
 
@@ -817,8 +805,9 @@ NV_STATUS RmIoctl(
 
             if (!bSkipDeviceRef)
             {
-                dev_nvfp = nv_get_file_private(fd, NV_FALSE, &priv);
-                if (dev_nvfp == NULL)
+                dev_nvfp = nv_get_file_private(fd, &priv);
+                
+                if (!nv_verify_nvfp_control_or_put(&dev_nvfp, &priv, NV_FALSE))
                 {
                     rmStatus = NV_ERR_INVALID_DEVICE;
                     goto done;
@@ -954,9 +943,8 @@ NV_STATUS RmIoctl(
             // But, the ctl_fd passed in should always correspond to a control FD.
             //
             ctl_nvfp = nv_get_file_private(params->ctl_fd,
-                                           NV_TRUE, /* require ctl fd */
                                            &priv);
-            if (ctl_nvfp == NULL)
+            if (!nv_verify_nvfp_control_or_put(&ctl_nvfp, &priv, NV_TRUE))
             {
                 // UNLOCK: release API lock
                 rmapiLockRelease();
@@ -1015,6 +1003,11 @@ NV_STATUS RmIoctl(
 
     rmStatus = NV_OK;
 done:
+
+    if (ppFilePrivate != NULL)
+    {
+        tlsEntryRelease(TLS_ENTRY_ID_FILE_PRIVATE);
+    }
 
     return rmStatus;
 }

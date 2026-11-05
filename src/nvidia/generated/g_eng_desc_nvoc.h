@@ -899,6 +899,14 @@ typedef struct KernelGsp KernelGsp;
 #endif /* __nvoc_class_id_KernelGsp */
 
 
+struct KernelVbios;
+
+#ifndef __nvoc_class_id_KernelVbios
+#define __nvoc_class_id_KernelVbios 0x4d29a5u
+typedef struct KernelVbios KernelVbios;
+#endif /* __nvoc_class_id_KernelVbios */
+
+
 struct OBJDCECLIENTRM;
 
 #ifndef __nvoc_class_id_OBJDCECLIENTRM
@@ -929,6 +937,14 @@ struct Oob;
 #define __nvoc_class_id_Oob 0x98b919u
 typedef struct Oob Oob;
 #endif /* __nvoc_class_id_Oob */
+
+
+struct Dgn;
+
+#ifndef __nvoc_class_id_Dgn
+#define __nvoc_class_id_Dgn 0x3b019cu
+typedef struct Dgn Dgn;
+#endif /* __nvoc_class_id_Dgn */
 
 
 struct OBJDSI;
@@ -1001,6 +1017,14 @@ struct Spdm;
 #define __nvoc_class_id_Spdm 0x261ee8u
 typedef struct Spdm Spdm;
 #endif /* __nvoc_class_id_Spdm */
+
+
+struct TdispMgr;
+
+#ifndef __nvoc_class_id_TdispMgr
+#define __nvoc_class_id_TdispMgr 0x78baa3u
+typedef struct TdispMgr TdispMgr;
+#endif /* __nvoc_class_id_TdispMgr */
 
 
 struct Keystore;
@@ -1108,6 +1132,7 @@ typedef struct KernelOob KernelOob;
 #define ENG_CLASS_DISPMACRO            classId(OBJDISPMACRO)
 #define ENG_CLASS_NNE                  classId(OBJNNE)
 #define ENG_CLASS_OOB                  classId(Oob)
+#define ENG_CLASS_DGN                  classId(Dgn)
 #define ENG_CLASS_DSI                  classId(OBJDSI)
 #define ENG_CLASS_DCECLIENTRM          classId(OBJDCECLIENTRM)
 #define ENG_CLASS_DCB                  classId(OBJDCB)
@@ -1224,6 +1249,7 @@ typedef struct KernelOob KernelOob;
 #define ENG_DISPMACRO            MKENGDESC(ENG_CLASS_DISPMACRO,       0)
 #define ENG_NNE                  MKENGDESC(ENG_CLASS_NNE,             0)
 #define ENG_OOB                  MKENGDESC(ENG_CLASS_OOB,             0)
+#define ENG_DGN                  MKENGDESC(ENG_CLASS_DGN,             0)
 #define ENG_DSI                  MKENGDESC(ENG_CLASS_DSI,             0)
 #define ENG_DCECLIENTRM          MKENGDESC(ENG_CLASS_DCECLIENTRM,     0)
 #define ENG_DCB                  MKENGDESC(ENG_CLASS_DCB,             0)

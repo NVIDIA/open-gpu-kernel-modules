@@ -399,6 +399,8 @@ kmigmgrSwizzIdToSpan_GA100
     KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
     NV_RANGE ret;
     NvU8 spanLen;
+    NvU32 halfLen;
+    NvU32 quarterLen;
     NvU32 maxValidSwizzId;
 
     NV_ASSERT_OR_RETURN(kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->bInitialized, NV_RANGE_EMPTY);
@@ -409,28 +411,39 @@ kmigmgrSwizzIdToSpan_GA100
     else
         spanLen = kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo->infoList[NV2080_CTRL_GR_INFO_INDEX_MAX_PARTITIONABLE_GPCS].data;
 
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_MAXIMIZE_GPC_USAGE_ON_UNEVEN_CHIPS))
+    {
+        halfLen = NV_CEIL(spanLen, 2);
+        quarterLen = NV_CEIL(spanLen, 4);
+    }
+    else
+    {
+        halfLen = spanLen / 2;
+        quarterLen = spanLen / 4;
+    }
+
     switch (swizzId)
     {
         case 0:
             ret = rangeMake(0, spanLen - 1);
             break;
         case 1:
-            ret = rangeMake(0, (spanLen/2) - 1);
+            ret = rangeMake(0, halfLen - 1);
             break;
         case 2:
-            ret = rangeMake(spanLen/2, spanLen - 1);
+            ret = rangeMake(halfLen, spanLen - 1);
             break;
         case 3:
-            ret = rangeMake(0, (spanLen/4) - 1);
+            ret = rangeMake(0, quarterLen - 1);
             break;
         case 4:
-            ret = rangeMake((spanLen/4), (spanLen/2) - 1);
+            ret = rangeMake(quarterLen, halfLen - 1);
             break;
         case 5:
-            ret = rangeMake((spanLen/2), (3*(spanLen/4)) - 1);
+            ret = rangeMake(halfLen, halfLen + quarterLen - 1);
             break;
         case 6:
-            ret = rangeMake((3*(spanLen/4)), spanLen - 1);
+            ret = rangeMake(halfLen + quarterLen, spanLen - 1);
             break;
         case 7:
             if (spanLen >= 8)

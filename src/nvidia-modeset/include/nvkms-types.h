@@ -493,6 +493,7 @@ typedef struct _NVEvoChannel {
     struct {
         NvBool enabled;
         NvBool clientSpecified;
+        NvBool satCorrEnable;
         NvU32 srcMaxLum;
         NvU32 targetMaxLums;
     } tmoParams;
@@ -638,6 +639,7 @@ typedef struct {
     struct NvKmsCompositionParams composition;
 
     NVFlipLutHwState tmoLut;
+    NvBool tmoSatCorrEnable;
     struct {
         struct NvKmsHDRStaticMetadata val;
         NvBool enabled;
@@ -707,6 +709,11 @@ typedef struct {
         enum NvKmsInfoFrameEOTF eotf;
         struct NvKmsHDRStaticMetadata staticMetadata;
     } hdrInfoFrame;
+
+    struct {
+        NvU64 targetVTotal;
+        NvU16 targetFraction;
+    } vrr;
 
     struct NvKmsHdmiVsifMetadata hdmiVsifMetadata;
 
@@ -908,6 +915,7 @@ typedef struct {
     NvBool rasterLockAcrossProtocolsAllowed :1;
     NvBool adaptiveSyncSdpSupported         :1;
     NvBool supportsGenericSharedInfoFrames  :1;
+    NvBool supportsVirtualRefreshRate       :1;
     NvU32  maxPitchValue;
     int    maxWidthInBytes;
     int    maxWidthInPixels;
@@ -981,16 +989,19 @@ typedef struct _NVDisplaylessPendingFlipRec {
     NvU32 acquireValue;
     NvU32 releaseValue;
     NVFlipNIsoSurfaceEvoHwState semaSurface;
+    NVSurfaceEvoPtr pScanoutSurface;
 } NVDisplaylessPendingFlipRec;
 
 typedef struct _NVDisplaylessWorkerRec {
     nvkms_timer_handle_t *timer;
+    NvU32 hVgpuDevice;
     struct {
         NvU8 head;
         NvU8 tail;
         NVDisplaylessPendingFlipRec q[DISPLAYLESS_MAX_PENDING_FLIPS];
         NVFlipNIsoSurfaceEvoHwState lastSemaSurface;
         NvU32 lastReleaseValue;
+        NVSurfaceEvoPtr lastScanoutSurface;
     } head[NVKMS_MAX_HEADS_PER_DISP];
 } NVDisplaylessWorkerRec;
 
@@ -1446,6 +1457,12 @@ typedef struct _NVDscInfoEvoRec {
     enum NVDscInfoEvoType type;
 } NVDscInfoEvoRec;
 
+enum NvKmsCurrentVrrType {
+    NVKMS_VRR_TYPE_NONE = 0,
+    NVKMS_VRR_TYPE_GAMING,
+    NVKMS_VRR_TYPE_MEDIA
+};
+
 /*
  * This structure defines all of the values necessary to program mode timings
  * on EVO hardware.
@@ -1458,7 +1475,7 @@ typedef struct _NVHwModeTimingsEvo {
     struct NvKmsPoint rasterBlankEnd;
     struct NvKmsPoint rasterBlankStart;
 
-    NvU32 pixelClock; /* in kHz */
+    NvU64 pixelClockHz;
     enum nvKmsTimingsProtocol protocol;
     /*
      * yuv420Mode reflects whether this mode requires YUV 4:2:0 decimation into
@@ -1490,8 +1507,8 @@ typedef struct _NVHwModeTimingsEvo {
     NvBool dscPassThrough : 1;
     struct {
         /* The vrr type for which this mode is adjusted. */
-        enum NvKmsDpyVRRType type;
-        NvU32 timeoutMicroseconds;
+        enum NvKmsCurrentVrrType type;
+        NvU32 minRefreshRate;
     } vrr;
 
     NVHwModeViewPortEvo viewPort;
@@ -1517,7 +1534,7 @@ static inline NvBool nvIsGsyncV2DpyVrrType(enum NvKmsDpyVRRType type)
 static inline NvU64 nvEvoFrametimeUsFromTimings(const NVHwModeTimingsEvo *pTimings)
 {
     NvU64 pixelsPerFrame = pTimings->rasterSize.x * pTimings->rasterSize.y;
-    NvU64 pixelsPerSecond = KHzToHz(pTimings->pixelClock);
+    NvU64 pixelsPerSecond = pTimings->pixelClockHz;
     NvU64 framesPerSecond = pixelsPerSecond / pixelsPerFrame;
 
     return 1000000ULL / framesPerSecond;
@@ -1931,6 +1948,11 @@ typedef struct _NVDispHeadStateEvoRec {
         NvBool baseLutEnabled   : 1;
     } lut;
 
+    struct {
+        NvU64 targetVTotal;
+        NvU16 targetFraction;
+    } vrr;
+
     /*
      * The api head can be mapped onto the N harware heads, a frame presented
      * by the api head gets split horizontally into N sections,
@@ -1973,6 +1995,13 @@ typedef struct _NVDispApiHeadStateEvoRec {
     NvBool hdrInfoFrameOverride;
     NvBool hdmiVsifMetadataEnabled;
     NvU32 hdrStaticMetadataLayerMask;
+
+    /*
+     * Requested ALLM enable mode for this api head.
+     * Set from the flip/modeset path and read by nvUpdateHdmiInfoFrames()
+     * to compute the effective ALLM bit in the HF-VSIF infoframe.
+     */
+    enum NvKmsAllmMode allmMode;
 
     /*
      * Hardware timings which are split across hardware heads.
@@ -2314,6 +2343,9 @@ typedef struct _NVDpyEvoRec {
 
     /* whether the connected dpy is HDMI capable */
     NvBool      hdmiCapable              : 1;
+
+    /* whether the connected dpy advertises ALLM support in EDID */
+    NvBool      allmCapable              : 1;
     NvBool      isVrHmd                  : 1;
 
     /* 
@@ -2374,6 +2406,7 @@ typedef struct _NVDpyEvoRec {
         HDMI_SRC_CAPS srcCaps;
         HDMI_SINK_CAPS sinkCaps;
         NvBool reassessFrlLinkCaps             : 1;
+        NvU8 scdcSrcTestConfig;
     } hdmi;
 
     struct {
@@ -3249,6 +3282,10 @@ typedef const struct _nv_evo_hal {
                          const NvU32 head,
                          const NVEvoMergeMode mode,
                          NVEvoUpdateState* pUpdateState);
+    void (*SendHdmiVrrVtem)(NVDevEvoRec *pDevEvo,
+                            const NvU32 head,
+                            NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *pEmpCtrl,
+                            NVEvoUpdateState *updateState);
     void (*SendHdmiInfoFrame)(const NVDispEvoRec *pDispEvo,
                               const NvU32 head,
                               const NvEvoInfoFrameTransmitControl *transmitCtrl,
@@ -3337,10 +3374,17 @@ typedef const struct _nv_evo_hal {
                          NVEvoUpdateState *pUpdateState);
 
     void (*SetupVBlankRgSemaphoreInterrupt) (NVDispEvoPtr pDispEvo,
-                                               NvU32 head,
-                                               NvU16 rasterLine,
-                                               NVSurfaceDescriptor *pSurfaceDesc,
-                                               NVEvoUpdateState *pUpdateState);
+                                             NvU32 head,
+                                             NvU16 rasterLine,
+                                             NVSurfaceDescriptor *pSurfaceDesc,
+                                             NVEvoUpdateState *pUpdateState);
+
+    void (*SetVTotalAndFraction) (NVDevEvoPtr pDevEvo,
+                                  NvU32 head,
+                                  const NVHwModeTimingsEvo *pTimings,
+                                  NvU64 targetVTotal,
+                                  NvU32 targetFraction,
+                                  NVEvoUpdateState *updateState);
     struct {
         NvU32 supportsHDMIFRL                           :1;
         NvU32 supportsSetStorageMemoryLayout            :1;

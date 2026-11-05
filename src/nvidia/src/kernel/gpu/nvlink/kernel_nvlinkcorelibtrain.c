@@ -85,6 +85,7 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
     NvBool  bUpdateConnStatus     = NV_FALSE;
     NvBool  bCheckDegradedMode    = NV_FALSE;
     NvBool  bForceDiscovery       = NV_FALSE;
+    NvBool  bDiscoveryAttempted   = NV_FALSE;
     nvlink_conn_info conn_info    = {0};
     NvU32   linkId;
     NvU32     numActiveLinksPerIoctrl = 0;
@@ -108,7 +109,7 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
         //
         //  UpdatePostRxDetect has to happen only if there is a disconnected link
         //
-        if (KNVLINK_GET_MASK(pKernelNvlink, disconnectedLinkMask, 64) && pKernelNvlink->bEnableAli)
+        if (!bitVectorTestAllCleared(&pKernelNvlink->disconnectedLinkMask) && pKernelNvlink->bEnableAli)
         {
             // Update the post Rx Det link Mask for the GPU
             knvlinkUpdatePostRxDetectLinkMask(pGpu, pKernelNvlink);
@@ -132,7 +133,7 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
         }
 
         // We only need to look at links that are still considered disconnected
-        FOR_EACH_INDEX_IN_MASK(64, linkId, KNVLINK_GET_MASK(pKernelNvlink, disconnectedLinkMask, 64))
+        FOR_EACH_IN_BITVECTOR(&pKernelNvlink->disconnectedLinkMask, linkId)
         {
             //
             // If we are using ALI training, make sure the
@@ -219,8 +220,33 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
                         flags = NVLINK_STATE_CHANGE_ASYNC;
                     }
 
-                    nvlink_lib_discover_and_get_remote_conn_info(
+                    if (pKernelNvlink->ipVerNvlink >= NVLINK_VERSION_60)
+                    {
+                        //
+                        // A single core discovery pass walks all registered links.
+                        // Force it only once per RM invocation so this per-link loop
+                        // cannot consume the global packet-injection retry budget.
+                        //
+                        if (!bDiscoveryAttempted)
+                        {
+                            nvlink_lib_discover_and_get_remote_conn_info(
+                                pKernelNvlink->nvlinkLinks[linkId].core_link,
+                                &conn_info, flags, NV_TRUE);
+                            bDiscoveryAttempted = NV_TRUE;
+                        }
+                        else
+                        {
+                            nvlink_lib_get_remote_conn_info(
+                                pKernelNvlink->nvlinkLinks[linkId].core_link,
+                                &conn_info);
+                        }
+                    }
+                    else
+                    {
+                        // Legacy behavior
+                        nvlink_lib_discover_and_get_remote_conn_info(
                             pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, flags, NV_FALSE);
+                    }
                 }
 
                 // RPC into GSP-RM to update the link connected status only if its required
@@ -257,7 +283,7 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
                 }
             }
         }
-        FOR_EACH_INDEX_IN_MASK_END;
+        FOR_EACH_IN_BITVECTOR_END();
     }
     else
     {
@@ -655,8 +681,11 @@ knvlinkTrainP2pLinksToActive_IMPL
     //
     if (IsAMPEREorBetter(pGpu0))
     {
-        NvU64 localLinkMask  = 0;
-        NvU64 remoteMask = 0;
+        NVLINK_BIT_VECTOR localLinkMask;
+        NVLINK_BIT_VECTOR remoteMask;
+
+        bitVectorClrAll(&localLinkMask);
+        bitVectorClrAll(&remoteMask);
 
         FOR_EACH_IN_BITVECTOR(&pKernelNvlink1->enabledLinks, i)
         {
@@ -664,14 +693,14 @@ knvlinkTrainP2pLinksToActive_IMPL
             {
                 remoteLink = pKernelNvlink0->nvlinkLinks[i].remoteEndInfo.linkNumber;
 
-                localLinkMask  |= BIT(i);
-                remoteMask     |= BIT(remoteLink);
+                bitVectorSet(&localLinkMask, i);
+                bitVectorSet(&remoteMask, remoteLink);
             }
         }
         FOR_EACH_IN_BITVECTOR_END();
 
-        if (((pKernelNvlink0->initializedLinks & localLinkMask)  == localLinkMask) &&
-            ((pKernelNvlink1->initializedLinks & remoteMask) == remoteMask))
+        if (bitVectorTestIsSubset(&localLinkMask, &pKernelNvlink0->initializedLinks) &&
+            bitVectorTestIsSubset(&remoteMask, &pKernelNvlink1->initializedLinks))
         {
             NV_PRINTF(LEVEL_INFO, "P2P links are all trained already, return\n");
             return NV_OK;
@@ -1463,7 +1492,8 @@ knvlinkFloorSweep_IMPL
     // other link masks as these have been floorswept by the corelib
     //
 
-    pKernelNvlink->disconnectedLinkMask    = tmpEnabledLinkMask;
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        convertMaskToBitVector((NvU64)tmpEnabledLinkMask, &pKernelNvlink->disconnectedLinkMask));
     pKernelNvlink->initDisabledLinksMask   = tmpDisabledLinkMask;
 
     status = knvlinkProcessInitDisabledLinks(pGpu, pKernelNvlink);
@@ -1488,8 +1518,8 @@ knvlinkFloorSweep_IMPL
     if(!(nvPopCount32(tmpEnabledLinkMask) <= *pNumActiveLinksPerIoctrl * nvPopCount32(pKernelNvlink->ioctrlMask)))
     {
         NV_PRINTF(LEVEL_INFO,
-              "Floorsweeping didn't work! enabledMaskCount: 0x%x and numActiveLinksTotal: 0x%x. Current link info cached in SW: discoveredLinks:" NV_BITVECTOR_INLINE_FMTX "enabledLinks: " NV_BITVECTOR_INLINE_FMTX "; disconnectedLinks:0x%llx; initDisabledLinksMask:0x%x\n",
-                nvPopCount32(tmpEnabledLinkMask), *pNumActiveLinksPerIoctrl * nvPopCount32(pKernelNvlink->ioctrlMask), NV_BITVECTOR_INLINE_PRINTF_ARG(&pKernelNvlink->discoveredLinks), NV_BITVECTOR_INLINE_PRINTF_ARG(&pKernelNvlink->enabledLinks), pKernelNvlink->disconnectedLinkMask, pKernelNvlink->initDisabledLinksMask);
+              "Floorsweeping didn't work! enabledMaskCount: 0x%x and numActiveLinksTotal: 0x%x. Current link info cached in SW: discoveredLinks:" NV_BITVECTOR_INLINE_FMTX "enabledLinks: " NV_BITVECTOR_INLINE_FMTX "; disconnectedLinks:" NV_BITVECTOR_INLINE_FMTX "; initDisabledLinksMask:0x%x\n",
+                nvPopCount32(tmpEnabledLinkMask), *pNumActiveLinksPerIoctrl * nvPopCount32(pKernelNvlink->ioctrlMask), NV_BITVECTOR_INLINE_PRINTF_ARG(&pKernelNvlink->discoveredLinks), NV_BITVECTOR_INLINE_PRINTF_ARG(&pKernelNvlink->enabledLinks), NV_BITVECTOR_INLINE_PRINTF_ARG(&pKernelNvlink->disconnectedLinkMask), pKernelNvlink->initDisabledLinksMask);
 
         return NV_ERR_NOT_READY;
     }
@@ -1579,11 +1609,13 @@ _knvlinkActivateDiscoveredConns
     NvBool        bCheckDegradedMode
 )
 {
-    NvU64      initDisconnectedLinkMask = KNVLINK_GET_MASK(pKernelNvlink, disconnectedLinkMask, 64);
+    NVLINK_BIT_VECTOR initDisconnectedLinkMask;
     NvU64      switchLinkMasks          = 0;
     NvBool     bPeerUpdated             = NV_FALSE;
     NV_STATUS  status                   = NV_OK;
     NvU32      linkId;
+
+    bitVectorCopy(&initDisconnectedLinkMask, &pKernelNvlink->disconnectedLinkMask);
 
     //
     // Degraded Mode on LR10+ systems. Check for degraded mode if this was not done before
@@ -1596,12 +1628,12 @@ _knvlinkActivateDiscoveredConns
     }
 
     // We only need to look at links that are considered disconnected
-    FOR_EACH_INDEX_IN_MASK(64, linkId, initDisconnectedLinkMask)
+    FOR_EACH_IN_BITVECTOR(&initDisconnectedLinkMask, linkId)
     {
         if (pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.bConnected)
         {
             // This link is now marked connected
-            pKernelNvlink->disconnectedLinkMask &= ~NVBIT64(linkId);
+            bitVectorClr(&pKernelNvlink->disconnectedLinkMask, linkId);
 
             if (pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.deviceType
                     == NVLINK_DEVICE_TYPE_GPU)
@@ -1650,7 +1682,7 @@ _knvlinkActivateDiscoveredConns
             }
         }
     }
-    FOR_EACH_INDEX_IN_MASK_END;
+    FOR_EACH_IN_BITVECTOR_END();
 
 #if defined(NVCPU_AARCH64)
     if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_SYSMEM_SUPPORT_ENABLED))
@@ -1668,9 +1700,9 @@ _knvlinkActivateDiscoveredConns
 #endif
 
     // If any new connection was discovered in this call
-    if (initDisconnectedLinkMask != KNVLINK_GET_MASK(pKernelNvlink, disconnectedLinkMask, 64))
+    if (!bitVectorTestEqual(&initDisconnectedLinkMask, &pKernelNvlink->disconnectedLinkMask))
     {
-        if (KNVLINK_GET_MASK(pKernelNvlink, disconnectedLinkMask, 64) == KNVLINK_BITVECTOR_TO_MASK(pKernelNvlink, enabledLinks, 64)) //GPU degraded case
+        if (bitVectorTestEqual(&pKernelNvlink->disconnectedLinkMask, &pKernelNvlink->enabledLinks)) //GPU degraded case
         {
             bPeerUpdated |= _knvlinkUpdateSwitchLinkMasksGpuDegraded(pGpu, pKernelNvlink);
         }
@@ -1797,7 +1829,7 @@ _knvlinkActivateDiscoveredP2pConn
                     }
                 }
 
-                pKernelNvlink1->disconnectedLinkMask &= ~NVBIT64(remoteLinkId);
+                bitVectorClr(&pKernelNvlink1->disconnectedLinkMask, remoteLinkId);
 
                 // Map this GPU's instance number to the associated link on the remote end.
                 NVLINK_BIT_VECTOR tempPeerLinkMask;
@@ -2635,10 +2667,10 @@ _knvlinkPrintTopologySummary
     }
 
     // Print the links which do not have a connection yet
-    if (pKernelNvlink->disconnectedLinkMask != 0)
+    if (!bitVectorTestAllCleared(&pKernelNvlink->disconnectedLinkMask))
     {
-        NV_PRINTF(LEVEL_INFO, "    unknown link mask: 0x%llx\n",
-                  KNVLINK_GET_MASK(pKernelNvlink, disconnectedLinkMask, 64));
+        NV_BITVECTOR_PRINT(NV_PRINTF(LEVEL_INFO, "    unknown link mask: \n"),
+                  &pKernelNvlink->disconnectedLinkMask);
     }
 #endif
 
@@ -2654,21 +2686,32 @@ _knvlinkGetNumPortEvents
 {
     NV_STATUS status;
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS params = {0};
+    NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS *pParams;
+    NvU32 numPortEvents = 0;
+    pParams = portMemAllocNonPaged(sizeof(NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS));
+    if (pParams == NULL)
+    {
+        return 0;
+    }
+    portMemSet(pParams, 0, sizeof(NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS));
 
     status = pRmApi->Control(pRmApi,
                              pGpu->hInternalClient,
                              pGpu->hInternalSubdevice,
                              NV2080_CTRL_CMD_NVLINK_GET_PORT_EVENTS,
-                             &params,
+                             pParams,
                              sizeof(NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS));
     if (status != NV_OK)
     {
+        portMemFree(pParams);
         // If this call fails, force discovery in knvlinkCoreGetRemoteDeviceInfo
         return 0;
     }
 
-    return params.portEventCount;
+    numPortEvents = pParams->portEventCount;
+    portMemFree(pParams);
+
+    return numPortEvents;
 }
 
 #endif

@@ -30,50 +30,6 @@
 #include "class/cl906f.h"   // GF100_CHANNEL_GPFIFO
 #include "class/clc0b5.h"   // PASCAL_DMA_COPY_A
 
-/*!
- * @brief Determine the kind of compressed PTE for a given allocation for color.
- *
- * @param[in]   pFbAllocInfo FB_ALLOC_INFO pointer
- *
- * @returns     PTE Kind.
- */
-NvU32
-memmgrChooseKindCompressC_GP100
-(
-    OBJGPU                 *pGpu,
-    MemoryManager          *pMemoryManager,
-    FB_ALLOC_PAGE_FORMAT   *pFbAllocPageFormat
-)
-{
-    extern NvU32 memmgrChooseKindCompressC_GM107(OBJGPU *pGpu, MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *pFbAllocPageFormat);
-    NvU32  kind         = NV_MMU_PTE_KIND_PITCH;
-    NvU32  attrdepth    = DRF_VAL(OS32, _ATTR, _DEPTH, pFbAllocPageFormat->attr);
-    NvU32  aasamples    = DRF_VAL(OS32, _ATTR, _AA_SAMPLES, pFbAllocPageFormat->attr);
-
-    if ((attrdepth == NVOS32_ATTR_DEPTH_32) &&
-         ((aasamples == NVOS32_ATTR_AA_SAMPLES_4) ||
-          (aasamples == NVOS32_ATTR_AA_SAMPLES_4_ROTATED) ||
-          (aasamples == NVOS32_ATTR_AA_SAMPLES_4_VIRTUAL_8) ||
-          (aasamples == NVOS32_ATTR_AA_SAMPLES_4_VIRTUAL_16)))
-    {
-        kind = NV_MMU_PTE_KIND_C32_MS4_4CBRA;
-    }
-    else if ((attrdepth == NVOS32_ATTR_DEPTH_64) &&
-              ((aasamples == NVOS32_ATTR_AA_SAMPLES_4) ||
-              (aasamples == NVOS32_ATTR_AA_SAMPLES_4_ROTATED) ||
-              (aasamples == NVOS32_ATTR_AA_SAMPLES_4_VIRTUAL_8) ||
-              (aasamples == NVOS32_ATTR_AA_SAMPLES_4_VIRTUAL_16)))
-    {
-        kind = NV_MMU_PTE_KIND_C64_MS4_4CBRA;
-    }
-    else
-    {
-        kind = memmgrChooseKindCompressC_GM107(pGpu, pMemoryManager, pFbAllocPageFormat);
-    }
-
-    return kind;
-
-}
 
 NV_STATUS
 memmgrHandleSizeOverrides_GP100

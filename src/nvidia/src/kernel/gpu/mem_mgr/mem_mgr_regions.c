@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -156,6 +156,7 @@ memmgrInsertFbRegion_IMPL
 {
     NvU32   insertRegion = 0;
     PFB_REGION_DESCRIPTOR pFbRegion;
+    NvU32   additionalRegionCount;
 
     //
     // Consider that we have 4 Fb Regions
@@ -191,6 +192,14 @@ memmgrInsertFbRegion_IMPL
     pFbRegion = &pMemoryManager->Ram.fbRegion[insertRegion];
 
     NV_ASSERT_OR_RETURN(!pFbRegion->bRsvdRegion && !pFbRegion->bInternalHeap, NV_ERR_INVALID_ARGUMENT);
+
+    additionalRegionCount =
+        ((pFbRegion->base != pInsertRegion->base) && (pFbRegion->limit != pInsertRegion->limit)) ? 2U :
+        ((pFbRegion->base != pInsertRegion->base) || (pFbRegion->limit != pInsertRegion->limit)) ? 1U : 0U;
+
+    NV_ASSERT_OR_RETURN((pMemoryManager->Ram.numFBRegions <= MAX_FB_REGIONS) &&
+                        (additionalRegionCount <= MAX_FB_REGIONS - pMemoryManager->Ram.numFBRegions),
+                        NV_ERR_INVALID_DATA);
 
     //
     // Consider that we have 4 FB regions and for the sake of example we will
@@ -290,6 +299,7 @@ memmgrInsertFbRegion_IMPL
  * and in unprotected memory otherwise.
  *
  * @param[in]  pbMemoryProtectionEnabled
+ * @param[in]  bSkipInternalHeap            Whether to skip internal heap region
  *
  * @returns Pointer to the matching FB_REGION_DESCRIPTOR, or NULL if none.
  */
@@ -298,7 +308,8 @@ memmgrGetLastUsableFbRegion_IMPL
 (
     OBJGPU        *pGpu,
     MemoryManager *pMemoryManager,
-    const NvBool  *pbMemoryProtectionEnabled
+    const NvBool  *pbMemoryProtectionEnabled,
+    NvBool         bSkipInternalHeap
 )
 {
     NvU32 i;
@@ -313,6 +324,11 @@ memmgrGetLastUsableFbRegion_IMPL
             continue;
         }
 
+        if (bSkipInternalHeap && pRegion->bInternalHeap)
+        {
+            continue;
+        }
+
         if (pbMemoryProtectionEnabled != NULL &&
             pRegion->bProtected != *pbMemoryProtectionEnabled)
         {
@@ -323,6 +339,28 @@ memmgrGetLastUsableFbRegion_IMPL
     }
 
     return pLastRegion;
+}
+
+PFB_REGION_DESCRIPTOR
+memmgrGetGspCarveoutFbRegion_IMPL
+(
+    OBJGPU        *pGpu,
+    MemoryManager *pMemoryManager
+)
+{
+    NvU32 i;
+
+    for (i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
+    {
+        PFB_REGION_DESCRIPTOR pRegion = &pMemoryManager->Ram.fbRegion[i];
+
+        if (pRegion->regionTag == NV2080_FB_REGION_TAG_GSP_CARVEOUT)
+        {
+            return pRegion;
+        }
+    }
+
+    return NULL;
 }
 
 /*
@@ -481,3 +519,4 @@ memmgrClearFbRegions_IMPL
     pMemoryManager->Ram.numFBRegionPriority = 0;
     pMemoryManager->Ram.reservedMemSize = 0;
 }
+

@@ -1341,7 +1341,6 @@ _tmrStateLoadCallbacks
     NvU64 nextAlarmTime = 0;
     TMR_EVENT_PVT *pScan = pTmr->pRmActiveOSTimerEventList;
     NvBool bForceRearmCallbackInterrupt = NV_FALSE;
-
     if (tmrEventsExist(pTmr))
     {
         //

@@ -51,7 +51,6 @@ static NV_INLINE void NV_RM_RPC_GET_CONSOLIDATED_STATIC_INFO(OBJGPU *pGpu, ...) 
 static NV_INLINE void NV_RM_RPC_UPDATE_PDE_2(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_TRANSLATE_GUEST_GPU_PTES(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_SET_SEMA_MEM_VALIDATION_STATE(OBJGPU *pGpu, ...) { }
-static NV_INLINE void NV_RM_RPC_RESET_CURRENT_GR_CONTEXT(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_ALLOC_CONTEXT_DMA(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_GET_PLCABLE_ADDRESS_KIND(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_UPDATE_GPU_PDES(OBJGPU *pGpu, ...) { }
@@ -139,6 +138,16 @@ static NV_INLINE void NV_RM_RPC_UPDATE_GPU_PDES(OBJGPU *pGpu, ...) { }
         OBJRPC *pRpc = GPU_GET_RPC(pGpu);                               \
         if ((status == NV_OK) && (pRpc != NULL))                        \
             status = rpcRestoreHibernationData_HAL(pGpu, pRpc);         \
+    } while(0)
+
+#define NV_RM_RPC_SEND_GUEST_STUN_COMPLETION(pGpu, stunEventType, stunEventStatus, status) \
+    do                                                                  \
+    {                                                                   \
+        OBJRPC *pRpc = GPU_GET_RPC(pGpu);                               \
+        if ((status == NV_OK) && (pRpc != NULL))                        \
+            status = rpcSendGuestStunCompletion_HAL(pGpu, pRpc,         \
+                                                    stunEventType,      \
+                                                    stunEventStatus);   \
     } while(0)
 
 #define NV_RM_RPC_SETUP_HIBERNATION_BUFFER(pGpu, status)                \

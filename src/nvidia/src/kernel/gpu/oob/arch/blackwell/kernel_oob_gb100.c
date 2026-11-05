@@ -150,9 +150,18 @@ koobCheckSupported_GB100
     }
 
     // Not supported in CC mode for first release.
-    if (gpuIsCCFeatureEnabled(pGpu))
+    if (gpuIsCCFeatureEnabled(pGpu)
+        || gpuIsBaremetalSecureAiEnabled(pGpu)
+    )
     {
         NV_PRINTF(LEVEL_NOTICE, "Kernel OOB logging is disabled because it is incompatible with CC.\n");
+        return NV_FALSE;
+    }
+
+    // Not supported in TDISP mode
+    if (gpuIsTdispFeatureEnabled(pGpu))
+    {
+        NV_PRINTF(LEVEL_NOTICE, "Kernel OOB logging is disabled because it is incompatible with TDISP.\n");
         return NV_FALSE;
     }
 

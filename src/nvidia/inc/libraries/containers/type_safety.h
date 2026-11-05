@@ -26,7 +26,7 @@
 #include "nvtypes.h"
 #include "nvport/nvport.h"
 
-// Check for typeof support. For now restricting to GNUC compilers.
+// Check for __typeof__ support. For now restricting to GNUC compilers.
 #if defined(__GNUC__)
 #define NV_TYPEOF_SUPPORTED 1
 #else
@@ -166,25 +166,32 @@ typename T::IterType CONT_ITER_RANGE_INDEX
     (sizeof((pCont)->elem == (pValue)) ? (pValue) : NULL)
 
 //
-// Return checks are more problematic, but typeof is perfect when available.
-// Without typeof we resort to a runtime vtable.
+// Return checks are more problematic, but __typeof__ is perfect when available.
+// Without __typeof__ we resort to a runtime vtable.
 //
 #if NV_TYPEOF_SUPPORTED
 
-#define CONT_CAST_ELEM(pCont, ret, validfunc) ((typeof((pCont)->elem))(ret))
+#define CONT_CAST_ELEM(pCont, ret, validfunc) ((__typeof__((pCont)->elem))(ret))
 
 //
-// The dummy contId prevents compilers from warning about incompatible
-// function casts. This is safe since we know the two return structures
-// are identical (modulo alpha-conversion).
+// Call the underlying iterator function with its true prototype and graft the
+// base iterator it returns into the container's typed iterator wrapper.
 //
 #define CONT_ITER_RANGE(pCont, pFunc, pFirst, pLast, validfunc)              \
-    (((typeof(*(pCont)->iter)(*)(void *, void *, void *))contId(pFunc))(     \
-        pCont, pFirst, pLast))
+    ({                                                                       \
+        __typeof__(*(pCont)->iter) _contIterTmp = {                          \
+            .iter = (pFunc)(&(pCont)->real.base, (pFirst), (pLast))          \
+        };                                                                   \
+        _contIterTmp;                                                        \
+    })
 
 #define CONT_ITER_RANGE_INDEX(pCont, pFunc, first, last, validfunc)          \
-    (((typeof(*(pCont)->iter)(*)(void *, NvU64, NvU64))contId(pFunc))(       \
-        pCont, first, last))
+    ({                                                                       \
+        __typeof__(*(pCont)->iter) _contIterTmp = {                          \
+            .iter = (pFunc)(&(pCont)->real.base, (first), (last))            \
+        };                                                                   \
+        _contIterTmp;                                                        \
+    })
 
 #else
 

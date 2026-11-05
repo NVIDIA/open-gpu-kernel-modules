@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1704,6 +1704,65 @@ typedef struct NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_STATE_VOTE_PARAMS {
     NvBool bAllowed;
 } NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_STATE_VOTE_PARAMS;
 
+/*
+ * NV2080_CTRL_CMD_BUS_SET_C2C_INTERRUPTS
+ *
+ * This command is used to disable/enable C2C interrupts.
+ *
+ *   bEnable[in]
+ *      If NV_FALSE disable C2C interrupts.
+ *      If NV_TRUE enable the C2C interrupts if previously disabled.
+ *
+ * Possible status values returned are:
+ *  NV_OK
+ *  NV_ERR_INVALID_STATE
+ *  NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV2080_CTRL_CMD_BUS_SET_C2C_INTERRUPTS (0x20801833) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_SET_C2C_INTERRUPTS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_BUS_SET_C2C_INTERRUPTS_PARAMS_MESSAGE_ID (0x33U)
+
+typedef struct NV2080_CTRL_BUS_SET_C2C_INTERRUPTS_PARAMS {
+    NvBool bEnable;
+} NV2080_CTRL_BUS_SET_C2C_INTERRUPTS_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_BUS_SET_C2C_ERR_CLEAR_MODE
+ *
+ * This command is used to disable/enable
+ * periodic HW clear for C2C error counters.
+ *
+ *   bEnable[in]
+ *      If NV_FALSE disable periodic HW clear.
+ *      If NV_TRUE enable periodic HW clear.
+ *
+ * Possible status values returned are:
+ *  NV_OK
+ *  NV_ERR_INVALID_STATE
+ *  NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV2080_CTRL_CMD_BUS_SET_C2C_ERR_CLEAR_MODE (0x20801834) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_SET_C2C_ERR_CLEAR_MODE_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_BUS_SET_C2C_ERR_CLEAR_MODE_PARAMS_MESSAGE_ID (0x34U)
+
+typedef struct NV2080_CTRL_BUS_SET_C2C_ERR_CLEAR_MODE_PARAMS {
+    NvBool bEnable;
+} NV2080_CTRL_BUS_SET_C2C_ERR_CLEAR_MODE_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_BUS_CLEAR_C2C_ERR_COUNTS
+ *
+ * This command clears the C2C error counts for all C2C links.
+ *
+ * Possible status values returned are:
+ *  NV_OK
+ *  NV_ERR_INVALID_STATE
+ *  NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV2080_CTRL_CMD_BUS_CLEAR_C2C_ERR_COUNTS        (0x20801835) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | 0x35" */
 
 /*
  * NV2080_CTRL_CMD_BUS_SET_C2C_LPWR_IDLE_THRESHOLD
@@ -1742,4 +1801,106 @@ typedef struct NV2080_CTRL_CMD_BUS_GET_C2C_PACKET_COUNTERS_PARAMS {
 } NV2080_CTRL_CMD_BUS_GET_C2C_PACKET_COUNTERS_PARAMS;
 
 
+
+/*
+ * NV2080_CTRL_CMD_BUS_GET_C2C_DEBUG_INTR_INFO
+ *
+ * This command returns the RM test-only C2C_DEBUG interrupt counts for
+ * each C2C link.
+ *
+ *   debugIntrCnts[OUT]
+ *       Array of C2C_DEBUG interrupt counts.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_TEST_ONLY_CODE_NOT_ENABLED
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV2080_CTRL_CMD_BUS_GET_C2C_DEBUG_INTR_INFO (0x2080183d) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_GET_C2C_DEBUG_INTR_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_BUS_GET_C2C_DEBUG_INTR_INFO_PARAMS_MESSAGE_ID (0x3DU)
+
+typedef struct NV2080_CTRL_BUS_GET_C2C_DEBUG_INTR_INFO_PARAMS {
+    NvU32 debugIntrCnts[NV2080_CTRL_CMD_BUS_GET_C2C_INFO_MAX_C2C_LINKS];
+} NV2080_CTRL_BUS_GET_C2C_DEBUG_INTR_INFO_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_BUS_CLEAR_C2C_DEBUG_INTR_COUNTS
+ *
+ * This command clears the RM test-only C2C_DEBUG interrupt counts for all
+ * C2C links. It only clears RM state and does not program hardware.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_TEST_ONLY_CODE_NOT_ENABLED
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV2080_CTRL_CMD_BUS_CLEAR_C2C_DEBUG_INTR_COUNTS (0x2080183e) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | 0x3E" */
+
+/*
+ * NV2080_CTRL_CMD_BUS_ENABLE_C2C_DEBUG_INTR
+ *
+ * This command enables C2C_DEBUG interrupt routing on all active C2C links
+ * by setting the C2C_DEBUG bit in the INTR enable and INTR1 mask registers.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_TEST_ONLY_CODE_NOT_ENABLED
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV2080_CTRL_CMD_BUS_ENABLE_C2C_DEBUG_INTR       (0x2080183f) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | 0x3F" */
+
+/*
+ * NV2080_CTRL_CMD_BUS_TRIGGER_C2C_DEBUG_INTR
+ *
+ * This command triggers a C2C_DEBUG interrupt on a selected C2C link and
+ * waits until INTR2 status shows C2C_DEBUG pending or RM services it.
+ * C2C_DEBUG interrupt routing must be enabled before calling this command.
+ *
+ *   linkId[IN]
+ *       C2C link to trigger.
+ *   intr2StatusCount[OUT]
+ *       1 if INTR2 pending was observed before RM serviced and cleared it;
+ *       0 otherwise.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_TEST_ONLY_CODE_NOT_ENABLED
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_STATE_IN_USE
+ *   NV_ERR_TIMEOUT
+ */
+
+#define NV2080_CTRL_CMD_BUS_TRIGGER_C2C_DEBUG_INTR      (0x20801840) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_TRIGGER_C2C_DEBUG_INTR_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_BUS_TRIGGER_C2C_DEBUG_INTR_PARAMS_MESSAGE_ID (0x40U)
+
+typedef struct NV2080_CTRL_BUS_TRIGGER_C2C_DEBUG_INTR_PARAMS {
+    NvU32 linkId;
+    NvU32 intr2StatusCount;
+} NV2080_CTRL_BUS_TRIGGER_C2C_DEBUG_INTR_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_BUS_DISABLE_C2C_DEBUG_INTR
+ *
+ * This command disables C2C_DEBUG interrupt routing on all active C2C links by
+ * clearing the C2C_DEBUG bit in the INTR enable and INTR1 mask registers.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_TEST_ONLY_CODE_NOT_ENABLED
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV2080_CTRL_CMD_BUS_DISABLE_C2C_DEBUG_INTR (0x20801841) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | 0x41" */
 

@@ -74,10 +74,9 @@ typedef struct mem_export_info MEM_EXPORT_INFO;
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__MemoryExport;
 struct NVOC_METADATA__RmResource;
-struct NVOC_VTABLE__MemoryExport;
 
 
 struct MemoryExport {
@@ -103,36 +102,10 @@ struct MemoryExport {
 };
 
 
-// Vtable with 21 per-class function pointers
-struct NVOC_VTABLE__MemoryExport {
-    NvBool (*__memoryexportCanCopy__)(struct MemoryExport * /*this*/);  // virtual override (res) base (rmres)
-    NV_STATUS (*__memoryexportControl__)(struct MemoryExport * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (rmres)
-    NvBool (*__memoryexportAccessCallback__)(struct MemoryExport * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__memoryexportShareCallback__)(struct MemoryExport * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__memoryexportGetMemInterMapParams__)(struct MemoryExport * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__memoryexportCheckMemInterUnmap__)(struct MemoryExport * /*this*/, NvBool);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__memoryexportGetMemoryMappingDescriptor__)(struct MemoryExport * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__memoryexportControlSerialization_Prologue__)(struct MemoryExport * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__memoryexportControlSerialization_Epilogue__)(struct MemoryExport * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__memoryexportControl_Prologue__)(struct MemoryExport * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__memoryexportControl_Epilogue__)(struct MemoryExport * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__memoryexportIsDuplicate__)(struct MemoryExport * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (rmres)
-    void (*__memoryexportPreDestruct__)(struct MemoryExport * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__memoryexportControlFilter__)(struct MemoryExport * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__memoryexportMap__)(struct MemoryExport * /*this*/, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__memoryexportUnmap__)(struct MemoryExport * /*this*/, struct CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NvBool (*__memoryexportIsPartialUnmapSupported__)(struct MemoryExport * /*this*/);  // inline virtual inherited (res) base (rmres) body
-    NV_STATUS (*__memoryexportMapTo__)(struct MemoryExport * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__memoryexportUnmapFrom__)(struct MemoryExport * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
-    NvU32 (*__memoryexportGetRefCount__)(struct MemoryExport * /*this*/);  // virtual inherited (res) base (rmres)
-    void (*__memoryexportAddAdditionalDependants__)(struct RsClient *, struct MemoryExport * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__MemoryExport {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__RmResource metadata__RmResource;
-    const struct NVOC_VTABLE__MemoryExport vtable;
 };
 
 #ifndef __nvoc_class_id_MemoryExport
@@ -199,13 +172,13 @@ static inline NV_STATUS memoryexportCtrlGetInfo(struct MemoryExport *pMemoryExpo
 
 
 // Wrapper macros for halified functions
-#define memoryexportCanCopy_FNPTR(pMemoryExport) pMemoryExport->__nvoc_metadata_ptr->vtable.__memoryexportCanCopy__
+#define memoryexportCanCopy_FNPTR(pMemoryExport) pMemoryExport->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define memoryexportCanCopy(pMemoryExport) memoryexportCanCopy_DISPATCH(pMemoryExport)
-#define memoryexportControl_FNPTR(pMemoryExport) pMemoryExport->__nvoc_metadata_ptr->vtable.__memoryexportControl__
+#define memoryexportControl_FNPTR(pMemoryExport) pMemoryExport->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define memoryexportControl(pMemoryExport, pCallContext, pParams) memoryexportControl_DISPATCH(pMemoryExport, pCallContext, pParams)
-#define memoryexportAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define memoryexportAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define memoryexportAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) memoryexportAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define memoryexportShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
+#define memoryexportShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define memoryexportShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) memoryexportShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define memoryexportGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define memoryexportGetMemInterMapParams(pRmResource, pParams) memoryexportGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -213,13 +186,13 @@ static inline NV_STATUS memoryexportCtrlGetInfo(struct MemoryExport *pMemoryExpo
 #define memoryexportCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) memoryexportCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define memoryexportGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define memoryexportGetMemoryMappingDescriptor(pRmResource, ppMemDesc) memoryexportGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define memoryexportControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define memoryexportControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define memoryexportControlSerialization_Prologue(pResource, pCallContext, pParams) memoryexportControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define memoryexportControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define memoryexportControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define memoryexportControlSerialization_Epilogue(pResource, pCallContext, pParams) memoryexportControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define memoryexportControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define memoryexportControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define memoryexportControl_Prologue(pResource, pCallContext, pParams) memoryexportControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define memoryexportControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define memoryexportControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define memoryexportControl_Epilogue(pResource, pCallContext, pParams) memoryexportControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define memoryexportIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define memoryexportIsDuplicate(pResource, hMemory, pDuplicate) memoryexportIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
@@ -244,87 +217,87 @@ static inline NV_STATUS memoryexportCtrlGetInfo(struct MemoryExport *pMemoryExpo
 
 // Dispatch functions
 static inline NvBool memoryexportCanCopy_DISPATCH(struct MemoryExport *pMemoryExport) {
-    return pMemoryExport->__nvoc_metadata_ptr->vtable.__memoryexportCanCopy__(pMemoryExport);
+    return pMemoryExport->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pMemoryExport, RsResource));
 }
 
 static inline NV_STATUS memoryexportControl_DISPATCH(struct MemoryExport *pMemoryExport, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pMemoryExport->__nvoc_metadata_ptr->vtable.__memoryexportControl__(pMemoryExport, pCallContext, pParams);
+    return pMemoryExport->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pMemoryExport, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool memoryexportAccessCallback_DISPATCH(struct MemoryExport *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool memoryexportShareCallback_DISPATCH(struct MemoryExport *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS memoryexportGetMemInterMapParams_DISPATCH(struct MemoryExport *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__memoryexportGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS memoryexportCheckMemInterUnmap_DISPATCH(struct MemoryExport *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__memoryexportCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS memoryexportGetMemoryMappingDescriptor_DISPATCH(struct MemoryExport *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__memoryexportGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS memoryexportControlSerialization_Prologue_DISPATCH(struct MemoryExport *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void memoryexportControlSerialization_Epilogue_DISPATCH(struct MemoryExport *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__memoryexportControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS memoryexportControl_Prologue_DISPATCH(struct MemoryExport *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void memoryexportControl_Epilogue_DISPATCH(struct MemoryExport *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__memoryexportControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS memoryexportIsDuplicate_DISPATCH(struct MemoryExport *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void memoryexportPreDestruct_DISPATCH(struct MemoryExport *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__memoryexportPreDestruct__(pResource);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS memoryexportControlFilter_DISPATCH(struct MemoryExport *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS memoryexportMap_DISPATCH(struct MemoryExport *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS memoryexportUnmap_DISPATCH(struct MemoryExport *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool memoryexportIsPartialUnmapSupported_DISPATCH(struct MemoryExport *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS memoryexportMapTo_DISPATCH(struct MemoryExport *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS memoryexportUnmapFrom_DISPATCH(struct MemoryExport *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 memoryexportGetRefCount_DISPATCH(struct MemoryExport *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memoryexportGetRefCount__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void memoryexportAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct MemoryExport *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__memoryexportAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

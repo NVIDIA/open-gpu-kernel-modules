@@ -38,7 +38,7 @@ using namespace DisplayPort;
 //
 NvU32 GUIDBuilder::random()
 {
-    previousRandom = static_cast<NvU32>(( ((NvU64)1664525 * previousRandom + 1013904223) & 0xFFFFFFFF) & 0xFF);
+    previousRandom = static_cast<NvU32>(((NvU64)1664525 * previousRandom + 1013904223) & 0xFFFFFFFF);
     return previousRandom;
 }
 
@@ -46,7 +46,10 @@ NvU32 GUIDBuilder::random()
 GUIDBuilder::GUIDBuilder(Timer * source, NvU32 salt)
     : salt(salt), source(source)
 {
-    previousRandom = static_cast<NvU32>(( source->getTimeUs() & 0xFFFFFFFF) & 0xFF);
+    NvU64 t = source->getTimeUs();
+    NvU64 addrMix = static_cast<NvU64>(reinterpret_cast<NvUPtr>(this));
+    NvU64 mixed = t ^ (t >> 32) ^ addrMix ^ (addrMix >> 32);
+    previousRandom = static_cast<NvU32>(mixed & 0xFFFFFFFF);
 }
 
 void GUIDBuilder::makeGuid(GUID & guid)
@@ -66,11 +69,12 @@ void GUIDBuilder::makeGuid(GUID & guid)
     guid.data[10] = static_cast<NvU8>(( currentTimer >> 8) & 0xFF);
     guid.data[11] = static_cast<NvU8>(( currentTimer) & 0xFF);
 
-    unsigned rnd = random();
-    guid.data[12] = static_cast<NvU8>(( rnd >> 24) & 0xFF);
-    guid.data[13] = static_cast<NvU8>(( rnd >> 16) & 0xFF);
-    guid.data[14] = static_cast<NvU8>(( rnd >> 8) & 0xFF);
-    guid.data[15] = static_cast<NvU8>(( rnd) & 0xFF);
+    NvU32 rnd1 = random();
+    NvU32 rnd2 = random();
+    guid.data[12] = static_cast<NvU8>((rnd1 >> 24) & 0xFF);
+    guid.data[13] = static_cast<NvU8>((rnd1 >> 16) & 0xFF);
+    guid.data[14] = static_cast<NvU8>((rnd2 >> 8) & 0xFF);
+    guid.data[15] = static_cast<NvU8>((rnd2) & 0xFF);
  
     //
     //  Spin until we get a new timer counter

@@ -47,6 +47,7 @@ extern "C" {
 #include "kernel/mem_mgr/vaspace.h"
 
 #include "ctrl/ctrl0080/ctrl0080gr.h" // NV03_DEVICE
+#include "ctrl/ctrla06c.h"            // NVA06C_CTRL_INTERLEAVE_LEVEL_*
 
 #include "libraries/containers/btree.h"
 #include "gpu/mem_mgr/mem_desc.h"
@@ -91,6 +92,9 @@ typedef enum
     CHANNELGROUP_STATE_COUNT // Should be last
 } CHANNELGROUP_STATE;
 
+// Default interleave level for new TSGs.
+#define KCHANGRP_DEFAULT_INTERLEAVE_LEVEL NVA06C_CTRL_INTERLEAVE_LEVEL_MEDIUM
+
 //
 // Describes the engine context memory for a channel
 // (Stored in KernelChannelGroup because it's shared by all channels in the group)
@@ -112,6 +116,7 @@ typedef struct _HW_ENG_FAULT_METHOD_BUFFER
     NvU64              bar2Addr;
     MEMORY_DESCRIPTOR *pMemDesc;
 } HW_ENG_FAULT_METHOD_BUFFER;
+
 
 //
 // dword array size used to track the valid subcontext mask.
@@ -166,7 +171,8 @@ struct KernelChannelGroup {
     struct RsShared *__nvoc_pbase_RsShared;    // shr super
     struct KernelChannelGroup *__nvoc_pbase_KernelChannelGroup;    // kchangrp
 
-    // Vtable with 4 per-object function pointers
+    // Vtable with 5 per-object function pointers
+    void (*__kchangrpUpdateSubcontextMask__)(struct OBJGPU *, struct KernelChannelGroup * /*this*/, NvU32, NvBool);  // halified (2 hals) body
     NV_STATUS (*__kchangrpAllocFaultMethodBuffers__)(struct OBJGPU *, struct KernelChannelGroup * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kchangrpFreeFaultMethodBuffers__)(struct OBJGPU *, struct KernelChannelGroup * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kchangrpMapFaultMethodBuffers__)(struct OBJGPU *, struct KernelChannelGroup * /*this*/, NvU32);  // halified (2 hals) body
@@ -200,7 +206,7 @@ struct KernelChannelGroup {
     KernelChannelGroupApiList apiObjList;
     NvBool bIsCallingContextVgpuPlugin;
     NvBool bNonPreemptableDebuggerSessionActive;
-    NvU32 recoverySuppressionExpirationTime;
+    NvU64 recoverySuppressionExpirationTime;
     NvU32 tsgUniqueId;
 };
 
@@ -341,6 +347,16 @@ static inline NV_STATUS kchangrpSetInterleaveLevel(struct OBJGPU *pGpu, struct K
 #define kchangrpSetInterleaveLevel(pGpu, pKernelChannelGroup, value) kchangrpSetInterleaveLevel_IMPL(pGpu, pKernelChannelGroup, value)
 #endif // __nvoc_kernel_channel_group_h_disabled
 
+NV_STATUS kchangrpSetInterleaveLevelInternal_IMPL(struct OBJGPU *pGpu, struct KernelChannelGroup *pKernelChannelGroup, NvU32 value);
+#ifdef __nvoc_kernel_channel_group_h_disabled
+static inline NV_STATUS kchangrpSetInterleaveLevelInternal(struct OBJGPU *pGpu, struct KernelChannelGroup *pKernelChannelGroup, NvU32 value) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroup was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_channel_group_h_disabled
+#define kchangrpSetInterleaveLevelInternal(pGpu, pKernelChannelGroup, value) kchangrpSetInterleaveLevelInternal_IMPL(pGpu, pKernelChannelGroup, value)
+#endif // __nvoc_kernel_channel_group_h_disabled
+
 NV_STATUS kchangrpSetInterleaveLevelSched_IMPL(struct OBJGPU *pGpu, struct KernelChannelGroup *pKernelChannelGroup, NvU32 value);
 #ifdef __nvoc_kernel_channel_group_h_disabled
 static inline NV_STATUS kchangrpSetInterleaveLevelSched(struct OBJGPU *pGpu, struct KernelChannelGroup *pKernelChannelGroup, NvU32 value) {
@@ -351,29 +367,23 @@ static inline NV_STATUS kchangrpSetInterleaveLevelSched(struct OBJGPU *pGpu, str
 #define kchangrpSetInterleaveLevelSched(pGpu, pKernelChannelGroup, value) kchangrpSetInterleaveLevelSched_IMPL(pGpu, pKernelChannelGroup, value)
 #endif // __nvoc_kernel_channel_group_h_disabled
 
-#ifdef __nvoc_kernel_channel_group_h_disabled
-static inline void kchangrpUpdateSubcontextMask(struct OBJGPU *pGpu, struct KernelChannelGroup *arg_this, NvU32 arg3, NvBool arg4) {
-    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroup was disabled!");
-}
-#else // __nvoc_kernel_channel_group_h_disabled
-#define kchangrpUpdateSubcontextMask(pGpu, arg_this, arg3, arg4) kchangrpUpdateSubcontextMask_d44104(pGpu, arg_this, arg3, arg4)
-#endif // __nvoc_kernel_channel_group_h_disabled
-
+void kchangrpSetSubcontextZombieState_IMPL(struct OBJGPU *pGpu, struct KernelChannelGroup *arg_this, NvU32 arg3, NvBool arg4);
 #ifdef __nvoc_kernel_channel_group_h_disabled
 static inline void kchangrpSetSubcontextZombieState(struct OBJGPU *pGpu, struct KernelChannelGroup *arg_this, NvU32 arg3, NvBool arg4) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannelGroup was disabled!");
 }
 #else // __nvoc_kernel_channel_group_h_disabled
-#define kchangrpSetSubcontextZombieState(pGpu, arg_this, arg3, arg4) kchangrpSetSubcontextZombieState_d44104(pGpu, arg_this, arg3, arg4)
+#define kchangrpSetSubcontextZombieState(pGpu, arg_this, arg3, arg4) kchangrpSetSubcontextZombieState_IMPL(pGpu, arg_this, arg3, arg4)
 #endif // __nvoc_kernel_channel_group_h_disabled
 
+NvBool kchangrpGetSubcontextZombieState_IMPL(struct OBJGPU *pGpu, struct KernelChannelGroup *arg_this, NvU32 arg3);
 #ifdef __nvoc_kernel_channel_group_h_disabled
 static inline NvBool kchangrpGetSubcontextZombieState(struct OBJGPU *pGpu, struct KernelChannelGroup *arg_this, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannelGroup was disabled!");
     return NV_FALSE;
 }
 #else // __nvoc_kernel_channel_group_h_disabled
-#define kchangrpGetSubcontextZombieState(pGpu, arg_this, arg3) kchangrpGetSubcontextZombieState_72a2e1(pGpu, arg_this, arg3)
+#define kchangrpGetSubcontextZombieState(pGpu, arg_this, arg3) kchangrpGetSubcontextZombieState_IMPL(pGpu, arg_this, arg3)
 #endif // __nvoc_kernel_channel_group_h_disabled
 
 #ifdef __nvoc_kernel_channel_group_h_disabled
@@ -399,9 +409,9 @@ static inline FIFO_TSG_INFO kchangrpGetInfo(struct KernelChannelGroup *arg_this)
 
 
 // Wrapper macros for halified functions
-#define kchangrpUpdateSubcontextMask_HAL(pGpu, arg_this, arg3, arg4) kchangrpUpdateSubcontextMask(pGpu, arg_this, arg3, arg4)
-#define kchangrpSetSubcontextZombieState_HAL(pGpu, arg_this, arg3, arg4) kchangrpSetSubcontextZombieState(pGpu, arg_this, arg3, arg4)
-#define kchangrpGetSubcontextZombieState_HAL(pGpu, arg_this, arg3) kchangrpGetSubcontextZombieState(pGpu, arg_this, arg3)
+#define kchangrpUpdateSubcontextMask_FNPTR(arg_this) arg_this->__kchangrpUpdateSubcontextMask__
+#define kchangrpUpdateSubcontextMask(pGpu, arg_this, arg3, arg4) kchangrpUpdateSubcontextMask_DISPATCH(pGpu, arg_this, arg3, arg4)
+#define kchangrpUpdateSubcontextMask_HAL(pGpu, arg_this, arg3, arg4) kchangrpUpdateSubcontextMask_DISPATCH(pGpu, arg_this, arg3, arg4)
 #define kchangrpAllocFaultMethodBuffers_FNPTR(pKernelChannelGroup) pKernelChannelGroup->__kchangrpAllocFaultMethodBuffers__
 #define kchangrpAllocFaultMethodBuffers(pGpu, pKernelChannelGroup) kchangrpAllocFaultMethodBuffers_DISPATCH(pGpu, pKernelChannelGroup)
 #define kchangrpAllocFaultMethodBuffers_HAL(pGpu, pKernelChannelGroup) kchangrpAllocFaultMethodBuffers_DISPATCH(pGpu, pKernelChannelGroup)
@@ -417,6 +427,10 @@ static inline FIFO_TSG_INFO kchangrpGetInfo(struct KernelChannelGroup *arg_this)
 #define kchangrpSetRealtime_HAL(pGpu, pKernelChannelGroup, bRealtime) kchangrpSetRealtime(pGpu, pKernelChannelGroup, bRealtime)
 
 // Dispatch functions
+static inline void kchangrpUpdateSubcontextMask_DISPATCH(struct OBJGPU *pGpu, struct KernelChannelGroup *arg_this, NvU32 arg3, NvBool arg4) {
+    arg_this->__kchangrpUpdateSubcontextMask__(pGpu, arg_this, arg3, arg4);
+}
+
 static inline NV_STATUS kchangrpAllocFaultMethodBuffers_DISPATCH(struct OBJGPU *pGpu, struct KernelChannelGroup *pKernelChannelGroup) {
     return pKernelChannelGroup->__kchangrpAllocFaultMethodBuffers__(pGpu, pKernelChannelGroup);
 }
@@ -436,7 +450,7 @@ static inline NV_STATUS kchangrpUnmapFaultMethodBuffers_DISPATCH(struct OBJGPU *
 // Virtual method declarations and/or inline definitions
 // Exported method declarations and/or inline definitions
 // HAL method declarations without bodies
-void kchangrpUpdateSubcontextMask_GV100(struct OBJGPU *pGpu, struct KernelChannelGroup *arg_this, NvU32 arg3, NvBool arg4);
+void kchangrpUpdateSubcontextMask_TU102(struct OBJGPU *pGpu, struct KernelChannelGroup *arg_this, NvU32 arg3, NvBool arg4);
 
 NV_STATUS kchangrpAllocFaultMethodBuffers_GV100(struct OBJGPU *pGpu, struct KernelChannelGroup *pKernelChannelGroup);
 
@@ -449,15 +463,6 @@ NV_STATUS kchangrpUnmapFaultMethodBuffers_GV100(struct OBJGPU *pGpu, struct Kern
 // Inline HAL method definitions
 static inline void kchangrpUpdateSubcontextMask_d44104(struct OBJGPU *pGpu, struct KernelChannelGroup *arg_this, NvU32 arg3, NvBool arg4){
     return;
-}
-
-static inline void kchangrpSetSubcontextZombieState_d44104(struct OBJGPU *pGpu, struct KernelChannelGroup *arg_this, NvU32 arg3, NvBool arg4){
-    return;
-}
-
-static inline NvBool kchangrpGetSubcontextZombieState_72a2e1(struct OBJGPU *pGpu, struct KernelChannelGroup *arg_this, NvU32 arg3){
-    NV_ASSERT_PRECOMP(0);
-    return NV_FALSE;
 }
 
 static inline NV_STATUS kchangrpAllocFaultMethodBuffers_ac1694(struct OBJGPU *pGpu, struct KernelChannelGroup *pKernelChannelGroup){

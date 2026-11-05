@@ -167,10 +167,11 @@ namespace DisplayPort
         DSC_INFO::FORCED_DSC_PARAMS* forcedParams; // [IN]     - Client telling DP Library to force certain DSC params.
         bool bEnableDsc;                           // [OUT]    - DP Library telling client that DSC is needed for this mode.
         NvU32 sliceCountMask;                      // [OUT]    - DP Library telling client what all slice counts can be used for the mode.
-        unsigned bitsPerPixelX16;                  // [IN/OUT] - Bits per pixel value multiplied by 16
+        unsigned bitsPerPixelX16;                  // [IN/OUT] - Bits per pixel value multiplied by 16. Effective bpp on Blackwell DP, normal bpp otherwise.
         DscOutParams *pDscOutParams;               // [OUT]    - DSC parameters
+        unsigned normalBitsPerPixelX16;            // [OUT]    - Normal bits per pixel multiplied by 16
 
-        DscParams() : bCheckWithDsc(false), forceDsc(DSC_DEFAULT), forcedParams(NULL), bEnableDsc(false), sliceCountMask(0), bitsPerPixelX16(0), pDscOutParams(NULL) {}
+        DscParams() : bCheckWithDsc(false), forceDsc(DSC_DEFAULT), forcedParams(NULL), bEnableDsc(false), sliceCountMask(0), bitsPerPixelX16(0), pDscOutParams(NULL), normalBitsPerPixelX16(0) {}
     };
 
     class Group;

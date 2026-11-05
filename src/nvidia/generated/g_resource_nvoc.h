@@ -259,29 +259,11 @@ struct RmResource {
 };
 
 
-// Vtable with 21 per-class function pointers
+// Vtable with 3 per-class function pointers
 struct NVOC_VTABLE__RmResource {
-    NvBool (*__rmresAccessCallback__)(struct RmResource * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual override (res) base (res)
-    NvBool (*__rmresShareCallback__)(struct RmResource * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual override (res) base (res)
     NV_STATUS (*__rmresGetMemInterMapParams__)(struct RmResource * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual
     NV_STATUS (*__rmresCheckMemInterUnmap__)(struct RmResource * /*this*/, NvBool);  // virtual
     NV_STATUS (*__rmresGetMemoryMappingDescriptor__)(struct RmResource * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual
-    NV_STATUS (*__rmresControlSerialization_Prologue__)(struct RmResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (res)
-    void (*__rmresControlSerialization_Epilogue__)(struct RmResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (res)
-    NV_STATUS (*__rmresControl_Prologue__)(struct RmResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (res)
-    void (*__rmresControl_Epilogue__)(struct RmResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (res)
-    NvBool (*__rmresCanCopy__)(struct RmResource * /*this*/);  // virtual inherited (res) base (res)
-    NV_STATUS (*__rmresIsDuplicate__)(struct RmResource * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (res)
-    void (*__rmresPreDestruct__)(struct RmResource * /*this*/);  // virtual inherited (res) base (res)
-    NV_STATUS (*__rmresControl__)(struct RmResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
-    NV_STATUS (*__rmresControlFilter__)(struct RmResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
-    NV_STATUS (*__rmresMap__)(struct RmResource * /*this*/, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (res) base (res)
-    NV_STATUS (*__rmresUnmap__)(struct RmResource * /*this*/, struct CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (res) base (res)
-    NvBool (*__rmresIsPartialUnmapSupported__)(struct RmResource * /*this*/);  // inline virtual inherited (res) base (res) body
-    NV_STATUS (*__rmresMapTo__)(struct RmResource * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (res)
-    NV_STATUS (*__rmresUnmapFrom__)(struct RmResource * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (res)
-    NvU32 (*__rmresGetRefCount__)(struct RmResource * /*this*/);  // virtual inherited (res) base (res)
-    void (*__rmresAddAdditionalDependants__)(struct RsClient *, struct RmResource * /*this*/, RsResourceRef *);  // virtual inherited (res) base (res)
 };
 
 // Metadata with per-class RTTI and vtable with ancestor(s)
@@ -323,9 +305,9 @@ NV_STATUS rmresConstruct_IMPL(struct RmResource *pResource, struct CALL_CONTEXT 
 
 
 // Wrapper macros for halified functions
-#define rmresAccessCallback_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define rmresAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define rmresAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) rmresAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define rmresShareCallback_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__rmresShareCallback__
+#define rmresShareCallback_FNPTR(pResource) pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define rmresShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) rmresShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define rmresGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define rmresGetMemInterMapParams(pRmResource, pParams) rmresGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -333,13 +315,13 @@ NV_STATUS rmresConstruct_IMPL(struct RmResource *pResource, struct CALL_CONTEXT 
 #define rmresCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) rmresCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define rmresGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define rmresGetMemoryMappingDescriptor(pRmResource, ppMemDesc) rmresGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define rmresControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define rmresControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define rmresControlSerialization_Prologue(pResource, pCallContext, pParams) rmresControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define rmresControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define rmresControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define rmresControlSerialization_Epilogue(pResource, pCallContext, pParams) rmresControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define rmresControl_Prologue_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define rmresControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define rmresControl_Prologue(pResource, pCallContext, pParams) rmresControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define rmresControl_Epilogue_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define rmresControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define rmresControl_Epilogue(pResource, pCallContext, pParams) rmresControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define rmresCanCopy_FNPTR(pResource) pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define rmresCanCopy(pResource) rmresCanCopy_DISPATCH(pResource)
@@ -368,11 +350,11 @@ NV_STATUS rmresConstruct_IMPL(struct RmResource *pResource, struct CALL_CONTEXT 
 
 // Dispatch functions
 static inline NvBool rmresAccessCallback_DISPATCH(struct RmResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool rmresShareCallback_DISPATCH(struct RmResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS rmresGetMemInterMapParams_DISPATCH(struct RmResource *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
@@ -388,67 +370,67 @@ static inline NV_STATUS rmresGetMemoryMappingDescriptor_DISPATCH(struct RmResour
 }
 
 static inline NV_STATUS rmresControlSerialization_Prologue_DISPATCH(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void rmresControlSerialization_Epilogue_DISPATCH(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS rmresControl_Prologue_DISPATCH(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void rmresControl_Epilogue_DISPATCH(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool rmresCanCopy_DISPATCH(struct RmResource *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresCanCopy__(pResource);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS rmresIsDuplicate_DISPATCH(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void rmresPreDestruct_DISPATCH(struct RmResource *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__rmresPreDestruct__(pResource);
+    pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS rmresControl_DISPATCH(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS rmresControlFilter_DISPATCH(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS rmresMap_DISPATCH(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS rmresUnmap_DISPATCH(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool rmresIsPartialUnmapSupported_DISPATCH(struct RmResource *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS rmresMapTo_DISPATCH(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS rmresUnmapFrom_DISPATCH(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 rmresGetRefCount_DISPATCH(struct RmResource *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__rmresGetRefCount__(pResource);
+    return pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void rmresAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__rmresAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,12 +44,24 @@ extern "C" {
 #ifndef _KERNEL_WATCHDOG_H_
 #define _KERNEL_WATCHDOG_H_
 
+#include "gpu/gpu_halspec.h"
 #include "gpu/gpu_resource.h"
 #include "resserv/rs_server.h"
 #include "resserv/rs_resource.h"
+#include "kernel/gpu/rc/kernel_rc_watchdog.h"
 #include "kernel/gpu/rc/kernel_rc_watchdog_private.h"
 
 #include "class/cl008f.h" // KERNEL_WATCHDOG
+
+struct Subdevice;
+
+#ifndef __nvoc_class_id_Subdevice
+#define __nvoc_class_id_Subdevice 0x4b01b3u
+typedef struct Subdevice Subdevice;
+#endif /* __nvoc_class_id_Subdevice */
+
+
+
 //
 // Watchdog object ids
 //
@@ -69,10 +81,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelWatchdog;
 struct NVOC_METADATA__GpuResource;
-struct NVOC_VTABLE__KernelWatchdog;
 
 
 struct KernelWatchdog {
@@ -94,6 +105,12 @@ struct KernelWatchdog {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct KernelWatchdog *__nvoc_pbase_KernelWatchdog;    // kwdt
 
+    // Vtable with 4 per-object function pointers
+    NV_STATUS (*__kwdtWatchdogInit__)(struct OBJGPU *, struct KernelWatchdog * /*this*/);  // halified (2 hals) body
+    void (*__kwdtWatchdogInitPushbuffer__)(struct OBJGPU *, struct KernelWatchdog * /*this*/);  // halified (2 hals) body
+    void (*__kwdtWatchdog__)(struct OBJGPU *, struct KernelWatchdog * /*this*/);  // halified (2 hals) body
+    void (*__kwdtWatchdogRecovery__)(struct OBJGPU *, struct KernelWatchdog * /*this*/);  // halified (2 hals) body
+
     // Data members
     NvHandle hClient;
     NvHandle hDevice;
@@ -104,40 +121,10 @@ struct KernelWatchdog {
 };
 
 
-// Vtable with 25 per-class function pointers
-struct NVOC_VTABLE__KernelWatchdog {
-    NV_STATUS (*__kwdtControl__)(struct KernelWatchdog * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__kwdtMap__)(struct KernelWatchdog * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__kwdtUnmap__)(struct KernelWatchdog * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__kwdtShareCallback__)(struct KernelWatchdog * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__kwdtGetRegBaseOffsetAndSize__)(struct KernelWatchdog * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__kwdtGetMapAddrSpace__)(struct KernelWatchdog * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__kwdtInternalControlForward__)(struct KernelWatchdog * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__kwdtGetInternalObjectHandle__)(struct KernelWatchdog * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__kwdtAccessCallback__)(struct KernelWatchdog * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__kwdtGetMemInterMapParams__)(struct KernelWatchdog * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__kwdtCheckMemInterUnmap__)(struct KernelWatchdog * /*this*/, NvBool);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__kwdtGetMemoryMappingDescriptor__)(struct KernelWatchdog * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__kwdtControlSerialization_Prologue__)(struct KernelWatchdog * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__kwdtControlSerialization_Epilogue__)(struct KernelWatchdog * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__kwdtControl_Prologue__)(struct KernelWatchdog * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__kwdtControl_Epilogue__)(struct KernelWatchdog * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NvBool (*__kwdtCanCopy__)(struct KernelWatchdog * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__kwdtIsDuplicate__)(struct KernelWatchdog * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__kwdtPreDestruct__)(struct KernelWatchdog * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__kwdtControlFilter__)(struct KernelWatchdog * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (gpures)
-    NvBool (*__kwdtIsPartialUnmapSupported__)(struct KernelWatchdog * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__kwdtMapTo__)(struct KernelWatchdog * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__kwdtUnmapFrom__)(struct KernelWatchdog * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__kwdtGetRefCount__)(struct KernelWatchdog * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__kwdtAddAdditionalDependants__)(struct RsClient *, struct KernelWatchdog * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelWatchdog {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResource metadata__GpuResource;
-    const struct NVOC_VTABLE__KernelWatchdog vtable;
 };
 
 #ifndef __nvoc_class_id_KernelWatchdog
@@ -172,15 +159,129 @@ NV_STATUS kwdtConstruct_IMPL(struct KernelWatchdog *pKernelWatchdog, struct CALL
 void kwdtDestruct_IMPL(struct KernelWatchdog *arg_this);
 #define __nvoc_kwdtDestruct(arg_this) kwdtDestruct_IMPL(arg_this)
 
+NV_STATUS kwdtWatchdogChangeState_IMPL(struct KernelWatchdog *pKernelWatchdog, struct Subdevice *pSubdevice, RC_CHANGE_WATCHDOG_STATE_OPERATION_TYPE operation);
+#ifdef __nvoc_kernel_watchdog_h_disabled
+static inline NV_STATUS kwdtWatchdogChangeState(struct KernelWatchdog *pKernelWatchdog, struct Subdevice *pSubdevice, RC_CHANGE_WATCHDOG_STATE_OPERATION_TYPE operation) {
+    NV_ASSERT_FAILED_PRECOMP("KernelWatchdog was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_watchdog_h_disabled
+#define kwdtWatchdogChangeState(pKernelWatchdog, pSubdevice, operation) kwdtWatchdogChangeState_IMPL(pKernelWatchdog, pSubdevice, operation)
+#endif // __nvoc_kernel_watchdog_h_disabled
+
+void kwdtWatchdogEnable_IMPL(struct KernelWatchdog *pKernelWatchdog, NvBool bOverRide);
+#ifdef __nvoc_kernel_watchdog_h_disabled
+static inline void kwdtWatchdogEnable(struct KernelWatchdog *pKernelWatchdog, NvBool bOverRide) {
+    NV_ASSERT_FAILED_PRECOMP("KernelWatchdog was disabled!");
+}
+#else // __nvoc_kernel_watchdog_h_disabled
+#define kwdtWatchdogEnable(pKernelWatchdog, bOverRide) kwdtWatchdogEnable_IMPL(pKernelWatchdog, bOverRide)
+#endif // __nvoc_kernel_watchdog_h_disabled
+
+void kwdtWatchdogDisable_IMPL(struct KernelWatchdog *pKernelWatchdog);
+#ifdef __nvoc_kernel_watchdog_h_disabled
+static inline void kwdtWatchdogDisable(struct KernelWatchdog *pKernelWatchdog) {
+    NV_ASSERT_FAILED_PRECOMP("KernelWatchdog was disabled!");
+}
+#else // __nvoc_kernel_watchdog_h_disabled
+#define kwdtWatchdogDisable(pKernelWatchdog) kwdtWatchdogDisable_IMPL(pKernelWatchdog)
+#endif // __nvoc_kernel_watchdog_h_disabled
+
+void kwdtWatchdogPause_IMPL(struct KernelWatchdog *pKernelWatchdog);
+#ifdef __nvoc_kernel_watchdog_h_disabled
+static inline void kwdtWatchdogPause(struct KernelWatchdog *pKernelWatchdog) {
+    NV_ASSERT_FAILED_PRECOMP("KernelWatchdog was disabled!");
+}
+#else // __nvoc_kernel_watchdog_h_disabled
+#define kwdtWatchdogPause(pKernelWatchdog) kwdtWatchdogPause_IMPL(pKernelWatchdog)
+#endif // __nvoc_kernel_watchdog_h_disabled
+
+void kwdtWatchdogResume_IMPL(struct KernelWatchdog *pKernelWatchdog);
+#ifdef __nvoc_kernel_watchdog_h_disabled
+static inline void kwdtWatchdogResume(struct KernelWatchdog *pKernelWatchdog) {
+    NV_ASSERT_FAILED_PRECOMP("KernelWatchdog was disabled!");
+}
+#else // __nvoc_kernel_watchdog_h_disabled
+#define kwdtWatchdogResume(pKernelWatchdog) kwdtWatchdogResume_IMPL(pKernelWatchdog)
+#endif // __nvoc_kernel_watchdog_h_disabled
+
+NV_STATUS kwdtWatchdogShutdown_IMPL(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog);
+#ifdef __nvoc_kernel_watchdog_h_disabled
+static inline NV_STATUS kwdtWatchdogShutdown(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog) {
+    NV_ASSERT_FAILED_PRECOMP("KernelWatchdog was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_kernel_watchdog_h_disabled
+#define kwdtWatchdogShutdown(pGpu, pKernelWatchdog) kwdtWatchdogShutdown_IMPL(pGpu, pKernelWatchdog)
+#endif // __nvoc_kernel_watchdog_h_disabled
+
+void kwdtWatchdogGetReservationCounts_IMPL(struct KernelWatchdog *pKernelWatchdog, NvS32 *pEnable, NvS32 *pDisable, NvS32 *pSoftDisable);
+#ifdef __nvoc_kernel_watchdog_h_disabled
+static inline void kwdtWatchdogGetReservationCounts(struct KernelWatchdog *pKernelWatchdog, NvS32 *pEnable, NvS32 *pDisable, NvS32 *pSoftDisable) {
+    NV_ASSERT_FAILED_PRECOMP("KernelWatchdog was disabled!");
+}
+#else // __nvoc_kernel_watchdog_h_disabled
+#define kwdtWatchdogGetReservationCounts(pKernelWatchdog, pEnable, pDisable, pSoftDisable) kwdtWatchdogGetReservationCounts_IMPL(pKernelWatchdog, pEnable, pDisable, pSoftDisable)
+#endif // __nvoc_kernel_watchdog_h_disabled
+
+NvBool kwdtTestAllowAlloc_IMPL(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog, NvU32 failMask);
+#ifdef __nvoc_kernel_watchdog_h_disabled
+static inline NvBool kwdtTestAllowAlloc(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog, NvU32 failMask) {
+    NV_ASSERT_FAILED_PRECOMP("KernelWatchdog was disabled!");
+    return NV_FALSE;
+}
+#else // __nvoc_kernel_watchdog_h_disabled
+#define kwdtTestAllowAlloc(pGpu, pKernelWatchdog, failMask) kwdtTestAllowAlloc_IMPL(pGpu, pKernelWatchdog, failMask)
+#endif // __nvoc_kernel_watchdog_h_disabled
+
+void kwdtWatchdogWriteNotifierToGpfifo_IMPL(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog);
+#ifdef __nvoc_kernel_watchdog_h_disabled
+static inline void kwdtWatchdogWriteNotifierToGpfifo(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog) {
+    NV_ASSERT_FAILED_PRECOMP("KernelWatchdog was disabled!");
+}
+#else // __nvoc_kernel_watchdog_h_disabled
+#define kwdtWatchdogWriteNotifierToGpfifo(pGpu, pKernelWatchdog) kwdtWatchdogWriteNotifierToGpfifo_IMPL(pGpu, pKernelWatchdog)
+#endif // __nvoc_kernel_watchdog_h_disabled
+
+void kwdtWatchdogCallbackVblankRecovery_IMPL(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog);
+#ifdef __nvoc_kernel_watchdog_h_disabled
+static inline void kwdtWatchdogCallbackVblankRecovery(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog) {
+    NV_ASSERT_FAILED_PRECOMP("KernelWatchdog was disabled!");
+}
+#else // __nvoc_kernel_watchdog_h_disabled
+#define kwdtWatchdogCallbackVblankRecovery(pGpu, pKernelWatchdog) kwdtWatchdogCallbackVblankRecovery_IMPL(pGpu, pKernelWatchdog)
+#endif // __nvoc_kernel_watchdog_h_disabled
+
+#ifdef __nvoc_kernel_watchdog_h_disabled
+static inline void kwdtWatchdogCallbackPerf(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog) {
+    NV_ASSERT_FAILED_PRECOMP("KernelWatchdog was disabled!");
+}
+#else // __nvoc_kernel_watchdog_h_disabled
+#define kwdtWatchdogCallbackPerf(pGpu, pKernelWatchdog) kwdtWatchdogCallbackPerf_d44104(pGpu, pKernelWatchdog)
+#endif // __nvoc_kernel_watchdog_h_disabled
+
 
 // Wrapper macros for halified functions
-#define kwdtControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define kwdtWatchdogInit_FNPTR(pKernelWatchdog) pKernelWatchdog->__kwdtWatchdogInit__
+#define kwdtWatchdogInit(pGpu, pKernelWatchdog) kwdtWatchdogInit_DISPATCH(pGpu, pKernelWatchdog)
+#define kwdtWatchdogInit_HAL(pGpu, pKernelWatchdog) kwdtWatchdogInit_DISPATCH(pGpu, pKernelWatchdog)
+#define kwdtWatchdogInitPushbuffer_FNPTR(pKernelWatchdog) pKernelWatchdog->__kwdtWatchdogInitPushbuffer__
+#define kwdtWatchdogInitPushbuffer(pGpu, pKernelWatchdog) kwdtWatchdogInitPushbuffer_DISPATCH(pGpu, pKernelWatchdog)
+#define kwdtWatchdogInitPushbuffer_HAL(pGpu, pKernelWatchdog) kwdtWatchdogInitPushbuffer_DISPATCH(pGpu, pKernelWatchdog)
+#define kwdtWatchdog_FNPTR(pKernelWatchdog) pKernelWatchdog->__kwdtWatchdog__
+#define kwdtWatchdog(pGpu, pKernelWatchdog) kwdtWatchdog_DISPATCH(pGpu, pKernelWatchdog)
+#define kwdtWatchdog_HAL(pGpu, pKernelWatchdog) kwdtWatchdog_DISPATCH(pGpu, pKernelWatchdog)
+#define kwdtWatchdogRecovery_FNPTR(pKernelWatchdog) pKernelWatchdog->__kwdtWatchdogRecovery__
+#define kwdtWatchdogRecovery(pGpu, pKernelWatchdog) kwdtWatchdogRecovery_DISPATCH(pGpu, pKernelWatchdog)
+#define kwdtWatchdogRecovery_HAL(pGpu, pKernelWatchdog) kwdtWatchdogRecovery_DISPATCH(pGpu, pKernelWatchdog)
+#define kwdtWatchdogCallbackPerf_HAL(pGpu, pKernelWatchdog) kwdtWatchdogCallbackPerf(pGpu, pKernelWatchdog)
+#define kwdtControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define kwdtControl(pGpuResource, pCallContext, pParams) kwdtControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define kwdtMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
+#define kwdtMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define kwdtMap(pGpuResource, pCallContext, pParams, pCpuMapping) kwdtMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define kwdtUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
+#define kwdtUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define kwdtUnmap(pGpuResource, pCallContext, pCpuMapping) kwdtUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define kwdtShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define kwdtShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define kwdtShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) kwdtShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define kwdtGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define kwdtGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) kwdtGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -190,7 +291,7 @@ void kwdtDestruct_IMPL(struct KernelWatchdog *arg_this);
 #define kwdtInternalControlForward(pGpuResource, command, pParams, size) kwdtInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define kwdtGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define kwdtGetInternalObjectHandle(pGpuResource) kwdtGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define kwdtAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define kwdtAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define kwdtAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) kwdtAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define kwdtGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define kwdtGetMemInterMapParams(pRmResource, pParams) kwdtGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -198,13 +299,13 @@ void kwdtDestruct_IMPL(struct KernelWatchdog *arg_this);
 #define kwdtCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) kwdtCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define kwdtGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define kwdtGetMemoryMappingDescriptor(pRmResource, ppMemDesc) kwdtGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define kwdtControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define kwdtControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define kwdtControlSerialization_Prologue(pResource, pCallContext, pParams) kwdtControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kwdtControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define kwdtControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define kwdtControlSerialization_Epilogue(pResource, pCallContext, pParams) kwdtControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kwdtControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define kwdtControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define kwdtControl_Prologue(pResource, pCallContext, pParams) kwdtControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kwdtControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define kwdtControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define kwdtControl_Epilogue(pResource, pCallContext, pParams) kwdtControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define kwdtCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define kwdtCanCopy(pResource) kwdtCanCopy_DISPATCH(pResource)
@@ -226,113 +327,161 @@ void kwdtDestruct_IMPL(struct KernelWatchdog *arg_this);
 #define kwdtAddAdditionalDependants(pClient, pResource, pReference) kwdtAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
+static inline NV_STATUS kwdtWatchdogInit_DISPATCH(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog) {
+    return pKernelWatchdog->__kwdtWatchdogInit__(pGpu, pKernelWatchdog);
+}
+
+static inline void kwdtWatchdogInitPushbuffer_DISPATCH(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog) {
+    pKernelWatchdog->__kwdtWatchdogInitPushbuffer__(pGpu, pKernelWatchdog);
+}
+
+static inline void kwdtWatchdog_DISPATCH(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog) {
+    pKernelWatchdog->__kwdtWatchdog__(pGpu, pKernelWatchdog);
+}
+
+static inline void kwdtWatchdogRecovery_DISPATCH(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog) {
+    pKernelWatchdog->__kwdtWatchdogRecovery__(pGpu, pKernelWatchdog);
+}
+
 static inline NV_STATUS kwdtControl_DISPATCH(struct KernelWatchdog *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__kwdtControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS kwdtMap_DISPATCH(struct KernelWatchdog *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__kwdtMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pGpuResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS kwdtUnmap_DISPATCH(struct KernelWatchdog *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__kwdtUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pGpuResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool kwdtShareCallback_DISPATCH(struct KernelWatchdog *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__kwdtShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS kwdtGetRegBaseOffsetAndSize_DISPATCH(struct KernelWatchdog *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__kwdtGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS kwdtGetMapAddrSpace_DISPATCH(struct KernelWatchdog *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__kwdtGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pGpuResource, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS kwdtInternalControlForward_DISPATCH(struct KernelWatchdog *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__kwdtInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle kwdtGetInternalObjectHandle_DISPATCH(struct KernelWatchdog *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__kwdtGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool kwdtAccessCallback_DISPATCH(struct KernelWatchdog *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__kwdtAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS kwdtGetMemInterMapParams_DISPATCH(struct KernelWatchdog *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__kwdtGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS kwdtCheckMemInterUnmap_DISPATCH(struct KernelWatchdog *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__kwdtCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS kwdtGetMemoryMappingDescriptor_DISPATCH(struct KernelWatchdog *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__kwdtGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS kwdtControlSerialization_Prologue_DISPATCH(struct KernelWatchdog *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__kwdtControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void kwdtControlSerialization_Epilogue_DISPATCH(struct KernelWatchdog *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__kwdtControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS kwdtControl_Prologue_DISPATCH(struct KernelWatchdog *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__kwdtControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void kwdtControl_Epilogue_DISPATCH(struct KernelWatchdog *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__kwdtControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool kwdtCanCopy_DISPATCH(struct KernelWatchdog *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__kwdtCanCopy__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS kwdtIsDuplicate_DISPATCH(struct KernelWatchdog *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__kwdtIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void kwdtPreDestruct_DISPATCH(struct KernelWatchdog *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__kwdtPreDestruct__(pResource);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS kwdtControlFilter_DISPATCH(struct KernelWatchdog *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__kwdtControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool kwdtIsPartialUnmapSupported_DISPATCH(struct KernelWatchdog *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__kwdtIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS kwdtMapTo_DISPATCH(struct KernelWatchdog *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__kwdtMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS kwdtUnmapFrom_DISPATCH(struct KernelWatchdog *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__kwdtUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 kwdtGetRefCount_DISPATCH(struct KernelWatchdog *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__kwdtGetRefCount__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void kwdtAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct KernelWatchdog *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__kwdtAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions
 // Exported method declarations and/or inline definitions
 // HAL method declarations without bodies
+NV_STATUS kwdtWatchdogInit_IMPL(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog);
+
+void kwdtWatchdogInitPushbuffer_IMPL(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog);
+
+void kwdtWatchdog_IMPL(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog);
+
+void kwdtWatchdogRecovery_KERNEL(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog);
+
 // Inline HAL method definitions
+static inline NV_STATUS kwdtWatchdogInit_395e98(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline void kwdtWatchdogInitPushbuffer_d44104(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog){
+    return;
+}
+
+static inline void kwdtWatchdog_d44104(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog){
+    return;
+}
+
+static inline void kwdtWatchdogRecovery_f2d351(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog){
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline void kwdtWatchdogCallbackPerf_d44104(struct OBJGPU *pGpu, struct KernelWatchdog *pKernelWatchdog){
+    return;
+}
+
 // Static dispatch method declarations
 // Static inline method definitions
 #undef PRIVATE_FIELD
+
+
+/*! Watchdog timer function */
+void kwdtWatchdogTimerProc(OBJGPU *pGpu, void *);
 
 #endif // _KERNEL_WATCHDOG_H_
 

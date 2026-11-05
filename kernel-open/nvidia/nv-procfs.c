@@ -54,7 +54,7 @@ static struct proc_dir_entry *proc_nvidia_warnings;
 static struct proc_dir_entry *proc_nvidia_patches;
 static struct proc_dir_entry *proc_nvidia_gpus;
 
-extern NvU32 NVreg_EnableUserNUMAManagement;
+extern NvU32 NVreg_EnableNUMA;
 extern char *NVreg_RegistryDwords;
 extern char *NVreg_RegistryDwordsPerDevice;
 extern char *NVreg_RegistryBinaryFilePerDevice;
@@ -454,7 +454,7 @@ nv_procfs_read_params(
         seq_printf(s, "%s: %u\n", entry->name, *entry->data);
 
     seq_printf(s, "CoherentGPUMemoryMode: \"%s\"\n",
-               (NVreg_EnableUserNUMAManagement == 1) ? "numa" : "driver");
+               (NVreg_EnableNUMA == 1) ? "numa" : "driver");
     seq_printf(s, "RegistryDwords: \"%s\"\n",
                (NVreg_RegistryDwords != NULL) ? NVreg_RegistryDwords : "");
     seq_printf(s, "RegistryDwordsPerDevice: \"%s\"\n",
@@ -519,6 +519,11 @@ nv_procfs_write_file(
     nv_procfs_private_t *nvpp = s->private;
     char *proc_buffer;
     unsigned long bytes_left;
+
+    if (!NV_IS_SUSER())
+    {
+        return -EPERM;
+    }
 
     down(&nvpp->sp_lock);
 

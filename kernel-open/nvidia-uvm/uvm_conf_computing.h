@@ -60,6 +60,7 @@
 // UVM_METHOD_SIZE * 2 * 10 = 80.
 #define UVM_CONF_COMPUTING_SIGN_BUF_MAX_SIZE 80
 
+NV_STATUS uvm_conf_computing_init(const UvmPlatformInfo *platform_info);
 void uvm_conf_computing_check_parent_gpu(const uvm_parent_gpu_t *parent);
 
 typedef struct

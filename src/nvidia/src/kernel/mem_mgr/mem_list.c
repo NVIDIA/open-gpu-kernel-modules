@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -164,6 +164,12 @@ continue_alloc_object:
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
+    if (FLD_TEST_DRF(OS02, _FLAGS, _NUMA_NODE_VALID, _TRUE,
+                     pAllocParams->flagsOs02) &&
+        (externalClassId != NV01_MEMORY_LIST_SYSTEM))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     NV_ASSERT_OR_RETURN(!(pAllocParams->flags & NVOS32_ALLOC_FLAGS_VIRTUAL), NV_ERR_NOT_SUPPORTED);
 
@@ -279,6 +285,11 @@ continue_alloc_object:
         pMemDesc->PteAdjust = pAllocParams->pteAdjust;
         memdescSetPteKind(pMemDesc, pAllocParams->format);
         memdescSetGuestId(pMemDesc, pAllocParams->guestId);
+        if (FLD_TEST_DRF(OS02, _FLAGS, _NUMA_NODE_VALID, _TRUE,
+                         pAllocParams->flagsOs02))
+        {
+            memdescSetNumaNode(pMemDesc, pAllocParams->numaNode);
+        }
 
         pPteArray = memdescGetPteArray(pMemDesc, AT_GPU);
 
@@ -503,17 +514,23 @@ continue_alloc_object:
                                        DRF_SHIFTMASK(NVOS32_ATTR_ZCULL))));
 
         status = memdescCreate(&pMemDesc, pGpu, memSize, 0, bContig, addressSpace,
-                               Cache, MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE_FB_BC_ONLY(pGpu, addressSpace));
+                               Cache, MEMDESC_FLAGS_NONE);
         if (status != NV_OK)
         {
             goto done_fbmem;
         }
         pPteArray = memdescGetPteArray(pMemDesc, AT_GPU);
-        // copy in the pages
+        if ((pAllocParams->pageCount > pMemDesc->pageArraySize) ||
+            !portSafeMulU32(sizeof(NvU64), pAllocParams->pageCount, &result))
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto done_fbmem;
+        }
+
         status = rmapiParamsCopyIn(NULL,
                                    pPteArray,
                                    pAllocParams->pageNumberList,
-                                   sizeof(NvU64) * pAllocParams->pageCount,
+                                   result,
                                    bUserModeArgs);
 
         if (status != NV_OK)

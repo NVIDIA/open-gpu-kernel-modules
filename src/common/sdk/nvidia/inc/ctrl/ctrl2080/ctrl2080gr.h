@@ -1233,26 +1233,6 @@ typedef struct NV2080_CTRL_GR_GET_GLOBAL_SM_ORDER_PARAMS {
 } NV2080_CTRL_GR_GET_GLOBAL_SM_ORDER_PARAMS;
 
 /*
-* NV2080_CTRL_CMD_GR_GET_CURRENT_RESIDENT_CHANNEL
-*
-* This command gives current resident channel on GR engine
-*
-*   chID [OUT]
-*       RM returns current resident channel on GR engine
-*   grRouteInfo [IN]
-*       This parameter specifies the routing information used to
-*       disambiguate the target GR engine.
-*/
-#define NV2080_CTRL_CMD_GR_GET_CURRENT_RESIDENT_CHANNEL (0x2080121cU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_GET_CURRENT_RESIDENT_CHANNEL_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_GR_GET_CURRENT_RESIDENT_CHANNEL_PARAMS_MESSAGE_ID (0x1CU)
-
-typedef struct NV2080_CTRL_GR_GET_CURRENT_RESIDENT_CHANNEL_PARAMS {
-    NvU32 chID;
-    NV_DECLARE_ALIGNED(NV2080_CTRL_GR_ROUTE_INFO grRouteInfo, 8);
-} NV2080_CTRL_GR_GET_CURRENT_RESIDENT_CHANNEL_PARAMS;
-
-/*
  * NV2080_CTRL_CMD_GR_GET_ATTRIBUTE_BUFFER_SIZE
  *
  * This command provides the size of GR attribute buffer.

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,6 +42,7 @@ extern "C" {
 #define NV_BITVECTOR_ARRAY_SIZE(last)   (NV_BITVECTOR_IDX((last) - 1) + 1)
 #define NV_BITVECTOR_BYTE_SIZE(last)    (NV_BITVECTOR_ARRAY_SIZE((last)) * sizeof(NvU64))
 #define NV_BITVECTOR_OFFSET(index)      ((index) & ((sizeof(NvU64) * 8) - 1))
+#define NV_BITVECTOR_LAST(pBitVector)   (sizeof(((pBitVector)->last->_)) - 1U)
 
 /**
  * \anchor NV_BITVECTOR_1

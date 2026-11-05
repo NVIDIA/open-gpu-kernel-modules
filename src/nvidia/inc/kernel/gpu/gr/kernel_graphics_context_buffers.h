@@ -49,6 +49,9 @@
 NV_ENUM_DEF(GR_GLOBALCTX_BUFFER, GR_GLOBALCTX_BUFFER_DEF)
 #define GR_GLOBALCTX_BUFFER_COUNT               NV_ENUM_SIZE(GR_GLOBALCTX_BUFFER)
 
+// Add 4 to include local ctx buffer, patch context buffer, PM ctxsw buffer, and GTA work queue
+#define GR_BUFFER_COUNT GR_GLOBALCTX_BUFFER_COUNT + 4
+
 
 #define GR_CTX_BUFFER_DEF(x)                                 \
         NV_ENUM_ENTRY(x, GR_CTX_BUFFER_MAIN,     0x00000000) \

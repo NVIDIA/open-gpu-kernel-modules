@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -56,11 +56,11 @@
                             0x9E, 0x41, 0xB0, 0x02, 0xCB, 0xC6, 0x57, 0x1D}
 #define PCFG_REVISION_ID       0x00000100
 
-#define GPS_2X_REVISION_ID      0x00000200
+#define PRH_2X_REVISION_ID     0x00000200
 
-#define GPS_DSM_GUID_STR   { 0x01, 0x2D, 0x13, 0xA3, 0xDA, 0x8C, 0xBA, 0x49, \
+#define PRH_DSM_GUID_STR   { 0x01, 0x2D, 0x13, 0xA3, 0xDA, 0x8C, 0xBA, 0x49, \
                              0xA5, 0x2E, 0xBC, 0x9D, 0x46, 0xDF, 0x6B, 0x81},
-#define GPS_REVISION_ID       0x00000100
+#define PRH_REVISION_ID       0x00000100
 
 #define JT_DSM_GUID_STR     { 0x51, 0xA3, 0xEC, 0xCB, 0x7B, 0x06, 0x24, 0x49, \
                               0x9C, 0xBD, 0xB4, 0x6B, 0x00, 0xB8, 0x6F, 0x34}
@@ -75,6 +75,8 @@
 
 #define NVPCF_2X_ACPI_DSM_REVISION_ID    0x00000200
 
+#define NVPCF_3X_ACPI_DSM_REVISION_ID    0x00000300
+
 extern const GUID NBCI_DSM_GUID;
 extern const GUID NBSI_DSM_GUID;
 extern const GUID NVHG_DSM_GUID;
@@ -82,7 +84,7 @@ extern const GUID NVOP_DSM_GUID;
 extern const GUID SPB_DSM_GUID;
 extern const GUID DSM_MXM_GUID;
 extern const GUID PCFG_DSM_GUID;
-extern const GUID GPS_DSM_GUID;
+extern const GUID PRH_DSM_GUID;
 extern const GUID PEX_DSM_GUID;
 extern const GUID JT_DSM_GUID;
 extern const GUID NVPCF_ACPI_DSM_GUID;

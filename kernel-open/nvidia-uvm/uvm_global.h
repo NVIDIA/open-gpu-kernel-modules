@@ -163,6 +163,12 @@ struct uvm_global_struct
     // and can be read afterwards without acquiring any locks.
     bool conf_computing_enabled;
 
+    // True if TDISP is enabled on the platform.
+    //
+    // This field is set once during global initialization (uvm_global_init),
+    // and can be read afterwards without acquiring any locks.
+    bool tdisp_enabled;
+
     // List of all devmem ranges allocted on this GPU
     struct {
         uvm_mutex_t lock;

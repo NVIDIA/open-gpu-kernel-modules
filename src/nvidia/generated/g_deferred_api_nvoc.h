@@ -76,10 +76,9 @@ typedef struct _def_deferred_api_info
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__DeferredApiObject;
 struct NVOC_METADATA__ChannelDescendant;
-struct NVOC_VTABLE__DeferredApiObject;
 
 
 struct DeferredApiObject {
@@ -110,47 +109,10 @@ struct DeferredApiObject {
 };
 
 
-// Vtable with 32 per-class function pointers
-struct NVOC_VTABLE__DeferredApiObject {
-    NV_STATUS (*__defapiGetSwMethods__)(struct DeferredApiObject * /*this*/, const METHOD **, NvU32 *);  // virtual override (chandes) base (chandes)
-    NvBool (*__defapiIsSwMethodStalling__)(struct DeferredApiObject * /*this*/, NvU32);  // virtual override (chandes) base (chandes)
-    NV_STATUS (*__defapiCheckMemInterUnmap__)(struct DeferredApiObject * /*this*/, NvBool);  // virtual inherited (chandes) base (chandes)
-    NV_STATUS (*__defapiControl__)(struct DeferredApiObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (chandes)
-    NV_STATUS (*__defapiMap__)(struct DeferredApiObject * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (chandes)
-    NV_STATUS (*__defapiUnmap__)(struct DeferredApiObject * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (chandes)
-    NvBool (*__defapiShareCallback__)(struct DeferredApiObject * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (chandes)
-    NV_STATUS (*__defapiGetRegBaseOffsetAndSize__)(struct DeferredApiObject * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (chandes)
-    NV_STATUS (*__defapiGetMapAddrSpace__)(struct DeferredApiObject * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (chandes)
-    NV_STATUS (*__defapiInternalControlForward__)(struct DeferredApiObject * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (chandes)
-    NvHandle (*__defapiGetInternalObjectHandle__)(struct DeferredApiObject * /*this*/);  // virtual inherited (gpures) base (chandes)
-    NvBool (*__defapiAccessCallback__)(struct DeferredApiObject * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (chandes)
-    NV_STATUS (*__defapiGetMemInterMapParams__)(struct DeferredApiObject * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (chandes)
-    NV_STATUS (*__defapiGetMemoryMappingDescriptor__)(struct DeferredApiObject * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (chandes)
-    NV_STATUS (*__defapiControlSerialization_Prologue__)(struct DeferredApiObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (chandes)
-    void (*__defapiControlSerialization_Epilogue__)(struct DeferredApiObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (chandes)
-    NV_STATUS (*__defapiControl_Prologue__)(struct DeferredApiObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (chandes)
-    void (*__defapiControl_Epilogue__)(struct DeferredApiObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (chandes)
-    NvBool (*__defapiCanCopy__)(struct DeferredApiObject * /*this*/);  // virtual inherited (res) base (chandes)
-    NV_STATUS (*__defapiIsDuplicate__)(struct DeferredApiObject * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (chandes)
-    void (*__defapiPreDestruct__)(struct DeferredApiObject * /*this*/);  // virtual inherited (res) base (chandes)
-    NV_STATUS (*__defapiControlFilter__)(struct DeferredApiObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (chandes)
-    NvBool (*__defapiIsPartialUnmapSupported__)(struct DeferredApiObject * /*this*/);  // inline virtual inherited (res) base (chandes) body
-    NV_STATUS (*__defapiMapTo__)(struct DeferredApiObject * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (chandes)
-    NV_STATUS (*__defapiUnmapFrom__)(struct DeferredApiObject * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (chandes)
-    NvU32 (*__defapiGetRefCount__)(struct DeferredApiObject * /*this*/);  // virtual inherited (res) base (chandes)
-    void (*__defapiAddAdditionalDependants__)(struct RsClient *, struct DeferredApiObject * /*this*/, RsResourceRef *);  // virtual inherited (res) base (chandes)
-    PEVENTNOTIFICATION * (*__defapiGetNotificationListPtr__)(struct DeferredApiObject * /*this*/);  // virtual inherited (notify) base (chandes)
-    struct NotifShare * (*__defapiGetNotificationShare__)(struct DeferredApiObject * /*this*/);  // virtual inherited (notify) base (chandes)
-    void (*__defapiSetNotificationShare__)(struct DeferredApiObject * /*this*/, struct NotifShare *);  // virtual inherited (notify) base (chandes)
-    NV_STATUS (*__defapiUnregisterEvent__)(struct DeferredApiObject * /*this*/, NvHandle, NvHandle, NvHandle, NvHandle);  // virtual inherited (notify) base (chandes)
-    NV_STATUS (*__defapiGetOrAllocNotifShare__)(struct DeferredApiObject * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (chandes)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__DeferredApiObject {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__ChannelDescendant metadata__ChannelDescendant;
-    const struct NVOC_VTABLE__DeferredApiObject vtable;
 };
 
 #ifndef __nvoc_class_id_DeferredApiObject
@@ -227,19 +189,19 @@ static inline NV_STATUS defapiCtrlCmdRemoveApi(struct DeferredApiObject *pDeferr
 
 
 // Wrapper macros for halified functions
-#define defapiGetSwMethods_FNPTR(pDeferredApi) pDeferredApi->__nvoc_metadata_ptr->vtable.__defapiGetSwMethods__
+#define defapiGetSwMethods_FNPTR(pDeferredApi) pDeferredApi->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesGetSwMethods__
 #define defapiGetSwMethods(pDeferredApi, ppMethods, pNumMethods) defapiGetSwMethods_DISPATCH(pDeferredApi, ppMethods, pNumMethods)
-#define defapiIsSwMethodStalling_FNPTR(pDeferredApi) pDeferredApi->__nvoc_metadata_ptr->vtable.__defapiIsSwMethodStalling__
+#define defapiIsSwMethodStalling_FNPTR(pDeferredApi) pDeferredApi->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__
 #define defapiIsSwMethodStalling(pDeferredApi, hDeferredApi) defapiIsSwMethodStalling_DISPATCH(pDeferredApi, hDeferredApi)
-#define defapiCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesCheckMemInterUnmap__
+#define defapiCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define defapiCheckMemInterUnmap(pChannelDescendant, bSubdeviceHandleProvided) defapiCheckMemInterUnmap_DISPATCH(pChannelDescendant, bSubdeviceHandleProvided)
-#define defapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define defapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define defapiControl(pGpuResource, pCallContext, pParams) defapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define defapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
+#define defapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define defapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) defapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define defapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
+#define defapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define defapiUnmap(pGpuResource, pCallContext, pCpuMapping) defapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define defapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define defapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define defapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) defapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define defapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define defapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) defapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -249,19 +211,19 @@ static inline NV_STATUS defapiCtrlCmdRemoveApi(struct DeferredApiObject *pDeferr
 #define defapiInternalControlForward(pGpuResource, command, pParams, size) defapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define defapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define defapiGetInternalObjectHandle(pGpuResource) defapiGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define defapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define defapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define defapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) defapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define defapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define defapiGetMemInterMapParams(pRmResource, pParams) defapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define defapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define defapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) defapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define defapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define defapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define defapiControlSerialization_Prologue(pResource, pCallContext, pParams) defapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define defapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define defapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define defapiControlSerialization_Epilogue(pResource, pCallContext, pParams) defapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define defapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define defapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define defapiControl_Prologue(pResource, pCallContext, pParams) defapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define defapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define defapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define defapiControl_Epilogue(pResource, pCallContext, pParams) defapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define defapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define defapiCanCopy(pResource) defapiCanCopy_DISPATCH(pResource)
@@ -281,144 +243,144 @@ static inline NV_STATUS defapiCtrlCmdRemoveApi(struct DeferredApiObject *pDeferr
 #define defapiGetRefCount(pResource) defapiGetRefCount_DISPATCH(pResource)
 #define defapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define defapiAddAdditionalDependants(pClient, pResource, pReference) defapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define defapiGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
+#define defapiGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationListPtr__
 #define defapiGetNotificationListPtr(pNotifier) defapiGetNotificationListPtr_DISPATCH(pNotifier)
-#define defapiGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
+#define defapiGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationShare__
 #define defapiGetNotificationShare(pNotifier) defapiGetNotificationShare_DISPATCH(pNotifier)
-#define defapiSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
+#define defapiSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifySetNotificationShare__
 #define defapiSetNotificationShare(pNotifier, pNotifShare) defapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define defapiUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
+#define defapiUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyUnregisterEvent__
 #define defapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) defapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define defapiGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
+#define defapiGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetOrAllocNotifShare__
 #define defapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) defapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NV_STATUS defapiGetSwMethods_DISPATCH(struct DeferredApiObject *pDeferredApi, const METHOD **ppMethods, NvU32 *pNumMethods) {
-    return pDeferredApi->__nvoc_metadata_ptr->vtable.__defapiGetSwMethods__(pDeferredApi, ppMethods, pNumMethods);
+    return pDeferredApi->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesGetSwMethods__(staticCast(pDeferredApi, ChannelDescendant), ppMethods, pNumMethods);
 }
 
 static inline NvBool defapiIsSwMethodStalling_DISPATCH(struct DeferredApiObject *pDeferredApi, NvU32 hDeferredApi) {
-    return pDeferredApi->__nvoc_metadata_ptr->vtable.__defapiIsSwMethodStalling__(pDeferredApi, hDeferredApi);
+    return pDeferredApi->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__(staticCast(pDeferredApi, ChannelDescendant), hDeferredApi);
 }
 
 static inline NV_STATUS defapiCheckMemInterUnmap_DISPATCH(struct DeferredApiObject *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
-    return pChannelDescendant->__nvoc_metadata_ptr->vtable.__defapiCheckMemInterUnmap__(pChannelDescendant, bSubdeviceHandleProvided);
+    return pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pChannelDescendant, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS defapiControl_DISPATCH(struct DeferredApiObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__defapiControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS defapiMap_DISPATCH(struct DeferredApiObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__defapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pGpuResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS defapiUnmap_DISPATCH(struct DeferredApiObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__defapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pGpuResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool defapiShareCallback_DISPATCH(struct DeferredApiObject *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__defapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS defapiGetRegBaseOffsetAndSize_DISPATCH(struct DeferredApiObject *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__defapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS defapiGetMapAddrSpace_DISPATCH(struct DeferredApiObject *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__defapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pGpuResource, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS defapiInternalControlForward_DISPATCH(struct DeferredApiObject *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__defapiInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle defapiGetInternalObjectHandle_DISPATCH(struct DeferredApiObject *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__defapiGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool defapiAccessCallback_DISPATCH(struct DeferredApiObject *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__defapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS defapiGetMemInterMapParams_DISPATCH(struct DeferredApiObject *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__defapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS defapiGetMemoryMappingDescriptor_DISPATCH(struct DeferredApiObject *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__defapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS defapiControlSerialization_Prologue_DISPATCH(struct DeferredApiObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__defapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void defapiControlSerialization_Epilogue_DISPATCH(struct DeferredApiObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__defapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS defapiControl_Prologue_DISPATCH(struct DeferredApiObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__defapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void defapiControl_Epilogue_DISPATCH(struct DeferredApiObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__defapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool defapiCanCopy_DISPATCH(struct DeferredApiObject *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__defapiCanCopy__(pResource);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS defapiIsDuplicate_DISPATCH(struct DeferredApiObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__defapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void defapiPreDestruct_DISPATCH(struct DeferredApiObject *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__defapiPreDestruct__(pResource);
+    pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS defapiControlFilter_DISPATCH(struct DeferredApiObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__defapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool defapiIsPartialUnmapSupported_DISPATCH(struct DeferredApiObject *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__defapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS defapiMapTo_DISPATCH(struct DeferredApiObject *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__defapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS defapiUnmapFrom_DISPATCH(struct DeferredApiObject *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__defapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 defapiGetRefCount_DISPATCH(struct DeferredApiObject *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__defapiGetRefCount__(pResource);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void defapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct DeferredApiObject *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__defapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 static inline PEVENTNOTIFICATION * defapiGetNotificationListPtr_DISPATCH(struct DeferredApiObject *pNotifier) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__defapiGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationListPtr__(staticCast(pNotifier, INotifier));
 }
 
 static inline struct NotifShare * defapiGetNotificationShare_DISPATCH(struct DeferredApiObject *pNotifier) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__defapiGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationShare__(staticCast(pNotifier, INotifier));
 }
 
 static inline void defapiSetNotificationShare_DISPATCH(struct DeferredApiObject *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_metadata_ptr->vtable.__defapiSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifySetNotificationShare__(staticCast(pNotifier, INotifier), pNotifShare);
 }
 
 static inline NV_STATUS defapiUnregisterEvent_DISPATCH(struct DeferredApiObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__defapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyUnregisterEvent__(staticCast(pNotifier, INotifier), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS defapiGetOrAllocNotifShare_DISPATCH(struct DeferredApiObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__defapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetOrAllocNotifShare__(staticCast(pNotifier, INotifier), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 // Virtual method declarations and/or inline definitions

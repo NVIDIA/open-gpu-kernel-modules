@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -121,6 +121,11 @@
  *   head.bLtmAllowed
  *     bLtmAllowed indicates whether or not the Local Tone Mapping (LTM) is 
  *     enabled in postcomp.
+ *
+ *   head.bBiCubicScalingAllowed
+ *     NVD6.0+ supports cursor biCubic scaling in addition to biLinear.
+ *     In general, this will be set to TRUE when 4-TAP is used, and FALSE
+ *     with 2-TAP cursor scaling.
  *
  *   head.minFrameIdle.leadingRasterLines
  *     leadingRasterLines defines the number of lines between the start of the
@@ -611,6 +616,7 @@ typedef struct NVC372_CTRL_IMP_HEAD {
     NvBool bUpscalingAllowedV;
     NvBool bOverfetchEnabled;
     NvBool bLtmAllowed;
+    NvBool bBiCubicScalingAllowed;
 
     struct {
         NvU16 leadingRasterLines;

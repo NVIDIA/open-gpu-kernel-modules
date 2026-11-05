@@ -50,7 +50,7 @@
 #include "diagnostics/op_event.h"
 
 //
-// Per-group CPER descriptor (POD, GUIDs by value) — supplies the
+// Per-group CPER descriptor (POD, GUIDs by value) - supplies the
 // record-level state that is not derivable from the events in the group.
 // Lives on every typed-POD entry and is fed to cperInit /
 // cperAddNvidiaEventSection by opEventLogEntryRenderCper.
@@ -70,9 +70,10 @@ typedef struct GPU_CPER_GROUP_DESCRIPTOR
 struct EventGroup;
 struct EventBuffer;
 struct OpEventBufferBind;
+struct OBJGPU;
 
 //
-// Event POD — one per event in a group.
+// Event POD - one per event in a group.
 //
 // On the feature-on path the log copies scalar identity out of the live
 // GpuOperationalEvent and deep-copies the context chain (preserving the
@@ -104,9 +105,10 @@ typedef struct OpEventLogEvent
     NvU8  deviceUuid[16];
     NvU8  moduleInstance;
     NvU8  chipletId;
+    NvU8  producerGroupIndex;
 
     //
-    // Context chain — each context is a byte-identical copy of the live
+    // Context chain - each context is a byte-identical copy of the live
     // concrete context struct (EventContextHeader at offset 0 +
     // payload); pOutputAdapters is preserved verbatim (it points into
     // .rodata).
@@ -136,14 +138,14 @@ typedef struct OpEventLogEntry
 
     //
     // 0 = unpinned; nonzero = pinned by an in-flight push or
-    // SYSTEM_READ_CPER render. Pin only — not the same as "unconsumed".
+    // SYSTEM_READ_CPER render. Pin only - not the same as "unconsumed".
     //
     NvU32    refcount;
 
     //
     // pSpinlock-protected. Number of registered OpEventBufferBinds that
     // have not yet ATTEMPTED delivery of this entry (not the same as
-    // "successfully delivered" — see _opevtlogPushEntryToBind: delivery
+    // "successfully delivered" - see _opevtlogPushEntryToBind: delivery
     // is best-effort and the counter is decremented unconditionally
     // after each attempt). Stamped at insert time (typed path) to
     // listCount(binds); legacy CPER-bytes entries are stamped 0. Under
@@ -154,20 +156,21 @@ typedef struct OpEventLogEntry
     //
     NvU32    pendingBindCount;
 
-    // Legacy compat (CPER-bytes-only) path — always built.
+    // Legacy compat (CPER-bytes-only) path - always built.
     NvU32    prebuiltCperSize;
     NvU8    *pPrebuiltCperBytes;
 
     // Typed-POD path.
     NvU64    traceId;            // eventgroupGetTraceId() snapshot.
     NvU8     groupAttrs;         // RECOVERED / PREVERR / SIMULATED bits.
+    NvU8     producerGroupSize;  // Original producer size; may exceed eventCount.
     GPU_CPER_GROUP_DESCRIPTOR desc;  // POD, GUIDs by value.
     NvU32    eventCount;
     OpEventLogEvent *pEvents;
 } OpEventLogEntry;
 
 //
-// Module-wide singleton. Opaque to callers — the struct definition
+// Module-wide singleton. Opaque to callers - the struct definition
 // lives next to the implementation so the public header stays free of
 // private fields and intrusive-list machinery.
 //
@@ -200,7 +203,23 @@ NV_STATUS opevtlogFindNextCper(OpEventLog *pLog,
 // then drives the in-process producer over the bind registry.
 //
 NV_STATUS opevtlogAppendEventGroup(OpEventLog *pLog,
+                                   struct OBJGPU *pGpu,
                                    struct EventGroup *pEventGroup);
+
+//
+// Return rendering workspace with at least minSize bytes, growing the
+// OpEventLog-owned allocation if necessary. Caller must hold pPushMutex.
+//
+NvU8 *opevtlogGetRenderScratch(OpEventLog *pLog, NvU32 minSize);
+
+//
+// Test-only cleanup path: remove retained simulated typed entries matching
+// pDeviceUuid. This intentionally leaves real operational events and legacy
+// CPER-byte entries untouched.
+//
+NV_STATUS opevtlogClearSimulated(OpEventLog *pLog,
+                                 const NvU8 *pDeviceUuid,
+                                 NvU32 *pRemovedEntryCount);
 
 //
 // Bind registry. opevtbufbindConstruct / opevtbufbindDestruct call these

@@ -66,11 +66,10 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__DiagApi;
 struct NVOC_METADATA__GpuResource;
 struct NVOC_METADATA__Notifier;
-struct NVOC_VTABLE__DiagApi;
 
 
 struct DiagApi {
@@ -100,46 +99,11 @@ struct DiagApi {
 };
 
 
-// Vtable with 30 per-class function pointers
-struct NVOC_VTABLE__DiagApi {
-    NV_STATUS (*__diagapiControl__)(struct DiagApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (gpures)
-    NV_STATUS (*__diagapiControlFilter__)(struct DiagApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (gpures)
-    NV_STATUS (*__diagapiMap__)(struct DiagApi * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__diagapiUnmap__)(struct DiagApi * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__diagapiShareCallback__)(struct DiagApi * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__diagapiGetRegBaseOffsetAndSize__)(struct DiagApi * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__diagapiGetMapAddrSpace__)(struct DiagApi * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__diagapiInternalControlForward__)(struct DiagApi * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__diagapiGetInternalObjectHandle__)(struct DiagApi * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__diagapiAccessCallback__)(struct DiagApi * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__diagapiGetMemInterMapParams__)(struct DiagApi * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__diagapiCheckMemInterUnmap__)(struct DiagApi * /*this*/, NvBool);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__diagapiGetMemoryMappingDescriptor__)(struct DiagApi * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__diagapiControlSerialization_Prologue__)(struct DiagApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__diagapiControlSerialization_Epilogue__)(struct DiagApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__diagapiControl_Prologue__)(struct DiagApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__diagapiControl_Epilogue__)(struct DiagApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NvBool (*__diagapiCanCopy__)(struct DiagApi * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__diagapiIsDuplicate__)(struct DiagApi * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__diagapiPreDestruct__)(struct DiagApi * /*this*/);  // virtual inherited (res) base (gpures)
-    NvBool (*__diagapiIsPartialUnmapSupported__)(struct DiagApi * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__diagapiMapTo__)(struct DiagApi * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__diagapiUnmapFrom__)(struct DiagApi * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__diagapiGetRefCount__)(struct DiagApi * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__diagapiAddAdditionalDependants__)(struct RsClient *, struct DiagApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-    PEVENTNOTIFICATION * (*__diagapiGetNotificationListPtr__)(struct DiagApi * /*this*/);  // virtual inherited (notify) base (notify)
-    struct NotifShare * (*__diagapiGetNotificationShare__)(struct DiagApi * /*this*/);  // virtual inherited (notify) base (notify)
-    void (*__diagapiSetNotificationShare__)(struct DiagApi * /*this*/, struct NotifShare *);  // virtual inherited (notify) base (notify)
-    NV_STATUS (*__diagapiUnregisterEvent__)(struct DiagApi * /*this*/, NvHandle, NvHandle, NvHandle, NvHandle);  // virtual inherited (notify) base (notify)
-    NV_STATUS (*__diagapiGetOrAllocNotifShare__)(struct DiagApi * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (notify)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__DiagApi {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResource metadata__GpuResource;
     const struct NVOC_METADATA__Notifier metadata__Notifier;
-    const struct NVOC_VTABLE__DiagApi vtable;
 };
 
 #ifndef __nvoc_class_id_DiagApi
@@ -221,6 +185,26 @@ static inline NV_STATUS diagapiCtrlCmdFbEccInjectionSupported(struct DiagApi *pD
 #define diagapiCtrlCmdFbEccInjectionSupported(pDiagApi, pParams) diagapiCtrlCmdFbEccInjectionSupported_IMPL(pDiagApi, pParams)
 #endif // __nvoc_subdevice_diag_h_disabled
 
+NV_STATUS diagapiCtrlCmdFbRemapRow_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FB_REMAP_ROW_PARAMS *pParams);
+#ifdef __nvoc_subdevice_diag_h_disabled
+static inline NV_STATUS diagapiCtrlCmdFbRemapRow(struct DiagApi *pDiagApi, NV208F_CTRL_FB_REMAP_ROW_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("DiagApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_diag_h_disabled
+#define diagapiCtrlCmdFbRemapRow(pDiagApi, pParams) diagapiCtrlCmdFbRemapRow_IMPL(pDiagApi, pParams)
+#endif // __nvoc_subdevice_diag_h_disabled
+
+NV_STATUS diagapiCtrlCmdFbRemapBank_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FB_REMAP_BANK_PARAMS *pRemapBankParams);
+#ifdef __nvoc_subdevice_diag_h_disabled
+static inline NV_STATUS diagapiCtrlCmdFbRemapBank(struct DiagApi *pDiagApi, NV208F_CTRL_FB_REMAP_BANK_PARAMS *pRemapBankParams) {
+    NV_ASSERT_FAILED_PRECOMP("DiagApi was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_subdevice_diag_h_disabled
+#define diagapiCtrlCmdFbRemapBank(pDiagApi, pRemapBankParams) diagapiCtrlCmdFbRemapBank_IMPL(pDiagApi, pRemapBankParams)
+#endif // __nvoc_subdevice_diag_h_disabled
+
 NV_STATUS diagapiCtrlCmdFbClearRemappedRows_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS *pRemappedRowsParams);
 #ifdef __nvoc_subdevice_diag_h_disabled
 static inline NV_STATUS diagapiCtrlCmdFbClearRemappedRows(struct DiagApi *pDiagApi, NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS *pRemappedRowsParams) {
@@ -239,26 +223,6 @@ static inline NV_STATUS diagapiCtrlCmdFbClearRemappedBanks(struct DiagApi *pDiag
 }
 #else // __nvoc_subdevice_diag_h_disabled
 #define diagapiCtrlCmdFbClearRemappedBanks(pDiagApi, pRemappedBanksParams) diagapiCtrlCmdFbClearRemappedBanks_IMPL(pDiagApi, pRemappedBanksParams)
-#endif // __nvoc_subdevice_diag_h_disabled
-
-NV_STATUS diagapiCtrlCmdGpuGetRamSvopValues_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS *pGetRamSvopParams);
-#ifdef __nvoc_subdevice_diag_h_disabled
-static inline NV_STATUS diagapiCtrlCmdGpuGetRamSvopValues(struct DiagApi *pDiagApi, NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS *pGetRamSvopParams) {
-    NV_ASSERT_FAILED_PRECOMP("DiagApi was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_subdevice_diag_h_disabled
-#define diagapiCtrlCmdGpuGetRamSvopValues(pDiagApi, pGetRamSvopParams) diagapiCtrlCmdGpuGetRamSvopValues_IMPL(pDiagApi, pGetRamSvopParams)
-#endif // __nvoc_subdevice_diag_h_disabled
-
-NV_STATUS diagapiCtrlCmdGpuSetRamSvopValues_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS *pSetRamSvopParams);
-#ifdef __nvoc_subdevice_diag_h_disabled
-static inline NV_STATUS diagapiCtrlCmdGpuSetRamSvopValues(struct DiagApi *pDiagApi, NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS *pSetRamSvopParams) {
-    NV_ASSERT_FAILED_PRECOMP("DiagApi was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_subdevice_diag_h_disabled
-#define diagapiCtrlCmdGpuSetRamSvopValues(pDiagApi, pSetRamSvopParams) diagapiCtrlCmdGpuSetRamSvopValues_IMPL(pDiagApi, pSetRamSvopParams)
 #endif // __nvoc_subdevice_diag_h_disabled
 
 NV_STATUS diagapiCtrlCmdGpuVerifyInforom_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_GPU_VERIFY_INFOROM_PARAMS *pParams);
@@ -353,18 +317,18 @@ static inline NV_STATUS diagapiCtrlCmdUcodeInstrumentationGetData(struct DiagApi
 
 
 // Wrapper macros for halified functions
-#define diagapiControl_FNPTR(pDiagApi) pDiagApi->__nvoc_metadata_ptr->vtable.__diagapiControl__
+#define diagapiControl_FNPTR(pDiagApi) pDiagApi->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define diagapiControl(pDiagApi, pCallContext, pParams) diagapiControl_DISPATCH(pDiagApi, pCallContext, pParams)
-#define diagapiControlFilter_FNPTR(pDiagApi) pDiagApi->__nvoc_metadata_ptr->vtable.__diagapiControlFilter__
+#define diagapiControlFilter_FNPTR(pDiagApi) pDiagApi->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__
 #define diagapiControlFilter(pDiagApi, pCallContext, pParams) diagapiControlFilter_DISPATCH(pDiagApi, pCallContext, pParams)
 #define diagapiCtrlCmdFifoGetChannelState_FNPTR(pDiagApi) pDiagApi->__diagapiCtrlCmdFifoGetChannelState__
 #define diagapiCtrlCmdFifoGetChannelState(pDiagApi, pChannelStateParams) diagapiCtrlCmdFifoGetChannelState_DISPATCH(pDiagApi, pChannelStateParams)
 #define diagapiCtrlCmdFifoGetChannelState_HAL(pDiagApi, pChannelStateParams) diagapiCtrlCmdFifoGetChannelState_DISPATCH(pDiagApi, pChannelStateParams)
-#define diagapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
+#define diagapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define diagapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) diagapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define diagapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
+#define diagapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define diagapiUnmap(pGpuResource, pCallContext, pCpuMapping) diagapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define diagapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define diagapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define diagapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) diagapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define diagapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define diagapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) diagapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -374,7 +338,7 @@ static inline NV_STATUS diagapiCtrlCmdUcodeInstrumentationGetData(struct DiagApi
 #define diagapiInternalControlForward(pGpuResource, command, pParams, size) diagapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define diagapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define diagapiGetInternalObjectHandle(pGpuResource) diagapiGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define diagapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define diagapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define diagapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) diagapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define diagapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define diagapiGetMemInterMapParams(pRmResource, pParams) diagapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -382,13 +346,13 @@ static inline NV_STATUS diagapiCtrlCmdUcodeInstrumentationGetData(struct DiagApi
 #define diagapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) diagapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define diagapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define diagapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) diagapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define diagapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define diagapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define diagapiControlSerialization_Prologue(pResource, pCallContext, pParams) diagapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define diagapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define diagapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define diagapiControlSerialization_Epilogue(pResource, pCallContext, pParams) diagapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define diagapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define diagapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define diagapiControl_Prologue(pResource, pCallContext, pParams) diagapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define diagapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define diagapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define diagapiControl_Epilogue(pResource, pCallContext, pParams) diagapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define diagapiCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define diagapiCanCopy(pResource) diagapiCanCopy_DISPATCH(pResource)
@@ -406,24 +370,24 @@ static inline NV_STATUS diagapiCtrlCmdUcodeInstrumentationGetData(struct DiagApi
 #define diagapiGetRefCount(pResource) diagapiGetRefCount_DISPATCH(pResource)
 #define diagapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define diagapiAddAdditionalDependants(pClient, pResource, pReference) diagapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define diagapiGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
+#define diagapiGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationListPtr__
 #define diagapiGetNotificationListPtr(pNotifier) diagapiGetNotificationListPtr_DISPATCH(pNotifier)
-#define diagapiGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
+#define diagapiGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationShare__
 #define diagapiGetNotificationShare(pNotifier) diagapiGetNotificationShare_DISPATCH(pNotifier)
-#define diagapiSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
+#define diagapiSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifySetNotificationShare__
 #define diagapiSetNotificationShare(pNotifier, pNotifShare) diagapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define diagapiUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
+#define diagapiUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyUnregisterEvent__
 #define diagapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) diagapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define diagapiGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
+#define diagapiGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetOrAllocNotifShare__
 #define diagapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) diagapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NV_STATUS diagapiControl_DISPATCH(struct DiagApi *pDiagApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pDiagApi->__nvoc_metadata_ptr->vtable.__diagapiControl__(pDiagApi, pCallContext, pParams);
+    return pDiagApi->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pDiagApi, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS diagapiControlFilter_DISPATCH(struct DiagApi *pDiagApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pDiagApi->__nvoc_metadata_ptr->vtable.__diagapiControlFilter__(pDiagApi, pCallContext, pParams);
+    return pDiagApi->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pDiagApi, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS diagapiCtrlCmdFifoGetChannelState_DISPATCH(struct DiagApi *pDiagApi, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *pChannelStateParams) {
@@ -431,115 +395,115 @@ static inline NV_STATUS diagapiCtrlCmdFifoGetChannelState_DISPATCH(struct DiagAp
 }
 
 static inline NV_STATUS diagapiMap_DISPATCH(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__diagapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pGpuResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS diagapiUnmap_DISPATCH(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__diagapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pGpuResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool diagapiShareCallback_DISPATCH(struct DiagApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__diagapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS diagapiGetRegBaseOffsetAndSize_DISPATCH(struct DiagApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__diagapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS diagapiGetMapAddrSpace_DISPATCH(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__diagapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pGpuResource, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS diagapiInternalControlForward_DISPATCH(struct DiagApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__diagapiInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle diagapiGetInternalObjectHandle_DISPATCH(struct DiagApi *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__diagapiGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool diagapiAccessCallback_DISPATCH(struct DiagApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__diagapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS diagapiGetMemInterMapParams_DISPATCH(struct DiagApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__diagapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS diagapiCheckMemInterUnmap_DISPATCH(struct DiagApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__diagapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS diagapiGetMemoryMappingDescriptor_DISPATCH(struct DiagApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__diagapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS diagapiControlSerialization_Prologue_DISPATCH(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__diagapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void diagapiControlSerialization_Epilogue_DISPATCH(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__diagapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS diagapiControl_Prologue_DISPATCH(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__diagapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void diagapiControl_Epilogue_DISPATCH(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__diagapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool diagapiCanCopy_DISPATCH(struct DiagApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__diagapiCanCopy__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS diagapiIsDuplicate_DISPATCH(struct DiagApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__diagapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void diagapiPreDestruct_DISPATCH(struct DiagApi *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__diagapiPreDestruct__(pResource);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NvBool diagapiIsPartialUnmapSupported_DISPATCH(struct DiagApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__diagapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS diagapiMapTo_DISPATCH(struct DiagApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__diagapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS diagapiUnmapFrom_DISPATCH(struct DiagApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__diagapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 diagapiGetRefCount_DISPATCH(struct DiagApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__diagapiGetRefCount__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void diagapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct DiagApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__diagapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 static inline PEVENTNOTIFICATION * diagapiGetNotificationListPtr_DISPATCH(struct DiagApi *pNotifier) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__diagapiGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationListPtr__(staticCast(pNotifier, INotifier));
 }
 
 static inline struct NotifShare * diagapiGetNotificationShare_DISPATCH(struct DiagApi *pNotifier) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__diagapiGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationShare__(staticCast(pNotifier, INotifier));
 }
 
 static inline void diagapiSetNotificationShare_DISPATCH(struct DiagApi *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_metadata_ptr->vtable.__diagapiSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifySetNotificationShare__(staticCast(pNotifier, INotifier), pNotifShare);
 }
 
 static inline NV_STATUS diagapiUnregisterEvent_DISPATCH(struct DiagApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__diagapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyUnregisterEvent__(staticCast(pNotifier, INotifier), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS diagapiGetOrAllocNotifShare_DISPATCH(struct DiagApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__diagapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetOrAllocNotifShare__(staticCast(pNotifier, INotifier), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 // Virtual method declarations and/or inline definitions
@@ -558,13 +522,13 @@ NV_STATUS diagapiCtrlCmdFbEccSetWriteKill_IMPL(struct DiagApi *pDiagApi, NV208F_
 
 NV_STATUS diagapiCtrlCmdFbEccInjectionSupported_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_PARAMS *pParams);
 
+NV_STATUS diagapiCtrlCmdFbRemapRow_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FB_REMAP_ROW_PARAMS *pParams);
+
+NV_STATUS diagapiCtrlCmdFbRemapBank_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FB_REMAP_BANK_PARAMS *pRemapBankParams);
+
 NV_STATUS diagapiCtrlCmdFbClearRemappedRows_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS *pRemappedRowsParams);
 
 NV_STATUS diagapiCtrlCmdFbClearRemappedBanks_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FB_CLEAR_REMAPPED_BANKS_PARAMS *pRemappedBanksParams);
-
-NV_STATUS diagapiCtrlCmdGpuGetRamSvopValues_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS *pGetRamSvopParams);
-
-NV_STATUS diagapiCtrlCmdGpuSetRamSvopValues_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS *pSetRamSvopParams);
 
 NV_STATUS diagapiCtrlCmdGpuVerifyInforom_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_GPU_VERIFY_INFOROM_PARAMS *pParams);
 

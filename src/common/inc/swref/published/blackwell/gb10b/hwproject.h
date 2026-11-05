@@ -24,6 +24,7 @@
 #ifndef __gb10b_hwproject_h__
 #define __gb10b_hwproject_h__
 
+#define NV_FBHUB0_PRI_BASE                    0x8A0000
 #define NV_XAL_BASE_ADDRESS                    1110016
 #define NV_CHIP_EXTENDED_SYSTEM_PHYSICAL_ADDRESS_BITS              41
 

@@ -68,8 +68,6 @@ static const GPUCHILDORDER
 gpuChildOrderList_T234D[] =
 {
     {classId(OBJDCECLIENTRM),       GCO_ALL},
-    {classId(MemorySystem),         GCO_ALL},
-    {classId(KernelMemorySystem),   GCO_ALL},
     {classId(MemoryManager),        GCO_ALL},
     {classId(OBJDCB),               GCO_ALL},
     {classId(KernelDisplay),        GCO_ALL},
@@ -84,14 +82,9 @@ gpuChildOrderList_T234D[] =
 static const GPUCHILDPRESENT gpuChildrenPresent_T234D[] =
 {
     GPU_CHILD_PRESENT(OBJTMR, 1),
-    GPU_CHILD_PRESENT(KernelMIGManager, 1),
     GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
-    GPU_CHILD_PRESENT(KernelRc, 1),
-    GPU_CHILD_PRESENT(Intr, 1),
-    GPU_CHILD_PRESENT(NvDebugDump, 1),
     GPU_CHILD_PRESENT(OBJDCECLIENTRM, 1),
     GPU_CHILD_PRESENT(KernelDisplay, 1),
-    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
     GPU_CHILD_PRESENT(MemoryManager, 1),
 };
 

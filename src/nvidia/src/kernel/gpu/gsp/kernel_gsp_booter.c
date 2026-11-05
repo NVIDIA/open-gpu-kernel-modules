@@ -28,28 +28,6 @@
 #include "core/bin_data.h"
 
 /*!
- * Free a KernelGspVbiosImg structure.
- *
- * @param[in] pVbiosImg  structure to free
- */
-void
-kgspFreeVbiosImg
-(
-    KernelGspVbiosImg *pVbiosImg
-)
-{
-    if (pVbiosImg == NULL)
-    {
-        return;
-    }
-
-    portMemFree(pVbiosImg->pImage);
-    pVbiosImg->pImage = NULL;
-
-    portMemFree(pVbiosImg);
-}
-
-/*!
  * Free a KernelGspFlcnUcode structure.
  *
  * @param[in] pFlcnUcode structure to free

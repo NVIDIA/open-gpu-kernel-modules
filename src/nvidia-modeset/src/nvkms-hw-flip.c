@@ -172,6 +172,7 @@ void nvClearFlipEvoHwState(
 
     for (i = 0; i < ARRAY_LEN(pFlipState->layer); i++) {
         pFlipState->layer[i].cscMatrix = NVKMS_IDENTITY_CSC_MATRIX;
+        pFlipState->layer[i].tmoSatCorrEnable = FALSE;
     }
 }
 
@@ -235,6 +236,9 @@ void nvInitFlipEvoHwState(
     pFlipState->outputLut = pSdHeadState->outputLut;
     pFlipState->olutFpNormScale = pSdHeadState->olutFpNormScale;
     pFlipState->postcompColorPassthrough = pHeadState->postcompColorPassthrough;
+
+    pFlipState->vrr.targetVTotal = pHeadState->vrr.targetVTotal;
+    pFlipState->vrr.targetFraction = pHeadState->vrr.targetFraction;
 }
 
 
@@ -308,7 +312,8 @@ static NvBool FlipRequiresNonTearingMode(
            pOld->inputLut.pLutSurfaceEvo != pNew->inputLut.pLutSurfaceEvo ||
            pOld->inputLut.offset         != pNew->inputLut.offset         ||
            pOld->tmoLut.pLutSurfaceEvo   != pNew->tmoLut.pLutSurfaceEvo   ||
-           pOld->tmoLut.offset           != pNew->tmoLut.offset;
+           pOld->tmoLut.offset           != pNew->tmoLut.offset           ||
+           pOld->tmoSatCorrEnable        != pNew->tmoSatCorrEnable;
            // NewOutputLut
 }
 
@@ -671,6 +676,129 @@ static NvBool UpdateFlipLutHwState(
         } \
      }
 
+static NvBool ValidateTargetRefreshRate(const NVDevEvoRec *pDevEvo,
+                                        const NvU32 head,                              
+                                        const struct NvKmsFlipCommonParams *pParams,
+                                        NvU64 *targetVTotal,
+                                        NvU16 *targetFraction)
+{
+    NvU32 apiHead;
+    NVHwModeTimingsEvo *pTimings;
+    NVDispApiHeadStateEvoRec *pApiHeadState = NULL;
+    NVDpyEvoRec *pDpyEvo = NULL;
+
+    WITH_APIHEAD_FOR_HEAD (pDevEvo, 0, head, apiHead) { 
+        NvU64 minRR, pclk;
+        NvU32 minVTotal;
+
+        pApiHeadState = &pDevEvo->pDispEvo[0]->apiHeadState[apiHead];
+        pTimings = &pApiHeadState->timings;
+        pDpyEvo = nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDevEvo->pDispEvo[0]);
+
+        if (pTimings->vrr.type != NVKMS_VRR_TYPE_MEDIA) {
+            return TRUE;
+        }
+
+        nvAssert((pTimings->rasterSize.x != 0) && (pTimings->rasterSize.y != 0));
+        (*targetVTotal) = pTimings->rasterSize.y;
+        (*targetFraction) = 0;
+
+        minRR = ((NvU64) pTimings->vrr.minRefreshRate);
+
+        minVTotal = pTimings->rasterSize.y;
+        pclk = pTimings->pixelClockHz;  
+
+        /*
+         * For validation purposes, do not include the VBP extension for traditional
+         * G-SYNC displays.
+         */
+        if (nvIsGsyncDpyVrrType(pDpyEvo->vrr.type)) {
+            minVTotal -= 2;
+        }
+
+        if (pParams->targetVTotal) {
+            if (pParams->targetVTotal < minVTotal) {
+                return FALSE;
+            }
+
+            if (minRR) {
+                /*
+                 * Check against ceil'd maxVTotal for DP AdaptiveSync CTS:
+                 * maxVTotal = ceil((1 / minRR) / (hTotal / pclk))
+                 *           = ceil(pclk / (minRR * hTotal))
+                 */
+                NvU64 maxVTotal =
+                    NV_UNSIGNED_DIV_CEIL(pclk, minRR * pTimings->rasterSize.x); 
+
+                if (pParams->targetVTotal > maxVTotal) {
+                    return FALSE;
+                } 
+            } 
+
+            /* Lower bound to pTimings->rasterSize.y to not go below the base VFP on a traditional G-SYNC display */
+            (*targetVTotal) = NV_MAX(pParams->targetVTotal, pTimings->rasterSize.y);
+        } else {
+            #define MILLION 1000000UL
+
+            NvU64 targetRefreshRatex10M, numerator, targetVTotalRemainder;
+
+            NvU16 targetRefreshRate = pParams->targetRefreshRate;
+            NvBool divider = pParams->targetRefreshRateDivider;
+
+            NvU64 maxRefreshRatexDivider =
+                ((divider ? 1001 : 1000) * pTimings->pixelClockHz) /
+                ((NvU64) pTimings->rasterSize.x * minVTotal);
+            NvU64 minRefreshRatexDivider =
+                ((divider ? 1001 : 1000) * minRR);
+
+            if (targetRefreshRate == 0) {
+                return TRUE;
+            }
+
+            if (((1000ULL * targetRefreshRate) > maxRefreshRatexDivider) ||
+                ((1000ULL * targetRefreshRate) < minRefreshRatexDivider)) {
+                return FALSE;
+            }
+
+            /*
+             * Compute targetVTotal, targetFraction.
+             * In order to maintain the accuracy within the requirements for DP-FAVT,
+             * we scale the base refresh rate and target refresh rate.
+             *
+             * new_rr_10M --> new (target) refresh rate in (Hz * 10^7)
+             * base_rr_10M --> refresh rate of base timings in (Hz * 10^7)
+             *
+             * targetVTotal = (base_rr_10M * vtotal) / new_rr_10M
+             *              = (((1e7 * pclk) / (htotal * vtotal)) * vtotal) / new_rr_10M
+             *              = ((1e7 * pclk) / htotal) / new_rr_10M
+             *
+             * Error analysis: The numerator carries a relative error <= 10^-7, given the
+             *                 horizontal lines per second >= 1. The denominator has a relative error
+             *                 <= 10^-7 in all cases. So, we should expect the relative error of the whole
+             *                 expression <= 10^-7.
+             */
+            targetRefreshRatex10M = (10 * MILLION * (1000ULL * targetRefreshRate)) / (divider ? 1001 : 1000);
+
+            nvAssert((pclk != 0) && (NV_U64_MAX / pclk >= (NvU64) 1e7));
+            numerator = (((NvU64) 1e7) * pclk) / pTimings->rasterSize.x;
+
+            nvAssert(targetRefreshRatex10M != 0);
+            (*targetVTotal) = numerator / targetRefreshRatex10M;
+            targetVTotalRemainder = numerator % targetRefreshRatex10M; 
+
+            (*targetFraction) = ((targetVTotalRemainder << 16) / targetRefreshRatex10M) & 0xffff;
+
+            if ((*targetVTotal) < pTimings->rasterSize.y) {
+                /* Lower bound to pTimings->rasterSize.y to not go below the base VFP */
+                (*targetVTotal) = pTimings->rasterSize.y;
+                (*targetFraction) = 0;
+            }
+        }
+    } WITH_APIHEAD_FOR_HEAD_DONE;
+
+    return TRUE;
+}
+
 static NvBool UpdateLayerFlipEvoHwStateCommon(
     const struct NvKmsPerOpenDev *pOpenDev,
     NVDevEvoRec *pDevEvo,
@@ -954,6 +1082,8 @@ static NvBool UpdateLayerFlipEvoHwStateCommon(
     }
 
     if (pParams->layer[layer].tmo.specified) {
+        pFlipState->layer[layer].tmoSatCorrEnable =
+            pParams->layer[layer].tmo.satCorrEnable;
         if (pParams->layer[layer].tmo.enabled) {
             ret = UpdateFlipLutHwState(
                         pDevEvo,
@@ -1380,6 +1510,14 @@ NvBool nvUpdateFlipEvoHwState(
         }
         pFlipState->hdmiVsifMetadata = pParams->hdmiVsifMetadata.vsifMetadata;
         pFlipState->dirty.hdmiVsifMetadata = TRUE;
+    }
+
+    if (allowVrr) {
+        if (!ValidateTargetRefreshRate(pDevEvo, head, pParams,
+                                       &pFlipState->vrr.targetVTotal,
+                                       &pFlipState->vrr.targetFraction)) {
+            return FALSE;
+        }
     }
 
     return TRUE;
@@ -2454,15 +2592,27 @@ void nvUnionUsageBounds(const struct NvKmsUsageBounds *a,
         nvAssert(b->layer[i].usable ==
                  !!b->layer[i].supportedSurfaceMemoryFormats);
 
-        ret->layer[i].usable = a->layer[i].usable || b->layer[i].usable;
+        if (a->layer[i].usable && b->layer[i].usable) {
+            ret->layer[i].usable = TRUE;
 
-        ret->layer[i].supportedSurfaceMemoryFormats =
-            a->layer[i].supportedSurfaceMemoryFormats |
-            b->layer[i].supportedSurfaceMemoryFormats;
+            ret->layer[i].supportedSurfaceMemoryFormats =
+                a->layer[i].supportedSurfaceMemoryFormats |
+                b->layer[i].supportedSurfaceMemoryFormats;
 
-        UnionScalingUsageBounds(&a->layer[i].scaling,
-                                &b->layer[i].scaling,
-                                &ret->layer[i].scaling);
+            UnionScalingUsageBounds(&a->layer[i].scaling,
+                                    &b->layer[i].scaling,
+                                    &ret->layer[i].scaling);
+        } else if (a->layer[i].usable) {
+            ret->layer[i] = a->layer[i];
+        } else {
+            /*
+             * If B is usable or neither A nor B is, return B.
+             * The usage bounds of an unusable layer are
+             * irrelevant, so we can just return B if both are
+             * unusable.
+             */
+            ret->layer[i] = b->layer[i];
+        }
     }
 }
 
@@ -3095,7 +3245,7 @@ void nvPreFlip(NVDevEvoRec *pDevEvo,
 
     if (applyAllowVrrApiHeadMask != 0){
         // Applying allowVrrApiHeadMask to at least one apiHead
-        nvSetVrrActive(pDevEvo, applyAllowVrrApiHeadMask, allowVrrApiHeadMask);
+        nvSetVrrActive(pDevEvo->pDispEvo[0], pWorkArea, applyAllowVrrApiHeadMask, allowVrrApiHeadMask);
     }
 }
 

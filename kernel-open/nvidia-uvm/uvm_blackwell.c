@@ -135,4 +135,9 @@ void uvm_hal_blackwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
         // where this field is declared.
         parent_gpu->sticky_l2_coherent_cache_lines = true;
     }
+
+    if (parent_gpu->rm_info.gpuArch == NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100 &&
+        parent_gpu->rm_info.gpuImplementation == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10C) {
+        parent_gpu->sticky_l2_coherent_cache_lines = true;
+    }
 }

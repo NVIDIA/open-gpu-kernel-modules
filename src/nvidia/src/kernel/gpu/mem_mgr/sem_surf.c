@@ -1702,9 +1702,10 @@ semsurfCtrlCmdRegisterWaiter_IMPL
         }
         else
         {
-            rmStatus = osUserHandleToKernelPtr(pCallContext->pClient->hClient,
-                                               (NvP64)pParams->notificationHandle,
-                                               &notificationHandle);
+            rmStatus = osGetAndRefEventFromUserHandle(
+                pCallContext->pClient->hClient,
+                (NvP64)pParams->notificationHandle,
+                &notificationHandle);
         }
     }
 
@@ -1860,9 +1861,9 @@ semsurfCtrlCmdUnregisterWaiter_IMPL
         }
         else
         {
-            rmStatus = osUserHandleToKernelPtr(pCallContext->pClient->hClient,
-                                               (NvP64)pParams->notificationHandle,
-                                               &notificationHandle);
+            rmStatus = osGetAndRefEventFromUserHandle(pCallContext->pClient->hClient,
+                                                      (NvP64)pParams->notificationHandle,
+                                                      &notificationHandle);
         }
     }
 

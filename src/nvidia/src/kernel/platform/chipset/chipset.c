@@ -81,10 +81,9 @@ clInitPropertiesFromRegistry_IMPL(OBJGPU *pGpu, OBJCL *pCl)
         }
     }
 
-    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC, &data32) == NV_OK)
-            && (data32 == NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_YES))
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC, &data32) == NV_OK)
     {
-        pCl->setProperty(pCl, PDB_PROP_CL_DISABLE_IOMAP_WC, NV_TRUE);
+        pCl->setProperty(pCl, PDB_PROP_CL_DISABLE_IOMAP_WC, data32 != NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_NO);
     }
 
     osQADbgRegistryInit();
@@ -300,8 +299,16 @@ clFindFHBAndGetChipsetInfoIndex_IMPL
         pBusTopologyInfo = pCl->pBusTopologyInfo;
         while (pBusTopologyInfo)
         {
+            //
+            // Only accept a match on an actual bridge-class device (base class
+            // 0x06). This prevents a non-bridge device that shares a
+            // vendor/device ID present in the table from being
+            // mistaken for the chipset.
+            //
             if ((pBusTopologyInfo->busInfo.vendorID == chipsetInfo[i].vendorID) &&
-                (pBusTopologyInfo->busInfo.deviceID == chipsetInfo[i].deviceID))
+                (pBusTopologyInfo->busInfo.deviceID == chipsetInfo[i].deviceID)
+                && ((pBusTopologyInfo->pciSubBaseClass >> 8) == PCI_CLASS_BRIDGE_DEV)
+                )
             {
                 matchFound = NV_TRUE;
                 break;
@@ -322,7 +329,10 @@ clFindFHBAndGetChipsetInfoIndex_IMPL
             // Do not change the algorithm for older chipsets where the devcie at bus%0x40 ==0, 0, 0 is
             // considered as a host bridge.
             //
-            if (((pBusTopologyInfo->pciSubBaseClass & 0xFF) == PCI_SUBCLASS_BR_HOST) ||
+            // Match the full class+subclass so only a genuine host bridge (0x0600)
+            // qualifies.
+            //
+            if ((pBusTopologyInfo->pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_HOST) ||
                 (!(pBusTopologyInfo->bus % 0x40) && !pBusTopologyInfo->device && !pBusTopologyInfo->func))
             {
                 pCl->FHBAddr.domain = pBusTopologyInfo->domain;

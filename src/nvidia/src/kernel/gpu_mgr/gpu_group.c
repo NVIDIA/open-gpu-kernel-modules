@@ -169,7 +169,7 @@ gpugrpSetParentGpu_IMPL
  *
  * @returns GPU pointer
  */
-POBJGPU
+OBJGPU *
 gpugrpGetParentGpu_IMPL(OBJGPUGRP *pGpuGrp)
 {
     return pGpuGrp->parentGpu;
@@ -206,7 +206,6 @@ gpugrpCreateGlobalVASpace_IMPL
 )
 {
     NV_STATUS rmStatus;
-    NvU32      gpuMask              = pGpuGrp->gpuMask;
     OBJSYS    *pSys                 = SYS_GET_INSTANCE();
     OBJVMM    *pVmm                 = SYS_GET_VMM(pSys);
     NvBool     bcState              = gpumgrGetBcEnabledStatus(pGpu);
@@ -216,7 +215,7 @@ gpugrpCreateGlobalVASpace_IMPL
 
     gpumgrSetBcEnabledStatus(pGpu, NV_TRUE);
     vaspaceFlags |= VASPACE_FLAGS_ENABLE_VMM;
-    rmStatus = vmmCreateVaspace(pVmm, vaspaceClass, 0x0, gpuMask, vaStart,
+    rmStatus = vmmCreateVaspace(pVmm, vaspaceClass, 0x0, pGpu, vaStart,
                                       vaLimit, 0, 0, NULL, vaspaceFlags, &pGpuGrp->pGlobalVASpace);
     gpumgrSetBcEnabledStatus(pGpu, bcState);
     if (NV_OK != rmStatus)
@@ -289,7 +288,7 @@ gpugrpGetGlobalVASpace_IMPL(OBJGPUGRP *pGpuGrp, OBJVASPACE **ppVASpace)
  *
  * @param[in]   pGpuGrp         GPUGRP object pointer
  * @param[in]   subDeviceInst   GPU sundevice Instance
- * @param[out]  ppGpu           POBJGPU* pointer
+ * @param[out]  ppGpu           OBJGPU ** pointer
  *
  * @return NV_OK on success
  *         NV_ERR_INVALID_ARGUMENT on NULL pointer parameter

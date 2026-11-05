@@ -45,12 +45,15 @@ typedef struct {
 
     NvBool hdmiVsifMetadataEnabled;
 
+    enum NvKmsAllmMode allmMode;
+
     struct {
         NvU32 viewPortPointIn          : 1;
         NvU32 hdr                      : 1;
         NvU32 dithering                : 1;
         NvU32 postcompColorPassthrough : 1;
         NvU32 hdmiVsifMetadata         : 1;
+        NvU32 allmMode                 : 1;
     } dirty;
 } NVProposedFlipStateOneApiHead;
 

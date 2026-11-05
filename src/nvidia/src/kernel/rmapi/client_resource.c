@@ -467,7 +467,16 @@ CliGetSystemP2pCaps
 
         if (p2pCapsStatus != NULL)
         {
-            p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_NVLINK] = NV0000_P2P_CAPS_STATUS_OK;
+            if (p2pWriteCapStatus == NV0000_P2P_CAPS_STATUS_NOT_READY &&
+                p2pReadCapStatus == NV0000_P2P_CAPS_STATUS_NOT_READY)
+            {
+                p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_NVLINK] = NV0000_P2P_CAPS_STATUS_NOT_READY;
+            }
+            else
+            {
+                p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_NVLINK] = NV0000_P2P_CAPS_STATUS_OK;
+            }
+
             if (p2pAtomicCapStatus == NV0000_P2P_CAPS_STATUS_OK)
             {
                 p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_ATOMICS] = NV0000_P2P_CAPS_STATUS_OK;
@@ -1819,7 +1828,6 @@ cliresCtrlCmdGpuDetachIds_IMPL
             else
             {
                 // XXX add callback to detach logic on Windows
-                break;
             }
         }
     }
@@ -2338,6 +2346,83 @@ cliresCtrlCmdSystemPfmreqhndlrBatchControl_IMPL
     return NV_OK;
 }
 
+static void
+_controllerBuildConfig_StaticTable_1x
+(
+    CONTROLLER_STATIC_TABLE_ENTRY_1X *pEntry,
+    NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    pParams->samplingMulti =
+        (NvU16)pEntry->samplingMulti;
+
+    pParams->filterType =
+        (NvU8)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_1X, _FILTER, _TYPE,
+                      pEntry->filterParams);
+
+    pParams->filterReserved =
+        (NvU16)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_1X, _FILTER, _RESERVED,
+                       pEntry->filterParams);
+
+    switch (pParams->filterType)
+    {
+        case NVPCF0100_CTRL_CONTROLLER_FILTER_TYPE_EMWA:
+        {
+            pParams->filterParam.weight =
+                (NvU8)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_1X, _FILTERPARAM, _EWMA_WEIGHT,
+                              pEntry->filterParams);
+            break;
+        }
+
+        case NVPCF0100_CTRL_CONTROLLER_FILTER_TYPE_MOVING_MAX:
+        default:
+        {
+            pParams->filterParam.windowSize =
+                (NvU8)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_1X, _FILTERPARAM, _WINDOW_SIZE,
+                              pEntry->filterParams);
+            break;
+        }
+    }
+}
+
+static void
+_controllerBuildQboostConfig_StaticTable_1x
+(
+    CONTROLLER_STATIC_TABLE_ENTRY_1X *pEntry,
+    NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    pParams->bIsBoostController = NV_TRUE;
+
+    // Gains from 1x Param5
+    pParams->incRatio =
+        (NvUFXP4_12)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_1X, _PARAM5, _QBOOST_INCREASE_GAIN,
+                            pEntry->param5);
+    pParams->decRatio =
+        (NvUFXP4_12)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_1X, _PARAM5, _QBOOST_DECREASE_GAIN,
+                            pEntry->param5);
+
+    // 1x table has no DC support bit; Windows also treats DC support as false for v1.0.
+    pParams->bSupportBatt = NV_FALSE;
+}
+
+static void
+_controllerBuildCtgpConfig_StaticTable_1x
+(
+    NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    // CTGP: fixed sampling/filter; no Qboost
+    pParams->samplingMulti      = CONTROLLER_GRP_DEFAULT_SAMPLING_MULTIPLIER;
+    pParams->filterType         = NVPCF0100_CTRL_CONTROLLER_FILTER_TYPE_EMWA;
+    pParams->filterParam.weight = 0;
+
+    pParams->bIsBoostController = NV_FALSE;
+    pParams->incRatio           = 0;
+    pParams->decRatio           = 0;
+    pParams->bSupportBatt       = NV_FALSE;
+}
+
 /*!
  * Helper to build config data from unpacked table data,
  * static config v2.0/2.1.
@@ -2775,6 +2860,227 @@ _controllerParseStaticTable_v22_exit:
 }
 
 static NV_STATUS
+_sysDeviceParseStaticTable_1x
+(
+    NvU8 *pData,
+    NvU32 *pDataSize,
+    NvU32 *pControllerTableOffset,
+    NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 deviceTableOffset = 0;
+    NvU32 loop;
+    SYSDEV_STATIC_TABLE_HEADER_1X sysdevHeader = { 0 };
+    TOPOLOGY_STATIC_TABLE_HEADER_1X topoHeader = { 0 };
+
+    const char *pSzSysDevHeaderFmt = NVPCF_SYSDEV_STATIC_TABLE_HEADER_1X_FMT_SIZE_04;
+    const char *pSzSysDevEntryFmt  = NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_FMT_SIZE_09;
+    const char *pSzTopoHeaderFmt   = NVPCF_TOPOLOGY_STATIC_TABLE_HEADER_1X_FMT_SIZE_04;
+
+    // Validate input
+    NV_ASSERT_OR_RETURN(pData != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pDataSize != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pControllerTableOffset != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_INVALID_POINTER);
+
+    // Must have at least a sysdev header
+    if (*pDataSize < NVPCF_SYSDEV_STATIC_TABLE_HEADER_1X_SIZE_04)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // Read sysdev header
+    configReadStructure(pData, &sysdevHeader, deviceTableOffset, pSzSysDevHeaderFmt);
+
+    // Validate sysdev header
+    if ((sysdevHeader.version != NVPCF_SYSDEV_STATIC_TABLE_VERSION_1X) ||
+        (sysdevHeader.headerSize != NVPCF_SYSDEV_STATIC_TABLE_HEADER_1X_SIZE_04) ||
+        (sysdevHeader.entrySize  != NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_SIZE_09))
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVPCF_1X: %s: Invalid sysdev header\n", __FUNCTION__);
+        return NV_ERR_INVALID_DATA;
+    }
+
+    if (sysdevHeader.entryCount == 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVPCF_1X: %s: sysdev entryCount is 0\n", __FUNCTION__);
+        return NV_ERR_INVALID_DATA;
+    }
+
+    // Compute topology table offset
+    {
+        NvU32 topoOffset = deviceTableOffset +
+                           sysdevHeader.headerSize +
+                           (sysdevHeader.entrySize * sysdevHeader.entryCount);
+
+        // Bounds
+        if (*pDataSize < topoOffset + NVPCF_TOPOLOGY_STATIC_TABLE_HEADER_1X_SIZE_04)
+        {
+            return NV_ERR_INVALID_DATA;
+        }
+
+        for (loop = 0; loop < sysdevHeader.entryCount; loop++)
+        {
+            SYSDEV_STATIC_TABLE_ENTRY_1X sysdevEntry = { 0 };
+            NvU32 offset = deviceTableOffset + sysdevHeader.headerSize +
+                           (loop * sysdevHeader.entrySize);
+
+            configReadStructure(pData, &sysdevEntry, offset, pSzSysDevEntryFmt);
+
+            switch (DRF_VAL(PCF_SYSDEV_STATIC_TABLE_ENTRY_1X, _FLAGS0, _CLASS,
+                            sysdevEntry.flags0))
+            {
+                case NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_CPU_INTEL:
+                {
+                    pParams->cpuType =
+                        NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_PARAM0_CPU_TYPE_INTEL;
+                    break;
+                }
+                case NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_CPU_AMD:
+                {
+                    pParams->cpuType =
+                        NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_PARAM0_CPU_TYPE_AMD;
+                    break;
+                }
+                case NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_GPU_NV:
+                {
+                    pParams->gpuType =
+                        NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_PARAM0_GPU_TYPE_NVIDIA;
+                    break;
+                }
+                case NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_DISABLED:
+                default:
+                {
+                    break;
+                }
+            }
+        }
+
+        // Read topology header
+        configReadStructure(pData, &topoHeader, topoOffset, pSzTopoHeaderFmt);
+
+        // Validate topology header
+        if ((topoHeader.version != NVPCF_TOPOLOGY_STATIC_TABLE_VERSION_1X) ||
+            (topoHeader.headerSize != NVPCF_TOPOLOGY_STATIC_TABLE_HEADER_1X_SIZE_04) ||
+            (topoHeader.entrySize  != NVPCF_TOPOLOGY_STATIC_TABLE_ENTRY_1X_SIZE_05))
+        {
+            NV_PRINTF(LEVEL_ERROR, "NVPCF_1X: %s: Invalid topology header\n", __FUNCTION__);
+            return NV_ERR_INVALID_DATA;
+        }
+
+        // Controller table starts after topology header + entries
+        *pControllerTableOffset = topoOffset +
+                                  topoHeader.headerSize +
+                                  (topoHeader.entrySize * topoHeader.entryCount);
+
+        // Final bounds
+        if (*pDataSize < *pControllerTableOffset)
+        {
+            return NV_ERR_INVALID_DATA;
+        }
+    }
+
+    return status;
+}
+
+static NV_STATUS
+_controllerParseStaticTable_1x
+(
+    NvU8 *pData,
+    NvU32 dataSize,
+    NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 controllerTableOffset = 0;
+    CONTROLLER_STATIC_TABLE_HEADER_1X header = {0};
+    NvU32 expectedSize;
+    NvU32 loop;
+
+    // Must be able to read the sysdev header first
+    if (dataSize < NVPCF_SYSDEV_STATIC_TABLE_HEADER_1X_SIZE_04)
+        return NV_ERR_NOT_SUPPORTED;
+
+    // Locate controller table start and fill cpuType/gpuType
+    status = _sysDeviceParseStaticTable_1x(pData, &dataSize, &controllerTableOffset, pParams);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVPCF_1X: %s: Failed to parse sysdev table\n", __FUNCTION__);
+        return status;
+    }
+
+    if (dataSize < controllerTableOffset)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVPCF_1X: %s: Invalid controller table offset\n", __FUNCTION__);
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    pData    += controllerTableOffset;
+    dataSize -= controllerTableOffset;
+
+    // Header must fit
+    if (dataSize < NVPCF_CONTROLLER_STATIC_TABLE_HEADER_1X_SIZE_06)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVPCF_1X: %s: Invalid data size\n", __FUNCTION__);
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // Unpack header (v1.x: "4b1w")
+    configReadStructure(pData, &header, 0, NVPCF_CONTROLLER_STATIC_TABLE_HEADER_1X_FMT_SIZE_06);
+
+    // Validate header
+    if (header.version != NVPCF_CONTROLLER_STATIC_TABLE_VERSION_1X ||
+        header.headerSize != NVPCF_CONTROLLER_STATIC_TABLE_HEADER_1X_SIZE_06 ||
+        header.entrySize  != NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_SIZE_23 ||
+        header.entryCount == 0 ||
+        header.samplingPeriodms == 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVPCF_1X: %s: Invalid header\n", __FUNCTION__);
+        return NV_ERR_INVALID_DATA;
+    }
+
+    expectedSize = header.headerSize + (header.entryCount * header.entrySize);
+    if (expectedSize > dataSize)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVPCF_1X: %s: Invalid data size\n", __FUNCTION__);
+        return NV_ERR_INVALID_DATA;
+    }
+
+    // Base sampling period
+    pParams->samplingPeriodmS = (NvU16)header.samplingPeriodms;
+
+    // Walk entries
+    for (loop = 0; loop < header.entryCount; loop++)
+    {
+        CONTROLLER_STATIC_TABLE_ENTRY_1X entry = {0};
+        NvU32 offset = header.headerSize + (loop * header.entrySize);
+
+        configReadStructure(pData, &entry, offset, NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FMT_SIZE_23);
+
+        switch (DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_1X, _FLAGS0, _CLASS, entry.flags0))
+        {
+            case NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_PPAB:
+                _controllerBuildConfig_StaticTable_1x(&entry, pParams);
+                _controllerBuildQboostConfig_StaticTable_1x(&entry, pParams);
+                break;
+
+            case NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_TPP:
+                _controllerBuildCtgpConfig_StaticTable_1x(pParams);
+                break;
+
+            case NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_DISABLED:
+            default:
+                break;
+        }
+    }
+
+    pParams->version = (NvU8)header.version;
+
+    return NV_OK;
+}
+
+static NV_STATUS
 _sysDeviceParseStaticTable_2x
 (
     NvU8 *pData,
@@ -2949,8 +3255,8 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
     OBJGPU   *pGpu   = NULL;
     NV_STATUS status = NV_OK;
     NvU16     dsmDataSize;
-    ACPI_DSM_FUNCTION acpiDsmFunction = ACPI_DSM_FUNCTION_NVPCF_2X;
-    NvU32     acpiDsmSubFunction = NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED;
+    ACPI_DSM_FUNCTION acpiDsmFunction;
+    NvU32     acpiDsmSubFunction;
 
     if (pParams == NULL)
     {
@@ -2965,6 +3271,131 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
         return NV_ERR_INVALID_REQUEST;
     }
 
+    acpiDsmFunction = pParams->nvpcfFunc;
+    acpiDsmSubFunction = pParams->subFunc;
+
+    // NVPCF DSM 3.0 handling
+    if (acpiDsmFunction == ACPI_DSM_FUNCTION_NVPCF_3X)
+    {
+        NvU8 *pData = NULL;
+        NvU16 dataSize;
+
+        if (acpiDsmSubFunction == NVPCF0100_CTRL_CONFIG_DSM_3X_FUNC_NVPCF_READ_PLATFORM_WRITE_SUPPORTED_FUNCTIONS)
+        {
+            dsmDataSize = sizeof(pParams->supportedFuncs);
+
+            rc = osCallACPI_DSM(pGpu,
+                                acpiDsmFunction,
+                                acpiDsmSubFunction,
+                                &pParams->supportedFuncs,
+                                &dsmDataSize);
+
+            if ((rc != NV_OK) || (dsmDataSize == 0))
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                    "Unable to retrieve 3x NVPCF supported functions. Possibly not supported by SBIOS "
+                    "rc = %x, dsmDataSize = %u\n", rc, dsmDataSize);
+                status =  NV_ERR_NOT_SUPPORTED;
+            }
+        }
+        else
+        {
+            if (pParams->inOutData == NULL)
+            {
+                NV_PRINTF(LEVEL_WARNING, 
+                    "No buffer provided to NVPCF 3x call, invalid combination\n");
+
+                status = NV_ERR_INVALID_ARGUMENT;
+                goto nvpcf3xGetParams_exit;
+            }
+
+            dataSize = pParams->inOutDataSize;
+
+            if ((dataSize > 0) && (dataSize <= NVPCF0100_CTRL_CONFIG_3X_BUFF_SIZE_MAX))
+            {
+                pData = portMemAllocNonPaged(dataSize);
+                if (pData == NULL)
+                {
+                    status = NV_ERR_NO_MEMORY;
+                    goto nvpcf3xGetParams_exit;
+                }
+
+                if (acpiDsmSubFunction == NVPCF0100_CTRL_CONFIG_DSM_3X_FUNC_NVPCF_WRITE_PLATFORM_READ_DYNAMIC_PRIMITIVES_DATA ||
+                    acpiDsmSubFunction == NVPCF0100_CTRL_CONFIG_DSM_3X_FUNC_NVPCF_WRITE_PLATFORM_READ_CRITICAL_STATUS)
+                {
+                    status = portMemExCopyFromUser(NvP64_VALUE(pParams->inOutData), pData, dataSize);
+
+                    if (status != NV_OK)
+                    {
+                        NV_PRINTF(LEVEL_WARNING, "portMemExCopyFromUser failed with status = 0x%x\n", status);
+                        goto nvpcf3xGetParams_exit;
+                    }
+                }
+                else
+                {
+                    // Divide by 4 for cases of sub-func 1,2,3 that are passing in
+                    // a buffer to receive data via because NvU32 pointer is passed
+                    // below in osCallACPI_DSM call.
+                    dataSize = dataSize / 4;
+                }
+            }
+            else
+            {
+                status = NV_ERR_INVALID_ARGUMENT;
+                goto nvpcf3xGetParams_exit;
+            }
+
+            if ((rc = osCallACPI_DSM(pGpu,
+                                    acpiDsmFunction, /* ACPI_DSM_FUNCTION_NVPCF_3X */
+                                    acpiDsmSubFunction,
+                                    (NvU32 *)pData,
+                                    &dataSize)) != NV_OK)
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                        "Unable to retreive NVPCF 3x sub-function. "
+                        "rc = %x\n", rc);
+                status =  NV_ERR_NOT_SUPPORTED;
+                goto nvpcf3xGetParams_exit;
+            }
+
+            if (dataSize > pParams->inOutDataSize)
+            {
+                NV_PRINTF(LEVEL_WARNING, 
+                          "Insufficient buffer provided in input for NVPCF 3x: "
+                          "dataSize: 0x%x, "
+                          "pParams->inOutDataSize) : 0x%x\n",
+                          dataSize, pParams->inOutDataSize);
+
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                goto nvpcf3xGetParams_exit;
+            }
+
+            pParams->inOutDataSize = dataSize;
+
+            if (dataSize > 0 &&
+                (acpiDsmSubFunction ==  NVPCF0100_CTRL_CONFIG_DSM_3X_FUNC_NVPCF_READ_PLATFORM_WRITE_SUPPORTED_FUNCTIONS ||
+                 acpiDsmSubFunction == NVPCF0100_CTRL_CONFIG_DSM_3X_FUNC_NVPCF_READ_PLATFORM_WRITE_INIT_DATA ||
+                 acpiDsmSubFunction == NVPCF0100_CTRL_CONFIG_DSM_3X_FUNC_NVPCF_READ_PLATFORM_WRITE_SUBSCRIBED_PRIMITIVES_LIST ||
+                 acpiDsmSubFunction == NVPCF0100_CTRL_CONFIG_DSM_3X_FUNC_NVPCF_READ_PLATFORM_WRITE_DYNAMIC_PRIMITIVES_DATA))
+            {
+                status = portMemExCopyToUser(pData, NvP64_VALUE(pParams->inOutData), dataSize);
+                if (status != NV_OK)
+                {
+                    NV_PRINTF(LEVEL_WARNING, "portMemExCopyToUser failed with status = 0x%x\n", status);
+                    goto nvpcf3xGetParams_exit;
+                }
+            }
+        }
+
+nvpcf3xGetParams_exit:
+        if (pData != NULL)
+        {
+            portMemFree(pData);
+        }
+
+        return status;
+    }
+
     switch (pParams->subFunc)
     {
         case NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_SUPPORTED_CASE:
@@ -2974,6 +3405,12 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
         case NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED_CASE:
         {
             dsmDataSize = sizeof(pParams->supportedFuncs);
+
+            if (pParams->subFunc == NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED_CASE)
+            {
+                acpiDsmFunction = ACPI_DSM_FUNCTION_NVPCF_2X;
+                acpiDsmSubFunction = NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED;
+            }
 
             if ((rc = osCallACPI_DSM(pGpu,
                                      acpiDsmFunction,
@@ -3212,6 +3649,54 @@ nvpcf2xGetDynamicParams_exit:
 
             break;
         }
+
+        case NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_STATIC_CASE:
+        {
+            NvU8 *pData = NULL;
+            NvU16 dataSize =  NVPCF0100_CTRL_CONFIG_2X_BUFF_SIZE_MAX;
+
+            pData = portMemAllocNonPaged(dataSize);
+
+            if (pData == NULL)
+            {
+                status = NV_ERR_NO_MEMORY;
+                goto nvpcf1xGetStaticParams_exit;
+            }
+
+            if ((rc = osCallACPI_DSM(pGpu,
+                            ACPI_DSM_FUNCTION_NVPCF,
+                            NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_STATIC_CONFIG_TABLES,
+                            (NvU32 *)pData,
+                            &dataSize)) != NV_OK)
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                "NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_STATIC_CASE: Unable to retrieve NVPCF Static data. Possibly not supported by SBIOS "
+                "rc = %x\n", rc);
+                status =  NV_ERR_NOT_SUPPORTED;
+                goto nvpcf1xGetStaticParams_exit;
+            }
+
+            status = _validateConfigStaticTable_2x(pData, &dataSize);
+            if (NV_OK != status)
+            {
+                NV_PRINTF(LEVEL_WARNING, "Config Static Data checksum failed\n");
+                status =  NV_ERR_NOT_SUPPORTED;
+                goto nvpcf1xGetStaticParams_exit;
+            }
+
+            // Subtract 1 byte for the checksum
+            dataSize--;
+            status = _controllerParseStaticTable_1x(pData, dataSize, pParams);
+            if (NV_OK != status)
+            {
+                status =  NV_ERR_NOT_SUPPORTED;
+            }
+
+nvpcf1xGetStaticParams_exit:
+            portMemFree(pData);
+            break;
+        }
+
         case NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_STATIC_CASE:
         {
             NvU8 *pData = NULL;
@@ -3581,7 +4066,12 @@ cliresCtrlCmdNvdGetDumpSize_IMPL
                                  NVDUMP_BUFFER_COUNT,
                                  NULL);
 
-    pDumpSizeParams->size = nvDumpBuffer.curNumBytes;
+    // The get-dump path transfers at most NV0000_CTRL_NVD_MAX_DUMP_SIZE and
+    // truncates at record boundaries; report no more than it can deliver.
+    // Journal content can legitimately exceed the cap (it is not bounded by
+    // this ctrl's transfer limit).
+    pDumpSizeParams->size = NV_MIN(nvDumpBuffer.curNumBytes,
+                                   NV0000_CTRL_NVD_MAX_DUMP_SIZE);
 
     return rmStatus;
 }
@@ -3604,9 +4094,11 @@ cliresCtrlCmdNvdGetDump_IMPL
     NVDUMP_BUFFER nvDumpBuffer  = {0};
     NV_STATUS     rmStatus;
 
-    NV_ASSERT_OR_RETURN(pDumpParams->size <= NV0000_CTRL_NVD_MAX_DUMP_SIZE, NV_ERR_INVALID_ARGUMENT);
-
-    nvDumpBuffer.size    = pDumpParams->size;
+    // Clamp instead of rejecting oversized requests: callers echo the size
+    // reported by GET_DUMP_SIZE, and journal content beyond the cap must
+    // not make the whole journal unextractable. The encode truncates at
+    // record boundaries; curNumBytes reports what was actually written.
+    nvDumpBuffer.size    = NV_MIN(pDumpParams->size, NV0000_CTRL_NVD_MAX_DUMP_SIZE);
     nvDumpBuffer.address = pDumpParams->pBuffer;
 
     // Dump the component
@@ -5426,6 +5918,17 @@ cliresCtrlCmdNvdGetRcerrRpt_IMPL
              pParams)) != NV_OK)
     {
         return status;
+    }
+
+    //
+    // RC diagnostic collection paths skip simulation. vGPU recovery populates
+    // the host journal, not the guest's local journal.
+    //
+    if (IS_SIMULATION(pGpu) || IS_SIM_MODS(GPU_GET_OS(pGpu)) || IS_VIRTUAL(pGpu))
+    {
+        // RMCTRL_FLAGS_COPYOUT_ON_ERROR returns this flag with the error status.
+        pParams->flags |= NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_REPORTS_UNAVAILABLE;
+        return NV_ERR_MISSING_TABLE_ENTRY;
     }
 
     {

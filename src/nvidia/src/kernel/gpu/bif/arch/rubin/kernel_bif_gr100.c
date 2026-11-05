@@ -23,10 +23,14 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "events/gpu/pcie/pcie_events.h"
+#include "nvoc/event_bus.h"
+#include "nvport/time.h"
 
 #include "nverror.h"
 #include "gpu/bif/kernel_bif.h"
 #include "published/rubin/gr100/dev_pcfg_pf0.h"
+#include "published/rubin/gr100/dev_pcfg_pf0_addendum.h"
 #include "published/rubin/gr100/dev_nv_pcie_reset_addendum.h"
 
 /*!
@@ -178,8 +182,7 @@ _kbifReportResetStatus_GR100
         {
             case NV_PCIE_RESET_ACTION_SBR:
                 {
-                    nvErrorLog_va((void *)pGpu, PCIE_RESET_FAILURE,
-                        "PCIE_RESET_FAILURE: Classification: %d, Recommendation: Perform SBR\n", resetStatus);
+                    eventEmit(PcieResetFailure, pKernelBif, resetStatus, resetRecAction);
 
                     gpuMarkDeviceForReset(pGpu);
                     break;
@@ -188,9 +191,7 @@ _kbifReportResetStatus_GR100
             case NV_PCIE_RESET_ACTION_NONE:
             default:
                 {
-                    // We don't know how this could even occur, so print what's known
-                    nvErrorLog_va((void *)pGpu, PCIE_RESET_FAILURE,
-                        "Possible PCIE_RESET_FAILURE: Classification: %d, Recommendation: Unknown\n", resetStatus);
+                    eventEmit(PcieResetFailure, pKernelBif, resetStatus, resetRecAction);
                 }
         }
     }

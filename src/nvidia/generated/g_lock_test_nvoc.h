@@ -60,10 +60,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__LockTestRelaxedDupObject;
 struct NVOC_METADATA__RmResource;
-struct NVOC_VTABLE__LockTestRelaxedDupObject;
 
 
 struct LockTestRelaxedDupObject {
@@ -86,36 +85,10 @@ struct LockTestRelaxedDupObject {
 };
 
 
-// Vtable with 21 per-class function pointers
-struct NVOC_VTABLE__LockTestRelaxedDupObject {
-    NvBool (*__lockTestRelaxedDupObjCanCopy__)(struct LockTestRelaxedDupObject * /*this*/);  // inline virtual override (res) base (rmres) body
-    NvBool (*__lockTestRelaxedDupObjAccessCallback__)(struct LockTestRelaxedDupObject * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__lockTestRelaxedDupObjShareCallback__)(struct LockTestRelaxedDupObject * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__lockTestRelaxedDupObjGetMemInterMapParams__)(struct LockTestRelaxedDupObject * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__lockTestRelaxedDupObjCheckMemInterUnmap__)(struct LockTestRelaxedDupObject * /*this*/, NvBool);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__lockTestRelaxedDupObjGetMemoryMappingDescriptor__)(struct LockTestRelaxedDupObject * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__lockTestRelaxedDupObjControlSerialization_Prologue__)(struct LockTestRelaxedDupObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__lockTestRelaxedDupObjControlSerialization_Epilogue__)(struct LockTestRelaxedDupObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__lockTestRelaxedDupObjControl_Prologue__)(struct LockTestRelaxedDupObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__lockTestRelaxedDupObjControl_Epilogue__)(struct LockTestRelaxedDupObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__lockTestRelaxedDupObjIsDuplicate__)(struct LockTestRelaxedDupObject * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (rmres)
-    void (*__lockTestRelaxedDupObjPreDestruct__)(struct LockTestRelaxedDupObject * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__lockTestRelaxedDupObjControl__)(struct LockTestRelaxedDupObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__lockTestRelaxedDupObjControlFilter__)(struct LockTestRelaxedDupObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__lockTestRelaxedDupObjMap__)(struct LockTestRelaxedDupObject * /*this*/, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__lockTestRelaxedDupObjUnmap__)(struct LockTestRelaxedDupObject * /*this*/, struct CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NvBool (*__lockTestRelaxedDupObjIsPartialUnmapSupported__)(struct LockTestRelaxedDupObject * /*this*/);  // inline virtual inherited (res) base (rmres) body
-    NV_STATUS (*__lockTestRelaxedDupObjMapTo__)(struct LockTestRelaxedDupObject * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__lockTestRelaxedDupObjUnmapFrom__)(struct LockTestRelaxedDupObject * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
-    NvU32 (*__lockTestRelaxedDupObjGetRefCount__)(struct LockTestRelaxedDupObject * /*this*/);  // virtual inherited (res) base (rmres)
-    void (*__lockTestRelaxedDupObjAddAdditionalDependants__)(struct RsClient *, struct LockTestRelaxedDupObject * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__LockTestRelaxedDupObject {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__RmResource metadata__RmResource;
-    const struct NVOC_VTABLE__LockTestRelaxedDupObject vtable;
 };
 
 #ifndef __nvoc_class_id_LockTestRelaxedDupObject
@@ -152,11 +125,11 @@ void lockTestRelaxedDupObjDestruct_IMPL(struct LockTestRelaxedDupObject *pResour
 
 
 // Wrapper macros for halified functions
-#define lockTestRelaxedDupObjCanCopy_FNPTR(pResource) pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjCanCopy__
+#define lockTestRelaxedDupObjCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define lockTestRelaxedDupObjCanCopy(pResource) lockTestRelaxedDupObjCanCopy_DISPATCH(pResource)
-#define lockTestRelaxedDupObjAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define lockTestRelaxedDupObjAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define lockTestRelaxedDupObjAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) lockTestRelaxedDupObjAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define lockTestRelaxedDupObjShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
+#define lockTestRelaxedDupObjShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define lockTestRelaxedDupObjShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) lockTestRelaxedDupObjShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define lockTestRelaxedDupObjGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define lockTestRelaxedDupObjGetMemInterMapParams(pRmResource, pParams) lockTestRelaxedDupObjGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -164,13 +137,13 @@ void lockTestRelaxedDupObjDestruct_IMPL(struct LockTestRelaxedDupObject *pResour
 #define lockTestRelaxedDupObjCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) lockTestRelaxedDupObjCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define lockTestRelaxedDupObjGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define lockTestRelaxedDupObjGetMemoryMappingDescriptor(pRmResource, ppMemDesc) lockTestRelaxedDupObjGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define lockTestRelaxedDupObjControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define lockTestRelaxedDupObjControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define lockTestRelaxedDupObjControlSerialization_Prologue(pResource, pCallContext, pParams) lockTestRelaxedDupObjControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define lockTestRelaxedDupObjControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define lockTestRelaxedDupObjControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define lockTestRelaxedDupObjControlSerialization_Epilogue(pResource, pCallContext, pParams) lockTestRelaxedDupObjControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define lockTestRelaxedDupObjControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define lockTestRelaxedDupObjControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define lockTestRelaxedDupObjControl_Prologue(pResource, pCallContext, pParams) lockTestRelaxedDupObjControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define lockTestRelaxedDupObjControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define lockTestRelaxedDupObjControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define lockTestRelaxedDupObjControl_Epilogue(pResource, pCallContext, pParams) lockTestRelaxedDupObjControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define lockTestRelaxedDupObjIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define lockTestRelaxedDupObjIsDuplicate(pResource, hMemory, pDuplicate) lockTestRelaxedDupObjIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
@@ -197,87 +170,87 @@ void lockTestRelaxedDupObjDestruct_IMPL(struct LockTestRelaxedDupObject *pResour
 
 // Dispatch functions
 static inline NvBool lockTestRelaxedDupObjCanCopy_DISPATCH(struct LockTestRelaxedDupObject *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjCanCopy__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NvBool lockTestRelaxedDupObjAccessCallback_DISPATCH(struct LockTestRelaxedDupObject *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool lockTestRelaxedDupObjShareCallback_DISPATCH(struct LockTestRelaxedDupObject *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjGetMemInterMapParams_DISPATCH(struct LockTestRelaxedDupObject *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjCheckMemInterUnmap_DISPATCH(struct LockTestRelaxedDupObject *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjGetMemoryMappingDescriptor_DISPATCH(struct LockTestRelaxedDupObject *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjControlSerialization_Prologue_DISPATCH(struct LockTestRelaxedDupObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void lockTestRelaxedDupObjControlSerialization_Epilogue_DISPATCH(struct LockTestRelaxedDupObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjControl_Prologue_DISPATCH(struct LockTestRelaxedDupObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void lockTestRelaxedDupObjControl_Epilogue_DISPATCH(struct LockTestRelaxedDupObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjIsDuplicate_DISPATCH(struct LockTestRelaxedDupObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void lockTestRelaxedDupObjPreDestruct_DISPATCH(struct LockTestRelaxedDupObject *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjPreDestruct__(pResource);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjControl_DISPATCH(struct LockTestRelaxedDupObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjControlFilter_DISPATCH(struct LockTestRelaxedDupObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjMap_DISPATCH(struct LockTestRelaxedDupObject *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjUnmap_DISPATCH(struct LockTestRelaxedDupObject *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool lockTestRelaxedDupObjIsPartialUnmapSupported_DISPATCH(struct LockTestRelaxedDupObject *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjMapTo_DISPATCH(struct LockTestRelaxedDupObject *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS lockTestRelaxedDupObjUnmapFrom_DISPATCH(struct LockTestRelaxedDupObject *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 lockTestRelaxedDupObjGetRefCount_DISPATCH(struct LockTestRelaxedDupObject *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjGetRefCount__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void lockTestRelaxedDupObjAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct LockTestRelaxedDupObject *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__lockTestRelaxedDupObjAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

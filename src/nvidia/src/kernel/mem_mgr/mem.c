@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,13 +29,12 @@
 #include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
-#include "gpu/disp/disp_objs.h"
 #include "gpu/mem_mgr/mem_desc.h"
+#include "gpu/mig_mgr/kernel_mig_manager.h"
 #include "core/locks.h"
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "vgpu/rpc.h"
-#include "platform/sli/sli.h"
 #include "deprecated/rmapi_deprecated.h"
 #include "vgpu/vgpu_util.h"
 
@@ -84,9 +83,6 @@ memConstruct_IMPL
         pMemory->pGpu = CliGetGpuFromContext(pResourceRef, &pMemory->bBcResource);
 
         NV_ASSERT_OR_RETURN(pMemory->pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
-
-        // Set thread BC state
-        gpuSetThreadBcState(pMemory->pGpu, pMemory->bBcResource);
     }
 
     if (RS_IS_COPY_CTOR(pParams))
@@ -117,15 +113,13 @@ memGetMapAddrSpace_IMPL
 {
     NV_ADDRESS_SPACE   addrSpace;
     OBJGPU            *pGpu = pMemory->pGpu;
-    NvBool             bBcResource = pMemory->bBcResource;
-    MEMORY_DESCRIPTOR *pMemDesc = NULL;
+    MEMORY_DESCRIPTOR *pMemDesc = pMemory->pMemDesc;
 
     if (pGpu == NULL)
-        return NV_ERR_INVALID_OBJECT;
-
-    gpuSetThreadBcState(pGpu, bBcResource);
-
-    pMemDesc = memdescGetMemDescFromGpu(pMemory->pMemDesc, pGpu);
+    {
+        *pAddrSpace = memdescGetAddressSpace(pMemDesc);
+        return NV_OK;
+    }
 
     NV_ASSERT_OK_OR_RETURN(rmapiGetEffectiveAddrSpace(pGpu, pMemDesc, mapFlags, &addrSpace));
 
@@ -225,25 +219,11 @@ memCreateMemDesc_IMPL
 
     // Create and fill in a memory descriptor
     status = memdescCreate(&pMemDesc, pGpu, length, 0, NV_TRUE, addrSpace,
-        CpuCacheAttrib,
-        MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE_FB_BC_ONLY(pGpu, addrSpace));
+        CpuCacheAttrib, MEMDESC_FLAGS_NONE);
     if (status == NV_OK)
     {
-        if (memdescHasSubDeviceMemDescs(pMemDesc))
-        {
-            MEMORY_DESCRIPTOR *pMemDescNext = pMemDesc->_pNext;
-            while (pMemDescNext)
-            {
-                memdescDescribe(pMemDescNext, addrSpace, FBOffset, length);
-                memdescSetGpuCacheAttrib(pMemDescNext, gpuCacheAttrib);
-                pMemDescNext = pMemDescNext->_pNext;
-            }
-        }
-        else
-        {
-            memdescDescribe(pMemDesc, addrSpace, FBOffset, length);
-            memdescSetGpuCacheAttrib(pMemDesc, gpuCacheAttrib);
-        }
+        memdescDescribe(pMemDesc, addrSpace, FBOffset, length);
+        memdescSetGpuCacheAttrib(pMemDesc, gpuCacheAttrib);
 
         *ppMemDesc = pMemDesc;
     }
@@ -365,6 +345,10 @@ memConstructCommon_IMPL
     pMemory->tag             = tag;
     pMemory->isMemDescOwner  = NV_TRUE;
     pMemory->bRpcAlloc       = NV_FALSE;
+    pMemory->gpuAcctSessionId = 0U;
+
+    // Initialize the circular list item for tracking dup/sharing of pMemDesc
+    pMemory->dupListItem.pNext = pMemory->dupListItem.pPrev = pMemory;
 
     // We are finished if this instance is device-less
     if (pMemory->pDevice == NULL)
@@ -372,10 +356,9 @@ memConstructCommon_IMPL
         goto done;
     }
 
-    if (pMemDesc->pGpu == NULL)
-    {
-        return NV_ERR_INVALID_STATE;
-    }
+    NV_ASSERT_OR_RETURN(pMemDesc->pGpu != NULL, NV_ERR_INVALID_STATE);
+
+    pGpu = pMemDesc->pGpu;
 
     // Memory has hw resources associated with it that need to be tracked.
     if ((pHwResource != NULL) &&
@@ -406,46 +389,31 @@ memConstructCommon_IMPL
     // Check whether encryption should be enabled
     if (flags & NVOS32_ALLOC_FLAGS_TURBO_CIPHER_ENCRYPTED)
     {
-         pGpu = pMemDesc->pGpu;
-         SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-         memdescSetFlag(memdescGetMemDescFromGpu(pMemDesc, pGpu), MEMDESC_FLAGS_ENCRYPTED, NV_TRUE);
-         SLI_LOOP_END
+        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_ENCRYPTED, NV_TRUE);
     }
 
     if (FLD_TEST_DRF(OS32, _ATTR2, _PROTECTION_USER, _READ_ONLY, attr2))
     {
-         pGpu = pMemDesc->pGpu;
-         SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-         memdescSetFlag(memdescGetMemDescFromGpu(pMemDesc, pGpu), MEMDESC_FLAGS_USER_READ_ONLY, NV_TRUE);
-         SLI_LOOP_END
+        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_USER_READ_ONLY, NV_TRUE);
     }
 
     if (FLD_TEST_DRF(OS32, _ATTR2, _PROTECTION_DEVICE, _READ_ONLY, attr2))
     {
-         pGpu = pMemDesc->pGpu;
-         SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-         memdescSetFlag(memdescGetMemDescFromGpu(pMemDesc, pGpu), MEMDESC_FLAGS_DEVICE_READ_ONLY, NV_TRUE);
-         SLI_LOOP_END
+        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_DEVICE_READ_ONLY, NV_TRUE);
     }
 
     // setup GpuP2PCacheAttrib
     switch (DRF_VAL(OS32, _ATTR2, _P2P_GPU_CACHEABLE, attr2))
     {
         case NVOS32_ATTR2_P2P_GPU_CACHEABLE_YES:
-            pGpu = pMemDesc->pGpu;
-            SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-            memdescSetGpuP2PCacheAttrib(memdescGetMemDescFromGpu(pMemDesc, pGpu), NV_MEMORY_CACHED);
-            SLI_LOOP_END
+            memdescSetGpuP2PCacheAttrib(pMemDesc, NV_MEMORY_CACHED);
             break;
         default:
             NV_ASSERT(0);
             /*FALLSTHRU*/
         case NVOS32_ATTR2_P2P_GPU_CACHEABLE_NO:
         case NVOS32_ATTR2_P2P_GPU_CACHEABLE_DEFAULT:
-            pGpu = pMemDesc->pGpu;
-            SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-            memdescSetGpuP2PCacheAttrib(memdescGetMemDescFromGpu(pMemDesc, pGpu), NV_MEMORY_UNCACHED);
-            SLI_LOOP_END
+            memdescSetGpuP2PCacheAttrib(pMemDesc, NV_MEMORY_UNCACHED);
             break;
     }
 
@@ -454,46 +422,20 @@ memConstructCommon_IMPL
     // chips and is a nop for previous generations. At this point the hal call
     // to set the page size should never fail as the memory was just allocated.
     //
-    if (pMemDesc->pGpu)
-    {
-        pGpu = pMemDesc->pGpu;
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-
-        RM_ATTR_PAGE_SIZE pageSizeAttr = dmaNvos32ToPageSizeAttr(attr, attr2);
-        status = memmgrSetMemDescPageSize_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu), memdescGetMemDescFromGpu(pMemDesc, pGpu),
-                                              AT_GPU, pageSizeAttr);
-        if (status != NV_OK)
-        {
-            SLI_LOOP_BREAK;
-        }
-        SLI_LOOP_END
-
-        if (status != NV_OK)
-        {
-            goto done;
-        }
-    }
-
-    pMemory->Node.keyStart = RES_GET_HANDLE(pMemory);
-    pMemory->Node.keyEnd = RES_GET_HANDLE(pMemory);
-    pMemory->Node.Data = pMemory;
-
-    status = btreeInsert(&pMemory->Node, &pMemory->pDevice->DevMemoryTable);
+    status = memmgrSetMemDescPageSize_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu), pMemDesc,
+                                          AT_GPU, dmaNvos32ToPageSizeAttr(attr, attr2));
     if (status != NV_OK)
+    {
         goto done;
+    }
 
     // Make GSP-RM aware of the memory descriptor so it can be used there
     if (FLD_TEST_DRF(OS32, _ATTR2, _REGISTER_MEMDESC_TO_PHYS_RM, _TRUE, attr2))
     {
         status = memRegisterWithGsp(pGpu, RES_GET_CLIENT(pMemory), hParent, hMemory);
         if (status != NV_OK)
-        {
             goto done;
-        }
     }
-
-    // Initialize the circular list item for tracking dup/sharing of pMemDesc
-    pMemory->dupListItem.pNext = pMemory->dupListItem.pPrev = pMemory;
 
 done:
     if (status != NV_OK)
@@ -638,14 +580,11 @@ _memDestructCommonWithDevice
     RsResourceRef         *pDeviceRef = RES_GET_REF(pDevice);
     NvHandle               hDevice = RES_GET_HANDLE(pDevice);
     Subdevice             *pSubDeviceInfo;
-    DispCommon            *pDispCommon;
     RsClient              *pRsClient = RES_GET_CLIENT(pMemory);
     NV_STATUS              status = NV_OK;
     RS_ITERATOR            subDevIt;
     FB_ALLOC_INFO         *pFbAllocInfo       = NULL;
     FB_ALLOC_PAGE_FORMAT  *pFbAllocPageFormat = NULL;
-
-    gpuSetThreadBcState(pGpu, pMemory->bBcResource);
 
     subDevIt = clientRefIter(pRsClient, pDeviceRef, classId(Subdevice), RS_ITERATE_CHILDREN, NV_TRUE);
     while (clientRefIterNext(pRsClient, &subDevIt))
@@ -658,8 +597,6 @@ _memDestructCommonWithDevice
              pSubDeviceInfo->pNotifierMemory = NULL;
          }
     }
-
-    dispcmnGetByDevice(pRsClient, hDevice, &pDispCommon);
 
     //
     // Release any FB HW resources
@@ -730,28 +667,9 @@ _memDestructCommonWithDevice
         pMemory->pHwResource = NULL;
     }
 
-    NV_ASSERT_OK_OR_GOTO(status, btreeUnlink(&pMemory->Node, &pDevice->DevMemoryTable), done);
-
-    pMemory->pMemDesc->DupCount--;
-
-    // Choose the new owner
-    if (pMemory->isMemDescOwner)
-    {
-        (pMemory->dupListItem.pNext)->isMemDescOwner = NV_TRUE;
-    }
-    // Remove from circular list tracking dup/sharing of pMemDesc
-    pMemory->dupListItem.pPrev->dupListItem.pNext = pMemory->dupListItem.pNext;
-    pMemory->dupListItem.pNext->dupListItem.pPrev = pMemory->dupListItem.pPrev;
-    pMemory->dupListItem.pNext = pMemory->dupListItem.pPrev = NULL;
-
-    pMemory->bConstructed = NV_FALSE;
-
 done:
     portMemFree(pFbAllocPageFormat);
     portMemFree(pFbAllocInfo);
-
-    // The unmap call(s) above may have changed the broadcast state so restore it here
-    gpuSetThreadBcState(pGpu, pMemory->bBcResource);
 }
 
 void
@@ -771,14 +689,22 @@ memDestructCommon_IMPL
 
     _memUnregisterFromGsp(pMemory, pClient, hParent, hMemory);
 
+    pMemory->pMemDesc->DupCount--;
+
+    // Choose the new owner
+    if (pMemory->isMemDescOwner)
+    {
+        (pMemory->dupListItem.pNext)->isMemDescOwner = NV_TRUE;
+    }
+    // Remove from circular list tracking dup/sharing of pMemDesc
+    pMemory->dupListItem.pPrev->dupListItem.pNext = pMemory->dupListItem.pNext;
+    pMemory->dupListItem.pNext->dupListItem.pPrev = pMemory->dupListItem.pPrev;
+    pMemory->dupListItem.pNext = pMemory->dupListItem.pPrev = NULL;
+
     // Do device specific teardown if we have a device
     if (pMemory->pDevice != NULL)
     {
         _memDestructCommonWithDevice(pMemory);
-    }
-    else
-    {
-        pMemory->bConstructed = NV_FALSE;
     }
 
     if (pMemory->KernelVAddr != NvP64_NULL)
@@ -788,6 +714,8 @@ memDestructCommon_IMPL
         pMemory->KernelVAddr = NvP64_NULL;
         pMemory->KernelMapPriv = NvP64_NULL;
     }
+
+    pMemory->bConstructed = NV_FALSE;
 }
 
 NV_STATUS
@@ -954,31 +882,26 @@ memCopyConstruct_IMPL
 
     if (!!pSrcSubDevice != !!pDstSubDevice)
     {
-        NV_PRINTF(LEVEL_INFO, "Parent type mismatch between Src and Dst objects"
-                               "Both should be either device or subDevice\n");
-        return NV_ERR_INVALID_OBJECT_PARENT;
-    }
+        KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pSrcGpu);
 
-    // RS-TODO: This should use pMemorySrc->bBcResource when adding full support for subdevice duping
-    gpuSetThreadBcState(pSrcGpu, NV_TRUE);
-
-    if (!rmGpuLockIsOwner() &&
-        !(rmDeviceGpuLockIsOwner(pSrcGpu->gpuInstance) &&
-          rmDeviceGpuLockIsOwner(pDstGpu->gpuInstance)))
-    {
-        // LOCK: acquire GPUs lock
-        if ((status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_MEM)) != NV_OK)
+        if ((pKernelMIGManager == NULL) ||
+            !kmigmgrIsMIGNvlinkP2PSupportOverridden(pSrcGpu, pKernelMIGManager))
         {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Failed to acquire GPU locks, error 0x%x\n", status);
-            return status;
+            NV_PRINTF(LEVEL_INFO, "Parent type mismatch between Src and Dst objects"
+                                  "Both should be either device or subDevice\n");
+            return NV_ERR_INVALID_OBJECT_PARENT;
         }
-
-        bReleaseGpuLock = NV_TRUE;
     }
 
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                         memCheckCopyPermissions(pMemorySrc, pDstGpu, pDstDevice), done);
+
+NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR,
+                      memdescGetAddressSpace(pMemorySrc->pMemDesc) != ADDR_FBMEM ||
+                      gpumgrGetGpuMask(pDstGpu) == gpumgrGetGpuMask(pSrcGpu) ||
+                      pParams->pSecInfo->privLevel >= RS_PRIV_LEVEL_KERNEL,
+                      NV_ERR_INVALID_ARGUMENT,
+                      done);
 
     // Initialize Memory
     pMemoryDst->categoryClassId = pMemorySrc->categoryClassId;
@@ -997,30 +920,7 @@ memCopyConstruct_IMPL
     pMemoryDst->pHwResource     = pMemorySrc->pHwResource;
     pMemoryDst->isMemDescOwner  = NV_FALSE;
     pMemoryDst->bRpcAlloc       = pMemorySrc->bRpcAlloc;
-
-    // Link in the new device memory mapping
-    pMemoryDst->Node.keyStart   = RES_GET_HANDLE(pMemoryDst);
-    pMemoryDst->Node.keyEnd     = RES_GET_HANDLE(pMemoryDst);
-    pMemoryDst->Node.Data       = pMemoryDst;
-
-    status = btreeInsert(&pMemoryDst->Node, &pDstDevice->DevMemoryTable);
-    if (status != NV_OK)
-        goto done;
-
-    {
-        OBJGPU *pGpu = pDstGpu; // Need pGpu for SLI loop
-
-        gpuSetThreadBcState(pDstGpu, NV_TRUE);
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-        if (memdescGetPageSize(memdescGetMemDescFromGpu(pMemoryDst->pMemDesc, pGpu), AT_GPU) == 0)
-        {
-            status = memmgrSetMemDescPageSize_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu),
-                                                  memdescGetMemDescFromGpu(pMemoryDst->pMemDesc, pGpu),
-                                                  AT_GPU, RM_ATTR_PAGE_SIZE_DEFAULT);
-            NV_ASSERT(status == NV_OK);
-        }
-        SLI_LOOP_END
-    }
+    pMemoryDst->gpuAcctSessionId = 0U;
 
     //
     // ref-count increments for shared structs after all places where we
@@ -1031,8 +931,6 @@ memCopyConstruct_IMPL
 
     memdescAddRef(pMemoryDst->pMemDesc);
     pMemoryDst->pMemDesc->DupCount++;
-    if (pMemoryDst->pMemDesc->Allocated)
-        pMemoryDst->pMemDesc->Allocated++;
 
     // Insert pMemoryDst after pMemorySrc in circular list to track dup/sharing of pMemDesc
     pMemoryDst->dupListItem.pNext = pMemorySrc->dupListItem.pNext;
@@ -1040,25 +938,39 @@ memCopyConstruct_IMPL
     pMemorySrc->dupListItem.pNext = pMemoryDst;
     pMemoryDst->dupListItem.pNext->dupListItem.pPrev = pMemoryDst;
 
-done:
-
     // If the original allocation was RPCed, also send the Dup.
     if (pMemory->bRpcAlloc && (IS_VIRTUAL(pSrcGpu) || IS_FW_CLIENT(pSrcGpu)))
     {
+
+        if (!rmGpuLockIsOwner() &&
+            !(rmDeviceGpuLockIsOwner(pSrcGpu->gpuInstance) &&
+              rmDeviceGpuLockIsOwner(pDstGpu->gpuInstance)))
+        {
+            // LOCK: acquire GPUs lock
+            if ((status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_MEM)) != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR,
+                          "Failed to acquire GPU locks, error 0x%x\n", status);
+                return status;
+            }
+
+            bReleaseGpuLock = NV_TRUE;
+        }
+
         NV_RM_RPC_DUP_OBJECT(pSrcGpu, pDstClient->hClient, pDstParentRef->hResource, pDstRef->hResource,
                              pSrcClient->hClient, pSrcRef->hResource, 0,
                              NV_FALSE, // do not automatically issue RPC_FREE on object free
                              NULL,
                              status);
         NV_ASSERT(status == NV_OK);
+
+        if (bReleaseGpuLock)
+        {
+            rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+        }
     }
 
-    // UNLOCK: release GPUs lock
-    if (bReleaseGpuLock)
-    {
-        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
-    }
-
+done:
     pMemory->bConstructed = (status == NV_OK);
     return status;
 }
@@ -1076,7 +988,6 @@ memGetMemInterMapParams_IMPL
     MEMORY_DESCRIPTOR  *pSrcMemDesc = pMemory->pMemDesc;
     Device             *pDevice;
     Subdevice          *pSubdevice;
-    NvBool              bcState = gpumgrGetBcEnabledStatus(pGpu);
 
     // Don't expect to use default, but safe thing to do is set src=dest
     NvHandle            hMemoryDevice = 0;
@@ -1091,7 +1002,6 @@ memGetMemInterMapParams_IMPL
         {
             pSrcGpu = GPU_RES_GET_GPU(pDevice);
             hMemoryDevice = RES_GET_HANDLE(pDevice);
-            GPU_RES_SET_THREAD_BC_STATE(pDevice);
         }
         else
         {
@@ -1100,21 +1010,12 @@ memGetMemInterMapParams_IMPL
             {
                 pSrcGpu = GPU_RES_GET_GPU(pSubdevice);
                 hMemoryDevice = RES_GET_HANDLE(pSubdevice->pDevice);
-                GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
             }
         }
     }
 
     pParams->pSrcGpu = pSrcGpu;
     pParams->hMemoryDevice = hMemoryDevice;
-
-    //
-    // Restore pGpu's bcState in case it was overwritten above (i.e.,
-    // the case that hMemoryDevice and hBroadcastDevice are the same
-    // device, but a unicast mapping was desired).
-    //
-    gpumgrSetBcEnabledStatus(pGpu, bcState);
-
     pParams->pSrcMemDesc = pSrcMemDesc;
 
     return NV_OK;
@@ -1128,14 +1029,7 @@ memGetMemoryMappingDescriptor_IMPL
 )
 {
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO, memIsReady(pMemory, NV_FALSE));
-    if (pMemory->pGpu != NULL)
-    {
-        *ppMemDesc = memdescGetMemDescFromGpu(pMemory->pMemDesc, pMemory->pGpu);
-    }
-    else
-    {
-        *ppMemDesc = pMemory->pMemDesc;
-    }
+    *ppMemDesc = pMemory->pMemDesc;
     return NV_OK;
 }
 
@@ -1274,4 +1168,12 @@ memSetGpuCacheSnoop_IMPL
     }
 
     return status;
+}
+
+NvBool memNeedRpcAlloc_IMPL(Memory *pMemory)
+{
+    // All GPUs have to be in the same vgpu mode
+    OBJGPU *pGpu = pMemory->pGpu != NULL ? pMemory->pGpu : gpumgrGetSomeGpu();
+
+    return IS_VIRTUAL_WITHOUT_SRIOV(pGpu) || IS_VIRTUAL_WITH_HEAVY_SRIOV(pGpu);
 }

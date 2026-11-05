@@ -42,6 +42,8 @@
 #include <core/system.h>
 #include <os/os.h>
 #include "gpu/gpu.h"
+#include "events/gpu/bus/bus_events.h"
+#include "os/workitem.h"
 #include <gpu/timer/objtmr.h>
 #include "gpu/bus/kern_bus.h"
 #include "nverror.h"
@@ -57,9 +59,23 @@
 #include <kernel/gpu/fifo/kernel_fifo.h>
 #include <nv-firmware-chip-family-select.h>
 #include <kernel/gpu/gsp/kernel_gsp.h>
+#include "gpu/tdisp/tdisp_mgr.h"
+#include <kernel/gpu/fsp/kern_fsp.h>
 #include "liblogdecode.h"
 
 #include <mem_mgr/virt_mem_mgr.h>
+
+static NvBool
+_rmIsTdispDsmOnlyBoot
+(
+    OBJGPU *pGpu
+)
+{
+    TdispMgr *pTdispMgr = GPU_GET_TDISP_MGR(pGpu);
+
+    return (pTdispMgr != NULL) && tdispmgrIsTsmFspOnlyBoot_HAL(pGpu, pTdispMgr);
+}
+
 #include <virtualization/kernel_vgpu_mgr.h>
 
 #include <rmosxfac.h>
@@ -235,7 +251,7 @@ NV_STATUS osRmInitRm(void)
         // NUMA-onlining of the device memory.
         //
         osWriteRegistryDword(NULL,
-                NV_REG_ENABLE_USER_NUMA_MANAGEMENT, 0);
+                NV_REG_ENABLE_NUMA, 0);
     }
 
     if ((osReadRegistryDword(NULL,
@@ -337,6 +353,22 @@ void osDpcDetachGpu(
     return; // Nothing to do for unix
 }
 
+static void
+_emitGpuFallenOffBusEventWorker
+(
+    NvU32  gpuInstance,
+    void  *pArg
+)
+{
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+
+    PORT_UNREFERENCED_VARIABLE(pArg);
+
+    NV_ASSERT_OR_RETURN_VOID(pGpu != NULL);
+
+    eventEmit(BusGpuFallenOffBus, pGpu);
+}
+
 NV_STATUS
 osHandleGpuLost
 (
@@ -371,6 +403,7 @@ osHandleGpuLost
         // This doesn't support PEX Reset and Recovery yet.
         // This will help to prevent accessing registers of a GPU
         // which has fallen off the bus.
+        // Keep the legacy XID synchronous because this path can run at raised IRQL.
         //
         if (bEmitXid)
         {
@@ -391,6 +424,26 @@ osHandleGpuLost
         }
 
         gpuSetDisconnectedProperties(pGpu);
+
+        // Defer event construction and publication because this path can run at raised IRQL.
+        if (bEmitXid)
+        {
+            NV_STATUS status = osQueueWorkItem(
+                pGpu,
+                _emitGpuFallenOffBusEventWorker,
+                NULL,
+                (OsQueueWorkItemFlags){
+                    .bFallbackToDpc = NV_TRUE,
+                    .bLockGpuGroupSubdevice = NV_TRUE});
+
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                          "Fallen-off-bus event work item queue failed on GPU %u: 0x%x\n",
+                          pGpu->gpuInstance,
+                          status);
+            }
+        }
 
         if (IS_GSP_CLIENT(pGpu))
         {
@@ -957,6 +1010,12 @@ osInitNvMapping(
             nv->preserve_vidmem_allocations = os_supports_kernel_suspend_notifiers();
         }
 
+        if (IS_VIRTUAL(pGpu))
+        {
+            /* FBSR doesn't currently work on VGPU. See bug 6705865. */
+            nv->preserve_vidmem_allocations = NV_FALSE;
+        }
+
         if (nv->preserve_vidmem_allocations && nv_dev_needs_vidmem_preservation(nv))
         {
             KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
@@ -1181,7 +1240,7 @@ RmInitDeviceDma(
         OBJVMM *pVmm = SYS_GET_VMM(pSys);
         OBJVASPACE *pIOVAS;
         NV_STATUS status = vmmCreateVaspace(pVmm, IO_VASPACE_A,
-                                            nv->iovaspace_id, 0, 0ULL, ~0ULL,
+                                            nv->iovaspace_id, NULL, 0ULL, ~0ULL,
                                             0ULL, 0ULL,
                                             NULL, VASPACE_FLAGS_ENABLE_VMM,
                                             &pIOVAS);
@@ -1477,7 +1536,26 @@ RmSetupRegisters(
                 nv->fb->cpu_address, nv->fb->size);
     }
 
-    nv_os_map_kernel_space(nv, nv->regs);
+#if defined(NV_LINUX)
+    if (os_tdisp_enabled &&
+        os_is_tdisp_tdi_run_state(nv))
+    {
+        //
+        // BAR0 has protected regions and unprotected holes. Regular whole-BAR
+        // ioremap cannot preserve protected access attributes for the covered
+        // regions, so map BAR0 as protected once the TDI is in RUN. The
+        // unprotected holes are VMM trap/emulated ranges and do not cause GPT
+        // faults when reached through this protected mapping.
+        //
+        nv->regs->map = os_map_device_paddr_range_protected(nv->regs->cpu_address,
+                                                             nv->regs->size);
+        nv->regs->map_u = (nv_phwreg_t)nv->regs->map;
+    }
+    else
+#endif
+    {
+        nv_os_map_kernel_space(nv, nv->regs);
+    }
 
     if (nv->regs->map == NULL)
     {
@@ -1924,15 +2002,11 @@ static NV_STATUS RmFetchGspRmImages
 
     NvBool bFirmwareLoadSuccessful = *gspFwHandle != NULL;
 
-    // GB10Y does not have ucodes_xxx.bin firmware image
-    if (chipFamily != NV_FIRMWARE_CHIP_FAMILY_GB10Y)
-    {
-        *gspUcodesHandle = nv_get_firmware(nv, NV_FIRMWARE_TYPE_UCODES,
-                                           chipFamily,
-                                           &pGspFw->pUcodesBin,
-                                           &pGspFw->ucodesBinSize);
-        bFirmwareLoadSuccessful &= *gspUcodesHandle != NULL;
-    }
+    *gspUcodesHandle = nv_get_firmware(nv, NV_FIRMWARE_TYPE_UCODES,
+                                       chipFamily,
+                                       &pGspFw->pUcodesBin,
+                                       &pGspFw->ucodesBinSize);
+    bFirmwareLoadSuccessful &= *gspUcodesHandle != NULL;
 
     if (!bFirmwareLoadSuccessful && !nv->allow_fallback_to_monolithic_rm)
     {
@@ -2001,6 +2075,7 @@ NvBool RmInitAdapter(
     NV_DEV_PRINTF(NV_DBG_SETUP, nv, "RmInitAdapter\n");
 
     nv->flags &= ~NV_FLAG_PASSTHRU;
+    nv->flags &= ~NV_FLAG_VGPU_GUEST;
     nv->flags &= ~NV_FLAG_PCI_P2P_UNSUPPORTED_CHIPSET;
 
     RmSetupRegisters(nv, &status);
@@ -2164,6 +2239,9 @@ NvBool RmInitAdapter(
     if (IS_PASSTHRU(pGpu))
         nv->flags |= NV_FLAG_PASSTHRU;
 
+    if (IS_VIRTUAL(pGpu))
+        nv->flags |= NV_FLAG_VGPU_GUEST;
+
     RmInitNvHal(nv, devicereference, &status);
     if (!RM_INIT_SUCCESS(status.initStatus))
     {
@@ -2187,6 +2265,18 @@ NvBool RmInitAdapter(
     if (!IS_VIRTUAL(pGpu) && !NV_IS_SOC_DISPLAY_DEVICE(nv))
     {
         initNbsiTable(pGpu);
+    }
+
+    //
+    // RmInit rework for TDISP upstream: Skip RmInitNvDevice (engine
+    // PreInit/StateInit/StateLoad all send RPCs to GSP-RM which is not running).
+    // Skip engine-dependent steps (interrupts, watchdog, FIFO, osVerifySystemEnvironment).
+    // Run only CPU-side housekeeping (RM API, GPU registration).
+    //
+    if (_rmIsTdispDsmOnlyBoot(pGpu))
+    {
+        NV_PRINTF(LEVEL_NOTICE, "TDISP DSM-only init: skipping RmInitNvDevice and engine-dependent init\n");
+        goto rminit_rework_dsm_boot_done;
     }
 
     // finally, initialize the device
@@ -2252,25 +2342,24 @@ NvBool RmInitAdapter(
         goto shutdown;
     }
 
-    KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
     // initialize the watchdog (disabled by default)
-    status.rmStatus = GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL ? krcWatchdogInit_HAL(pGpu, pKernelRc, GPU_GET_KERNEL_WATCHDOG(pGpu)) :
+    status.rmStatus = GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL ? kwdtWatchdogInit_HAL(pGpu, GPU_GET_KERNEL_WATCHDOG(pGpu)) :
                                           NV_ERR_NOT_SUPPORTED;
     if (status.rmStatus == NV_OK)
     {
-        krcWatchdogDisable(pKernelRc, GPU_GET_KERNEL_WATCHDOG(pGpu));
+        kwdtWatchdogDisable(GPU_GET_KERNEL_WATCHDOG(pGpu));
         nvp->flags |= NV_INIT_FLAG_FIFO_WATCHDOG;
     }
     else if (status.rmStatus == NV_ERR_NOT_SUPPORTED)
     {
         NV_PRINTF(LEVEL_INFO,
-            "krcWatchdogInit returned _NOT_SUPPORTED. For Kepler GPUs in PGOB mode, this is normal\n");
+            "kwdtWatchdogInit returned _NOT_SUPPORTED. For Kepler GPUs in PGOB mode, this is normal\n");
     }
     else
     {
         RM_SET_ERROR(status, RM_INIT_WATCHDOG_FAILED);
         NV_PRINTF(LEVEL_ERROR,
-                  "krcWatchdogInit failed, bailing out of RmInitAdapter\n");
+                  "kwdtWatchdogInit failed, bailing out of RmInitAdapter\n");
         // UNLOCK: release GPUs lock
         rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
         goto shutdown;
@@ -2374,6 +2463,13 @@ NvBool RmInitAdapter(
 
     // call ShutdownAdapter to undo anything we've done above
     RmShutdownAdapter(nv);
+    goto failed;
+
+rminit_rework_dsm_boot_done:
+    NV_PRINTF(LEVEL_NOTICE,
+        "TDISP: GPU is in DSM only FW mode; GSP-RM is not running yet and workloads cannot be submitted until TDI lock/accept completes\n");
+    retVal = NV_TRUE;
+    goto done;
 
  failed:
     NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "RmInitAdapter failed! (0x%x:0x%x:%d)\n",
@@ -2448,7 +2544,7 @@ void RmShutdownAdapter(
                     NV_ASSERT(GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL);
                     if (GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL)
                     {
-                        krcWatchdogShutdown(pGpu, GPU_GET_KERNEL_RC(pGpu), GPU_GET_KERNEL_WATCHDOG(pGpu));
+                        kwdtWatchdogShutdown(pGpu, GPU_GET_KERNEL_WATCHDOG(pGpu));
                         nvp->flags &= ~NV_INIT_FLAG_FIFO_WATCHDOG;
                     }
                 }
@@ -2460,6 +2556,21 @@ void RmShutdownAdapter(
                 {
                     rmStatus = gpuStateUnload(pGpu, GPU_STATE_DEFAULT);
                     NV_ASSERT(rmStatus == NV_OK);
+                }
+                else
+                {
+                    //
+                    // TDISP DSM-only init skips RmInitNvDevice, so GPU state load
+                    // never runs and the normal gpuStateUnload path is bypassed.
+                    // FSP early init still allocates FMC boot memdescs before that
+                    // point, so unload FSP state explicitly on the same DSM-only gate.
+                    //
+                    KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+                    if (_rmIsTdispDsmOnlyBoot(pGpu) &&
+                        (pKernelFsp != NULL))
+                    {
+                        (void)kfspStateUnload(pGpu, pKernelFsp, GPU_STATE_DEFAULT);
+                    }
                 }
 
                 if (nvp->flags & NV_INIT_FLAG_GPU_STATE)
@@ -2614,7 +2725,7 @@ void RmDisableAdapter(
                 NV_ASSERT(GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL);
                 if (GPU_GET_KERNEL_WATCHDOG(pGpu) != NULL)
                 {
-                    krcWatchdogShutdown(pGpu, GPU_GET_KERNEL_RC(pGpu), GPU_GET_KERNEL_WATCHDOG(pGpu));
+                    kwdtWatchdogShutdown(pGpu, GPU_GET_KERNEL_WATCHDOG(pGpu));
                     nvp->flags &= ~NV_INIT_FLAG_FIFO_WATCHDOG;
                 }
             }

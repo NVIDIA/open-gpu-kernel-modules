@@ -253,13 +253,6 @@ static NVSurfaceEvoPtr AllocLutSurfaceEvoInSysmem(NVDevEvoPtr pDevEvo)
         goto fail;
     }
 
-    /*
-     * AllocLutSurfaceEvoInSysmem() will only be called if
-     * pDevEvo->requiresAllAllocationsInSysmem is TRUE. NVKMS will only set this
-     * cap bit for SOC display devices, and these devices should only have one
-     * subdevice.
-     */
-    nvAssert(pDevEvo->numSubDevices == 1);
     pSurfEvo->cpuAddress[0] = pBase;
 
     return pSurfEvo;
@@ -414,12 +407,10 @@ void nvFreeLutSurfacesEvo(NVDevEvoPtr pDevEvo)
 }
 
 void nvUploadDataToLutSurfaceEvo(NVSurfaceEvoPtr pSurfEvo,
-                                 const NVEvoLutDataRec *pLUTBuffer,
-                                 NVDispEvoPtr pDispEvo)
+                                 const NVEvoLutDataRec *pLUTBuffer)
 {
     const NvU32* data = (const NvU32*)pLUTBuffer;
     size_t size = sizeof(*pLUTBuffer);
-    const int sd = pDispEvo->displayOwner;
     NvU32 *dst;
     const NvU32 *src;
     int dword;
@@ -429,18 +420,18 @@ void nvUploadDataToLutSurfaceEvo(NVSurfaceEvoPtr pSurfEvo,
         return;
     }
 
-    nvAssert(pSurfEvo->cpuAddress[sd]);
+    nvAssert(pSurfEvo->cpuAddress[0]);
 
     /* The size to copy should not be larger than the surface. */
     nvAssert(size <= pSurfEvo->planes[0].rmObjectSizeInBytes);
 
     /* The source, destination, and size should be 4-byte aligned. */
     nvAssert((((NvUPtr)data) & 0x3) == 0);
-    nvAssert((((NvUPtr)pSurfEvo->cpuAddress[sd]) & 0x3) == 0);
+    nvAssert((((NvUPtr)pSurfEvo->cpuAddress[0]) & 0x3) == 0);
     nvAssert((size % 4) == 0);
 
     src = data;
-    dst = (NvU32*)pSurfEvo->cpuAddress[sd];
+    dst = (NvU32*)pSurfEvo->cpuAddress[0];
 
     for (dword = 0; dword < (size/4); dword++) {
         *(dst++) = *(src++);

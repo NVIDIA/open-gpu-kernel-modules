@@ -52,8 +52,6 @@
  * guestFbLengthList           - list of guest FB memory length in bytes
  * pluginHeapMemoryPhysAddr    - plugin heap memory offset
  * pluginHeapMemoryLength      - plugin heap memory length in bytes
- * migRmHeapMemoryPhysAddr     - Mig rm heap memory region's physical offset.
- * migRmHeapMemoryLength       - Mig rm heap memory length in bytes
  * bDeviceProfilingEnabled     - If set to true, profiling is allowed
  */
 #define NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK (0x20804001) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_VGPU_MGR_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS_MESSAGE_ID" */
@@ -87,8 +85,6 @@ typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAM
     NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffSize, 8);
     NV_DECLARE_ALIGNED(NvU64 kernelLogBuffOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 kernelLogBuffSize, 8);
-    NV_DECLARE_ALIGNED(NvU64 migRmHeapMemoryPhysAddr, 8);
-    NV_DECLARE_ALIGNED(NvU64 migRmHeapMemoryLength, 8);
     NvBool bDeviceProfilingEnabled;
 } NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS;
 
@@ -170,6 +166,8 @@ typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_PGPU_ADD_VGPU_TYPE_PARAMS {
  *  License expiry time in seconds since UNIX epoch
  * licenseExpiryStatus [OUT]
  *  License expiry status
+ * licenseExpiryStr [OUT]
+ *  License expiry string
  * guestDriverVersion [OUT]
  *  This param specifies the driver version of the driver installed on the VM
  * guestDriverBranch [OUT]
@@ -188,6 +186,7 @@ typedef struct NV2080_GUEST_VM_INFO {
     NvU32               licenseState;
     NvU32               licenseExpiryTimestamp;
     NvU8                licenseExpiryStatus;
+    char                licenseExpiryStr[NVA081_VGPU_SIGNATURE_SIZE];
     NvU8                guestDriverVersion[NVA081_VGPU_STRING_BUFFER_SIZE];
     NvU8                guestDriverBranch[NVA081_VGPU_STRING_BUFFER_SIZE];
     GUEST_VM_INFO_STATE guestVmInfoState;

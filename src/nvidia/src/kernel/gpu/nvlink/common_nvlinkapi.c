@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -972,6 +972,8 @@ subdeviceCtrlCmdBusGetNvlinkStatus_IMPL
         FOR_EACH_IN_BITVECTOR_END();
 
         pParams->bNvleModeEnabled = pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED);
+        pParams->bNvleSelectiveEncryptionEnabled = pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_SELECTIVE_ENCRYPTION_ENABLED);
+        pParams->bNvleModeReady = pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_NVLE_READY);
 
         _getNvlinkStatus(pGpu,
                          &pTmpData->nvlinkLinkAndClockInfoParams,

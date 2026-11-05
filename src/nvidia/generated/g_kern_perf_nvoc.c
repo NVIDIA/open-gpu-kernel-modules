@@ -43,15 +43,6 @@ NV_STATUS __nvoc_down_thunk_KernelPerf_engstateStateUnload(struct OBJGPU *pGpu, 
 void __nvoc_down_thunk_KernelPerf_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf);    // this
 
 // Up-thunk(s) to bridge KernelPerf methods to ancestors (if any)
-void __nvoc_up_thunk_OBJENGSTATE_kperfInitMissing(struct OBJGPU *pGpu, struct KernelPerf *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePreInitLocked(struct OBJGPU *pGpu, struct KernelPerf *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelPerf *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStateInitUnlocked(struct OBJGPU *pGpu, struct KernelPerf *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePreLoad(struct OBJGPU *pGpu, struct KernelPerf *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePostLoad(struct OBJGPU *pGpu, struct KernelPerf *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePreUnload(struct OBJGPU *pGpu, struct KernelPerf *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePostUnload(struct OBJGPU *pGpu, struct KernelPerf *pEngstate, NvU32 arg3);    // this
-NvBool __nvoc_up_thunk_OBJENGSTATE_kperfIsPresent(struct OBJGPU *pGpu, struct KernelPerf *pEngstate);    // this
 
 // Class-specific details for KernelPerf
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelPerf = 
@@ -69,7 +60,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelPerf =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__KernelPerf __nvoc_metadata__KernelPerf = {
     .rtti.pClassDef = &__nvoc_class_def_KernelPerf,    // (kperf) this
     .rtti.dtor      = &__nvoc_dtor_KernelPerf,
@@ -81,33 +72,21 @@ static const struct NVOC_METADATA__KernelPerf __nvoc_metadata__KernelPerf = {
     .metadata__OBJENGSTATE.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__OBJENGSTATE.metadata__Object.rtti.offset    = NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
 
-    .vtable.__kperfConstructEngine__ = &kperfConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelPerf_engstateConstructEngine,    // virtual
-    .vtable.__kperfStateInitLocked__ = &kperfStateInitLocked_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &__nvoc_down_thunk_KernelPerf_engstateStateInitLocked,    // virtual
-    .vtable.__kperfStateLoad__ = &kperfStateLoad_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &__nvoc_down_thunk_KernelPerf_engstateStateLoad,    // virtual
-    .vtable.__kperfStateUnload__ = &kperfStateUnload_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &__nvoc_down_thunk_KernelPerf_engstateStateUnload,    // virtual
-    .vtable.__kperfStateDestroy__ = &kperfStateDestroy_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &__nvoc_down_thunk_KernelPerf_engstateStateDestroy,    // virtual
-    .vtable.__kperfInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kperfInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-    .vtable.__kperfStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kperfStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-    .vtable.__kperfStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kperfStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .vtable.__kperfStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kperfStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-    .vtable.__kperfStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kperfStatePreLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-    .vtable.__kperfStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kperfStatePostLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-    .vtable.__kperfStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kperfStatePreUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-    .vtable.__kperfStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kperfStatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__kperfIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kperfIsPresent,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
 };
 
@@ -126,75 +105,27 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelPerf = {
 
 // kperfConstructEngine: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelPerf_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf, ENGDESCRIPTOR engDesc) {
-    return kperfConstructEngine(pGpu, (struct KernelPerf *)(((unsigned char *) pKernelPerf) - NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)), engDesc);
+    return kperfConstructEngine_IMPL(pGpu, (struct KernelPerf *)(((unsigned char *) pKernelPerf) - NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)), engDesc);
 }
 
 // kperfStateInitLocked: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelPerf_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf) {
-    return kperfStateInitLocked(pGpu, (struct KernelPerf *)(((unsigned char *) pKernelPerf) - NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)));
+    return kperfStateInitLocked_IMPL(pGpu, (struct KernelPerf *)(((unsigned char *) pKernelPerf) - NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)));
 }
 
 // kperfStateLoad: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelPerf_engstateStateLoad(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf, NvU32 flags) {
-    return kperfStateLoad(pGpu, (struct KernelPerf *)(((unsigned char *) pKernelPerf) - NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)), flags);
+    return kperfStateLoad_IMPL(pGpu, (struct KernelPerf *)(((unsigned char *) pKernelPerf) - NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)), flags);
 }
 
 // kperfStateUnload: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelPerf_engstateStateUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf, NvU32 flags) {
-    return kperfStateUnload(pGpu, (struct KernelPerf *)(((unsigned char *) pKernelPerf) - NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)), flags);
+    return kperfStateUnload_IMPL(pGpu, (struct KernelPerf *)(((unsigned char *) pKernelPerf) - NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)), flags);
 }
 
 // kperfStateDestroy: virtual override (engstate) base (engstate)
 void __nvoc_down_thunk_KernelPerf_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf) {
-    kperfStateDestroy(pGpu, (struct KernelPerf *)(((unsigned char *) pKernelPerf) - NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)));
-}
-
-
-// 9 up-thunk(s) defined to bridge methods in KernelPerf to superclasses
-
-// kperfInitMissing: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_kperfInitMissing(struct OBJGPU *pGpu, struct KernelPerf *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)));
-}
-
-// kperfStatePreInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePreInitLocked(struct OBJGPU *pGpu, struct KernelPerf *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)));
-}
-
-// kperfStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelPerf *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)));
-}
-
-// kperfStateInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStateInitUnlocked(struct OBJGPU *pGpu, struct KernelPerf *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)));
-}
-
-// kperfStatePreLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePreLoad(struct OBJGPU *pGpu, struct KernelPerf *pEngstate, NvU32 arg3) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kperfStatePostLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePostLoad(struct OBJGPU *pGpu, struct KernelPerf *pEngstate, NvU32 arg3) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kperfStatePreUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePreUnload(struct OBJGPU *pGpu, struct KernelPerf *pEngstate, NvU32 arg3) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kperfStatePostUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kperfStatePostUnload(struct OBJGPU *pGpu, struct KernelPerf *pEngstate, NvU32 arg3) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kperfIsPresent: virtual inherited (engstate) base (engstate)
-NvBool __nvoc_up_thunk_OBJENGSTATE_kperfIsPresent(struct OBJGPU *pGpu, struct KernelPerf *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)));
+    kperfStateDestroy_IMPL(pGpu, (struct KernelPerf *)(((unsigned char *) pKernelPerf) - NV_OFFSETOF(KernelPerf, __nvoc_base_OBJENGSTATE)));
 }
 
 
@@ -277,7 +208,7 @@ static void __nvoc_init_funcTable_KernelPerf_1(KernelPerf *pThis, RmHalspecOwner
 } // End __nvoc_init_funcTable_KernelPerf_1 with approximately 4 basic block(s).
 
 
-// Initialize vtable(s) for 16 virtual method(s).
+// Initialize vtable(s) for 2 virtual method(s).
 void __nvoc_init_funcTable_KernelPerf(KernelPerf *pThis, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize vtable(s) with 2 per-object function pointer(s).

@@ -38,11 +38,15 @@ static const PRB_ENUM_MAPPING prb_enum_mappings_regsandmem_memtype[] = {
         8,
         PRB_MAYBE_ENUM_NAME("INSTANCE")
     },
+    {
+        9,
+        PRB_MAYBE_ENUM_NAME("GPU_REGS_WR")
+    },
 };
 
 const PRB_ENUM_DESC prb_enums_regs_regsandmem_memtype = {
     prb_enum_mappings_regsandmem_memtype,
-    8,
+    9,
    PRB_MAYBE_ENUM_NAME("MemType")
 };
 

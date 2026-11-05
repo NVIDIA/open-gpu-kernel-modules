@@ -86,7 +86,7 @@ typedef struct NV0000_CTRL_NVD_GET_DUMP_SIZE_PARAMS {
 } NV0000_CTRL_NVD_GET_DUMP_SIZE_PARAMS;
 
 /* Max size that a GET_DUMP_SIZE_PARAMS call can return */
-#define NV0000_CTRL_NVD_MAX_DUMP_SIZE (1000000)
+#define NV0000_CTRL_NVD_MAX_DUMP_SIZE (8388608)
 
 /*
  * NV0000_CTRL_CMD_NVD_GET_DUMP
@@ -473,14 +473,16 @@ typedef struct NV0000_CTRL_NVD_GET_NVLOG_PARAMS {
  *   reqIdx:
  *      [IN] the index of the report being requested.
  *      index rolls over to 0.
- *      if the requested index is not in the circular buffer, then no data is
- *      transferred & either NV_ERR_INVALID_INDEX (indicating the specified
- *      index is not in the table) is returned.
+ *      index 0 may be used to query the current matching range; use the flags
+ *      to determine which outputs are valid.
+ *      if the requested index is not in the circular buffer but a matching
+ *      range exists, no report data is transferred, the range is returned,
+ *      and NV_OK is returned.
  *
  *   rptIdx:
  *      [OUT] the index of the report being returned.
  *      if the requested index is not in the circular buffer, then the value is
- *      undefined, no data istransferred & NV_ERR_INVALID_INDEX is returned.
+ *      undefined and no report data is transferred.
  *      if the the specified index is present, but does not meet the requested
  *      criteria (refer to the owner & processId fields). the rptIdx will be
  *      set to a value that does not match the reqIdx, and no data will be
@@ -513,11 +515,11 @@ typedef struct NV0000_CTRL_NVD_GET_NVLOG_PARAMS {
  *      [OUT] a set odf flags indicating attributes of the record
  *          NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_POS_FIRST --    indicates this is the first record of a report.
  *          NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_POS_LAST --     indicates this is the last record of the report.
- *          NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_RANGE_VALID --  indicates this is the response contains a valid
-*               index range.
- *              Note, this may be set when an error is returned indicating a valid range was found, but event of
- *              the requested index was not.
+ *          NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_RANGE_VALID --  indicates the response contains a valid index
+ *              range.
  *          NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_DATA_VALID --   indicates this is the response contains valid data.
+ *          NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_REPORTS_UNAVAILABLE -- indicates RC diagnostic reports are not
+ *              available on this platform. This flag may be set when NV_ERR_MISSING_TABLE_ENTRY is returned.
  *
  *   rptCount:
  *      [OUT] number of entries returned in report.
@@ -537,11 +539,10 @@ typedef struct NV0000_CTRL_NVD_GET_NVLOG_PARAMS {
  *
  *
  * Possible status values returned are:
- *  NV_OK -- we found & transferred the requested record.
+ *  NV_OK -- a matching range was found; the requested record was transferred if present.
  *  NV_ERR_MISSING_TABLE_ENTRY -- we don't find any records that meet the criteria.
- *  NV_ERR_INVALID_INDEX -- the requested index was not found in the buffer.
  *  NV_ERR_INSUFFICIENT_PERMISSIONS -- the requested record was found, but it did not meet the criteria.
- *  NV_ERR_BUSY_RETRY -- We could not access the circular buffer.
+ *  NV_ERR_BUSY_RETRY -- We could not access the circular buffer. Retry without using the output fields.
  *
  */
 
@@ -568,6 +569,7 @@ typedef struct NV0000_CTRL_NVD_GET_NVLOG_PARAMS {
 #define NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_POS_LAST                                 0x00000002                  // indicates this is the last record of the report.
 #define NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_RANGE_VALID                              0x00000004                  // indicates this is the response contains a valid range
 #define NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_DATA_VALID                               0x00000008                  // indicates this is the response contains valid data
+#define NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_REPORTS_UNAVAILABLE                      0x00000010                  // indicates RC diagnostic reports are not available
 
 
 // Attribute Definitions

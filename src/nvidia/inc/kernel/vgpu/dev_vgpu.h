@@ -145,6 +145,10 @@
 #define NV_VGPU_EV_FLAGS_TYPE_INBAND_RESPONSE            0x00000007 /* RW--V */
 #define NV_VGPU_EV_FLAGS_TYPE_TRACING                    0x00000008 /* RW--V */
 #define NV_VGPU_EV_FLAGS_TYPE_ROBUST_CHANNEL_ERROR_INSTBLK 0x00000009 /* RW--V */
+#define NV_VGPU_EV_FLAGS_TYPE_GPU_RESET_REQUIRED         0x0000000a /* RW--V */
+#define NV_VGPU_EV_FLAGS_TYPE_GPU_STUN                   0x0000000b /* RW--V */
+#define NV_VGPU_EV_FLAGS_TYPE_GPU_UNSTUN                 0x0000000c /* RW--V */
+#define NV_VGPU_EV_FLAGS_TYPE_HWS_RESUME_PENDING_WORK    0x0000000d /* RW--V */
 #define NV_VGPU_EV_NOTIFIER_TIMESTAMP                    0x00000010 /* RW-4R */
 #define NV_VGPU_EV_NOTIFIER_TIMESTAMP_HI                 0x00000014 /* RW-4R */
 #define NV_VGPU_EV_NOTIFIER_INFO32                       0x00000018 /* RW-4R */
@@ -180,6 +184,12 @@ ct_assert(NV_OFFSETOF(VGPU_EVENT_BUF_ENTRY, info16     ) == NV_VGPU_EV_NOTIFIER_
 ct_assert(NV_OFFSETOF(VGPU_EVENT_BUF_ENTRY, status     ) == NV_VGPU_EV_NOTIFIER_STATUS);
 ct_assert(NV_OFFSETOF(VGPU_EVENT_BUF_ENTRY, rcChid     ) == NV_VGPU_EV_ROBUST_CHANNEL_ERROR_CHID);
 ct_assert(VGPU_EVENT_BUF_ENTRY_SIZE == (NV_VGPU_EV__SIZE_1 * sizeof (NvU32)));
+
+/*
+** If MCTP/NVDM Events are enabled then the event buffer is both larger (128K)
+** and supports larger fixed size event elements (256 bytes).
+*/
+#define VGPU_EVENT_BUF_ENTRY_SIZE_MCTP                               256 /* bytes */
 
 /******************************************************************************/
 /* EVENT MEMORY - END                                                         */
@@ -382,8 +392,15 @@ typedef struct {
 #define NV_VGPU_GSP_CAPS_DEBUG_BUFF_SUPPORTED                                   0:0
 #define NV_VGPU_GSP_CAPS_DEBUG_BUFF_SUPPORTED_TRUE                       0x00000001
 #define NV_VGPU_GSP_CAPS_DEBUG_BUFF_SUPPORTED_FALSE                      0x00000000
+#define NV_VGPU_GSP_CAPS_MCTP_RPC_SUPPORTED                                     1:1
+#define NV_VGPU_GSP_CAPS_MCTP_RPC_SUPPORTED_TRUE                         0x00000001
+#define NV_VGPU_GSP_CAPS_MCTP_RPC_SUPPORTED_FALSE                        0x00000000
+#define NV_VGPU_GSP_CAPS_MCTP_EVENTS_SUPPORTED                                  2:2
+#define NV_VGPU_GSP_CAPS_MCTP_EVENTS_SUPPORTED_TRUE                      0x00000001
+#define NV_VGPU_GSP_CAPS_MCTP_EVENTS_SUPPORTED_FALSE                     0x00000000
 
 #define VGPU_SHARED_MEMORY_BUFFER_SIZE_8K                               (8 * 1024)  // TDR debug buffer - 8 KB
 
 ct_assert(sizeof(VGPU_GSP_SYSMEM_BITMAP_ROOT_NODE) == 0x1000);
+
 #endif // __vgpu_dev_nv_vgpu_h__

@@ -115,7 +115,7 @@
 #define MC_ENGINE_IDX_NVDEC6                        71
 #define MC_ENGINE_IDX_NVDEC7                        72
 #define MC_ENGINE_IDX_CPU_DOORBELL                  73
-#define MC_ENGINE_IDX_PRIV_DOORBELL                 74
+//#define MC_ENGINE_IDX  unused
 #define MC_ENGINE_IDX_MMU_ECC_ERROR                 75
 #define MC_ENGINE_IDX_BLG                           76
 #define MC_ENGINE_IDX_PERFMON                       77
@@ -135,38 +135,52 @@
 #define MC_ENGINE_IDX_GR6                           90
 #define MC_ENGINE_IDX_GR7                           91
 #define MC_ENGINE_IDX_GR_MAX                        MC_ENGINE_IDX_GR7
-#define MC_ENGINE_IDX_ESCHED                        92
+#define MC_ENGINE_IDX_RESERVED92                    92
+#define MC_ENGINE_IDX_RESERVED93                    93
+#define MC_ENGINE_IDX_RESERVED94                    94
+#define MC_ENGINE_IDX_RESERVED95                    95
+#define MC_ENGINE_IDX_ESCHED                        96
 #define MC_ENGINE_IDX_ESCHED__SIZE                  64
-#define MC_ENGINE_IDX_GR_FECS_LOG                   156
+#define MC_ENGINE_IDX_GR_FECS_LOG                   160
 #define MC_ENGINE_IDX_GR0_FECS_LOG                  MC_ENGINE_IDX_GR_FECS_LOG
-#define MC_ENGINE_IDX_GR1_FECS_LOG                  157
-#define MC_ENGINE_IDX_GR2_FECS_LOG                  158
-#define MC_ENGINE_IDX_GR3_FECS_LOG                  159
-#define MC_ENGINE_IDX_GR4_FECS_LOG                  160
-#define MC_ENGINE_IDX_GR5_FECS_LOG                  161
-#define MC_ENGINE_IDX_GR6_FECS_LOG                  162
-#define MC_ENGINE_IDX_GR7_FECS_LOG                  163
-#define MC_ENGINE_IDX_TMR_SWRL                      164
-#define MC_ENGINE_IDX_DISP_GSP                      165
-#define MC_ENGINE_IDX_REPLAYABLE_FAULT_CPU          166
-#define MC_ENGINE_IDX_NON_REPLAYABLE_FAULT_CPU      167
-#define MC_ENGINE_IDX_PXUC                          168
-#define MC_ENGINE_IDX_SYSLTC                        169
-#define MC_ENGINE_IDX_LRCC                          170
-#define MC_ENGINE_IDX_GSPLITE                       171
+#define MC_ENGINE_IDX_GR1_FECS_LOG                  161
+#define MC_ENGINE_IDX_GR2_FECS_LOG                  162
+#define MC_ENGINE_IDX_GR3_FECS_LOG                  163
+#define MC_ENGINE_IDX_GR4_FECS_LOG                  164
+#define MC_ENGINE_IDX_GR5_FECS_LOG                  165
+#define MC_ENGINE_IDX_GR6_FECS_LOG                  166
+#define MC_ENGINE_IDX_GR7_FECS_LOG                  167
+#define MC_ENGINE_IDX_TMR_SWRL                      168
+#define MC_ENGINE_IDX_DISP_GSP                      169
+#define MC_ENGINE_IDX_REPLAYABLE_FAULT_CPU          170
+#define MC_ENGINE_IDX_NON_REPLAYABLE_FAULT_CPU      171
+#define MC_ENGINE_IDX_PXUC                          172
+#define MC_ENGINE_IDX_SYSLTC                        173
+#define MC_ENGINE_IDX_LRCC                          174
+#define MC_ENGINE_IDX_GSPLITE                       175
 #define MC_ENGINE_IDX_GSPLITE0                      MC_ENGINE_IDX_GSPLITE
-#define MC_ENGINE_IDX_GSPLITE1                      172
-#define MC_ENGINE_IDX_GSPLITE2                      173
-#define MC_ENGINE_IDX_GSPLITE3                      174
+#define MC_ENGINE_IDX_GSPLITE1                      176
+#define MC_ENGINE_IDX_GSPLITE2                      177
+#define MC_ENGINE_IDX_GSPLITE3                      178
 #define MC_ENGINE_IDX_GSPLITE_MAX                   MC_ENGINE_IDX_GSPLITE3
-#define MC_ENGINE_IDX_DPAUX                         175
-#define MC_ENGINE_IDX_GPIO                          176
-#define MC_ENGINE_IDX_DISP_LOW                      177
-#define MC_ENGINE_IDX_HFRP                          178
-#define MC_ENGINE_IDX_I2C                           179
-#define MC_ENGINE_IDX_LPSEC                         180
-// This must be kept as the max bit if we need to add more engines
-#define MC_ENGINE_IDX_MAX                           181
+#define MC_ENGINE_IDX_DPAUX                         179
+#define MC_ENGINE_IDX_GPIO                          180
+#define MC_ENGINE_IDX_DISP_LOW                      181
+#define MC_ENGINE_IDX_HFRP                          182
+#define MC_ENGINE_IDX_I2C                           183
+#define MC_ENGINE_IDX_LPSEC                         184
+#define MC_ENGINE_IDX_SEC_FAULT                     185
+#define MC_ENGINE_IDX_RESERVED186                   186
+#define MC_ENGINE_IDX_RESERVED187                   187
+#define MC_ENGINE_IDX_RESERVED188                   188
+#define MC_ENGINE_IDX_RESERVED189                   189
+#define MC_ENGINE_IDX_RESERVED190                   190
+#define MC_ENGINE_IDX_RESERVED191                   191
+#define MC_ENGINE_IDX_ESCHED_TSG_PREEMPT            192
+#define MC_ENGINE_IDX_ESCHED_TSG_PREEMPT__SIZE       64
+#define MC_ENGINE_IDX_ESCHED_RL_PREEMPT             256
+#define MC_ENGINE_IDX_ESCHED_RL_PREEMPT__SIZE        64
+#define MC_ENGINE_IDX_MAX                           320
 
 // Index GR reference
 #define MC_ENGINE_IDX_GRn(x)            (MC_ENGINE_IDX_GR0 + (x))
@@ -187,11 +201,23 @@
 // Index ESCHED reference
 #define MC_ENGINE_IDX_ESCHEDn(x)        (MC_ENGINE_IDX_ESCHED + (x))
 
+// Index ESCHED_TSG_PREEMPT reference
+#define MC_ENGINE_IDX_ESCHED_TSG_PREEMPTn(x)        (MC_ENGINE_IDX_ESCHED_TSG_PREEMPT + (x))
+
+// Index ESCHED_RL_PREEMPT reference
+#define MC_ENGINE_IDX_ESCHED_RL_PREEMPTn(x)        (MC_ENGINE_IDX_ESCHED_RL_PREEMPT + (x))
+
 #define MC_ENGINE_IDX_IS_CE(x) \
     ((MC_ENGINE_IDX_CE(0) <= (x)) && ((x) <= MC_ENGINE_IDX_CE_MAX))
 
 #define MC_ENGINE_IDX_IS_GR(x) \
     ((MC_ENGINE_IDX_GR0 <= (x)) && ((x) <= MC_ENGINE_IDX_GR_MAX))
+
+#define MC_ENGINE_IDX_IS_ESCHED_TSG_PREEMPT(x) \
+    ((MC_ENGINE_IDX_ESCHED_TSG_PREEMPT <= (x)) && ((x) <= (MC_ENGINE_IDX_ESCHED_TSG_PREEMPT + MC_ENGINE_IDX_ESCHED_TSG_PREEMPT__SIZE - 1)))
+
+#define MC_ENGINE_IDX_IS_ESCHED_RL_PREEMPT(x) \
+    ((MC_ENGINE_IDX_ESCHED_RL_PREEMPT <= (x)) && ((x) <= (MC_ENGINE_IDX_ESCHED_RL_PREEMPT + MC_ENGINE_IDX_ESCHED_RL_PREEMPT__SIZE - 1)))
 
 // Index OFA reference
 #define MC_ENGINE_IDX_OFA(x)            (MC_ENGINE_IDX_OFA0 + (x))

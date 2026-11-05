@@ -38,26 +38,10 @@ extern const struct NVOC_CASTINFO __nvoc_castinfo__SwIntr;
 extern const struct NVOC_EXPORT_INFO __nvoc_export_info__SwIntr;
 
 // Down-thunk(s) to bridge SwIntr methods from ancestors (if any)
-void __nvoc_down_thunk_SwIntr_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pSwIntr, IntrServiceRecord pRecords[181]);    // this
+void __nvoc_down_thunk_SwIntr_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pSwIntr, IntrServiceRecord pRecords[320]);    // this
 NvU32 __nvoc_down_thunk_SwIntr_intrservServiceInterrupt(OBJGPU *pGpu, struct IntrService *pSwIntr, IntrServiceServiceInterruptArguments *pParams);    // this
 
 // Up-thunk(s) to bridge SwIntr methods to ancestors (if any)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrConstructEngine(struct OBJGPU *pGpu, struct SwIntr *pEngstate, ENGDESCRIPTOR arg3);    // this
-void __nvoc_up_thunk_OBJENGSTATE_swintrInitMissing(struct OBJGPU *pGpu, struct SwIntr *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePreInitLocked(struct OBJGPU *pGpu, struct SwIntr *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePreInitUnlocked(struct OBJGPU *pGpu, struct SwIntr *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStateInitLocked(struct OBJGPU *pGpu, struct SwIntr *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStateInitUnlocked(struct OBJGPU *pGpu, struct SwIntr *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePreLoad(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStateLoad(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePostLoad(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePreUnload(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStateUnload(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePostUnload(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3);    // this
-void __nvoc_up_thunk_OBJENGSTATE_swintrStateDestroy(struct OBJGPU *pGpu, struct SwIntr *pEngstate);    // this
-NvBool __nvoc_up_thunk_OBJENGSTATE_swintrIsPresent(struct OBJGPU *pGpu, struct SwIntr *pEngstate);    // this
-NvBool __nvoc_up_thunk_IntrService_swintrClearInterrupt(OBJGPU *pGpu, struct SwIntr *pIntrService, IntrServiceClearInterruptArguments *pParams);    // this
-NV_STATUS __nvoc_up_thunk_IntrService_swintrServiceNotificationInterrupt(OBJGPU *pGpu, struct SwIntr *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams);    // this
 
 // Class-specific details for SwIntr
 const struct NVOC_CLASS_DEF __nvoc_class_def_SwIntr = 
@@ -75,7 +59,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_SwIntr =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__SwIntr __nvoc_metadata__SwIntr = {
     .rtti.pClassDef = &__nvoc_class_def_SwIntr,    // (swintr) this
     .rtti.dtor      = &__nvoc_dtor_SwIntr,
@@ -90,41 +74,25 @@ static const struct NVOC_METADATA__SwIntr __nvoc_metadata__SwIntr = {
     .metadata__IntrService.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__IntrService.rtti.offset    = NV_OFFSETOF(SwIntr, __nvoc_base_IntrService),
 
-    .vtable.__swintrRegisterIntrService__ = &swintrRegisterIntrService_IMPL,    // virtual override (intrserv) base (intrserv)
     .metadata__IntrService.vtable.__intrservRegisterIntrService__ = &__nvoc_down_thunk_SwIntr_intrservRegisterIntrService,    // virtual
-    .vtable.__swintrServiceInterrupt__ = &swintrServiceInterrupt_IMPL,    // virtual override (intrserv) base (intrserv)
     .metadata__IntrService.vtable.__intrservServiceInterrupt__ = &__nvoc_down_thunk_SwIntr_intrservServiceInterrupt,    // virtual
-    .vtable.__swintrConstructEngine__ = &__nvoc_up_thunk_OBJENGSTATE_swintrConstructEngine,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &engstateConstructEngine_IMPL,    // virtual
-    .vtable.__swintrInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_swintrInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-    .vtable.__swintrStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_swintrStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-    .vtable.__swintrStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_swintrStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .vtable.__swintrStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_swintrStateInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
-    .vtable.__swintrStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_swintrStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-    .vtable.__swintrStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_swintrStatePreLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-    .vtable.__swintrStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_swintrStateLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
-    .vtable.__swintrStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_swintrStatePostLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-    .vtable.__swintrStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_swintrStatePreUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-    .vtable.__swintrStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_swintrStateUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
-    .vtable.__swintrStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_swintrStatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__swintrStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_swintrStateDestroy,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &engstateStateDestroy_IMPL,    // virtual
-    .vtable.__swintrIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_swintrIsPresent,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
-    .vtable.__swintrClearInterrupt__ = &__nvoc_up_thunk_IntrService_swintrClearInterrupt,    // virtual inherited (intrserv) base (intrserv)
     .metadata__IntrService.vtable.__intrservClearInterrupt__ = &intrservClearInterrupt_IMPL,    // virtual
-    .vtable.__swintrServiceNotificationInterrupt__ = &__nvoc_up_thunk_IntrService_swintrServiceNotificationInterrupt,    // virtual inherited (intrserv) base (intrserv)
     .metadata__IntrService.vtable.__intrservServiceNotificationInterrupt__ = &intrservServiceNotificationInterrupt_IMPL,    // virtual
 };
 
@@ -143,96 +111,13 @@ const struct NVOC_CASTINFO __nvoc_castinfo__SwIntr = {
 // 2 down-thunk(s) defined to bridge methods in SwIntr from superclasses
 
 // swintrRegisterIntrService: virtual override (intrserv) base (intrserv)
-void __nvoc_down_thunk_SwIntr_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pSwIntr, IntrServiceRecord pRecords[181]) {
-    swintrRegisterIntrService(pGpu, (struct SwIntr *)(((unsigned char *) pSwIntr) - NV_OFFSETOF(SwIntr, __nvoc_base_IntrService)), pRecords);
+void __nvoc_down_thunk_SwIntr_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pSwIntr, IntrServiceRecord pRecords[320]) {
+    swintrRegisterIntrService_IMPL(pGpu, (struct SwIntr *)(((unsigned char *) pSwIntr) - NV_OFFSETOF(SwIntr, __nvoc_base_IntrService)), pRecords);
 }
 
 // swintrServiceInterrupt: virtual override (intrserv) base (intrserv)
 NvU32 __nvoc_down_thunk_SwIntr_intrservServiceInterrupt(OBJGPU *pGpu, struct IntrService *pSwIntr, IntrServiceServiceInterruptArguments *pParams) {
-    return swintrServiceInterrupt(pGpu, (struct SwIntr *)(((unsigned char *) pSwIntr) - NV_OFFSETOF(SwIntr, __nvoc_base_IntrService)), pParams);
-}
-
-
-// 16 up-thunk(s) defined to bridge methods in SwIntr to superclasses
-
-// swintrConstructEngine: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrConstructEngine(struct OBJGPU *pGpu, struct SwIntr *pEngstate, ENGDESCRIPTOR arg3) {
-    return engstateConstructEngine(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// swintrInitMissing: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_swintrInitMissing(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)));
-}
-
-// swintrStatePreInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePreInitLocked(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)));
-}
-
-// swintrStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePreInitUnlocked(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)));
-}
-
-// swintrStateInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStateInitLocked(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)));
-}
-
-// swintrStateInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStateInitUnlocked(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)));
-}
-
-// swintrStatePreLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePreLoad(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// swintrStateLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStateLoad(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// swintrStatePostLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePostLoad(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// swintrStatePreUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePreUnload(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// swintrStateUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStateUnload(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
-    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// swintrStatePostUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swintrStatePostUnload(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// swintrStateDestroy: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_swintrStateDestroy(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)));
-}
-
-// swintrIsPresent: virtual inherited (engstate) base (engstate)
-NvBool __nvoc_up_thunk_OBJENGSTATE_swintrIsPresent(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(SwIntr, __nvoc_base_OBJENGSTATE)));
-}
-
-// swintrClearInterrupt: virtual inherited (intrserv) base (intrserv)
-NvBool __nvoc_up_thunk_IntrService_swintrClearInterrupt(OBJGPU *pGpu, struct SwIntr *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return intrservClearInterrupt(pGpu, (struct IntrService *)(((unsigned char *) pIntrService) + NV_OFFSETOF(SwIntr, __nvoc_base_IntrService)), pParams);
-}
-
-// swintrServiceNotificationInterrupt: virtual inherited (intrserv) base (intrserv)
-NV_STATUS __nvoc_up_thunk_IntrService_swintrServiceNotificationInterrupt(OBJGPU *pGpu, struct SwIntr *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
-    return intrservServiceNotificationInterrupt(pGpu, (struct IntrService *)(((unsigned char *) pIntrService) + NV_OFFSETOF(SwIntr, __nvoc_base_IntrService)), pParams);
+    return swintrServiceInterrupt_IMPL(pGpu, (struct SwIntr *)(((unsigned char *) pSwIntr) - NV_OFFSETOF(SwIntr, __nvoc_base_IntrService)), pParams);
 }
 
 
@@ -291,7 +176,7 @@ static void __nvoc_init_funcTable_SwIntr_1(SwIntr *pThis) {
 } // End __nvoc_init_funcTable_SwIntr_1
 
 
-// Initialize vtable(s) for 18 virtual method(s).
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_SwIntr(SwIntr *pThis) {
     __nvoc_init_funcTable_SwIntr_1(pThis);
 }

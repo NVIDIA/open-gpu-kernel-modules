@@ -1905,7 +1905,7 @@ int nv_drm_semsurf_export_to_syncobj_point_ioctl(struct drm_device *dev,
         NV_DRM_DEV_LOG_ERR(
             nv_dev,
             "Failed to create fence for wait_value: %llu",
-            p->wait_value);
+            (unsigned long long)p->wait_value);
         goto done;
     }
 
@@ -1969,7 +1969,7 @@ int nv_drm_syncobj_get_syncfd_ioctl(struct drm_device *dev,
             nv_dev,
             "Failed to find fence for syncobj 0x%08x at point %llu",
             p->syncobj_handle,
-            p->syncobj_point);
+            (unsigned long long)p->syncobj_point);
         goto done;
     }
 

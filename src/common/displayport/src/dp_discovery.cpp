@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -54,8 +54,31 @@ void DiscoveryManager::notifyLongPulse(bool status)
 
 void DiscoveryManager::detectBranch(Device device)
 {
-    Address::StringBuffer sb;
-    DP_USED(sb);
+    //
+    // Bound topology-discovery allocations. Without these caps, a malicious
+    // branch device can drive unbounded BranchDetection allocation through
+    // recursive LAM replies (especially once any branch reaches maxHops, where
+    // Address::append silently no-ops and recursion would spawn fresh
+    // BranchDetections at the same address).
+    //
+    if (outstandingBranchDetections.size() >= maximumOutstandingBranchDetections)
+    {
+        NvU64 packedAddr = (device.address).pack();
+        DP_PRINTF(DP_ERROR, "%s(): outstanding cap %u reached, ignoring " DP_ADDR_FMT,
+                  __FUNCTION__, maximumOutstandingBranchDetections,
+                  DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
+        return;
+    }
+    if (currentDevicesCount >= maximumTopologyNodes)
+    {
+        NvU64 packedAddr = (device.address).pack();
+        DP_PRINTF(DP_ERROR, "%s(): topology cap %u reached, ignoring " DP_ADDR_FMT,
+                  __FUNCTION__, maximumTopologyNodes,
+                  DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
+        return;
+    }
 
     //
     // 1. Create a LINK_ADDRESS_MESSAGE to send to this target so that we can find who he is
@@ -63,7 +86,9 @@ void DiscoveryManager::detectBranch(Device device)
     //     *alternatively* we may have to use the local DPCD HAL to write this
     // 3. Enumerate any children that we may wish to queue detect on.
     //
-    DP_PRINTF(DP_NOTICE, "%s(): target = %s", __FUNCTION__, device.address.toString(sb));
+    NvU64 packedAddr = (device.address).pack();
+    DP_PRINTF(DP_NOTICE, "DP-DM> target = " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+    DP_USED(packedAddr);
 
     BranchDetection * branchDetection = new BranchDetection(this, device);
     outstandingBranchDetections.insertBack(branchDetection);
@@ -72,10 +97,9 @@ void DiscoveryManager::detectBranch(Device device)
 
 void DiscoveryManager::detectSink(DiscoveryManager::Device device, bool bFromCSN)
 {
-    Address::StringBuffer sb;
-    DP_USED(sb);
-
-    DP_PRINTF(DP_NOTICE, "%s(): target = %s", __FUNCTION__, device.address.toString(sb));
+    NvU64 packedAddr = (device.address).pack();
+    DP_PRINTF(DP_NOTICE, "DP-DM> target = " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+    DP_USED(packedAddr);
     SinkDetection * sinkDetection = new SinkDetection(this, device, bFromCSN);
     sinkDetection->start();
 }
@@ -118,9 +142,6 @@ DiscoveryManager::Device * DiscoveryManager::findDevice(GUID & guid)
 
 void DiscoveryManager::addDevice(const DiscoveryManager::Device & device)
 {
-    Address::StringBuffer sb;
-    DP_USED(sb);
-
     GUID guid = device.peerGuid;
     if (guid.isGuidZero() &&
         (device.peerDevice != Dongle) &&
@@ -129,12 +150,27 @@ void DiscoveryManager::addDevice(const DiscoveryManager::Device & device)
         DP_ASSERT(0 && "GUID missing for the device");
     }
     DP_ASSERT(!findDevice(device.address) && "Redundant add");
+
+    // Bound topology before sink-path allocations: the sink callback allocates
+    // DevicePendingEDIDRead / DeviceImpl per invocation, so the cap must gate the
+    // callback rather than only the currentDevices[] recording below.
+    if (currentDevicesCount >= maximumTopologyNodes)
+    {
+        NvU64 packedAddr = (device.address).pack();
+        DP_PRINTF(DP_ERROR, "DP-DM> topology cap %u reached; dropping new device announcement at '" DP_ADDR_FMT "'",
+                  maximumTopologyNodes, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
+        return;
+    }
+
     sink->discoveryNewDevice(device);
 
-    DP_PRINTF(DP_NOTICE, "DP-DM> New device '%s' %s %s %s", device.address.toString(sb),
-              device.branch ? "Branch" : "", device.legacy ? "Legacy" : "",
-              device.peerDevice == Dongle ? "Dongle" :
-              device.peerDevice == DownstreamSink ? "DownstreamSink" : "");
+    // PeerDevice: 0=None 1=UpstreamSourceOrSSTBranch 2=DownstreamBranch 3=DownstreamSink 4=Dongle
+    NvU64 packedAddr = (device.address).pack();
+    DP_PRINTF(DP_NOTICE, "DP-DM> New device '" DP_ADDR_FMT "' branch:%d legacy:%d peerDevice:%d(0:None/1:SST/2:Branch/3:Sink/4:Dongle)",
+              DP_ADDR_ARGS(packedAddr),
+              device.branch, device.legacy, device.peerDevice);
+    DP_USED(packedAddr);
 
     Address::NvU32Buffer addrBuffer;
     dpMemZero(addrBuffer, sizeof(addrBuffer));
@@ -142,21 +178,17 @@ void DiscoveryManager::addDevice(const DiscoveryManager::Device & device)
     NV_DPTRACE_INFO(NEW_MST_DEVICE, device.address.size(), addrBuffer[0], addrBuffer[1],
                     addrBuffer[2], addrBuffer[3], device.branch, device.legacy, device.peerDevice);
 
-    if (currentDevicesCount < maximumTopologyNodes)
-    {
-        currentDevices[currentDevicesCount++] = device;
-    }
+    currentDevices[currentDevicesCount++] = device;
 }
 
 void DiscoveryManager::removeDevice(Device * device)
 {
-    Address::StringBuffer sb;
-    DP_USED(sb);
-
-    DP_PRINTF(DP_NOTICE, "DP-DM> Lost device '%s' %s %s %s", device->address.toString(sb),
-              device->branch ? "Branch" : "", device->legacy ? "Legacy" : "",
-              device->peerDevice == Dongle ? "Dongle" :
-              device->peerDevice == DownstreamSink ? "DownstreamSink" : "");
+    // PeerDevice: 0=None 1=UpstreamSourceOrSSTBranch 2=DownstreamBranch 3=DownstreamSink 4=Dongle
+    NvU64 packedAddr = (device->address).pack();
+    DP_PRINTF(DP_NOTICE, "DP-DM> Lost device '" DP_ADDR_FMT "' branch:%d legacy:%d peerDevice:%d(0:None/1:SST/2:Branch/3:Sink/4:Dongle)",
+              DP_ADDR_ARGS(packedAddr),
+              device->branch, device->legacy, device->peerDevice);
+    DP_USED(packedAddr);
 
     sink->discoveryLostDevice(device->address);
 
@@ -189,6 +221,13 @@ DiscoveryManager::Device * DiscoveryManager::findChildDeviceForBranchWithGuid
         return 0;
     }
 
+    // Address::append silently caps at maxHops; if parent is already at maxHops,
+    // childAddr would equal parent's address and findDevice would return the parent.
+    if (parentDevice->address.size() >= Address::maxHops)
+    {
+        return 0;
+    }
+
     childAddr = parentDevice->address;
     childAddr.append(port);
     return (findDevice(childAddr));
@@ -206,10 +245,10 @@ void DiscoveryManager::SinkDetection::detectCompleted(bool passed)
         //
         if (device.dpcdRevisionMajor > 1 || device.dpcdRevisionMinor >= 2)
         {
-            Address::StringBuffer sb;
-            DP_USED(sb);
-            DP_PRINTF(DP_ERROR, "DP-DM> sink at '%s' failed GUID identification, demote to 1.1 sink.",
-                      address.toString(sb));
+            NvU64 packedAddr = (address).pack();
+        DP_PRINTF(DP_ERROR, "DP-DM> sink at '" DP_ADDR_FMT "' failed GUID identification, demote to 1.1 sink.",
+                      DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
             device.dpcdRevisionMajor = 1;
             device.dpcdRevisionMinor = 1;
         }
@@ -252,6 +291,16 @@ void DiscoveryManager::SinkDetection::detectCompleted(bool passed)
     {
         parent->removeDevice(oldDevice);
     }
+    //
+    // It already existed but LOCAL_NATIVE_DISPLAYID_PRESENT changed (e.g. the earlier
+    // read failed). Not a different device, so update it in place and report it again
+    // so the connector re-evaluates the Native DisplayID read.
+    //
+    else if (oldDevice->bLocalNativeDisplayIdPresent != device.bLocalNativeDisplayIdPresent)
+    {
+        oldDevice->bLocalNativeDisplayIdPresent = device.bLocalNativeDisplayIdPresent;
+        parent->sink->discoveryNewDevice(*oldDevice);
+    }
 
     // otherwise.. it already existed, and still does
 
@@ -286,6 +335,18 @@ void DiscoveryManager::BranchDetection::detectCompleted(bool present)
     {
         Device newDevice;
         newDevice.address = address;
+
+        //
+        //     Address::append silently caps at maxHops. Without this guard,
+        //     recursion from a saturated parent address would spawn fresh
+        //     BranchDetections at the same address per child slot.
+        //
+        if (newDevice.address.size() >= Address::maxHops)
+        {
+            DP_PRINTF(DP_ERROR, "%s(): at maxHops=%u, ignoring child port %u",
+                      __FUNCTION__, Address::maxHops, child[i].portNumber);
+            continue;
+        }
         newDevice.address.append(child[i].portNumber);
 
         //
@@ -377,9 +438,9 @@ void DiscoveryManager::BranchDetection::expired(const void * tag)
 {
     if (retryLinkAddressMessage)
     {
-        Address::StringBuffer sb;
-        DP_USED(sb);
-        DP_PRINTF(DP_NOTICE, "DP-DM> Requeing LINK_ADDRESS_MESSAGE to %s", address.toString(sb));
+        NvU64 packedAddr = (address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-DM> Requeing LINK_ADDRESS_MESSAGE to " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
 
         retryLinkAddressMessage = false;
         linkAddressMessage.set(address);
@@ -397,13 +458,15 @@ void DiscoveryManager::BranchDetection::expired(const void * tag)
         Address parentAddress = address;
         parentAddress.pop();
 
-        Address::StringBuffer sb;
-        DP_USED(sb);
-        DP_PRINTF(DP_NOTICE, "DP-DM> Requeing REMOTE_DPCD_WRITE_MESSAGE to %s", parentAddress.toString(sb));
+        NvU64 packedAddr = (parentAddress).pack();
+        DP_PRINTF(DP_NOTICE, "DP-DM> Requeing REMOTE_DPCD_WRITE_MESSAGE to " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
 
         retryRemoteDpcdWriteMessage = false;
-        remoteDpcdWriteMessage.set(parentAddress, parentAddress.tail(), NV_DPCD_GUID, sizeof(GUID), (NvU8 *)&parentDevice.peerGuid);
-        DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (remotely) for '%s' sent REMOTE_DPCD_WRITE {%p}", address.toString(sb), &remoteDpcdWriteMessage);
+        remoteDpcdWriteMessage.set(parentAddress, address.tail(), NV_DPCD_GUID, sizeof(GUID), (NvU8 *)&parentDevice.peerGuid);
+        NvU64 packedAddr2 = (address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (remotely) for '" DP_ADDR_FMT "' sent REMOTE_DPCD_WRITE {%p}", DP_ADDR_ARGS(packedAddr2), &remoteDpcdWriteMessage);
+        DP_USED(packedAddr2);
 
         if (parent->hal->isPollingEnabledForDpMstDetection())
         {
@@ -423,9 +486,9 @@ void DiscoveryManager::SinkDetection::expired(const void * tag)
         Address parentAddress = address;
         parentAddress.pop();
 
-        Address::StringBuffer sb;
-        DP_USED(sb);
-        DP_PRINTF(DP_NOTICE, "DP-DM> Requeueing LAM message to %s", parentAddress.toString(sb));
+        NvU64 packedAddr = (parentAddress).pack();
+        DP_PRINTF(DP_NOTICE, "DP-DM> Requeueing LAM message to " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
 
         retryLinkAddressMessage = false;
         linkAddressMessage.set(parentAddress);
@@ -444,13 +507,15 @@ void DiscoveryManager::SinkDetection::expired(const void * tag)
         Address parentAddress = address;
         parentAddress.pop();
 
-        Address::StringBuffer sb;
-        DP_USED(sb);
-        DP_PRINTF(DP_NOTICE, "DP-DM> Requeueing REMOTE_DPCD_READ_MESSAGE to %s", parentAddress.toString(sb));
+        NvU64 packedAddr = (parentAddress).pack();
+        DP_PRINTF(DP_NOTICE, "DP-DM> Requeueing REMOTE_DPCD_READ_MESSAGE to " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
 
         retryRemoteDpcdReadMessage = false;
-        remoteDpcdReadMessage.set(parentAddress, parentAddress.tail(), NV_DPCD_GUID, sizeof(GUID));
-        DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (remotely) for '%s' sent REMOTE_DPCD_READ {%p}", address.toString(sb), &remoteDpcdReadMessage);
+        remoteDpcdReadMessage.set(parentAddress, address.tail(), NV_DPCD_GUID, sizeof(GUID));
+        NvU64 packedAddr2 = (address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (remotely) for '" DP_ADDR_FMT "' sent REMOTE_DPCD_READ {%p}", DP_ADDR_ARGS(packedAddr2), &remoteDpcdReadMessage);
+        DP_USED(packedAddr2);
 
         if (parent->hal->isPollingEnabledForDpMstDetection())
         {
@@ -466,16 +531,18 @@ void DiscoveryManager::SinkDetection::expired(const void * tag)
         Address parentAddress = address;
         parentAddress.pop();
 
-        Address::StringBuffer sb;
-        DP_USED(sb);
-        DP_PRINTF(DP_NOTICE, "DP-DM> Requeueing REMOTE_DPCD_WRITE_MESSAGE to %s", parentAddress.toString(sb));
+        NvU64 packedAddr = (parentAddress).pack();
+        DP_PRINTF(DP_NOTICE, "DP-DM> Requeueing REMOTE_DPCD_WRITE_MESSAGE to " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+        DP_USED(packedAddr);
 
         retryRemoteDpcdWriteMessage = false;
         remoteDpcdWriteMessage.set(parentAddress,
-                                    parentAddress.tail(),
+                                    address.tail(),
                                     NV_DPCD_GUID, sizeof(GUID),
                                     (NvU8 *)&device.peerGuid);
-        DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (remotely) for '%s' sent REMOTE_DPCD_WRITE {%p}", address.toString(sb), &remoteDpcdWriteMessage);
+        NvU64 packedAddr2 = (address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (remotely) for '" DP_ADDR_FMT "' sent REMOTE_DPCD_WRITE {%p}", DP_ADDR_ARGS(packedAddr2), &remoteDpcdWriteMessage);
+        DP_USED(packedAddr2);
 
         if (parent->hal->isPollingEnabledForDpMstDetection())
         {
@@ -521,12 +588,14 @@ void DiscoveryManager::BranchDetection::messageFailed(MessageManager::Message * 
         }
     }
 
-    Address::StringBuffer sb;
-    DP_USED(sb);
-    DP_PRINTF(DP_ERROR, "DP-DM> Message %s {%p} at '%s' failed. Device marked not present.",
-              from == &linkAddressMessage ? "LINK_ADDRESS_MESSAGE" :
-              from == &remoteDpcdWriteMessage ? "REMOTE_DPCD_WRITE(GUID)" : "???",
-              from, address.toString(sb));
+    NvU64 packedAddr = (address).pack();
+    DP_USED(packedAddr);
+    if (from == &linkAddressMessage)
+        DP_PRINTF(DP_ERROR, "DP-DM> Message LINK_ADDRESS_MESSAGE {%p} at '" DP_ADDR_FMT "' failed. Device marked not present.", from, DP_ADDR_ARGS(packedAddr));
+    else if (from == &remoteDpcdWriteMessage)
+        DP_PRINTF(DP_ERROR, "DP-DM> Message REMOTE_DPCD_WRITE(GUID) {%p} at '" DP_ADDR_FMT "' failed. Device marked not present.", from, DP_ADDR_ARGS(packedAddr));
+    else
+        DP_PRINTF(DP_ERROR, "DP-DM> Message ??? {%p} at '" DP_ADDR_FMT "' failed. Device marked not present.", from, DP_ADDR_ARGS(packedAddr));
 
 
     //
@@ -575,21 +644,22 @@ void DiscoveryManager::SinkDetection::messageFailed(MessageManager::Message * fr
         }
     }
 
-    Address::StringBuffer sb;
-    DP_USED(sb);
-    DP_PRINTF(DP_ERROR, "DP-DM> Message %s {%p} at '%s' failed.",
-              from == &remoteDpcdWriteMessage ? "REMOTE_DPCD_WRITE(GUID)" :
-              from == &remoteDpcdReadMessage ? "REMOTE_DPCD_READ(GUID)" :
-              from == &linkAddressMessage ? "LINK_ADDRESS_MESSAGE" : "???",
-              from, address.toString(sb));
+    NvU64 packedAddr = (address).pack();
+    DP_USED(packedAddr);
+    if (from == &remoteDpcdWriteMessage)
+        DP_PRINTF(DP_ERROR, "DP-DM> Message REMOTE_DPCD_WRITE(GUID) {%p} at '" DP_ADDR_FMT "' failed.", from, DP_ADDR_ARGS(packedAddr));
+    else if (from == &remoteDpcdReadMessage)
+        DP_PRINTF(DP_ERROR, "DP-DM> Message REMOTE_DPCD_READ(GUID) {%p} at '" DP_ADDR_FMT "' failed.", from, DP_ADDR_ARGS(packedAddr));
+    else if (from == &linkAddressMessage)
+        DP_PRINTF(DP_ERROR, "DP-DM> Message LINK_ADDRESS_MESSAGE {%p} at '" DP_ADDR_FMT "' failed.", from, DP_ADDR_ARGS(packedAddr));
+    else
+        DP_PRINTF(DP_ERROR, "DP-DM> Message ??? {%p} at '" DP_ADDR_FMT "' failed.", from, DP_ADDR_ARGS(packedAddr));
 
     detectCompleted(false);
 }
 
 void DiscoveryManager::SinkDetection::handleLinkAddressDownReply()
 {
-    Address::StringBuffer sb;
-    DP_USED(sb);
     LinkAddressMessage::Result child;
     child = *linkAddressMessage.result(address.tail());
 
@@ -604,8 +674,10 @@ void DiscoveryManager::SinkDetection::handleLinkAddressDownReply()
     }
     device.portMap.inputMap |= (1 << child.portNumber);
 
-    DP_PRINTF(DP_NOTICE, "DP-DM> handleLinkAddressDownReply for sink device on '%s': DPCD Rev = %d.%d",
-              address.toString(sb), device.dpcdRevisionMajor, device.dpcdRevisionMinor);
+    NvU64 packedAddr = (address).pack();
+    DP_PRINTF(DP_NOTICE, "DP-DM> handleLinkAddressDownReply for sink device on '" DP_ADDR_FMT "': DPCD Rev = %d.%d",
+              DP_ADDR_ARGS(packedAddr), device.dpcdRevisionMajor, device.dpcdRevisionMinor);
+    DP_USED(packedAddr);
 
     // Check if the device already has a GUID
     // or it is a dongle or on a logical port ; in which case no GUID is required.
@@ -635,11 +707,11 @@ void DiscoveryManager::SinkDetection::handleLinkAddressDownReply()
 
 void DiscoveryManager::SinkDetection::handleRemoteDpcdReadDownReply()
 {
-    Address::StringBuffer sb;
-    DP_USED(sb);
-    DP_PRINTF(DP_NOTICE, "DP-DM> REMOTE_DPCD_READ {%p} at '%s' completed",
+    NvU64 packedAddr = (address).pack();
+    DP_PRINTF(DP_NOTICE, "DP-DM> REMOTE_DPCD_READ {%p} at '" DP_ADDR_FMT "' completed",
               (MessageManager::Message *)&remoteDpcdReadMessage,
-              address.toString(sb));
+              DP_ADDR_ARGS(packedAddr));
+    DP_USED(packedAddr);
     if (remoteDpcdReadMessage.replyNumOfBytesReadDPCD() != sizeof(GUID))
     {
         DP_ASSERT(0 && "Incomplete GUID in remote DPCD read message");
@@ -668,8 +740,10 @@ void DiscoveryManager::SinkDetection::handleRemoteDpcdReadDownReply()
                                     NV_DPCD_GUID, sizeof(GUID),
                                     (NvU8 *)&device.peerGuid);
 
-        DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (remotely) for '%s' sent REMOTE_DPCD_WRITE {%p}",
-                  address.toString(sb), &remoteDpcdWriteMessage);
+        NvU64 packedAddr2 = (address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (remotely) for '" DP_ADDR_FMT "' sent REMOTE_DPCD_WRITE {%p}",
+                  DP_ADDR_ARGS(packedAddr2), &remoteDpcdWriteMessage);
+        DP_USED(packedAddr2);
 
         if (parent->hal->isPollingEnabledForDpMstDetection())
         {
@@ -684,8 +758,6 @@ void DiscoveryManager::SinkDetection::handleRemoteDpcdReadDownReply()
 
 void DiscoveryManager::BranchDetection::handleLinkAddressDownReply()
 {
-    Address::StringBuffer sb;
-    DP_USED(sb);
 
     //
     //  Copy link address results out of the structure
@@ -710,9 +782,9 @@ void DiscoveryManager::BranchDetection::handleLinkAddressDownReply()
             {
                 //
                 // For immediate branch device, we will have already read DPCD version
-                // in notifyHPD. So we can just use that to populate here. 
-                // For the remaining devices, LAM to parent branch will report the child 
-                // DPCD version in reply and we are populating it in 
+                // in notifyHPD. So we can just use that to populate here.
+                // For the remaining devices, LAM to parent branch will report the child
+                // DPCD version in reply and we are populating it in
                 // BranchDetection::detectCompleted.
                 //
                 parentDevice.dpcdRevisionMajor = parent->hal->getRevisionMajor();
@@ -731,7 +803,9 @@ void DiscoveryManager::BranchDetection::handleLinkAddressDownReply()
 
         if (address == Address(0))
         {
-            DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (locally) for '%s'", address.toString(sb));
+            NvU64 packedAddr = (address).pack();
+            DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (locally) for '" DP_ADDR_FMT "'", DP_ADDR_ARGS(packedAddr));
+            DP_USED(packedAddr);
             //
             // We're locally connected, use the DPCD HAL to write the new GUID
             //
@@ -755,8 +829,10 @@ void DiscoveryManager::BranchDetection::handleLinkAddressDownReply()
                                        NV_DPCD_GUID, sizeof(GUID),
                                        (NvU8 *)&parentDevice.peerGuid);
 
-            DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (remotely) for '%s' sent REMOTE_DPCD_WRITE {%p}",
-                     address.toString(sb), &remoteDpcdWriteMessage);
+            NvU64 packedAddr = (address).pack();
+            DP_PRINTF(DP_NOTICE, "DP-DM> Setting GUID (remotely) for '" DP_ADDR_FMT "' sent REMOTE_DPCD_WRITE {%p}",
+                     DP_ADDR_ARGS(packedAddr), &remoteDpcdWriteMessage);
+            DP_USED(packedAddr);
 
             if (parent->hal->isPollingEnabledForDpMstDetection())
             {
@@ -806,11 +882,11 @@ void DiscoveryManager::BranchDetection::start()
     //
     linkAddressMessage.set(address);
 
-    Address::StringBuffer sb;
-    DP_USED(sb);
-    DP_PRINTF(DP_NOTICE, "DP-DM> Detecting '%s' (sending LINK_ADDRESS_MESSAGE {%p})",
-              address.toString(sb),
+    NvU64 packedAddr = (address).pack();
+    DP_PRINTF(DP_NOTICE, "DP-DM> Detecting '" DP_ADDR_FMT "' (sending LINK_ADDRESS_MESSAGE {%p})",
+              DP_ADDR_ARGS(packedAddr),
               (MessageManager::Message *)&linkAddressMessage);
+    DP_USED(packedAddr);
 
     if (parent->hal->isPollingEnabledForDpMstDetection())
     {
@@ -823,6 +899,92 @@ void DiscoveryManager::BranchDetection::start()
     }
 }
 
+/*!
+ * @brief Whether LOCAL_NATIVE_DISPLAYID_PRESENT is worth reading for this device.
+ *
+ * Only a non-dongle video sink at DPCD 1.4 or higher will have its Native DisplayID
+ * consumed. When the DPCD revision is not known yet (a sink first seen through a CSN)
+ * the revision check is skipped.
+ */
+bool DiscoveryManager::shouldReadNativeDisplayIdCap(const Device & device, bool bRevisionKnown)
+{
+    return device.videoSink &&
+           (device.peerDevice != Dongle) &&
+           (!bRevisionKnown ||
+            (device.dpcdRevisionMajor > 1) ||
+            ((device.dpcdRevisionMajor == 1) && (device.dpcdRevisionMinor >= 4)));
+}
+
+/*!
+ * @brief Read RECEIVE_PORT0_CAP_0 [0] - LOCAL_NATIVE_DISPLAYID_PRESENT - for a sink.
+ *
+ * The VESA SCR "DPCD Capability for Native DisplayID support at 0xA4/0xA5" requires a
+ * Source to consume this bit before accessing the Native DisplayID DDC pair. Honouring
+ * it is what lets us drop the blind REMOTE_I2C_READ of 0xA4 that leaves some VR/HMD and
+ * SST Receivers unresponsive, and costs a 4 second sideband timeout per such device.
+ *
+ * Uses the busy-waiting form of send(), like the PowerUpPhy in SinkDetection::start():
+ * the answer has to be in Device before the device is reported to the connector. The
+ * message is local so that this can be called both from SinkDetection::start() and from
+ * the CSN path that re-reports an already known device.
+ *
+ * Note a Source operating in MST mode uses the legacy 00008h register, not the Extended
+ * Receiver Capability mirror at 02208h.
+ *
+ * @return true if the sink advertises Native DisplayID, false if not or if the read failed.
+ */
+bool DiscoveryManager::readNativeDisplayIdCap(const Address & address)
+{
+    NakData nakData;
+    RemoteDpcdReadMessage remoteDpcdReadNativeDisplayIdMessage;
+    NvU64 packedAddr = address.pack();
+    DP_USED(packedAddr);
+
+    //
+    // Retry transient failures like the GUID REMOTE_DPCD_READ in messageFailed() does,
+    // but not NakTimeout: this send() busy-waits, so every timeout already costs
+    // DPCD_MESSAGE_REPLY_TIMEOUT and retrying it would stall discovery for that long
+    // per attempt.
+    //
+    for (unsigned retries = 0; ; retries++)
+    {
+        remoteDpcdReadNativeDisplayIdMessage.set(address.parent(), address.tail(),
+                                                 NV_DPCD_RECEIVE_PORT0_CAP_0, sizeof(NvU8));
+
+        if (messageManager->send(&remoteDpcdReadNativeDisplayIdMessage, nakData))
+            break;
+
+        if ((retries < DPCD_REMOTE_DPCD_READ_MESSAGE_RETRIES) &&
+            (nakData.reason == NakDefer || nakData.reason == NakDpcdFail) &&
+            !hal->isDpcdOffline())
+        {
+            timer->sleep(DPCD_REMOTE_DPCD_READ_MESSAGE_COOLDOWN);
+            continue;
+        }
+
+        DP_PRINTF(DP_WARNING, "DP-DM> REMOTE_DPCD_READ(RECEIVE_PORT0_CAP_0) failed for '" DP_ADDR_FMT "'"
+                  " (reason %d, %u retries) - assuming no Native DisplayID.",
+                  DP_ADDR_ARGS(packedAddr), nakData.reason, retries);
+        return false;
+    }
+
+    if (remoteDpcdReadNativeDisplayIdMessage.replyNumOfBytesReadDPCD() != sizeof(NvU8))
+    {
+        DP_PRINTF(DP_WARNING, "DP-DM> Bad RECEIVE_PORT0_CAP_0 reply size (%d) for '" DP_ADDR_FMT "'"
+                  " - assuming no Native DisplayID.",
+                  remoteDpcdReadNativeDisplayIdMessage.replyNumOfBytesReadDPCD(),
+                  DP_ADDR_ARGS(packedAddr));
+        return false;
+    }
+
+    bool bPresent = FLD_TEST_DRF(_DPCD, _RECEIVE_PORTX_CAP_0, _LOCAL_NATIVE_DISPLAYID, _YES,
+                                 remoteDpcdReadNativeDisplayIdMessage.replyGetData()[0]);
+
+    DP_PRINTF(DP_NOTICE, "DP-DM> '" DP_ADDR_FMT "' LOCAL_NATIVE_DISPLAYID_PRESENT = %d",
+              DP_ADDR_ARGS(packedAddr), bPresent);
+    return bPresent;
+}
+
 void DiscoveryManager::SinkDetection::start()
 {
     //
@@ -833,8 +995,18 @@ void DiscoveryManager::SinkDetection::start()
     powerUpPhyMessage.set(address.parent(), address.tail(), NV_TRUE);
     parent->messageManager->send(&powerUpPhyMessage, nakData);
 
-    Address::StringBuffer sb;
-    DP_USED(sb);
+    //
+    // Must run before the exit paths below: both of them can report the device and
+    // destroy this object without sending anything else over the sideband. Skip the
+    // blocking read when the known device attributes show that Native DisplayID will
+    // not be consumed. A CSN does not provide the DPCD revision, so the revision check
+    // can only be applied to the non-CSN path where LINK_ADDRESS already supplied it.
+    //
+    device.bLocalNativeDisplayIdPresent = false;
+    if (parent->shouldReadNativeDisplayIdCap(device, !bFromCSN))
+    {
+        device.bLocalNativeDisplayIdPresent = parent->readNativeDisplayIdCap(address);
+    }
 
     // The sink is found in CSN, missing dpcd revision
     if (bFromCSN)
@@ -843,9 +1015,11 @@ void DiscoveryManager::SinkDetection::start()
         // Create a LINK_ADDRESS_MESSAGE to send to parent of this target
         linkAddressMessage.set(address.parent());
 
-        DP_PRINTF(DP_NOTICE, "DP-DM> Detecting '%s' (sending LINK_ADDRESS_MESSAGE {%p})",
-                  address.toString(sb),
+        NvU64 packedAddr = (address).pack();
+        DP_PRINTF(DP_NOTICE, "DP-DM> Detecting '" DP_ADDR_FMT "' (sending LINK_ADDRESS_MESSAGE {%p})",
+                  DP_ADDR_ARGS(packedAddr),
                   (MessageManager::Message *)&linkAddressMessage);
+        DP_USED(packedAddr);
         if (parent->hal->isPollingEnabledForDpMstDetection())
         {
             parent->messageManager->send(&linkAddressMessage, this);
@@ -907,6 +1081,17 @@ DiscoveryManager::SinkDetection::~SinkDetection()
     parent->timer->cancelCallbacks(this);
 }
 
+static bool isReceiverAuthorizedForCsnGuid(DiscoveryManager * parent,
+                                           GUID & guid,
+                                           const Address & receiverRAD)
+{
+    DiscoveryManager::Device * parentDevice = parent->findDevice(guid);
+    if (!parentDevice)
+        return true;
+
+    return parentDevice->address.under(receiverRAD);
+}
+
 void DiscoveryManager::ReceiverSink::messageProcessed(MessageManager::MessageReceiver * from)
 {
     DP_ASSERT((from->getRequestId() == 0x2) && "This receiver is only meant for CSNs");
@@ -923,6 +1108,14 @@ void DiscoveryManager::ReceiverSink::messageProcessed(MessageManager::MessageRec
     if (csnMessage->getUpRequestData()->isInputPort)
     {
         DP_PRINTF(DP_ERROR, "Concentrator?? Got CSN for an upstream port!");
+        return;
+    }
+
+    if (!isReceiverAuthorizedForCsnGuid(parent,
+                                        csnMessage->getUpRequestData()->guid,
+                                        from->getAddress()))
+    {
+        DP_PRINTF(DP_ERROR, "DP-DM> CSN from unauthorized receiver for claimed GUID; dropping");
         return;
     }
 
@@ -960,6 +1153,14 @@ void DiscoveryManager::ReceiverSink::handleCSN(MessageManager::MessageReceiver *
        return;
     }
 
+    if (!isReceiverAuthorizedForCsnGuid(parent,
+                                        csnMessage->getUpRequestData()->guid,
+                                        from->getAddress()))
+    {
+        DP_PRINTF(DP_ERROR, "DP-DM> CSN from unauthorized receiver for claimed GUID; dropping");
+        return;
+    }
+
     Address childAddr;
     unsigned port = csnMessage->getUpRequestData()->port;
     DiscoveryManager::Device * oldDevice =
@@ -976,6 +1177,27 @@ void DiscoveryManager::ReceiverSink::handleCSN(MessageManager::MessageReceiver *
         // and a video sink is now added with it
         oldDevice->videoSink = ((csnMessage->getUpRequestData()->peerDeviceType == Dongle) ?
                                 csnMessage->getUpRequestData()->legacyPlugged : true);
+
+        //
+        // The sink behind this port may have changed without the device being removed,
+        // so re-read LOCAL_NATIVE_DISPLAYID_PRESENT rather than reuse the stale value.
+        // The blocking read can run deferred completions that add/remove entries in
+        // currentDevices[], so look the device up again afterwards.
+        //
+        if (parent->shouldReadNativeDisplayIdCap(*oldDevice, true))
+        {
+            bool bLocalNativeDisplayIdPresent = parent->readNativeDisplayIdCap(childAddr);
+
+            oldDevice = parent->findDevice(childAddr);
+            if (!oldDevice)
+                return;
+
+            oldDevice->bLocalNativeDisplayIdPresent = bLocalNativeDisplayIdPresent;
+        }
+        else
+        {
+            oldDevice->bLocalNativeDisplayIdPresent = false;
+        }
 
         parent->sink->discoveryNewDevice(*oldDevice);
         return;

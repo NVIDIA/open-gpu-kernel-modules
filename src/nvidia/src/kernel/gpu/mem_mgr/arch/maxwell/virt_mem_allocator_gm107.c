@@ -120,7 +120,6 @@
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/fabric_vaspace.h"
 #include "mem_mgr/virt_mem_mgr.h"
-#include "platform/sli/sli.h"
 #include "containers/eheap_old.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "rmapi/mapping_list.h"
@@ -332,7 +331,6 @@ dmaAllocMapping_GM107
     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     KernelMIGManager   *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     OBJEHEAP           *pVASpaceHeap      = NULL;
-    KernelGmmu         *pKernelGmmu       = GPU_GET_KERNEL_GMMU(pGpu);
     KernelBus          *pKernelBus        = GPU_GET_KERNEL_BUS(pGpu);
     FABRIC_VASPACE     *pFabricVAS        = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
     MEMORY_DESCRIPTOR  *pAdjustedMemDesc  = pMemDesc;
@@ -384,10 +382,8 @@ dmaAllocMapping_GM107
         NvBool             bIsMemContiguous;
         NvU64              fabricAddr;
         NvBool             bIndirectPeer;
-        NvBool             bFlaImport;
         NV_RANGE           totalVaRange;
         MEMORY_DESCRIPTOR *pRootMemDesc;
-        MEMORY_DESCRIPTOR *pTempMemDesc;
         Memory            *pMemory;
         NvU64              pageArrayGranularity;
         NvU8               pageShift;
@@ -521,13 +517,10 @@ dmaAllocMapping_GM107
         }
     }
 
-    // Get pageSize
-    pLocals->pTempMemDesc = memdescGetMemDescFromGpu(pAdjustedMemDesc, pGpu);
-
     // Get physical allocation granularity and page size.
-    pLocals->pageArrayGranularity = pLocals->pTempMemDesc->pageArrayGranularity;
-    pLocals->physPageSize = memdescGetPageSize(pLocals->pTempMemDesc, addressTranslation);
-    pLocals->bIsMemContiguous = memdescGetContiguity(pLocals->pTempMemDesc, addressTranslation);
+    pLocals->pageArrayGranularity = pAdjustedMemDesc->pageArrayGranularity;
+    pLocals->physPageSize = memdescGetPageSize(pAdjustedMemDesc, addressTranslation);
+    pLocals->bIsMemContiguous = memdescGetContiguity(pAdjustedMemDesc, addressTranslation);
 
     // retrieve mapping page size from flags
     switch(DRF_VAL(OS46, _FLAGS, _PAGE_SIZE, flags))
@@ -545,10 +538,10 @@ dmaAllocMapping_GM107
                 {
                     NvU64 vaddrAligned = RM_ALIGN_DOWN(*pVaddr, RM_PAGE_SIZE);
                     // physAddr[0] - PteAdjust should always be at least 4K aligned.
-                    NvU64 physStartAddr = memdescGetPhysAddr(pLocals->pTempMemDesc, addressTranslation, 0) - pLocals->pTempMemDesc->PteAdjust;
+                    NvU64 physStartAddr = memdescGetPhysAddr(pAdjustedMemDesc, addressTranslation, 0) - pAdjustedMemDesc->PteAdjust;
                     // Aligning up the size to 4K as that is the smallest page size that RM can map.
-                    NvU64 physEndAddr = RM_ALIGN_UP(memdescGetPhysAddr(pLocals->pTempMemDesc, addressTranslation, 0) +
-                                                    memdescGetSize(pLocals->pTempMemDesc), RM_PAGE_SIZE);
+                    NvU64 physEndAddr = RM_ALIGN_UP(memdescGetPhysAddr(pAdjustedMemDesc, addressTranslation, 0) +
+                                                    memdescGetSize(pAdjustedMemDesc), RM_PAGE_SIZE);
 
                     NV_PRINTF(LEVEL_SILENT, "Choosing default map pagesize through fixed offset path.\n");
 
@@ -584,10 +577,10 @@ dmaAllocMapping_GM107
                         NV_PRINTF(LEVEL_SILENT, "Choosing default map pagesize based on client provided VA range.\n");
 
                         NV_ASSERT_OK_OR_GOTO(status, _dmaGetMaxVAPageSize(*pVaddr, pCliMapInfo->pVirtualMemory,
-                            memdescGetPhysAddr(pLocals->pTempMemDesc, addressTranslation, 0),
-                            memdescGetSize(pLocals->pTempMemDesc),
-                            memdescGetPteArray(pLocals->pTempMemDesc, addressTranslation)[0],
-                            pLocals->pTempMemDesc->ActualSize,
+                            memdescGetPhysAddr(pAdjustedMemDesc, addressTranslation, 0),
+                            memdescGetSize(pAdjustedMemDesc),
+                            memdescGetPteArray(pAdjustedMemDesc, addressTranslation)[0],
+                            pAdjustedMemDesc->ActualSize,
                             &vaMaxPageSize,
                             // TODO: Remove once Maxwell is deprecated.
                             pLocals->vaspaceBigPageSize),
@@ -611,10 +604,10 @@ dmaAllocMapping_GM107
     
                         // TODO: Fix me - the submemdesc creation code is broken as it inherits the parent page size. submemdescs < parent page size will fail mapping.
                         NV_ASSERT_OK_OR_GOTO(status, _dmaGetMaxVAPageSize(*pVaddr, NULL,
-                            memdescGetPhysAddr(pLocals->pTempMemDesc, addressTranslation, 0),
-                            memdescGetSize(pLocals->pTempMemDesc),
-                            memdescGetPteArray(pLocals->pTempMemDesc, addressTranslation)[0],
-                            pLocals->pTempMemDesc->ActualSize,
+                            memdescGetPhysAddr(pAdjustedMemDesc, addressTranslation, 0),
+                            memdescGetSize(pAdjustedMemDesc),
+                            memdescGetPteArray(pAdjustedMemDesc, addressTranslation)[0],
+                            pAdjustedMemDesc->ActualSize,
                             &vaMaxPageSize,
                             // TODO: Remove once Maxwell is deprecated.
                             pLocals->vaspaceBigPageSize),
@@ -631,10 +624,10 @@ dmaAllocMapping_GM107
             }
             else
             {
-                pLocals->pageSize = memdescGetPageSize(pLocals->pTempMemDesc, addressTranslation);
+                pLocals->pageSize = memdescGetPageSize(pAdjustedMemDesc, addressTranslation);
 
                 NvBool is_page_size_compatible = isPageSizeCompatibleWithVA(*pVaddr, 
-                    memdescGetPhysAddr(pLocals->pTempMemDesc, addressTranslation, 0), pLocals->pageSize);
+                    memdescGetPhysAddr(pAdjustedMemDesc, addressTranslation, 0), pLocals->pageSize);
 
                 if (!is_page_size_compatible) 
                 {
@@ -678,8 +671,8 @@ dmaAllocMapping_GM107
     if (pLocals->physPageSize < pLocals->pageSize)
     {
         if (!pLocals->bIsMemContiguous ||
-            !NV_IS_ALIGNED64(memdescGetPhysAddr(pLocals->pTempMemDesc, addressTranslation, 0), pLocals->pageSize) ||
-            !NV_IS_ALIGNED64(pLocals->pTempMemDesc->Size, pLocals->pageSize))
+            !NV_IS_ALIGNED64(memdescGetPhysAddr(pAdjustedMemDesc, addressTranslation, 0), pLocals->pageSize) ||
+            !NV_IS_ALIGNED64(pAdjustedMemDesc->Size, pLocals->pageSize))
         {
             //
             // Allow contig allocation to be mapped at page size bigger then physical,
@@ -694,7 +687,7 @@ dmaAllocMapping_GM107
         }
     }
 
-    if (memdescGetFlag(pLocals->pTempMemDesc, MEMDESC_FLAGS_DEVICE_READ_ONLY))
+    if (memdescGetFlag(pAdjustedMemDesc, MEMDESC_FLAGS_DEVICE_READ_ONLY))
     {
         NV_ASSERT_OR_ELSE((pLocals->readOnly == DMA_UPDATE_VASPACE_FLAGS_READ_ONLY),
             status = NV_ERR_INVALID_ARGUMENT; goto cleanup);
@@ -706,33 +699,30 @@ dmaAllocMapping_GM107
     // For large BAR1 SKUs, avoid forcing 64KB size and use the pagesize of
     // the memdesc.
     //
-    if (kgmmuIsVaspaceInteropSupported(pKernelGmmu) &&
-        pLocals->bIsBar1)
+    if (pLocals->bIsBar1)
     {
         if ((pLocals->pageSize > pLocals->vaspaceBigPageSize) &&
              kbusIsBar1Force64KBMappingEnabled(pKernelBus))
         {
             pLocals->pageSize = pLocals->vaspaceBigPageSize;
 
-            SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-                memdescSetPageSize(memdescGetMemDescFromGpu(pAdjustedMemDesc, pGpu),
-                               addressTranslation, (NvU32)pLocals->pageSize);
-            SLI_LOOP_END
+            memdescSetPageSize(pAdjustedMemDesc, addressTranslation,
+                               (NvU32)pLocals->pageSize);
         }
     }
 
     pLocals->pageShift = BIT_IDX_32(pLocals->pageArrayGranularity);
 
     // Get mapping params on current gpu memdesc
-    pLocals->pageOffset   = memdescGetPhysAddr(pLocals->pTempMemDesc, addressTranslation, 0) & (pLocals->pageSize - 1);
-    pLocals->mapLength    = RM_ALIGN_UP(pLocals->pageOffset + pLocals->pTempMemDesc->Size, pLocals->pageSize);
+    pLocals->pageOffset   = memdescGetPhysAddr(pAdjustedMemDesc, addressTranslation, 0) & (pLocals->pageSize - 1);
+    pLocals->mapLength    = RM_ALIGN_UP(pLocals->pageOffset + pAdjustedMemDesc->Size, pLocals->pageSize);
     pLocals->pageCount    = NvU64_LO32(pLocals->mapLength >> pLocals->pageShift);
 
     pLocals->kind                           = NV_MMU_PTE_KIND_PITCH;
 
     // Get compression/pte pLocals->kind on current gpu memdesc
     status = memmgrGetKindComprFromMemDesc(pMemoryManager,
-                                           pLocals->pTempMemDesc,
+                                           pAdjustedMemDesc,
                                            0,
                                            &pLocals->kind, &pLocals->comprInfo);
 
@@ -754,23 +744,6 @@ dmaAllocMapping_GM107
         NV_PRINTF(LEVEL_WARNING, "Requested 4K mapping on compressible sufrace. Overriding to physical page granularity...\n");
         pLocals->pageSize = pLocals->physPageSize;
     }
-
-#ifdef DEBUG
-    // Check for subdevices consistency if broadcast memdesc is passed in
-    if (memdescHasSubDeviceMemDescs(pAdjustedMemDesc))
-    {
-        // Check pageOffset, pageSize consistency across subdevices
-        memdescCheckSubDevicePageSizeConsistency(pGpu, pAdjustedMemDesc, pVAS, pLocals->pageSize, pLocals->pageOffset);
-
-        // Check mem contiguity consistency across subdevices
-        memdescCheckSubDeviceMemContiguityConsistency(pGpu, pAdjustedMemDesc, pVAS, pLocals->bIsMemContiguous);
-
-        // Check compression/pte pLocals->kind consistency across subdevices
-        status = memdescCheckSubDeviceKindComprConsistency(pGpu, pAdjustedMemDesc, pVAS,
-                                                           pLocals->kind, &pLocals->comprInfo);
-        NV_ASSERT(!status);
-    }
-#endif
 
     //
     //             +-- +-- +------------+ --+
@@ -799,16 +772,14 @@ dmaAllocMapping_GM107
     }
     else
     {
-        pLocals->pteCount = pLocals->pTempMemDesc->PageCount;
+        pLocals->pteCount = pAdjustedMemDesc->PageCount;
     }
 
     // Disable PLC Compression for FLA->PA Mapping because of the HW Bug: 3046774
     if (pMemorySystemConfig->bUseRawModeComptaglineAllocation &&
         pKernelMemorySystem->bDisablePlcForCertainOffsetsBug3046774)
     {
-        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-
-        if (((vaspaceGetFlags(pVAS) & VASPACE_FLAGS_FLA) || (dynamicCast(pVAS, FABRIC_VASPACE) != NULL)) &&
+        if ((dynamicCast(pVAS, FABRIC_VASPACE) != NULL) &&
             memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, pLocals->kind) &&
             !memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_DISALLOW_PLC, pLocals->kind))
         {
@@ -826,8 +797,6 @@ dmaAllocMapping_GM107
         // BAR1 VA space is split when MIG mem partitioning is enabled
         if (pLocals->bIsBar1 && pLocals->bIsMIGMemPartitioningEnabled && IS_GFID_PF(gfid))
         {
-            KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-
             pLocals->totalVaRange = memmgrGetMIGPartitionableBAR1Range(pGpu, pMemoryManager);
             NV_ASSERT_OK_OR_GOTO(status,
                 kmemsysSwizzIdToMIGMemRange(pGpu, pKernelMemorySystem, swizzId, pLocals->totalVaRange, &pLocals->totalVaRange),
@@ -1062,25 +1031,7 @@ dmaAllocMapping_GM107
         NV_ASSERT_OR_GOTO(pLocals->pMemory != NULL, fail_post_register);
         pLocals->pSrcGpu = pLocals->pMemory->pGpu;
 
-        // XXX - is this required here if we disable SLI BC below?
-        GPU_RES_SET_THREAD_BC_STATE(pLocals->pMemory->pDevice);
-
-        if (IsSLIEnabled(pLocals->pSrcGpu))
-        {
-            NvU32 deviceInstance = gpuGetDeviceInstance(pLocals->pSrcGpu);
-
-            pLocals->pSrcGpu = gpumgrGetGpuFromSubDeviceInst(deviceInstance, pLocals->subDevIdSrc);
-            gpumgrSetBcEnabledStatus(pLocals->pSrcGpu, NV_FALSE);
-        }
-
         pLocals->peerNumber = kbusGetPeerId_HAL(pGpu, pKernelBus, pLocals->pSrcGpu);
-
-        // only needed pLocals->pSrcGpu for the one line above, swap back now.
-        if (IsSLIEnabled(pLocals->pSrcGpu))
-        {
-            pLocals->pSrcGpu = gpumgrGetParentGPU(pLocals->pSrcGpu);
-            gpumgrSetBcEnabledStatus(pLocals->pSrcGpu, NV_TRUE);
-        }
 
         NV_PRINTF(LEVEL_INFO,
                   "P2P LOOPBACK setup with physical vidmem at 0x%llx and virtual address "
@@ -1107,364 +1058,342 @@ dmaAllocMapping_GM107
         }
     }
 
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
+    // Commit the mapping update
+    pLocals->pPteArray = memdescGetPteArray(pAdjustedMemDesc, addressTranslation);
+
+    if (!pLocals->bIsMIGMemPartitioningEnabled &&
+        memdescGetFlag(pAdjustedMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED))
+    {
+        pLocals->pageArrayFlags |= DMA_PAGE_ARRARY_FLAGS_LOCALIZED;
+    }
+    dmaPageArrayInitWithFlags(&pLocals->pageArray, pLocals->pPteArray, pLocals->pteCount,
+                              pLocals->pageArrayFlags, pAdjustedMemDesc->localizedMask);
+    pLocals->pageArray.PteAdjust = pAdjustedMemDesc->PteAdjust;
+    NV_ASSERT_OR_ELSE(pLocals->pageArray.PteAdjust < pAdjustedMemDesc->pageArrayGranularity, status = NV_ERR_INVALID_STATE; goto cleanup);
+
+    // Get pLocals->aperture
+    if (memdescGetAddressSpace(pAdjustedMemDesc) == ADDR_FBMEM)
     {
         if (pLocals->p2p)
         {
-            if (pLocals->bFlaImport)
+            pLocals->aperture = GMMU_APERTURE_PEER;
+        }
+        else if (pLocals->bIndirectPeer)
+        {
+            pLocals->aperture = GMMU_APERTURE_SYS_COH;
+        }
+        else
+        {
+            pLocals->aperture = GMMU_APERTURE_VIDEO;
+        }
+
+    }
+    else if (
+             (memdescGetAddressSpace(pAdjustedMemDesc) == ADDR_FABRIC_MC) ||
+             (memdescGetAddressSpace(pAdjustedMemDesc) == ADDR_FABRIC_V2))
+    {
+        OBJGPU *pMappingGpu = pGpu;
+        OBJGPU *pPeerGpu;
+        pLocals->peerNumber = BUS_INVALID_PEER;
+
+        if (pLocals->pMemory == NULL)
+        {
+            status = NV_ERR_INVALID_STATE;
+            DBG_BREAKPOINT();
+            goto mapping_done;
+        }
+
+        pPeerGpu = pLocals->pMemory->pGpu;
+
+        if (memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, pLocals->kind))
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                  "Fabric memory should not be compressible.\n");
+            status = NV_ERR_INVALID_STATE;
+            DBG_BREAKPOINT();
+            goto mapping_done;
+        }
+
+        pLocals->aperture = GMMU_APERTURE_PEER;
+
+        if (!memIsGpuMapAllowed(pLocals->pMemory, pMappingGpu))
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Mapping Gpu is not attached to the given memory object\n");
+            status = NV_ERR_INVALID_STATE;
+            DBG_BREAKPOINT();
+            goto mapping_done;
+        }
+
+        if (pPeerGpu != NULL)
+        {
+            if (IS_VIRTUAL_WITH_SRIOV(pMappingGpu) &&
+                !gpuIsWarBug200577889SriovHeavyEnabled(pMappingGpu))
             {
-                pLocals->pTempMemDesc = memdescGetMemDescFromGpu(pAdjustedMemDesc, pGpu);
+                pLocals->peerNumber = kbusGetNvlinkPeerId_HAL(pMappingGpu,
+                                                            GPU_GET_KERNEL_BUS(pMappingGpu),
+                                                            pPeerGpu);
             }
             else
             {
-                pLocals->pTempMemDesc = memdescGetMemDescFromGpu(pAdjustedMemDesc, pLocals->pSrcGpu);
+                KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pMappingGpu);
+
+                if ((pKernelNvlink != NULL) &&
+                    knvlinkIsNvlinkP2pSupported(pMappingGpu, pKernelNvlink, pPeerGpu))
+                {
+                    pLocals->peerNumber = kbusGetPeerId_HAL(pMappingGpu, GPU_GET_KERNEL_BUS(pMappingGpu),
+                                                        pPeerGpu);
+                }
             }
         }
         else
         {
-            pLocals->pTempMemDesc = memdescGetMemDescFromGpu(pAdjustedMemDesc, pGpu);
+            pLocals->peerNumber = kbusGetNvSwitchPeerId_HAL(pMappingGpu,
+                                                            GPU_GET_KERNEL_BUS(pMappingGpu));
         }
 
-        // Commit the mapping update
-        pLocals->pPteArray = memdescGetPteArray(pLocals->pTempMemDesc, addressTranslation);
-
-        if (!pLocals->bIsMIGMemPartitioningEnabled &&
-            memdescGetFlag(pLocals->pTempMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED))
+        if (pLocals->peerNumber == BUS_INVALID_PEER)
         {
-            pLocals->pageArrayFlags |= DMA_PAGE_ARRARY_FLAGS_LOCALIZED;
+            status = NV_ERR_INVALID_STATE;
+            DBG_BREAKPOINT();
+            goto mapping_done;
         }
-        dmaPageArrayInitWithFlags(&pLocals->pageArray, pLocals->pPteArray, pLocals->pteCount,
-                                  pLocals->pageArrayFlags, pLocals->pTempMemDesc->localizedMask);
-        pLocals->pageArray.PteAdjust = pLocals->pTempMemDesc->PteAdjust;
-        NV_ASSERT_OR_ELSE(pLocals->pageArray.PteAdjust < pLocals->pTempMemDesc->pageArrayGranularity, status = NV_ERR_INVALID_STATE; goto cleanup);
+    }
+    else if (memdescIsEgm(pAdjustedMemDesc))
+    {
+        pLocals->aperture = GMMU_APERTURE_PEER;
 
-        // Get pLocals->aperture
-        if (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FBMEM)
+        if (pLocals->p2p)
         {
-            if (pLocals->p2p)
-            {
-                pLocals->aperture = GMMU_APERTURE_PEER;
-            }
-            else if (pLocals->bIndirectPeer)
+            OBJGPU *pMappingGpu = pGpu;
+            OBJGPU *pPeerGpu;
+
+            NV_ASSERT_OR_ELSE(pLocals->pMemory != NULL, status = NV_ERR_INVALID_STATE; goto cleanup);
+
+            pPeerGpu = pLocals->pMemory->pGpu;
+            pLocals->peerNumber = kbusGetEgmPeerId_HAL(pMappingGpu, GPU_GET_KERNEL_BUS(pMappingGpu), pPeerGpu);
+        }
+        else
+        {
+            //
+            // Make sure that we receive a mapping request for EGM memory
+            // only if local EGM is enabled.
+            //
+            NV_ASSERT_OR_ELSE(pMemoryManager->bLocalEgmEnabled, status = NV_ERR_INVALID_STATE; goto cleanup);
+            pLocals->peerNumber = pMemoryManager->localEgmPeerId;
+        }
+    }
+    else
+    {
+        // No P2P for system memory
+        if (pLocals->p2p)
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            NV_PRINTF(LEVEL_ERROR, "No P2P for system memory.\n");
+            goto mapping_done;
+        }
+
+        if (memdescGetFlag(pAdjustedMemDesc, MEMDESC_FLAGS_ALLOC_SKED_REFLECTED))
+        {
+            pLocals->aperture = GMMU_APERTURE_SYS_NONCOH;
+        }
+        //
+        // Coherent platforms like tegra use the aperture field as a way
+        // to signal whether the CPU (or other IO devices) will snoop the GPU cache.
+        //
+        else if (pMemoryManager->bPlatformFullyCoherent)
+        {
+            if (pLocals->gpuCacheSnoop)
             {
                 pLocals->aperture = GMMU_APERTURE_SYS_COH;
             }
             else
             {
-                pLocals->aperture = GMMU_APERTURE_VIDEO;
-            }
-
-        }
-        else if (
-                 (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FABRIC_MC) ||
-                 (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FABRIC_V2))
-        {
-            OBJGPU *pMappingGpu = pGpu;
-            OBJGPU *pPeerGpu;
-            pLocals->peerNumber = BUS_INVALID_PEER;
-
-            if (pLocals->pMemory == NULL)
-            {
-                status = NV_ERR_INVALID_STATE;
-                DBG_BREAKPOINT();
-                SLI_LOOP_BREAK;
-            }
-
-            pPeerGpu = pLocals->pMemory->pGpu;
-
-            if (memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, pLocals->kind))
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                      "Fabric memory should not be compressible.\n");
-                status = NV_ERR_INVALID_STATE;
-                DBG_BREAKPOINT();
-                SLI_LOOP_BREAK;
-            }
-
-            pLocals->aperture = GMMU_APERTURE_PEER;
-
-            if (!memIsGpuMapAllowed(pLocals->pMemory, pMappingGpu))
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                          "Mapping Gpu is not attached to the given memory object\n");
-                status = NV_ERR_INVALID_STATE;
-                DBG_BREAKPOINT();
-                SLI_LOOP_BREAK;
-            }
-
-            if (pPeerGpu != NULL)
-            {
-                if (IS_VIRTUAL_WITH_SRIOV(pMappingGpu) &&
-                    !gpuIsWarBug200577889SriovHeavyEnabled(pMappingGpu))
-                {
-                    pLocals->peerNumber = kbusGetNvlinkPeerId_HAL(pMappingGpu,
-                                                                GPU_GET_KERNEL_BUS(pMappingGpu),
-                                                                pPeerGpu);
-                }
-                else
-                {
-                    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pMappingGpu);
-
-                    if ((pKernelNvlink != NULL) &&
-                        knvlinkIsNvlinkP2pSupported(pMappingGpu, pKernelNvlink, pPeerGpu))
-                    {
-                        pLocals->peerNumber = kbusGetPeerId_HAL(pMappingGpu, GPU_GET_KERNEL_BUS(pMappingGpu),
-                                                            pPeerGpu);
-                    }
-                }
-            }
-            else
-            {
-                pLocals->peerNumber = kbusGetNvSwitchPeerId_HAL(pMappingGpu,
-                                                                GPU_GET_KERNEL_BUS(pMappingGpu));
-            }
-
-            if (pLocals->peerNumber == BUS_INVALID_PEER)
-            {
-                status = NV_ERR_INVALID_STATE;
-                DBG_BREAKPOINT();
-                SLI_LOOP_BREAK;
+                pLocals->aperture = GMMU_APERTURE_SYS_NONCOH;
             }
         }
-        else if (memdescIsEgm(pLocals->pTempMemDesc))
-        {
-            pLocals->aperture = GMMU_APERTURE_PEER;
-
-            if (pLocals->p2p)
-            {
-                OBJGPU *pMappingGpu = pGpu;
-                OBJGPU *pPeerGpu;
-
-                NV_ASSERT_OR_ELSE(pLocals->pMemory != NULL, status = NV_ERR_INVALID_STATE; goto cleanup);
-
-                pPeerGpu = pLocals->pMemory->pGpu;
-                pLocals->peerNumber = kbusGetEgmPeerId_HAL(pMappingGpu, GPU_GET_KERNEL_BUS(pMappingGpu), pPeerGpu);
-            }
-            else
-            {
-                //
-                // Make sure that we receive a mapping request for EGM memory
-                // only if local EGM is enabled.
-                //
-                NV_ASSERT_OR_ELSE(pMemoryManager->bLocalEgmEnabled, status = NV_ERR_INVALID_STATE; goto cleanup);
-                pLocals->peerNumber = pMemoryManager->localEgmPeerId;
-            }
-        }
+        //
+        // For platforms that do not support full coherency, the aperture flag signals
+        // whether the GPU will snoop the CPU cache.
+        //
         else
         {
-            // No P2P for system memory
-            if (pLocals->p2p)
+            if (pLocals->cpuCacheSnoop)
             {
-                status = NV_ERR_INVALID_ARGUMENT;
-                NV_PRINTF(LEVEL_ERROR, "No P2P for system memory.\n");
-                SLI_LOOP_BREAK;
+                pLocals->aperture = GMMU_APERTURE_SYS_COH;
             }
-
-            if (memdescGetFlag(pAdjustedMemDesc, MEMDESC_FLAGS_ALLOC_SKED_REFLECTED))
+            else
             {
                 pLocals->aperture = GMMU_APERTURE_SYS_NONCOH;
             }
-            //
-            // Coherent platforms like tegra use the aperture field as a way
-            // to signal whether the CPU (or other IO devices) will snoop the GPU cache.
-            //
-            else if (pMemoryManager->bPlatformFullyCoherent)
-            {
-                if (pLocals->gpuCacheSnoop)
-                {
-                    pLocals->aperture = GMMU_APERTURE_SYS_COH;
-                }
-                else
-                {
-                    pLocals->aperture = GMMU_APERTURE_SYS_NONCOH;
-                }
-            }
-            //
-            // For platforms that do not support full coherency, the aperture flag signals
-            // whether the GPU will snoop the CPU cache.
-            //
-            else
-            {
-                if (pLocals->cpuCacheSnoop)
-                {
-                    pLocals->aperture = GMMU_APERTURE_SYS_COH;
-                }
-                else
-                {
-                    pLocals->aperture = GMMU_APERTURE_SYS_NONCOH;
-                }
-            }
-        }
-
-        if (pLocals->p2p == NVOS46_FLAGS_P2P_ENABLE_SLI)
-        {
-            if (pLocals->pSrcGpu == pGpu)
-            {
-                // Leave the local GPU VA range unmapped (invalid).
-                SLI_LOOP_CONTINUE;
-            }
-            else
-            {
-                pLocals->peerNumber = kbusGetPeerId_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), pLocals->pSrcGpu);
-            }
-        }
-
-        if (pLocals->aperture == GMMU_APERTURE_PEER &&
-            pLocals->peerNumber == BUS_INVALID_PEER)
-        {
-            status = NV_ERR_INVALID_STATE;
-            DBG_BREAKPOINT();
-            SLI_LOOP_BREAK;
-        }
-
-        if (((gpuIsSriovEnabled(pGpu) && IS_GFID_VF(gfid)) || IS_VIRTUAL_WITH_SRIOV(pGpu)) &&
-            (pLocals->aperture == GMMU_APERTURE_VIDEO) &&
-            (pLocals->pageSize > gpuGetVmmuSegmentSize(pGpu)))
-        {
-            NV_CHECK_FAILED(LEVEL_ERROR, "Vidmem page size is limited by VMMU segment size when GPU is in SRIOV mode");
-            status = NV_ERR_INVALID_ARGUMENT;
-            SLI_LOOP_BREAK;
-        }
-
-        //
-        // Fabric memory descriptors are pre-encoded with the fabric base address
-        // use NVLINK_INVALID_FABRIC_ADDR to avoid encoding twice
-        //
-        // Skip fabric base address for Local EGM as it uses peer aperture but
-        // doesn't require fabric address
-        //
-        if (pLocals->bFlaImport ||
-            (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FABRIC_MC) ||
-            (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FABRIC_V2) ||
-            (memdescIsEgm(pLocals->pTempMemDesc) && (pGpu == pLocals->pSrcGpu)))
-        {
-            pLocals->fabricAddr = NVLINK_INVALID_FABRIC_ADDR;
-        }
-        else if (GPU_GET_KERNEL_NVLINK(pGpu) != NULL)
-        {
-            if (!GPU_IS_NVSWITCH_DETECTED(pGpu) &&
-                gpuIsSelfHosted(pGpu))
-            {
-                // NVLink direct-connect
-
-                if (memdescIsEgm(pLocals->pTempMemDesc))
-                {
-                    pLocals->fabricAddr = NVLINK_INVALID_FABRIC_ADDR;
-                }
-                else
-                {
-                    // Get vidmem base address, if applicable
-                    pLocals->fabricAddr = knvlinkGetDirectConnectBaseAddress(pGpu,
-                                                            GPU_GET_KERNEL_NVLINK(pGpu));
-                }
-            }
-            else
-            {
-                // NvSwitch-connected
-
-                if (memdescIsEgm(pLocals->pTempMemDesc))
-                {
-                    // Get EGM fabric address for Remote EGM
-                    status = _dmaGetFabricEgmAddress(pLocals->pSrcGpu, pLocals->aperture,
-                                                     pLocals->kind, &pLocals->fabricAddr);
-                }
-                else
-                {
-                    // Get vidmem fabric address
-                    status = _dmaGetFabricAddress(pLocals->pSrcGpu, pLocals->aperture,
-                                                  pLocals->kind, &pLocals->fabricAddr);
-                }
-
-                if (status != NV_OK)
-                {
-                    DBG_BREAKPOINT();
-                    SLI_LOOP_BREAK;
-                }
-            }
-        }
-        else
-        {
-            pLocals->fabricAddr = NVLINK_INVALID_FABRIC_ADDR;
-        }
-
-        pLocals->bVolatile = dmaIsDefaultGpuUncached_HAL(pDma, pLocals->pTempMemDesc,
-                                                         pLocals->aperture, pLocals->bIndirectPeer);
-
-        // We shouldn't modify volatility for MMIO page.
-        if (!memdescGetFlag(pLocals->pTempMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
-        {
-            switch (DRF_VAL(OS46, _FLAGS, _GPU_CACHEABLE, flags))
-            {
-                case NVOS46_FLAGS_GPU_CACHEABLE_DEFAULT:
-                case NVOS46_FLAGS_GPU_CACHEABLE_INVALID:
-                    // The default case is to use the underlying allocation's cache attribute
-                    break;
-                case NVOS46_FLAGS_GPU_CACHEABLE_NO:
-                    pLocals->bVolatile = NV_TRUE;
-                    break;
-                case NVOS46_FLAGS_GPU_CACHEABLE_YES:
-                    pLocals->bVolatile = NV_FALSE;
-                    break;
-            }
-        }
-
-        if (pMemoryManager->bPlatformFullyCoherent &&
-            pLocals->aperture == GMMU_APERTURE_SYS_NONCOH &&
-            pLocals->bVolatile)
-        {
-            //
-            // On fully coherent systems, platform atomics are not supported for SYS_NCOH + VOL=1 mappings.
-            // Restricting this case is not viable as it requires clients to choose between the less
-            // performant SYS_COH mode or the more performant SYS_NCOH mode with cache mgmt ops to maintain
-            // functional correctness.
-            //
-            NV_PRINTF(LEVEL_INFO, "SYS_NCOH + VOL=1 mappings do not support platform atomics.\n");
-        }
-
-        pLocals->bNeedL2InvalidateAtUnmap = kmemsysNeedInvalidateGpuCacheOnUnmap(pGpu, pKernelMemorySystem,
-                                                                                 pLocals->bVolatile, pLocals->aperture);
-        if (pCliMapInfo != NULL)
-        {
-            pCliMapInfo->pDmaMappingInfo->aperture = pLocals->aperture;
-            pCliMapInfo->pDmaMappingInfo->bNeedL2InvalidateAtUnmap = pLocals->bNeedL2InvalidateAtUnmap;
-        }
-        else
-        {
-            NV_ASSERT_TRUE_OR_GOTO(status, !pLocals->bNeedL2InvalidateAtUnmap,
-                                   NV_ERR_INVALID_ARGUMENT, fail_post_register);
-        }
-
-        pDma = GPU_GET_DMA(pGpu);
-
-        status = dmaUpdateVASpace_HAL(pGpu, pDma,
-                                      pVAS,
-                                      pLocals->pTempMemDesc,
-                                      NULL,
-                                      pLocals->vaLo, pLocals->vaHi,
-                                      DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL | pLocals->readOnly | pLocals->priv |
-                                          pLocals->tlbLock | pLocals->shaderFlags | pLocals->disableEncryption,
-                                     &pLocals->pageArray,
-                                     &pLocals->comprInfo,
-                                      0,
-                                      NV_MMU_PTE_VALID_TRUE,
-                                      pLocals->aperture,
-                                      pLocals->bVolatile,
-                                      pLocals->peerNumber,
-                                      pLocals->fabricAddr,
-                                      pLocals->deferInvalidate,
-                                      NV_FALSE,
-                                      pLocals->pageSize);
-        if (NV_OK != status)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "can't update VA space for mapping @vaddr=0x%llx\n",
-                      pLocals->vaLo);
-            DBG_BREAKPOINT();
-            SLI_LOOP_BREAK;
         }
     }
-    SLI_LOOP_END
 
+    if (pLocals->p2p == NVOS46_FLAGS_P2P_ENABLE_SLI)
+    {
+        if (pLocals->pSrcGpu == pGpu)
+        {
+            // Leave the local GPU VA range unmapped (invalid).
+            goto mapping_done;
+        }
+        else
+        {
+            pLocals->peerNumber = kbusGetPeerId_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), pLocals->pSrcGpu);
+        }
+    }
+
+    if (pLocals->aperture == GMMU_APERTURE_PEER &&
+        pLocals->peerNumber == BUS_INVALID_PEER)
+    {
+        status = NV_ERR_INVALID_STATE;
+        DBG_BREAKPOINT();
+        goto mapping_done;
+    }
+
+    if (((gpuIsSriovEnabled(pGpu) && IS_GFID_VF(gfid)) || IS_VIRTUAL_WITH_SRIOV(pGpu)) &&
+        (pLocals->aperture == GMMU_APERTURE_VIDEO) &&
+        (pLocals->pageSize > gpuGetVmmuSegmentSize(pGpu)))
+    {
+        NV_CHECK_FAILED(LEVEL_ERROR, "Vidmem page size is limited by VMMU segment size when GPU is in SRIOV mode");
+        status = NV_ERR_INVALID_ARGUMENT;
+        goto mapping_done;
+    }
+
+    //
+    // Fabric memory descriptors are pre-encoded with the fabric base address
+    // use NVLINK_INVALID_FABRIC_ADDR to avoid encoding twice
+    //
+    // Skip fabric base address for Local EGM as it uses peer aperture but
+    // doesn't require fabric address
+    //
+    if (
+        (memdescGetAddressSpace(pAdjustedMemDesc) == ADDR_FABRIC_MC) ||
+        (memdescGetAddressSpace(pAdjustedMemDesc) == ADDR_FABRIC_V2) ||
+        (memdescIsEgm(pAdjustedMemDesc) && (pGpu == pLocals->pSrcGpu)))
+    {
+        pLocals->fabricAddr = NVLINK_INVALID_FABRIC_ADDR;
+    }
+    else if (GPU_GET_KERNEL_NVLINK(pGpu) != NULL)
+    {
+        if (!GPU_IS_NVSWITCH_DETECTED(pGpu) &&
+            gpuIsSelfHosted(pGpu))
+        {
+            // NVLink direct-connect
+
+            if (memdescIsEgm(pAdjustedMemDesc))
+            {
+                pLocals->fabricAddr = NVLINK_INVALID_FABRIC_ADDR;
+            }
+            else
+            {
+                // Get vidmem base address, if applicable
+                pLocals->fabricAddr = knvlinkGetDirectConnectBaseAddress(pGpu,
+                                                        GPU_GET_KERNEL_NVLINK(pGpu));
+            }
+        }
+        else
+        {
+            // NvSwitch-connected
+
+            if (memdescIsEgm(pAdjustedMemDesc))
+            {
+                // Get EGM fabric address for Remote EGM
+                status = _dmaGetFabricEgmAddress(pLocals->pSrcGpu, pLocals->aperture,
+                                                 pLocals->kind, &pLocals->fabricAddr);
+            }
+            else
+            {
+                // Get vidmem fabric address
+                status = _dmaGetFabricAddress(pLocals->pSrcGpu, pLocals->aperture,
+                                              pLocals->kind, &pLocals->fabricAddr);
+            }
+
+            if (status != NV_OK)
+            {
+                DBG_BREAKPOINT();
+                goto mapping_done;
+            }
+        }
+    }
+    else
+    {
+        pLocals->fabricAddr = NVLINK_INVALID_FABRIC_ADDR;
+    }
+
+    pLocals->bVolatile = dmaIsDefaultGpuUncached_HAL(pDma, pAdjustedMemDesc,
+                                                     pLocals->aperture, pLocals->bIndirectPeer);
+
+    // We shouldn't modify volatility for MMIO page.
+    if (!memdescGetFlag(pAdjustedMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
+    {
+        switch (DRF_VAL(OS46, _FLAGS, _GPU_CACHEABLE, flags))
+        {
+            case NVOS46_FLAGS_GPU_CACHEABLE_DEFAULT:
+            case NVOS46_FLAGS_GPU_CACHEABLE_INVALID:
+                // The default case is to use the underlying allocation's cache attribute
+                break;
+            case NVOS46_FLAGS_GPU_CACHEABLE_NO:
+                pLocals->bVolatile = NV_TRUE;
+                break;
+            case NVOS46_FLAGS_GPU_CACHEABLE_YES:
+                pLocals->bVolatile = NV_FALSE;
+                break;
+        }
+    }
+
+    if (pMemoryManager->bPlatformFullyCoherent &&
+        pLocals->aperture == GMMU_APERTURE_SYS_NONCOH &&
+        pLocals->bVolatile)
+    {
+        //
+        // On fully coherent systems, platform atomics are not supported for SYS_NCOH + VOL=1 mappings.
+        // Restricting this case is not viable as it requires clients to choose between the less
+        // performant SYS_COH mode or the more performant SYS_NCOH mode with cache mgmt ops to maintain
+        // functional correctness.
+        //
+        NV_PRINTF(LEVEL_INFO, "SYS_NCOH + VOL=1 mappings do not support platform atomics.\n");
+    }
+
+    pLocals->bNeedL2InvalidateAtUnmap = kmemsysNeedInvalidateGpuCacheOnUnmap(pGpu, pKernelMemorySystem,
+                                                                             pLocals->bVolatile, pLocals->aperture);
+    if (pCliMapInfo != NULL)
+    {
+        pCliMapInfo->pDmaMappingInfo->aperture = pLocals->aperture;
+        pCliMapInfo->pDmaMappingInfo->bNeedL2InvalidateAtUnmap = pLocals->bNeedL2InvalidateAtUnmap;
+    }
+    else
+    {
+        NV_ASSERT_TRUE_OR_GOTO(status, !pLocals->bNeedL2InvalidateAtUnmap,
+                               NV_ERR_INVALID_ARGUMENT, fail_post_register);
+    }
+
+    status = dmaUpdateVASpace_HAL(pGpu, pDma,
+                                  pVAS,
+                                  pAdjustedMemDesc,
+                                  NULL,
+                                  pLocals->vaLo, pLocals->vaHi,
+                                  DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL | pLocals->readOnly | pLocals->priv |
+                                      pLocals->tlbLock | pLocals->shaderFlags | pLocals->disableEncryption,
+                                 &pLocals->pageArray,
+                                 &pLocals->comprInfo,
+                                  0,
+                                  NV_MMU_PTE_VALID_TRUE,
+                                  pLocals->aperture,
+                                  pLocals->bVolatile,
+                                  pLocals->peerNumber,
+                                  pLocals->fabricAddr,
+                                  pLocals->deferInvalidate,
+                                  NV_FALSE,
+                                  pLocals->pageSize);
+    if (NV_OK != status)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "can't update VA space for mapping @vaddr=0x%llx\n",
+                  pLocals->vaLo);
+        DBG_BREAKPOINT();
+    }
+
+mapping_done:
     if (NV_OK == status)
     {
         //
@@ -1481,10 +1410,8 @@ dmaAllocMapping_GM107
             pCliMapInfo->pDmaMappingInfo->mapPageSize = pLocals->pageSize;
         }
 
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
         // This is needed for cliDB tracking of the map.
-        memdescSetPageSize(memdescGetMemDescFromGpu(pAdjustedMemDesc, pGpu), addressTranslation, pLocals->pageSize);
-        SLI_LOOP_END
+        memdescSetPageSize(pAdjustedMemDesc, addressTranslation, pLocals->pageSize);
     }
     else
     {
@@ -1554,14 +1481,11 @@ dmaFreeMapping_GM107
     OBJGPU        *pLocalGpu = NULL;
 
     NV_STATUS status = NV_OK;
-    MEMORY_DESCRIPTOR *pTempMemDesc    = NULL;
 
     NV_ASSERT_OR_RETURN(NULL != pMemDesc, NV_ERR_INVALID_ARGUMENT);
 
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-        // ensure the page size has been set before continuing
-        NV_ASSERT(memdescGetPageSize(memdescGetMemDescFromGpu(pMemDesc, pGpu), VAS_ADDRESS_TRANSLATION(pVAS)) != 0);
-    SLI_LOOP_END
+    // ensure the page size has been set before continuing
+    NV_ASSERT(memdescGetPageSize(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS)) != 0);
 
     if (pCliMapInfo)
     {
@@ -1581,28 +1505,18 @@ dmaFreeMapping_GM107
     // Handle NV50_MEMORY_VIRTUAL use case
     if ((pVirtualMemory != NULL) && pVirtualMemory->bReserveVaOnAlloc)
     {
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
+        // For SLI P2P mappings the source GPU itself was never mapped.
+        if ((p2p != NVOS46_FLAGS_P2P_ENABLE_SLI) || (pLocalGpu != pGpu))
         {
-            if (p2p == NVOS46_FLAGS_P2P_ENABLE_SLI)
-            {
-                if (pLocalGpu == pGpu)
-                {
-                    SLI_LOOP_CONTINUE;
-                }
-            }
-
-            pTempMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
-
             NV_ASSERT_OR_RETURN(pCliMapInfo != NULL, NV_ERR_INVALID_STATE);
             NV_ASSERT_OR_RETURN(pCliMapInfo->pDmaMappingInfo->mapPageSize != 0, NV_ERR_INVALID_STATE);
 
             pageSize     = pCliMapInfo->pDmaMappingInfo->mapPageSize;
-            pageOffset   = memdescGetPhysAddr(pTempMemDesc, VAS_ADDRESS_TRANSLATION(pVAS), 0) & (pageSize - 1);
-            mapLength    = RM_ALIGN_UP(pageOffset + pTempMemDesc->Size, pageSize);
+            pageOffset   = memdescGetPhysAddr(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS), 0) & (pageSize - 1);
+            mapLength    = RM_ALIGN_UP(pageOffset + pMemDesc->Size, pageSize);
             vaLo         = RM_ALIGN_DOWN(vAddr, pageSize);
             vaHi         = vaLo + mapLength - 1;
 
-            pDma = GPU_GET_DMA(pGpu);
             if (vaspaceGetFlags(pVAS) & VASPACE_FLAGS_SPARSIFIED)
             {
                 NV_PRINTF(LEVEL_ERROR, "Using dmaFreeMapping with sparse == False in sparse VASpace path!\n");
@@ -1612,7 +1526,7 @@ dmaFreeMapping_GM107
 
             status = dmaUpdateVASpace_HAL(pGpu, pDma,
                                           pVAS,
-                                          pTempMemDesc,
+                                          pMemDesc,
                                           NULL,
                                           vaLo, vaHi,
                                           DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID, // only change validity
@@ -1633,7 +1547,6 @@ dmaFreeMapping_GM107
                 return status;
             }
         }
-        SLI_LOOP_END
     }
     else
     {
@@ -1642,19 +1555,16 @@ dmaFreeMapping_GM107
 
     //
     // invalidate any cached peer data if this memory was mapped p2p cached.
-    // for SLI case - kmemsysCacheOp would loop through all GPUs
-    // for non-SLI case pGpu is pointing to the P2P mapped GPU would
-    // invalidate only on that GPU.
+    // pGpu is pointing to the P2P mapped GPU, so this invalidates only on
+    // that GPU.
     //
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-        if ((memdescGetGpuP2PCacheAttrib(memdescGetMemDescFromGpu(pMemDesc, pGpu)) == NV_MEMORY_CACHED) &&
-            (p2p != NVOS46_FLAGS_P2P_ENABLE_NONE))
-        {
-            KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-            kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, NULL, FB_CACHE_PEER_MEMORY,
-                               FB_CACHE_INVALIDATE);
-        }
-    SLI_LOOP_END
+    if ((memdescGetGpuP2PCacheAttrib(pMemDesc) == NV_MEMORY_CACHED) &&
+        (p2p != NVOS46_FLAGS_P2P_ENABLE_NONE))
+    {
+        KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+        kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, NULL, FB_CACHE_PEER_MEMORY,
+                           FB_CACHE_INVALIDATE);
+    }
 
     if (pCliMapInfo != NULL && pCliMapInfo->pDmaMappingInfo->bNeedL2InvalidateAtUnmap)
     {
@@ -2237,17 +2147,6 @@ dmaUpdateVASpace_GF100
         //
         alignSize = RM_PAGE_SIZE;
     }
-    else if (pDma->bDmaEnableFullCompTagLine)
-    {
-        //
-        // Compressed surfaces must be aligned to the compression page size
-        // but don't check for LDDM which may pass in unaligned surfaces incrementally.
-        // Chips that support full comp tag lines will support the VA being aligned to
-        // the big page size. This is because the PA alignement chooses between even/odd pages
-        // and SW programs the PA alignment.
-        //
-        alignSize = vaSpaceBigPageSize;
-    }
 
     //
     // If we have dynamic granularity page arrays enabled we will never
@@ -2313,9 +2212,6 @@ dmaUpdateVASpace_GF100
     const NvU64      vaHi      = NV_ALIGN_DOWN64(vAddrLimit + pageSize, pageSize) - 1;
     GVAS_GPU_STATE  *pGpuState = gvaspaceGetGpuState(pGVAS, pGpu);
     const GMMU_FMT  *pFmt      = pGpuState->pFmt;
-
-    // Enforce unicast.
-    NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
 
     if (bUnmap)
     {
@@ -2686,45 +2582,25 @@ dmaMapBuffer_GM107
     NvU64       vaSize;
     NvU64       vaAlign;
     OBJEHEAP   *pVASpaceHeap = vaspaceGetHeap(pVAS);
-    NvU64       pageSize = 0;
-    NvU64       pageSizeSubDev = 0;
-    NvU64       pageOffs = 0;
-    NvU64       pageOffsSubDev = 0;
+    NvU64       pageSize;
+    NvU64       pageOffs;
     NvU32       flags;
     NvBool      bVolatile;
 
     DMA_PAGE_ARRAY pageArray;
-    MEMORY_DESCRIPTOR *pSubDevMemDesc  = NULL;
     VAS_ALLOC_FLAGS allocFlags      = {0};
 
     NV_ASSERT(pVaddr);
     NV_ASSERT(pVAS);
 
-    //
-    // Sets the page size for all subdevice memdescs when present. Since we don't support
-    // different page size per subdevice, it asserts when the page size differs.
-    //
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-    pSubDevMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
-    if (memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pSubDevMemDesc, VAS_ADDRESS_TRANSLATION(pVAS),
+    if (memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS),
                                      RM_ATTR_PAGE_SIZE_DEFAULT) != NV_OK)
     {
-        SLI_LOOP_RETURN(NV_ERR_INVALID_ARGUMENT);
+        return NV_ERR_INVALID_ARGUMENT;
     }
-    pageSizeSubDev = memdescGetPageSize(pSubDevMemDesc, VAS_ADDRESS_TRANSLATION(pVAS));
-    pageOffsSubDev = memdescGetPhysAddr(pSubDevMemDesc, VAS_ADDRESS_TRANSLATION(pVAS), 0) &
-                        (pageSizeSubDev - 1);
-    if (0 == pageSize)
-    {
-        pageSize = pageSizeSubDev;
-        pageOffs = pageOffsSubDev;
-    }
-    else
-    {
-        NV_ASSERT(pageSize == pageSizeSubDev);
-        NV_ASSERT(pageOffs == pageOffsSubDev);
-    }
-    SLI_LOOP_END
+    pageSize = memdescGetPageSize(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS));
+    pageOffs = memdescGetPhysAddr(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS), 0) &
+                   (pageSize - 1);
 
     status = memmgrGetKindComprFromMemDesc(pMemoryManager, pMemDesc, 0, &kind, &comprInfo);
     if (status != NV_OK)
@@ -2797,25 +2673,21 @@ dmaMapBuffer_GM107
         return status;
     }
 
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-
-    pSubDevMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
-
-    pteCount  = memdescGetContiguity(pSubDevMemDesc, VAS_ADDRESS_TRANSLATION(pVAS)) ? 1 :
+    pteCount  = memdescGetContiguity(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS)) ? 1 :
                     (NvU32)(mapLength >> RM_PAGE_SHIFT);
 
     dmaPageArrayInit(&pageArray,
-        memdescGetPteArray(pSubDevMemDesc, VAS_ADDRESS_TRANSLATION(pVAS)),
+        memdescGetPteArray(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS)),
         pteCount);
     flags = flagsForUpdate;
-    flags |= memdescGetFlag(pSubDevMemDesc, MEMDESC_FLAGS_GPU_PRIVILEGED) ?
+    flags |= memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GPU_PRIVILEGED) ?
                                 DMA_UPDATE_VASPACE_FLAGS_PRIV : 0;
 
-    if (memdescGetAddressSpace(pSubDevMemDesc) == ADDR_FBMEM)
+    if (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM)
     {
         aperture = GMMU_APERTURE_VIDEO;
     }
-    else if (memdescGetCpuCacheAttrib(pSubDevMemDesc) == NV_MEMORY_CACHED)
+    else if (memdescGetCpuCacheAttrib(pMemDesc) == NV_MEMORY_CACHED)
     {
         aperture = GMMU_APERTURE_SYS_COH;
     }
@@ -2824,11 +2696,11 @@ dmaMapBuffer_GM107
         aperture = GMMU_APERTURE_SYS_NONCOH;
     }
 
-    bVolatile = dmaIsDefaultGpuUncached_HAL(pDma, pSubDevMemDesc, aperture, NV_FALSE);
+    bVolatile = dmaIsDefaultGpuUncached_HAL(pDma, pMemDesc, aperture, NV_FALSE);
 
     if (kmemsysNeedInvalidateGpuCacheOnUnmap(pGpu, pKernelMemorySystem, bVolatile, aperture))
     {
-        MEMORY_DESCRIPTOR *pRootMemDesc = memdescGetRootMemDesc(pSubDevMemDesc, NULL);
+        MEMORY_DESCRIPTOR *pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
 
         // mapping creates submemdesc for mapping GPU
         NV_ASSERT_OR_RETURN(pGpu == pRootMemDesc->pGpu && memdescGetAddressSpace(pRootMemDesc) == ADDR_SYSMEM,
@@ -2838,7 +2710,7 @@ dmaMapBuffer_GM107
     }
 
     status = dmaUpdateVASpace_HAL(pGpu, pDma, pVAS,
-                                  pSubDevMemDesc,
+                                  pMemDesc,
                                   NULL,
                                   vaddr, vaddr + mapLength - 1,
                                   flags | DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL,
@@ -2851,13 +2723,6 @@ dmaMapBuffer_GM107
                                   NVLINK_INVALID_FABRIC_ADDR,
                                   NV_FALSE, NV_FALSE,
                                   pageSize);
-
-    if (status != NV_OK)
-    {
-        SLI_LOOP_BREAK;
-    }
-
-    SLI_LOOP_END
 
     if (status != NV_OK)
     {

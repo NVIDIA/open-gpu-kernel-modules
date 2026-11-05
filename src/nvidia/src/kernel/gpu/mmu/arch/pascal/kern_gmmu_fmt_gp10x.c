@@ -197,11 +197,3 @@ void kgmmuFmtInitPte_GP10X(KernelGmmu *pKernelGmmu,
         INIT_FIELD_ADDRESS(&pPte->fldAddrSysmem, NV_MMU_VER2_PTE_ADDRESS_SYS, NV_MMU_VER2_PTE_ADDRESS_SHIFT);
     }
 }
-
-void kgmmuFmtInitPteComptagLine_GP10X(KernelGmmu *pKernelGmmu,
-                                      GMMU_FMT_PTE *pPte,
-                                      const NvU32 version)
-{
-    NV_ASSERT_OR_RETURN_VOID(version == GMMU_FMT_VERSION_2);
-    INIT_FIELD_DESC32(&pPte->fldCompTagLine, NV_MMU_VER2_PTE_COMPTAGLINE);
-}

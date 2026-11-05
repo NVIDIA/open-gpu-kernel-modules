@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,7 +48,6 @@ extern "C" {
 
 #include "containers/list.h"
 #include "containers/map.h"
-#include "containers/multimap.h"
 
 #include "nvtypes.h"
 #include "nvstatus.h"
@@ -80,7 +79,7 @@ extern int g_debugLevel;
 typedef struct RsServer RsServer;
 typedef struct RsDomain RsDomain;
 typedef struct CLIENT_ENTRY CLIENT_ENTRY;
-typedef struct RsResourceDep RsResourceDep;
+typedef struct RsDependencyEdge RsDependencyEdge;
 typedef struct RsResourceRef RsResourceRef;
 typedef struct RsInterMapping RsInterMapping;
 typedef struct RsCpuMapping RsCpuMapping;
@@ -156,7 +155,6 @@ MAKE_LIST(RsResourceRefList, RsResourceRef*);
 MAKE_LIST(RsResourceList, RsResource*);
 MAKE_LIST(RsHandleList, NvHandle);
 MAKE_LIST(RsShareList, RS_SHARE_POLICY);
-MAKE_MULTIMAP(RsIndex, RsResourceRef*);
 
 typedef NV_STATUS (*CtrlImpl_t)(struct RsClient*, struct RsResource*, void*);
 
@@ -249,9 +247,6 @@ typedef enum
     RS_API_MAX,
 } RS_API_ENUM;
 
-NV_STATUS indexAdd(RsIndex *pIndex, NvU32 index, RsResourceRef *pResourceRef);
-NV_STATUS indexRemove(RsIndex *pIndex, NvU32 index, RsResourceRef *pResourceRef);
-
 //
 // Externs
 //
@@ -325,8 +320,6 @@ struct CALL_CONTEXT
 typedef enum {
     RS_ITERATE_CHILDREN,    ///< Iterate over a RsResourceRef's children
     RS_ITERATE_DESCENDANTS, ///< Iterate over a RsResourceRef's children, grandchildren, etc. (unspecified order)
-    RS_ITERATE_CACHED,      ///< Iterate over a RsResourceRef's cache
-    RS_ITERATE_DEPENDANTS,  ///< Iterate over a RsResourceRef's dependants
 } RS_ITER_TYPE;
 
 typedef enum

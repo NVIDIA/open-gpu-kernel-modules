@@ -108,10 +108,9 @@ typedef enum
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__ConfidentialCompute;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__ConfidentialCompute;
 
 
 struct ConfidentialCompute {
@@ -172,11 +171,12 @@ struct ConfidentialCompute {
     NV_STATUS (*__confComputeKeyStoreDeriveKey__)(struct ConfidentialCompute * /*this*/, NvU32);  // halified (2 hals) body
     void (*__confComputeKeyStoreClearExportMasterKey__)(struct ConfidentialCompute * /*this*/);  // halified (2 hals) body
 
-    // 13 PDB properties
+    // 14 PDB properties
 //  NvBool PDB_PROP_CONFCOMPUTE_IS_MISSING inherited from OBJENGSTATE
     NvBool PDB_PROP_CONFCOMPUTE_ENABLED;
     NvBool PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED;
     NvBool PDB_PROP_CONFCOMPUTE_APM_FEATURE_ENABLED;
+    NvBool PDB_PROP_CONFCOMPUTE_BM_SECURE_AI_ENABLED;
     NvBool PDB_PROP_CONFCOMPUTE_DEVTOOLS_MODE_ENABLED;
     NvBool PDB_PROP_CONFCOMPUTE_ENABLE_EARLY_INIT;
     NvBool PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED;
@@ -202,14 +202,14 @@ struct ConfidentialCompute {
     NvU32 keyRotationEnableMask;
     NvU64 keyRotationInternalThreshold;
     NvU64 attackerAdvantage;
-    KEY_ROTATION_STATS_INFO aggregateStats[114];
+    KEY_ROTATION_STATS_INFO aggregateStats[116];
     NvU8 PRIVATE_FIELD(m_exportMasterKey)[32];
     void *PRIVATE_FIELD(m_keySlot);
     NvU8 PRIVATE_FIELD(channelKeySeed)[32];
-    KEY_ROTATION_STATUS PRIVATE_FIELD(keyRotationState)[114];
-    KEY_ROTATION_STATS_INFO PRIVATE_FIELD(freedChannelAggregateStats)[114];
-    KEY_ROTATION_TIMEOUT_INFO PRIVATE_FIELD(keyRotationTimeoutInfo)[114];
-    NvU32 PRIVATE_FIELD(keyRotationCount)[114];
+    KEY_ROTATION_STATUS PRIVATE_FIELD(keyRotationState)[116];
+    KEY_ROTATION_STATS_INFO PRIVATE_FIELD(freedChannelAggregateStats)[116];
+    KEY_ROTATION_TIMEOUT_INFO PRIVATE_FIELD(keyRotationTimeoutInfo)[116];
+    NvU32 PRIVATE_FIELD(keyRotationCount)[116];
     NvU32 PRIVATE_FIELD(keyRotationTimeout);
     NvU64 PRIVATE_FIELD(keyRotationThresholdDelta);
     NvU64 PRIVATE_FIELD(keyRotationUpperThreshold);
@@ -219,27 +219,10 @@ struct ConfidentialCompute {
 };
 
 
-// Vtable with 12 per-class function pointers
-struct NVOC_VTABLE__ConfidentialCompute {
-    NV_STATUS (*__confComputeConstructEngine__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__confComputeStatePreInitLocked__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    NV_STATUS (*__confComputeStateInitLocked__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // virtual override (engstate) base (engstate)
-    void (*__confComputeInitMissing__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__confComputeStatePreInitUnlocked__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__confComputeStateInitUnlocked__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__confComputeStatePreLoad__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__confComputeStateLoad__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__confComputeStateUnload__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__confComputeStatePostUnload__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__confComputeStateDestroy__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__confComputeIsPresent__)(struct OBJGPU *, struct ConfidentialCompute * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__ConfidentialCompute {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__ConfidentialCompute vtable;
 };
 
 #ifndef __nvoc_class_id_ConfidentialCompute
@@ -269,6 +252,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ConfidentialCompute;
 #define PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED
 #define PDB_PROP_CONFCOMPUTE_APM_FEATURE_ENABLED_BASE_CAST
 #define PDB_PROP_CONFCOMPUTE_APM_FEATURE_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_APM_FEATURE_ENABLED
+#define PDB_PROP_CONFCOMPUTE_BM_SECURE_AI_ENABLED_BASE_CAST
+#define PDB_PROP_CONFCOMPUTE_BM_SECURE_AI_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_BM_SECURE_AI_ENABLED
 #define PDB_PROP_CONFCOMPUTE_DEVTOOLS_MODE_ENABLED_BASE_CAST
 #define PDB_PROP_CONFCOMPUTE_DEVTOOLS_MODE_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_DEVTOOLS_MODE_ENABLED
 #define PDB_PROP_CONFCOMPUTE_ENABLE_EARLY_INIT_BASE_CAST
@@ -480,14 +465,14 @@ NvBool confComputeIsGivenThresholdCrossed_IMPL(const CC_CRYPTOBUNDLE_STATS *pSta
 
 
 // Wrapper macros for halified functions
-#define confComputeConstructEngine_FNPTR(pConfCompute) pConfCompute->__nvoc_metadata_ptr->vtable.__confComputeConstructEngine__
+#define confComputeConstructEngine_FNPTR(pConfCompute) pConfCompute->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define confComputeConstructEngine(pGpu, pConfCompute, engDesc) confComputeConstructEngine_DISPATCH(pGpu, pConfCompute, engDesc)
 #define confComputeDestruct_FNPTR(pConfCompute) pConfCompute->__confComputeDestruct__
 #define __nvoc_confComputeDestruct(pConfCompute) confComputeDestruct_DISPATCH(pConfCompute)
-#define confComputeStatePreInitLocked_FNPTR(pConfCompute) pConfCompute->__nvoc_metadata_ptr->vtable.__confComputeStatePreInitLocked__
+#define confComputeStatePreInitLocked_FNPTR(pConfCompute) pConfCompute->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
 #define confComputeStatePreInitLocked(pGpu, pConfCompute) confComputeStatePreInitLocked_DISPATCH(pGpu, pConfCompute)
 #define confComputeStatePreInitLocked_HAL(pGpu, pConfCompute) confComputeStatePreInitLocked_DISPATCH(pGpu, pConfCompute)
-#define confComputeStateInitLocked_FNPTR(pConfCompute) pConfCompute->__nvoc_metadata_ptr->vtable.__confComputeStateInitLocked__
+#define confComputeStateInitLocked_FNPTR(pConfCompute) pConfCompute->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__
 #define confComputeStateInitLocked(pGpu, pConfCompute) confComputeStateInitLocked_DISPATCH(pGpu, pConfCompute)
 #define confComputeStatePostLoad_FNPTR(pConfCompute) pConfCompute->__confComputeStatePostLoad__
 #define confComputeStatePostLoad(pGpu, pConfCompute, flags) confComputeStatePostLoad_DISPATCH(pGpu, pConfCompute, flags)
@@ -606,6 +591,10 @@ NvBool confComputeIsGivenThresholdCrossed_IMPL(const CC_CRYPTOBUNDLE_STATS *pSta
 #define confComputeKeyStoreClearExportMasterKey_FNPTR(pConfCompute) pConfCompute->__confComputeKeyStoreClearExportMasterKey__
 #define confComputeKeyStoreClearExportMasterKey(pConfCompute) confComputeKeyStoreClearExportMasterKey_DISPATCH(pConfCompute)
 #define confComputeKeyStoreClearExportMasterKey_HAL(pConfCompute) confComputeKeyStoreClearExportMasterKey_DISPATCH(pConfCompute)
+#define confComputeConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define confComputeConstructApertures(pGpu, pEngstate) confComputeConstructApertures_DISPATCH(pGpu, pEngstate)
+#define confComputeDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define confComputeDestructApertures(pGpu, pEngstate) confComputeDestructApertures_DISPATCH(pGpu, pEngstate)
 #define confComputeInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define confComputeInitMissing(pGpu, pEngstate) confComputeInitMissing_DISPATCH(pGpu, pEngstate)
 #define confComputeStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__
@@ -627,7 +616,7 @@ NvBool confComputeIsGivenThresholdCrossed_IMPL(const CC_CRYPTOBUNDLE_STATS *pSta
 
 // Dispatch functions
 static inline NV_STATUS confComputeConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, ENGDESCRIPTOR engDesc) {
-    return pConfCompute->__nvoc_metadata_ptr->vtable.__confComputeConstructEngine__(pGpu, pConfCompute, engDesc);
+    return pConfCompute->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(pGpu, staticCast(pConfCompute, OBJENGSTATE), engDesc);
 }
 
 static inline void confComputeDestruct_DISPATCH(struct ConfidentialCompute *pConfCompute) {
@@ -635,11 +624,11 @@ static inline void confComputeDestruct_DISPATCH(struct ConfidentialCompute *pCon
 }
 
 static inline NV_STATUS confComputeStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
-    return pConfCompute->__nvoc_metadata_ptr->vtable.__confComputeStatePreInitLocked__(pGpu, pConfCompute);
+    return pConfCompute->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pConfCompute, OBJENGSTATE));
 }
 
 static inline NV_STATUS confComputeStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
-    return pConfCompute->__nvoc_metadata_ptr->vtable.__confComputeStateInitLocked__(pGpu, pConfCompute);
+    return pConfCompute->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pConfCompute, OBJENGSTATE));
 }
 
 static inline NV_STATUS confComputeStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 flags) {
@@ -798,40 +787,48 @@ static inline void confComputeKeyStoreClearExportMasterKey_DISPATCH(struct Confi
     pConfCompute->__confComputeKeyStoreClearExportMasterKey__(pConfCompute);
 }
 
+static inline NV_STATUS confComputeConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
+static inline void confComputeDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
 static inline void confComputeInitMissing_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__confComputeInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS confComputeStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__confComputeStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS confComputeStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__confComputeStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS confComputeStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__confComputeStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS confComputeStateLoad_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__confComputeStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS confComputeStateUnload_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__confComputeStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS confComputeStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__confComputeStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline void confComputeStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__confComputeStateDestroy__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NvBool confComputeIsPresent_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__confComputeIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions

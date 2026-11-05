@@ -38,6 +38,7 @@
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "gpu/conf_compute/conf_compute_api.h"
+#include "gpu/tdisp/tdisp_mgr.h"
 #include "gpu/subdevice/subdevice.h"
 #include "class/clcb33.h" // NV_CONFIDENTIAL_COMPUTE
 #include "nvrm_registry.h"
@@ -64,6 +65,163 @@ confComputeApiDestruct_IMPL
     ConfidentialComputeApi *pConfComputeApi
 )
 {
+}
+
+static NvBool
+_confComputeApiAreAllGpusNvleReady
+(
+    CONF_COMPUTE_CAPS *pCcCaps
+)
+{
+    OBJGPU *pGpu;
+    NvU32   gpuMask      = 0;
+    NvU32   gpuInstance  = 0;
+
+    if (!pCcCaps->bMultiGpuNvleModeEnabled)
+    {
+        return NV_TRUE;
+    }
+
+    (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
+
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+        if ((pKernelNvlink == NULL) ||
+            !pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED))
+        {
+            continue;
+        }
+
+        if (!pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_NVLE_READY))
+        {
+            return NV_FALSE;
+        }
+    }
+
+    return NV_TRUE;
+}
+
+//
+// knvlinkSetupNvleRemapTables programs the keys of every GPU pair, so run it
+// once and mark all the GPUs NVLE ready before any GPU accepts client
+// requests. On BMSAI, re-keying a GPU that already accepts client requests
+// triggers NVLink fatal error recovery on it.
+//
+static NV_STATUS
+_confComputeApiSetupNvle(void)
+{
+    OBJGPU *pGpu;
+    NvU32   gpuMask;
+    NvU32   gpuInstance    = 0;
+    NvBool  bNvleSetupDone = NV_FALSE;
+
+    (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
+
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+        if ((pKernelNvlink == NULL) ||
+            !pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED))
+        {
+            continue;
+        }
+
+        if (!bNvleSetupDone &&
+            !pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_NVLE_READY))
+        {
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, knvlinkSetupNvleRemapTables(pGpu, pKernelNvlink));
+            bNvleSetupDone = NV_TRUE;
+        }
+
+        pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_NVLE_READY, NV_TRUE);
+    }
+
+    return NV_OK;
+}
+
+//
+// Report whether the TDI backing this GPU has reached secure mode, i.e. whether
+// the TSM handshake has completed and the TDI is in the RUN state.
+//
+static NV_STATUS
+_confComputeApiGetGpuTdiState
+(
+    OBJGPU *pGpu,
+    NvBool *pbTdiSecure
+)
+{
+    TdispMgr *pTdispMgr;
+
+    *pbTdiSecure = NV_FALSE;
+
+    pTdispMgr = GPU_GET_TDISP_MGR(pGpu);
+    NV_ASSERT_OR_RETURN(pTdispMgr != NULL, NV_ERR_INVALID_STATE);
+
+    *pbTdiSecure = tdispmgrIsGpuTrusted_HAL(pGpu, pTdispMgr);
+
+    return NV_OK;
+}
+
+//
+// Report whether TDISP is in use on this system and, if so, whether the TDIs
+// have reached secure mode.
+//
+static NV_STATUS
+_confComputeApiGetTdiState
+(
+    CONF_COMPUTE_CAPS *pCcCaps,
+    NvBool            *pbTdispEnabled,
+    NvBool            *pbTdiSecure
+)
+{
+    OBJGPU   *pGpu;
+    NvU32     gpuMask     = 0;
+    NvU32     gpuInstance = 0;
+    NvBool    bFirstGpu   = NV_TRUE;
+    NV_STATUS status      = NV_OK;
+
+    *pbTdispEnabled = NV_FALSE;
+    *pbTdiSecure    = NV_FALSE;
+
+    if (!pCcCaps->bTdispFeatureCapable || !pCcCaps->bTdispFeatureEnabled)
+    {
+        return NV_OK;
+    }
+
+    *pbTdispEnabled = NV_TRUE;
+
+    (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
+
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        NvBool bGpuTdiSecure = NV_FALSE;
+
+        status = _confComputeApiGetGpuTdiState(pGpu, &bGpuTdiSecure);
+        if (status != NV_OK)
+        {
+            return status;
+        }
+
+        if (bFirstGpu)
+        {
+            *pbTdiSecure = bGpuTdiSecure;
+            bFirstGpu    = NV_FALSE;
+            continue;
+        }
+
+        if (bGpuTdiSecure != *pbTdiSecure)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "TDI state differs across GPUs, system level TDISP state is ambiguous\n");
+            *pbTdiSecure = NV_FALSE;
+            return NV_ERR_INVALID_STATE;
+        }
+    }
+
+    return NV_OK;
 }
 
 NV_STATUS
@@ -110,9 +268,31 @@ confComputeApiCtrlCmdSystemGetCapabilities_IMPL
     }
 
 
+    // We can only advertise one capability at a time. Overwriting other caps for now.
+    if (pCcCaps->bBmsaiCapable)
+    {
+        pParams->gpusCapability = NV_CONF_COMPUTE_SYSTEM_GPUS_CAPABILITY_BMSAI;
+    }
+
     if (pCcCaps->bCCFeatureEnabled && pCcCaps->bHccFeatureCapable)
     {
         pParams->ccFeature = NV_CONF_COMPUTE_SYSTEM_FEATURE_HCC_ENABLED;
+    }
+    if (pCcCaps->bBmsaiFeatureEnabled)
+    {
+        pParams->ccFeature = NV_CONF_COMPUTE_SYSTEM_FEATURE_BMSAI_ENABLED;
+    }
+
+    // Override to TDISP only when TDISP is the active mode; otherwise leave HCC/NONE
+    if (pCcCaps->bTdispFeatureCapable && pCcCaps->bTdispFeatureEnabled)
+    {
+        pParams->gpusCapability = NV_CONF_COMPUTE_SYSTEM_GPUS_CAPABILITY_TDISP;
+        pParams->ccFeature      = NV_CONF_COMPUTE_SYSTEM_FEATURE_TDISP_ENABLED;
+
+        // ARM CCA is the only TDISP platform today; hardcode for now.
+        // TODO (Bug 6055447): Once OS static-config bits for ARM CCA, Intel TDX Connect,
+        // and AMD SEV-TIO are available, read cpuCapability from sysGetStaticConfig(pSys)
+        pParams->cpuCapability = NV_CONF_COMPUTE_SYSTEM_CPU_CAPABILITY_ARM_CCA;
     }
 
     if (pParams->ccFeature != NV_CONF_COMPUTE_SYSTEM_FEATURE_DISABLED)
@@ -149,9 +329,12 @@ confComputeApiCtrlCmdSystemGetGpusState_IMPL
     NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_GPUS_STATE_PARAMS *pParams
 )
 {
+    NvBool bNvleReady;
+
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
-    pParams->bAcceptClientRequest = pConfComputeApi->pCcCaps->bAcceptClientRequest;
+    bNvleReady = _confComputeApiAreAllGpusNvleReady(pConfComputeApi->pCcCaps);
+    pParams->bAcceptClientRequest = pConfComputeApi->pCcCaps->bAcceptClientRequest && bNvleReady;
 
     return NV_OK;
 }
@@ -176,25 +359,39 @@ confComputeApiCtrlCmdSystemSetGpusState_IMPL
     if (pConfComputeApi->pCcCaps->bFatalFailure)
         return NV_ERR_INVALID_ARGUMENT;
 
+    if (pParams->bAcceptClientRequest)
+    {
+        NvBool bTdispEnabled = NV_FALSE;
+        NvBool bTdiSecure    = NV_FALSE;
+
+        //
+        // The GPUs must not be marked ready for client work while their TDIs
+        // are still in FW-only mode. Only the "accept work" direction is
+        // restricted; blocking client work stays available at any TDI state.
+        //
+        status = _confComputeApiGetTdiState(pConfComputeApi->pCcCaps, &bTdispEnabled, &bTdiSecure);
+        if (status != NV_OK)
+            return status;
+
+        if (bTdispEnabled && !bTdiSecure)
+            return NV_ERR_NOT_READY;
+    }
+
     if (pConfComputeApi->pCcCaps->bAcceptClientRequest && !pParams->bAcceptClientRequest)
     {
         pConfComputeApi->pCcCaps->bFatalFailure = NV_TRUE;
         pConfComputeApi->pCcCaps->bAcceptClientRequest = NV_FALSE;
     }
 
+    status = _confComputeApiSetupNvle();
+    if (status != NV_OK)
+        return status;
+
     params.bAcceptClientRequest = pParams->bAcceptClientRequest;
     (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
 
     while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
     {
-        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-
-        if (pKernelNvlink && pKernelNvlink->getProperty(pGpu, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED))
-        {
-            // Update NVLE related topology infomation for all the GPUs 
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, knvlinkSetupNvleRemapTables(pGpu, pKernelNvlink));
-        }
-
         if (IS_VIRTUAL(pGpu))
             return NV_ERR_NOT_SUPPORTED;
 
@@ -287,7 +484,6 @@ confComputeApiCtrlCmdGetGpuCertificate_IMPL
 {
     Subdevice           *pSubdevice   = NULL;
     OBJGPU              *pGpu         = NULL;
-    ConfidentialCompute *pConfCompute = NULL;
     Spdm                *pSpdm        = NULL;
     NV_STATUS            status       = NV_OK;
 
@@ -297,31 +493,22 @@ confComputeApiCtrlCmdGetGpuCertificate_IMPL
         subdeviceGetByHandle(RES_GET_CLIENT(pConfComputeApi),
                              pParams->hSubDevice, &pSubdevice));
     pGpu         = GPU_RES_GET_GPU(pSubdevice);
-    pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
     pSpdm        = GPU_GET_SPDM(pGpu);
 
-    if (pConfCompute != NULL && confComputeIsSpdmSupported(pGpu, pConfCompute))
+    if (pSpdm != NULL && pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
     {
-        if (pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
-        {
-            // Set max size of certificate buffers before calling SPDM.
-            pParams->certChainSize            = NV_CONF_COMPUTE_CERT_CHAIN_MAX_SIZE;
-            pParams->attestationCertChainSize = NV_CONF_COMPUTE_ATTESTATION_CERT_CHAIN_MAX_SIZE;
+        // Set max size of certificate buffers before calling SPDM.
+        pParams->certChainSize            = NV_CONF_COMPUTE_CERT_CHAIN_MAX_SIZE;
+        pParams->attestationCertChainSize = NV_CONF_COMPUTE_ATTESTATION_CERT_CHAIN_MAX_SIZE;
 
-            status = spdmGetCertChains_HAL(pGpu,
-                                           pSpdm,
-                                           pParams->certChain,
-                                           &pParams->certChainSize,
-                                           pParams->attestationCertChain,
-                                           &pParams->attestationCertChainSize);
-            if (status != NV_OK)
-            {
-                // Attestation failure, tear down the CC system.
-                confComputeSetErrorState(pGpu, pConfCompute);
-            }
+        status = spdmGetCertChains_HAL(pGpu,
+                                        pSpdm,
+                                        pParams->certChain,
+                                        &pParams->certChainSize,
+                                        pParams->attestationCertChain,
+                                        &pParams->attestationCertChainSize);
 
-            return status;
-        }
+        return status;
     }
     return NV_ERR_OBJECT_NOT_FOUND;
 }
@@ -335,7 +522,6 @@ confComputeApiCtrlCmdGetGpuAttestationReport_IMPL
 {
     Subdevice           *pSubdevice   = NULL;
     OBJGPU              *pGpu         = NULL;
-    ConfidentialCompute *pConfCompute = NULL;
     Spdm                *pSpdm        = NULL;
     NV_STATUS            status       = NV_OK;
 
@@ -347,11 +533,8 @@ confComputeApiCtrlCmdGetGpuAttestationReport_IMPL
 
     pGpu         = GPU_RES_GET_GPU(pSubdevice);
     pSpdm        = GPU_GET_SPDM(pGpu);
-    pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
 
-    if (pConfCompute != NULL &&
-        confComputeIsSpdmSupported(pGpu, pConfCompute) &&
-        pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
+    if (pSpdm != NULL && pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
     {
         // Set max size of report buffers before calling SPDM.
         pParams->attestationReportSize    = NV_CONF_COMPUTE_GPU_ATTESTATION_REPORT_MAX_SIZE;
@@ -365,11 +548,6 @@ confComputeApiCtrlCmdGetGpuAttestationReport_IMPL
                                           &pParams->isCecAttestationReportPresent,
                                           pParams->cecAttestationReport,
                                           &pParams->cecAttestationReportSize);
-        if (status != NV_OK)
-        {
-            // Attestation failure, tear down the CC system.
-            confComputeSetErrorState(pGpu, pConfCompute);
-        }
 
         return status;
     }
@@ -524,6 +702,36 @@ confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL
     else
     {
         pParams->keyRotationState = NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_DISABLED;
+    }
+    return NV_OK;
+}
+
+NV_STATUS
+confComputeApiCtrlCmdSystemGetGpusTdispState_IMPL
+(
+    ConfidentialComputeApi                                       *pConfComputeApi,
+    NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_GPUS_TDISP_STATE_PARAMS *pParams
+)
+{
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    {
+        NvBool    bTdispEnabled = NV_FALSE;
+        NvBool    bTdiSecure    = NV_FALSE;
+        NV_STATUS status;
+
+        status = _confComputeApiGetTdiState(pConfComputeApi->pCcCaps, &bTdispEnabled, &bTdiSecure);
+        if (status != NV_OK)
+        {
+            return status;
+        }
+
+        if (!bTdispEnabled)
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+
+        pParams->bTdiSecure = bTdiSecure;
     }
     return NV_OK;
 }

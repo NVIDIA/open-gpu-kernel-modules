@@ -1573,6 +1573,32 @@ NV_STATUS nv_get_valid_window_head_mask(nv_state_t *nv, NvU64 *window_head_mask)
 #endif
 }
 
+NV_STATUS nv_get_sor_lane_polarity_enable_status(nv_state_t *nv)
+{
+#if NV_SUPPORTS_PLATFORM_DEVICE
+    bool ret = false;
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+
+    if (nvl == NULL)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Wrong input arguments \n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    ret = of_property_read_bool(nvl->dev->of_node, "nvidia,sor-enable-lane-polarity-inversion");
+    if (ret == true)
+    {
+        return NV_OK;
+    }
+    else
+    {
+        return NV_ERR_GENERIC;
+    }
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
+}
+
 NV_STATUS NV_API_CALL nv_soc_i2c_hsp_semaphore_acquire(NvU32 ownerId, NvBool bAcquire, NvU64 timeout)
 {
     // TODO: This needs to be updated once HSP side implementation is done.

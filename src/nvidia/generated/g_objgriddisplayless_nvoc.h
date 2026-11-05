@@ -61,10 +61,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__OBJGRIDDISPLAYLESS;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__OBJGRIDDISPLAYLESS;
 
 
 struct OBJGRIDDISPLAYLESS {
@@ -94,29 +93,10 @@ struct OBJGRIDDISPLAYLESS {
 };
 
 
-// Vtable with 14 per-class function pointers
-struct NVOC_VTABLE__OBJGRIDDISPLAYLESS {
-    NV_STATUS (*__griddisplaylessConstructEngine__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    void (*__griddisplaylessInitMissing__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__griddisplaylessStatePreInitLocked__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__griddisplaylessStatePreInitUnlocked__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__griddisplaylessStateInitLocked__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__griddisplaylessStateInitUnlocked__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__griddisplaylessStatePreLoad__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__griddisplaylessStateLoad__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__griddisplaylessStatePostLoad__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__griddisplaylessStatePreUnload__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__griddisplaylessStateUnload__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__griddisplaylessStatePostUnload__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__griddisplaylessStateDestroy__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__griddisplaylessIsPresent__)(struct OBJGPU *, struct OBJGRIDDISPLAYLESS * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__OBJGRIDDISPLAYLESS {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__OBJGRIDDISPLAYLESS vtable;
 };
 
 #ifndef __nvoc_class_id_OBJGRIDDISPLAYLESS
@@ -309,8 +289,12 @@ static inline void griddisplaylessSetMaxPixels(struct OBJGPU *pGpu, struct OBJGR
 
 
 // Wrapper macros for halified functions
-#define griddisplaylessConstructEngine_FNPTR(pGriddisplayless) pGriddisplayless->__nvoc_metadata_ptr->vtable.__griddisplaylessConstructEngine__
+#define griddisplaylessConstructEngine_FNPTR(pGriddisplayless) pGriddisplayless->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define griddisplaylessConstructEngine(pGpu, pGriddisplayless, arg3) griddisplaylessConstructEngine_DISPATCH(pGpu, pGriddisplayless, arg3)
+#define griddisplaylessConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define griddisplaylessConstructApertures(pGpu, pEngstate) griddisplaylessConstructApertures_DISPATCH(pGpu, pEngstate)
+#define griddisplaylessDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define griddisplaylessDestructApertures(pGpu, pEngstate) griddisplaylessDestructApertures_DISPATCH(pGpu, pEngstate)
 #define griddisplaylessInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define griddisplaylessInitMissing(pGpu, pEngstate) griddisplaylessInitMissing_DISPATCH(pGpu, pEngstate)
 #define griddisplaylessStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -340,59 +324,67 @@ static inline void griddisplaylessSetMaxPixels(struct OBJGPU *pGpu, struct OBJGR
 
 // Dispatch functions
 static inline NV_STATUS griddisplaylessConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pGriddisplayless, ENGDESCRIPTOR arg3) {
-    return pGriddisplayless->__nvoc_metadata_ptr->vtable.__griddisplaylessConstructEngine__(pGpu, pGriddisplayless, arg3);
+    return pGriddisplayless->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(pGpu, staticCast(pGriddisplayless, OBJENGSTATE), arg3);
+}
+
+static inline NV_STATUS griddisplaylessConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
+static inline void griddisplaylessDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline void griddisplaylessInitMissing_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS griddisplaylessStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS griddisplaylessStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS griddisplaylessStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS griddisplaylessStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS griddisplaylessStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS griddisplaylessStateLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS griddisplaylessStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS griddisplaylessStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS griddisplaylessStateUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS griddisplaylessStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline void griddisplaylessStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessStateDestroy__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NvBool griddisplaylessIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__griddisplaylessIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions

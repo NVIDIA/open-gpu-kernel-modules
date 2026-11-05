@@ -221,7 +221,7 @@ knvlinkDiscoverPostRxDetLinks_GH100
 
     if (pKernelNvlink1 == NULL)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Input mask contains a GPU on which NVLink is disabled.\n");
 
         return NV_ERR_INVALID_ARGUMENT;
@@ -330,6 +330,8 @@ knvlinkHandleFaultUpInterrupt_GH100
     OBJTMR    *pTmr = GPU_GET_TIMER(pGpu);
     PNVLINK_ID pFaultLink;
     NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(linkId < pKernelNvlink->maxNumLinks, NV_ERR_INVALID_STATE);
 
     pFaultLink = listAppendNew(&pKernelNvlink->faultUpLinks);
     NV_ASSERT_OR_RETURN(pFaultLink != NULL, NV_ERR_GENERIC);

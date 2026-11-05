@@ -24,6 +24,8 @@
 #ifndef RM_STATE_MONITOR_H
 #define RM_STATE_MONITOR_H
 
+#include "nvctassert.h"
+
 // run every 100ms to prevent excessive CPU usage
 // as RM dump task runs as a higher priority task
 // than RM main task
@@ -52,6 +54,43 @@ typedef union {
 #define RM_STATE_MONITOR_MAX_WORK_ITEMS 32
 #define RM_STATE_MONITOR_MAX_INTERRUPTS 32
 #define RM_STATE_MONITOR_MAX_ENINGE_BYTE_ARRAY (4)
+#define RM_STATE_MONITOR_BUFFER_SIZE 4096U
+#define RM_STATE_MONITOR_NVLINK_INVALID_VALUE NV_U32_MAX
+#define RM_STATE_MONITOR_NVLINK_MAX_SRAM_ACCESS_REGS 320
+
+#define RM_STATE_MONITOR_NVLINK_RPC_OP_NONE              0U
+#define RM_STATE_MONITOR_NVLINK_RPC_OP_MSETP_POLL        1U
+#define RM_STATE_MONITOR_NVLINK_RPC_OP_MNOC_SEND         2U
+#define RM_STATE_MONITOR_NVLINK_RPC_OP_MNOC_RECV         3U
+#define RM_STATE_MONITOR_NVLINK_RPC_OP_MINION_COMMAND    4U
+#define RM_STATE_MONITOR_NVLINK_RPC_OP_MSE_DEGRADATION   6U
+
+#define KNVLINK_TIMEOUT_KIND_NONE          0U
+#define KNVLINK_TIMEOUT_KIND_MSETP         1U
+#define KNVLINK_TIMEOUT_KIND_MNOC          2U
+#define KNVLINK_TIMEOUT_KIND_MINION_CMD    3U
+#define KNVLINK_TIMEOUT_KIND_MSE_FATAL     4U
+
+typedef struct {
+    NvU32 inFlightRpcCmd;
+    NvU64 inFlightRpcLinkMask;
+    NvU64 rpcStartTimestampNs;
+    NvU32 totalMSETPTimeouts;
+    NvU32 totalMNOCTimeouts;
+    NvU32 totalMinionCmdTimeouts;
+    NvU32 totalMSEFatalEvents;
+    NvU32 lastTimeoutKind;
+    NvU32 lastTimeoutLinkId;
+    NvU64 lastTimeoutTimestampNs;
+} KNVLINK_RPC_STATS;
+
+typedef struct {
+    KNVLINK_RPC_STATS rpcStats;
+    NvU64 enabledLinkMask;
+    NvU32 sramAccessTotalCount;
+    NvU32 sramAccessCount;
+    NvU32 sramAccess[RM_STATE_MONITOR_NVLINK_MAX_SRAM_ACCESS_REGS];
+} KNVLINK_DUMP;
 
 typedef struct {
     NvU64 dpcQueue[RM_STATE_MONITOR_MAX_DPC_QUEUE_ITEMS][RM_STATE_MONITOR_MAX_ENINGE_BYTE_ARRAY];
@@ -61,6 +100,8 @@ typedef struct {
     NvU64 lastWorkItemsExecutionTime;
     NvU64 totalWorkItemsExecutionTime;
     NvU64 interrupts[RM_STATE_MONITOR_MAX_INTERRUPTS]; //TODO: should this get set? will affect perf
+    NvBool bNvlinkDumpPresent;
+    KNVLINK_DUMP nvlinkDump;
 } RM_STATE_MONITOR_DATA;
  
 typedef struct {
@@ -68,5 +109,42 @@ typedef struct {
     NvU64 responseSequenceNumber; 
     RM_STATE_MONITOR_DATA data;
 } RM_STATE_MONITOR_BUFFER_LAYOUT;
- 
+
+ct_assert(sizeof(RM_STATE_MONITOR_BUFFER_LAYOUT) <= RM_STATE_MONITOR_BUFFER_SIZE);
+
+#ifndef RMCFG_IS_PLATFORM
+#define RM_STATE_MONITOR_NVLINK_RPC_HOOKS_EXTERN 1
+#else
+#define RM_STATE_MONITOR_NVLINK_RPC_HOOKS_EXTERN 0
 #endif
+
+#if RM_STATE_MONITOR_NVLINK_RPC_HOOKS_EXTERN
+
+void rmStateMonitorNvlinkRpcStart(NvU32 rmctrlCmd, NvU64 linkMask);
+
+void rmStateMonitorNvlinkRpcComplete(void);
+
+void rmStateMonitorNvlinkRpcOpStart(NvU32 linkId);
+
+void rmStateMonitorNvlinkRpcOpEnd(NvU32 op, NvU32 linkId, NV_STATUS status);
+
+#else
+
+static inline void
+rmStateMonitorNvlinkRpcStart
+(NvU32 rmctrlCmd, NvU64 linkMask) {}
+
+static inline void
+rmStateMonitorNvlinkRpcComplete(void) {}
+
+static inline void
+rmStateMonitorNvlinkRpcOpStart(NvU32 linkId) {}
+
+static inline void
+rmStateMonitorNvlinkRpcOpEnd(NvU32 op, NvU32 linkId, NV_STATUS status) {}
+
+#endif
+
+#undef RM_STATE_MONITOR_NVLINK_RPC_HOOKS_EXTERN
+ 
+#endif // RM_STATE_MONITOR_H

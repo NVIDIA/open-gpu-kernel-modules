@@ -382,24 +382,13 @@ void krcNotifyChannelEvent_IMPL
                         sizeof(params));
 }
 
-
-/*! Send notifications for notifiers what were already written to.
- *
- * GSP writes to notifiers to avoid a race condition between the time when an
- * error is handled and when the client receives notifications. However, GSP
- * doesn't actually send those notification events to the client in some cases
- * as that requires OS interaction.
- *
- * This function actually sends those notifications to the client.
- *
- */
-NV_STATUS
-krcErrorSendEventNotificationsCtxDma_FWCLIENT
+static NV_STATUS
+_krcErrorSendChannelEventNotifications
 (
     OBJGPU           *pGpu,
-    KernelRc         *pKernelRc,
     KernelChannel    *pKernelChannel,
-    RC_NOTIFIER_SCOPE scope
+    RC_NOTIFIER_SCOPE scope,
+    KernelChannel    *pSkipChannel
 )
 {
     NV_STATUS          status          = NV_OK;
@@ -409,14 +398,19 @@ krcErrorSendEventNotificationsCtxDma_FWCLIENT
     CHANNEL_LIST      *pChanList;
 
     //
-    // This function should only be called on paths where GSP has already
-    // written to notifiers
-    //
-    NV_ASSERT_OR_RETURN(IS_GSP_CLIENT(pGpu), NV_ERR_INVALID_STATE);
-
     // WAR bug 200326278, 200474671
+    //
+    // Mirror exactly the channel set that krcErrorSetNotifier() wrote notifier
+    // memory for: TSG-wide only when subcontext is supported and the GPU is not
+    // a vGPU host (TSG-wide notification causes vGPU failures). rcErrorNotify()
+    // calls krcErrorSetNotifier() -- which writes and flushes the notifier
+    // memory for this same set -- before this path runs, so matching the
+    // condition guarantees we only raise the OS event on channels whose error
+    // notifier was actually written.
+    //
     if (scope == RC_NOTIFIER_SCOPE_TSG &&
-        kfifoIsSubcontextSupported(pKernelFifo))
+        kfifoIsSubcontextSupported(pKernelFifo) &&
+        !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VGPU))
     {
         // Notify all channels in the TSG
         pChanList = (pKernelChannel->pKernelChannelGroupApi
@@ -443,6 +437,9 @@ krcErrorSendEventNotificationsCtxDma_FWCLIENT
     for (pChanNode = pChanList->pHead; pChanNode; pChanNode = pChanNode->pNext)
     {
         ContextDma *pContextDma;
+
+        if (pChanNode->pKernelChannel == pSkipChannel)
+            continue;
 
         if (ctxdmaGetByHandle(RES_GET_CLIENT(pChanNode->pKernelChannel),
                               pChanNode->pKernelChannel->hErrorContext,
@@ -476,6 +473,59 @@ Error:
         kfifoChannelListDestroy(pGpu, pKernelFifo, pChanList);
     }
     return status;
+}
+
+
+/*! Send notifications for notifiers what were already written to.
+ *
+ * GSP writes to notifiers to avoid a race condition between the time when an
+ * error is handled and when the client receives notifications. However, GSP
+ * doesn't actually send those notification events to the client in some cases
+ * as that requires OS interaction.
+ *
+ * This function actually sends those notifications to the client.
+ *
+ */
+NV_STATUS
+krcErrorSendEventNotificationsCtxDma_FWCLIENT
+(
+    OBJGPU           *pGpu,
+    KernelRc         *pKernelRc,
+    KernelChannel    *pKernelChannel,
+    RC_NOTIFIER_SCOPE scope
+)
+{
+    //
+    // This function should only be called on paths where GSP has already
+    // written to notifiers
+    //
+    NV_ASSERT_OR_RETURN(IS_GSP_CLIENT(pGpu), NV_ERR_INVALID_STATE);
+
+    //
+    // GSP does not deliver the per-channel OS event for the offending channel
+    // itself, so notify every channel in the (possibly fake single-channel)
+    // list.
+    //
+    return _krcErrorSendChannelEventNotifications(pGpu, pKernelChannel, scope,
+                                                  NULL /* skip none */);
+}
+
+
+NV_STATUS
+krcErrorSendEventNotificationsCtxDma_MONOLITHIC
+(
+    OBJGPU           *pGpu,
+    KernelRc         *pKernelRc,
+    KernelChannel    *pKernelChannel,
+    RC_NOTIFIER_SCOPE scope
+)
+{
+    //
+    // Monolithic RM sends channel-scope notification in krcErrorInvokeCallback.
+    // Send notifications for the other channels in TSG.
+    //
+    return _krcErrorSendChannelEventNotifications(pGpu, pKernelChannel, scope,
+                                                  pKernelChannel /* skip offending channel */);
 }
 
 

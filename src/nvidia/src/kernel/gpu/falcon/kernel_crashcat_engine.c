@@ -178,14 +178,7 @@ void kcrashcatEngineVprintf_IMPL
         return;
     }
 
-    // portDbgPrintString/NVLOG_PRINTF don't add a newline, so add one here
-    const char *newline = "\n";
-    const NvLength fmtSize = portStringLength(fmt) + 1;
-    const NvLength newlineSize = 3; // Two chars plus terminating null
-    const NvLength newFmtSize = fmtSize + newlineSize - 1; // terminating null is shared
-
-    
-    portStringCat(pKernelCrashCatEng->fmtBuffer, newFmtSize, newline, newlineSize);
+    nvDbgSnprintf(pKernelCrashCatEng->fmtBuffer, MAX_ERROR_STRING, "%s\n", fmt);
     nvDbgVsnprintf(pKernelCrashCatEng->printBuffer, MAX_ERROR_STRING,
                     pKernelCrashCatEng->fmtBuffer, args);
 

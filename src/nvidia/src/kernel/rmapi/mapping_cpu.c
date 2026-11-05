@@ -104,14 +104,6 @@ rmapiGetEffectiveAddrSpace
     return kbusGetEffectiveAddressSpace_HAL(pGpu, pMemDesc, mapFlags, pAddrSpace);
 }
 
-// Asserts to check caching type matches across sdk and nv_memory_types
-ct_assert(NVOS33_FLAGS_CACHING_TYPE_CACHED        == NV_MEMORY_CACHED);
-ct_assert(NVOS33_FLAGS_CACHING_TYPE_UNCACHED      == NV_MEMORY_UNCACHED);
-ct_assert(NVOS33_FLAGS_CACHING_TYPE_WRITECOMBINED == NV_MEMORY_WRITECOMBINED);
-ct_assert(NVOS33_FLAGS_CACHING_TYPE_WRITEBACK     == NV_MEMORY_WRITEBACK);
-ct_assert(NVOS33_FLAGS_CACHING_TYPE_DEFAULT       == NV_MEMORY_DEFAULT);
-ct_assert(NVOS33_FLAGS_CACHING_TYPE_UNCACHED_WEAK == NV_MEMORY_UNCACHED_WEAK);
-
 //
 // Map memory entry points.
 //
@@ -130,6 +122,9 @@ memMap_IMPL
     MemoryManager *pMemoryManager = NULL;
     KernelMemorySystem *pKernelMemorySystem = NULL;
     NvBool bIsForcePcie = NV_FALSE;
+    NvBool bIsBar0Reflect = NV_FALSE;
+    NvBool bIsBar1Reflect = NV_FALSE;
+    NvBool bMapIoSysmem = NV_FALSE;
     RmClient *pClient;
     RsResourceRef *pContextRef;
     RsResourceRef *pMemoryRef;
@@ -206,13 +201,14 @@ memMap_IMPL
     // allowed to write it in order to initialize memory allocated within the
     // PROTECTED region.
     //
-    // CPU to directly access protected memory is allowed on MODS
+    // CPU to directly access protected memory is allowed on MODS and for TDISP.
     //
     // The check below is for VPR and should be skipped for Hopper CC
     if ((pGpu != NULL) && !gpuIsCCFeatureEnabled(pGpu))
     {
         if ((pMemoryInfo->Flags & NVOS32_ALLOC_FLAGS_PROTECTED) &&
             (pMapParams->protect != NV_PROTECT_WRITEABLE) &&
+            (!gpuIsTdispFeatureEnabled(pGpu)) &&
             ! RMCFG_FEATURE_PLATFORM_MODS)
         {
             return NV_ERR_NOT_SUPPORTED;
@@ -296,126 +292,91 @@ memMap_IMPL
     {
         cachingType = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1) ?
                       NV_MEMORY_UNCACHED : NV_MEMORY_WRITECOMBINED;
+
+        bIsBar0Reflect = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_BAR0_REFLECT);
+        bIsBar1Reflect = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_BAR1_REFLECT);
+
+        bMapIoSysmem = bIsBar0Reflect || bIsBar1Reflect;
     }
 
     //
     //  NVLINK2 ATS: Coherent NVLINK mappings may be returned if the client
     //    doesn't specifically request PCI-E and if the surface is pitch.
     //
-    if ((pGpu != NULL) && pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
-        (!bIsForcePcie) && (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM))
+    if (bMapIoSysmem || ((pGpu != NULL) && pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
+        (!bIsForcePcie) && (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM)))
     {
-        NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED));
-        if ((memdescGetPteKind(pMemDesc) ==
+        NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED) || bMapIoSysmem);
+        if (bMapIoSysmem || ((memdescGetPteKind(pMemDesc) ==
             memmgrGetHwPteKindFromSwPteKind_HAL(pGpu, pMemoryManager, RM_DEFAULT_PTE_KIND)) && // pitch
             (!memdescGetFlag(memdescGetMemDescFromGpu(pMemDesc, pGpu), MEMDESC_FLAGS_ENCRYPTED)) &&
-            (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED)))
+            (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_AS_LOCALIZED))))
         {
             if (pMapParams->bKernel)
             {
-                rmStatus = kbusMapCoherentCpuMapping_HAL(pGpu,
-                                                         pKernelBus,
-                                                         pMemDesc,
-                                                         pMapParams->offset,
-                                                         pMapParams->length,
-                                                         pMapParams->protect,
-                                                         pMapParams->ppCpuVirtAddr,
-                                                         &priv);
-
+                NV_ASSERT_OR_RETURN(!bMapIoSysmem, NV_ERR_NOT_SUPPORTED);
+                NV_ASSERT_OK_OR_RETURN(kbusMapCoherentCpuMapping_HAL(pGpu,
+                                                                     pKernelBus,
+                                                                     pMemDesc,
+                                                                     pMapParams->offset,
+                                                                     pMapParams->length,
+                                                                     pMapParams->protect,
+                                                                     pMapParams->ppCpuVirtAddr,
+                                                                     &priv));
                 // No memarea support for kernel yet
-
-                if (rmStatus != NV_OK)
-                    return rmStatus;
             }
             else
             {
-                NvU64               paddr;
-                NvBool              bContigDesc;
-                ADDRESS_TRANSLATION addressTranslation = AT_CPU;
-                NvU64               pageSize;
-
-                //
-                // Allocating mapping for user mode client
-                // NOTE: This function intentionally leaves priv uninitialized.
-                //       It simply copies the busAddress [argument 2] into ppCpuVirtAddr.
-                //       During the FD mapping cleanup for bug 1784955, it is expected that
-                //       this function will transition to storing the mapping parameters onto
-                //       the FD.  Also note: All mapping parameters are ignored (!).
-                //
-                //   TODO: refactor this to either use the new osMapMemoryArea interface or unify with kernel in osMapSystemMemory
-
-                paddr = ((NvU64) pKernelMemorySystem->coherentCpuFbBase) +
-                    ((NvU64) memdescGetPhysAddr(pMemDesc, AT_CPU, pMapParams->offset));
-                *((NvU64*) pMapParams->ppCpuVirtAddr) = paddr;
-                bContigDesc = memdescGetContiguity(pMemDesc, addressTranslation);
-                pageSize = memdescGetPageSize(pMemDesc, addressTranslation);
-
-                //
-                // For FB addresses onlined to kernel, we will go through the NUMA APIs and don't need
-                // to store off more map info.
-                // For FB addresses not onlined to kernel(RM reserved memory region or CDMM mode),
-                // fill in the os map information so we can map it later (including the memArea so we
-                // can map it disconig)
-                //
-                if (!osNumaOnliningEnabled(pGpu->pOsGpuInfo) ||
-                    !IS_COHERENT_CPU_ATS_OFFSET(pGpu, pKernelMemorySystem,
-                                                paddr,
-                                                bContigDesc ? pMapParams->length :
-                                                NV_MIN(pMapParams->length,
-                                                       NV_ALIGN_UP(pMapParams->offset + 1, pageSize) -
-                                                       pMapParams->offset)))
+                MemoryArea memArea;
+                MemoryRange mapRange = mrangeMake(pMapParams->offset, pMapParams->length);
+                MemoryRange curRange;
+                MemoryIterator iterator;
+                NvU64 baseAddr = 0;
+                cachingType = NV_MEMORY_CACHED;
+                if (bMapIoSysmem)
                 {
-                    MemoryArea memArea;
-                    MemoryRange mapRange = mrangeMake(pMapParams->offset, pMapParams->length);
-                    MemoryRange curRange;
-                    MemoryIterator iterator;
-
-                    memArea.numRanges = 0;
-
-                    iterator = memdescIteratorInit(pMemDesc, addressTranslation, mapRange);
-
-                    while (memoryIteratorNext(&iterator, &curRange))
-                    {
-                        memArea.numRanges++;
-                    }
-
-                    memArea.pRanges = portMemAllocNonPaged(sizeof(MemoryRange) * memArea.numRanges);
-                    NV_CHECK_OR_RETURN(LEVEL_INFO, memArea.pRanges != NULL, NV_ERR_NO_MEMORY);
-
-                    memArea.numRanges = 0;
-                    iterator = memdescIteratorInit(pMemDesc, addressTranslation, mapRange);
-
-                    while (memoryIteratorNext(&iterator, &curRange))
-                    {
-                        memArea.pRanges[memArea.numRanges] = curRange;
-                        memArea.pRanges[memArea.numRanges].start += pKernelMemorySystem->coherentCpuFbBase;
-                        memArea.numRanges++;
-                    }
-
-                    // TODO: add an API that takes in an iterator instead of a memArea.
-                    rmStatus = osMapPciMemoryAreaUser(pGpu->pOsGpuInfo,
-                                                      memArea,
-                                                      pMapParams->protect,
-                                                      cachingType,
-                                                      pMapParams->ppCpuVirtAddr,
-                                                      &priv);
-
-                    // Coherent path doesn't need the memArea stored off for unmap
-                    portMemFree(memArea.pRanges);
-                    
-                    if (rmStatus != NV_OK)
-                        return rmStatus;
+                    cachingType = bIsBar0Reflect ? NV_MEMORY_UNCACHED : NV_MEMORY_WRITECOMBINED;
+                }
+                else
+                {
+                    baseAddr = pKernelMemorySystem->coherentCpuFbBase;
                 }
 
-                rmStatus = NV_OK;
-            }
+                memArea.numRanges = 0;
 
-            NV_PRINTF(LEVEL_INFO,
-                      "NVLINK mapping allocated: AtsBase=0x%llx, _pteArray[0]=0x%llx, mappedCpuAddr=0x%llx, length=%d\n",
-                      (NvU64)pKernelMemorySystem->coherentCpuFbBase,
-                      (NvU64)((NvUPtr)pMemDesc->_pteArray[0]),
-                      (*((NvU64 *)(pMapParams->ppCpuVirtAddr))),
-                      (int)pMapParams->length);
+                iterator = memdescIteratorInit(pMemDesc, AT_CPU, mapRange);
+
+                while (memoryIteratorNext(&iterator, &curRange))
+                {
+                    memArea.numRanges++;
+                }
+
+                memArea.pRanges = portMemAllocNonPaged(sizeof(MemoryRange) * memArea.numRanges);
+                NV_CHECK_OR_RETURN(LEVEL_INFO, memArea.pRanges != NULL, NV_ERR_NO_MEMORY);
+
+                memArea.numRanges = 0;
+                iterator = memdescIteratorInit(pMemDesc, AT_CPU, mapRange);
+
+                while (memoryIteratorNext(&iterator, &curRange))
+                {
+                    memArea.pRanges[memArea.numRanges] = curRange;
+                    memArea.pRanges[memArea.numRanges].start += baseAddr;
+                    memArea.numRanges++;
+                }
+
+                // TODO: add an API that takes in an iterator instead of a memArea.
+                rmStatus = osMapPciMemoryAreaUser(pGpu->pOsGpuInfo,
+                                                    memArea,
+                                                    pMapParams->protect,
+                                                    cachingType,
+                                                    pMapParams->ppCpuVirtAddr,
+                                                    &priv);
+
+                // Coherent path doesn't need the memArea stored off for unmap
+                portMemFree(memArea.pRanges);
+                
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, rmStatus);
+            }
 
             rmStatus = CliUpdateDeviceMemoryMapping(pCpuMapping,
                                                     pMapParams->bKernel,
@@ -588,7 +549,6 @@ memMap_IMPL
         // direct mapping.
         //
         pMapParams->flags = FLD_SET_DRF(OS33, _FLAGS, _MAPPING, _REFLECTED, pMapParams->flags);
-        pMapParams->flags = FLD_SET_DRF_NUM(OS33, _FLAGS, _CACHING_TYPE, cachingType, pMapParams->flags);
 
         if (rmStatus != NV_OK)
             goto _rmMapMemory_pciFail;
@@ -741,6 +701,7 @@ memUnmap_IMPL
 
     OBJSYS             *pSys                = SYS_GET_INSTANCE();
     NvBool              bIsForcePcie        = NV_FALSE;
+    NvBool              bMapIoSysmem        = NV_FALSE;
     KernelBus          *pKernelBus          = NULL;
     MemoryManager      *pMemoryManager      = NULL;
 
@@ -749,6 +710,10 @@ memUnmap_IMPL
         pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
         pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     }
+
+    // Must match the selection made in memMap_IMPL.
+    bMapIoSysmem = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_BAR0_REFLECT) ||
+                   memdescGetFlag(pMemDesc, MEMDESC_FLAGS_BAR1_REFLECT);
 
     if ((DRF_VAL(OS33, _FLAGS, _BUS, pCpuMapping->flags) == NVOS33_FLAGS_BUS_PCIE))
     {
@@ -764,13 +729,13 @@ memUnmap_IMPL
     {
         // Nothing more to do
     }
-    else if ((pGpu != NULL) && pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
-             (!bIsForcePcie) && (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM))
+    else if (bMapIoSysmem || ((pGpu != NULL) && pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
+                               (!bIsForcePcie) && (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM)))
     {
-        NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED));
-        NV_ASSERT((memdescGetPteKind(pMemDesc) ==
-                   memmgrGetHwPteKindFromSwPteKind_HAL(pGpu, pMemoryManager, RM_DEFAULT_PTE_KIND)) && // pitch
-                  (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ENCRYPTED)));
+        NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED) || bMapIoSysmem);
+        NV_ASSERT(bMapIoSysmem || ((memdescGetPteKind(pMemDesc) ==
+            memmgrGetHwPteKindFromSwPteKind_HAL(pGpu, pMemoryManager, RM_DEFAULT_PTE_KIND)) && // pitch
+            (!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ENCRYPTED))));
 
         if (pCpuMapping->pPrivate->bKernel)
         {
@@ -780,19 +745,12 @@ memUnmap_IMPL
         }
         else
         {
-            if (!osNumaOnliningEnabled(pGpu->pOsGpuInfo))
-            {
-                RmUnmapBusAperture(pGpu,
-                       pCpuMapping->pLinearAddress,
-                       pCpuMapping->length,
-                       pCpuMapping->pPrivate->bKernel,
-                       pCpuMapping->pPrivate->pPriv);
-            }
+            RmUnmapBusAperture(pGpu,
+                               pCpuMapping->pLinearAddress,
+                               pCpuMapping->length,
+                               pCpuMapping->pPrivate->bKernel,
+                               pCpuMapping->pPrivate->pPriv);
         }
-
-        NV_PRINTF(LEVEL_INFO,
-                  "Unmapping from NVLINK handle = 0x%x, addr= 0x%llx\n",
-                  RES_GET_HANDLE(pMemory), (NvU64)pCpuMapping->pLinearAddress);
 
         //
         // No BAR aperture mapping to delete.

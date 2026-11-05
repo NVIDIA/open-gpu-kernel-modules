@@ -138,6 +138,7 @@ ifeq ($(TARGET_ARCH),x86_64)
   ENDBR_SUPPORTED := $(call AS_HAS_INSTR, endbr64)
 
   FCF_SUPPORTED =
+  FCF_PROTECTION =
 
   #
   # GCC flags -fcf-protection=branch and -mindirect-branch=extern-thunk can
@@ -160,8 +161,14 @@ ifeq ($(TARGET_ARCH),x86_64)
       $(shell $(VERSION_MK_DIR)/nv-compiler.sh version_is_at_least $(CC) 140000)
   endif
 
+  ifeq ($(FCF_SUPPORTED),1)
+    FCF_PROTECTION := return
+  endif
   ifeq ($(FCF_SUPPORTED)-$(ENDBR_SUPPORTED),1-1)
-    CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fcf-protection=branch)
+    FCF_PROTECTION := full
+  endif
+  ifneq ($(FCF_PROTECTION),)
+    CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fcf-protection=$(FCF_PROTECTION))
   endif
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -fno-jump-tables)
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mindirect-branch=thunk-extern)

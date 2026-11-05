@@ -80,6 +80,7 @@ extern "C" {
 #define SYS_GET_FABRIC(p)         ((p)->pFabric)
 #define SYS_GET_GPUDB(p)          ((p)->pGpuDb)
 #define SYS_GET_HALMGR(p)         ((p)->pHalMgr)
+#define SYS_GET_CARVEOUT_MGR(p)   (((p) != NULL) ? (p)->pCarveoutMgr : NULL)
 
 #if RMCFG_FEATURE_GSPRM_BULLSEYE || defined(GSPRM_BULLSEYE_ENABLE)
 #define SYS_GET_CODE_COV_MGR(p)   ((p)->pInstrumentationManager)
@@ -234,6 +235,13 @@ typedef struct InstrumentationManager InstrumentationManager;
 #endif /* __nvoc_class_id_InstrumentationManager */
 
 
+struct CarveoutMgr;
+
+#ifndef __nvoc_class_id_CarveoutMgr
+#define __nvoc_class_id_CarveoutMgr 0xe81fb1u
+typedef struct CarveoutMgr CarveoutMgr;
+#endif /* __nvoc_class_id_CarveoutMgr */
+
 
 typedef struct OBJRCDB Journal;
 
@@ -368,7 +376,7 @@ struct OBJSYS {
     NvBool PDB_PROP_SYS_BUGCHECK_ON_TIMEOUT;
     NvBool PDB_PROP_SYS_RM_LOCK_TIME_COLLECT;
     NvBool PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE;
-    NvBool PDB_PROP_SYS_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR;
+    NvBool PDB_PROP_SYS_DXGKRNL_NUDGE_BUG_5785851_WAR;
     NvBool PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS;
     NvBool PDB_PROP_SYS_IS_QSYNC_FW_REVISION_CHECK_DISABLED;
     NvBool PDB_PROP_SYS_GPU_LOCK_MIDPATH_ENABLED;
@@ -421,6 +429,7 @@ struct OBJSYS {
     struct OBJGPUBOOSTMGR *pGpuBoostMgr;
     struct OBJDISPMGR *pDispMgr;
     struct OBJHALMGR *pHalMgr;
+    struct CarveoutMgr *pCarveoutMgr;
     struct Fabric *pFabric;
     struct GpuDb *pGpuDb;
     struct InstrumentationManager *pInstrumentationManager;
@@ -514,8 +523,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSYS;
 #define PDB_PROP_SYS_RM_LOCK_TIME_COLLECT_BASE_NAME PDB_PROP_SYS_RM_LOCK_TIME_COLLECT
 #define PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE_BASE_CAST
 #define PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE_BASE_NAME PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE
-#define PDB_PROP_SYS_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR_BASE_CAST
-#define PDB_PROP_SYS_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR_BASE_NAME PDB_PROP_SYS_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR
+#define PDB_PROP_SYS_DXGKRNL_NUDGE_BUG_5785851_WAR_BASE_CAST
+#define PDB_PROP_SYS_DXGKRNL_NUDGE_BUG_5785851_WAR_BASE_NAME PDB_PROP_SYS_DXGKRNL_NUDGE_BUG_5785851_WAR
 #define PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS_BASE_CAST
 #define PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS_BASE_NAME PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS
 #define PDB_PROP_SYS_IS_QSYNC_FW_REVISION_CHECK_DISABLED_BASE_CAST

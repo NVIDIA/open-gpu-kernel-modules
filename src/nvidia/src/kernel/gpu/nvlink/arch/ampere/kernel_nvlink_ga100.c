@@ -177,10 +177,9 @@ knvlinkRemoveMapping_GA100
     {
         FOR_EACH_INDEX_IN_MASK(32, peerId, peerMask)
         {
-            // ToDo: Use bitVectorOr when initializedLinks is changed to bitVector
-            NvU32 peerLinkMask;
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,convertBitVectorToLinkMask32(&pKernelNvlink->peerLinkMasks[peerId], &peerLinkMask));
-            if (pKernelNvlink->initializedLinks & peerLinkMask)
+            NVLINK_BIT_VECTOR tempAndResult;
+            bitVectorAnd(&tempAndResult, &pKernelNvlink->initializedLinks, &pKernelNvlink->peerLinkMasks[peerId]);
+            if (!bitVectorTestAllCleared(&tempAndResult))
             {
                 bBufferReady = NV_TRUE;
                 break;

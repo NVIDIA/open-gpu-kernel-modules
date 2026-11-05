@@ -167,10 +167,10 @@ deviceConstruct_IMPL
         // If using thwap to generate an allocation failure here, fail the alloc
         // right away
         //
-        KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
-        if (pKernelRc != NULL &&
-            !krcTestAllowAlloc(pGpu, pKernelRc,
-                               NV_ROBUST_CHANNEL_ALLOCFAIL_DEVICE))
+        KernelWatchdog *pKernelWatchdog = gpuGetKernelWatchdogFromDevice(pGpu, pDevice);
+        if (pKernelWatchdog != NULL &&
+            !kwdtTestAllowAlloc(pGpu, pKernelWatchdog,
+                                NV_ROBUST_CHANNEL_ALLOCFAIL_DEVICE))
         {
             _deviceTeardownRef(pDevice, pCallContext);
             _deviceTeardown(pDevice, pCallContext);
@@ -689,7 +689,7 @@ CliSetGpuContext
 /**
  * WARNING: This function is deprecated! Please use gpuGetByRef()
  */
-POBJGPU
+OBJGPU *
 CliGetGpuFromContext
 (
     RsResourceRef *pContextRef,
@@ -707,7 +707,7 @@ CliGetGpuFromContext
 /**
  * WARNING: This function is deprecated! Please use gpuGetByHandle()
  */
-POBJGPU
+OBJGPU *
 CliGetGpuFromHandle
 (
     NvHandle hClient,

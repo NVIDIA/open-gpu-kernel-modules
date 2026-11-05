@@ -112,20 +112,11 @@ struct KernelCrashCatEngine {
 };
 
 
-// Vtable with 13 per-class function pointers
+// Vtable with 4 per-class function pointers
 struct NVOC_VTABLE__KernelCrashCatEngine {
-    NvBool (*__kcrashcatEngineConfigured__)(struct KernelCrashCatEngine * /*this*/);  // virtual override (crashcatEngine) base (crashcatEngine)
-    void (*__kcrashcatEngineUnload__)(struct KernelCrashCatEngine * /*this*/);  // virtual override (crashcatEngine) base (crashcatEngine)
-    void (*__kcrashcatEngineResetLog__)(struct KernelCrashCatEngine * /*this*/);  // virtual override (crashcatEngine) base (crashcatEngine)
-    void (*__kcrashcatEngineVprintf__)(struct KernelCrashCatEngine * /*this*/, NvU64, const char *, va_list);  // virtual override (crashcatEngine) base (crashcatEngine)
     NvU32 (*__kcrashcatEngineRegRead__)(struct OBJGPU *, struct KernelCrashCatEngine * /*this*/, NvU32);  // pure virtual
     void (*__kcrashcatEngineRegWrite__)(struct OBJGPU *, struct KernelCrashCatEngine * /*this*/, NvU32, NvU32);  // pure virtual
     NvU32 (*__kcrashcatEngineMaskDmemAddr__)(struct OBJGPU *, struct KernelCrashCatEngine * /*this*/, NvU32);  // pure virtual
-    NvU32 (*__kcrashcatEnginePriRead__)(struct KernelCrashCatEngine * /*this*/, NvU32);  // virtual override (crashcatEngine) base (crashcatEngine)
-    void (*__kcrashcatEnginePriWrite__)(struct KernelCrashCatEngine * /*this*/, NvU32, NvU32);  // virtual override (crashcatEngine) base (crashcatEngine)
-    void * (*__kcrashcatEngineMapBufferDescriptor__)(struct KernelCrashCatEngine * /*this*/, CrashCatBufferDescriptor *);  // virtual override (crashcatEngine) base (crashcatEngine)
-    void (*__kcrashcatEngineUnmapBufferDescriptor__)(struct KernelCrashCatEngine * /*this*/, CrashCatBufferDescriptor *);  // virtual override (crashcatEngine) base (crashcatEngine)
-    void (*__kcrashcatEngineSyncBufferDescriptor__)(struct KernelCrashCatEngine * /*this*/, CrashCatBufferDescriptor *, NvU32, NvU32);  // virtual override (crashcatEngine) base (crashcatEngine)
     void (*__kcrashcatEngineReadEmem__)(struct KernelCrashCatEngine * /*this*/, NvU64, NvU64, void *);  // virtual halified (singleton optimized) body
 };
 
@@ -203,13 +194,13 @@ static inline void kcrashcatEngineUnregisterCrashBuffer(struct KernelCrashCatEng
 
 
 // Wrapper macros for halified functions
-#define kcrashcatEngineConfigured_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineConfigured__
+#define kcrashcatEngineConfigured_FNPTR(arg_this) arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineConfigured__
 #define kcrashcatEngineConfigured(arg_this) kcrashcatEngineConfigured_DISPATCH(arg_this)
-#define kcrashcatEngineUnload_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineUnload__
+#define kcrashcatEngineUnload_FNPTR(arg_this) arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineUnload__
 #define kcrashcatEngineUnload(arg_this) kcrashcatEngineUnload_DISPATCH(arg_this)
-#define kcrashcatEngineResetLog_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineResetLog__
+#define kcrashcatEngineResetLog_FNPTR(arg_this) arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineResetLog__
 #define kcrashcatEngineResetLog(arg_this) kcrashcatEngineResetLog_DISPATCH(arg_this)
-#define kcrashcatEngineVprintf_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineVprintf__
+#define kcrashcatEngineVprintf_FNPTR(arg_this) arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineVprintf__
 #define kcrashcatEngineVprintf(arg_this, errorId, fmt, args) kcrashcatEngineVprintf_DISPATCH(arg_this, errorId, fmt, args)
 #define kcrashcatEngineRegRead_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineRegRead__
 #define kcrashcatEngineRegRead(pGpu, arg_this, offset) kcrashcatEngineRegRead_DISPATCH(pGpu, arg_this, offset)
@@ -217,15 +208,15 @@ static inline void kcrashcatEngineUnregisterCrashBuffer(struct KernelCrashCatEng
 #define kcrashcatEngineRegWrite(pGpu, arg_this, offset, data) kcrashcatEngineRegWrite_DISPATCH(pGpu, arg_this, offset, data)
 #define kcrashcatEngineMaskDmemAddr_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineMaskDmemAddr__
 #define kcrashcatEngineMaskDmemAddr(pGpu, arg_this, addr) kcrashcatEngineMaskDmemAddr_DISPATCH(pGpu, arg_this, addr)
-#define kcrashcatEnginePriRead_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEnginePriRead__
+#define kcrashcatEnginePriRead_FNPTR(arg_this) arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEnginePriRead__
 #define kcrashcatEnginePriRead(arg_this, offset) kcrashcatEnginePriRead_DISPATCH(arg_this, offset)
-#define kcrashcatEnginePriWrite_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEnginePriWrite__
+#define kcrashcatEnginePriWrite_FNPTR(arg_this) arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEnginePriWrite__
 #define kcrashcatEnginePriWrite(arg_this, offset, data) kcrashcatEnginePriWrite_DISPATCH(arg_this, offset, data)
-#define kcrashcatEngineMapBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineMapBufferDescriptor__
+#define kcrashcatEngineMapBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineMapBufferDescriptor__
 #define kcrashcatEngineMapBufferDescriptor(arg_this, pBufDesc) kcrashcatEngineMapBufferDescriptor_DISPATCH(arg_this, pBufDesc)
-#define kcrashcatEngineUnmapBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineUnmapBufferDescriptor__
+#define kcrashcatEngineUnmapBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineUnmapBufferDescriptor__
 #define kcrashcatEngineUnmapBufferDescriptor(arg_this, pBufDesc) kcrashcatEngineUnmapBufferDescriptor_DISPATCH(arg_this, pBufDesc)
-#define kcrashcatEngineSyncBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineSyncBufferDescriptor__
+#define kcrashcatEngineSyncBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineSyncBufferDescriptor__
 #define kcrashcatEngineSyncBufferDescriptor(arg_this, pBufDesc, offset, size) kcrashcatEngineSyncBufferDescriptor_DISPATCH(arg_this, pBufDesc, offset, size)
 #define kcrashcatEngineReadDmem_FNPTR(arg_this) arg_this->__kcrashcatEngineReadDmem__
 #define kcrashcatEngineReadDmem(arg_this, offset, size, pBuf) kcrashcatEngineReadDmem_DISPATCH(arg_this, offset, size, pBuf)
@@ -242,19 +233,19 @@ static inline void kcrashcatEngineUnregisterCrashBuffer(struct KernelCrashCatEng
 
 // Dispatch functions
 static inline NvBool kcrashcatEngineConfigured_DISPATCH(struct KernelCrashCatEngine *arg_this) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineConfigured__(arg_this);
+    return arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineConfigured__(staticCast(arg_this, CrashCatEngine));
 }
 
 static inline void kcrashcatEngineUnload_DISPATCH(struct KernelCrashCatEngine *arg_this) {
-    arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineUnload__(arg_this);
+    arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineUnload__(staticCast(arg_this, CrashCatEngine));
 }
 
 static inline void kcrashcatEngineResetLog_DISPATCH(struct KernelCrashCatEngine *arg_this) {
-    arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineResetLog__(arg_this);
+    arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineResetLog__(staticCast(arg_this, CrashCatEngine));
 }
 
 static inline void kcrashcatEngineVprintf_DISPATCH(struct KernelCrashCatEngine *arg_this, NvU64 errorId, const char *fmt, va_list args) {
-    arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineVprintf__(arg_this, errorId, fmt, args);
+    arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineVprintf__(staticCast(arg_this, CrashCatEngine), errorId, fmt, args);
 }
 
 static inline NvU32 kcrashcatEngineRegRead_DISPATCH(struct OBJGPU *pGpu, struct KernelCrashCatEngine *arg_this, NvU32 offset) {
@@ -270,23 +261,23 @@ static inline NvU32 kcrashcatEngineMaskDmemAddr_DISPATCH(struct OBJGPU *pGpu, st
 }
 
 static inline NvU32 kcrashcatEnginePriRead_DISPATCH(struct KernelCrashCatEngine *arg_this, NvU32 offset) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEnginePriRead__(arg_this, offset);
+    return arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEnginePriRead__(staticCast(arg_this, CrashCatEngine), offset);
 }
 
 static inline void kcrashcatEnginePriWrite_DISPATCH(struct KernelCrashCatEngine *arg_this, NvU32 offset, NvU32 data) {
-    arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEnginePriWrite__(arg_this, offset, data);
+    arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEnginePriWrite__(staticCast(arg_this, CrashCatEngine), offset, data);
 }
 
 static inline void * kcrashcatEngineMapBufferDescriptor_DISPATCH(struct KernelCrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineMapBufferDescriptor__(arg_this, pBufDesc);
+    return arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineMapBufferDescriptor__(staticCast(arg_this, CrashCatEngine), pBufDesc);
 }
 
 static inline void kcrashcatEngineUnmapBufferDescriptor_DISPATCH(struct KernelCrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc) {
-    arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineUnmapBufferDescriptor__(arg_this, pBufDesc);
+    arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineUnmapBufferDescriptor__(staticCast(arg_this, CrashCatEngine), pBufDesc);
 }
 
 static inline void kcrashcatEngineSyncBufferDescriptor_DISPATCH(struct KernelCrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size) {
-    arg_this->__nvoc_metadata_ptr->vtable.__kcrashcatEngineSyncBufferDescriptor__(arg_this, pBufDesc, offset, size);
+    arg_this->__nvoc_base_CrashCatEngine.__nvoc_metadata_ptr->vtable.__crashcatEngineSyncBufferDescriptor__(staticCast(arg_this, CrashCatEngine), pBufDesc, offset, size);
 }
 
 static inline void kcrashcatEngineReadDmem_DISPATCH(struct KernelCrashCatEngine *arg_this, NvU32 offset, NvU32 size, void *pBuf) {

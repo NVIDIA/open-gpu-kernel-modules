@@ -31,6 +31,25 @@
 
 #include "nvkms-format.h"
 
+#ifndef DRM_FORMAT_P010
+#define DRM_FORMAT_P010  fourcc_code('P', '0', '1', '0')
+#endif
+#ifndef DRM_FORMAT_P012
+#define DRM_FORMAT_P012  fourcc_code('P', '0', '1', '2')
+#endif
+#ifndef DRM_FORMAT_P210
+#define DRM_FORMAT_P210  fourcc_code('P', '2', '1', '0')
+#endif
+#ifndef DRM_FORMAT_P212
+#define DRM_FORMAT_P212  fourcc_code('P', '2', '1', '2')
+#endif
+#ifndef DRM_FORMAT_P410
+#define DRM_FORMAT_P410  fourcc_code('P', '4', '1', '0')
+#endif
+#ifndef DRM_FORMAT_P412
+#define DRM_FORMAT_P412  fourcc_code('P', '4', '1', '2')
+#endif
+
 bool nv_drm_format_to_nvkms_format(u32 format,
                                    enum NvKmsSurfaceMemoryFormat *nvkms_format);
 

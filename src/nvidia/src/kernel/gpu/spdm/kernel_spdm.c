@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,6 +47,8 @@ spdmConstructEngine_IMPL
     ENGDESCRIPTOR  engDesc
 )
 {
+    (void)pGpu;
+
     pSpdm->pLibspdmContext             = NULL;
     pSpdm->pLibspdmScratch             = NULL;
     pSpdm->pAttestationCertChain       = NULL;
@@ -63,14 +65,17 @@ spdmConstructEngine_IMPL
     pSpdm->bSessionEstablished         = NV_FALSE;
     pSpdm->bUsePolling                 = NV_FALSE;
     pSpdm->bExportSecretCleared        = NV_FALSE;
-
     pSpdm->pPayloadBufferMemDesc       = NULL;
     pSpdm->payloadBufferSize           = 0;
-
     pSpdm->pHeartbeatEvent             = NULL;
-    pSpdm->heartbeatPeriodSec          = 0;
-    pSpdm->heartbeatPeriodSec          = 0;
+    pSpdm->heartbeatLastProgressTime   = 0;
+    pSpdm->heartbeatPeriodNsec         = 0;
+    pSpdm->heartbeatResponder          = SPDM_HEARTBEAT_RESPONDER_UNKNOWN;
     pSpdm->nvSpdmRequesterId           = NV_SPDM_REQUESTER_ID_NULL;
+    pSpdm->bRmHeartbeatContextReady    = NV_FALSE;
+    pSpdm->heartbeatRmReadyTime        = 0;
+    pSpdm->snapshotCount               = 0; 
+    portMemSet(pSpdm->heartbeatKey, 0, sizeof(pSpdm->heartbeatKey));
 
     return NV_OK;
 }
@@ -84,6 +89,7 @@ spdmStatePostLoad_KERNEL
 )
 {
     NV_STATUS status = NV_OK;
+    NvU32     heartbeatResponder = SPDM_HEARTBEAT_RESPONDER_UNKNOWN;
 
     if (pSpdm->getProperty(pSpdm, PDB_PROP_SPDM_ENABLED))
     {
@@ -95,6 +101,45 @@ spdmStatePostLoad_KERNEL
         }
 
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, spdmSendInitRmDataCommand_HAL(pGpu, pSpdm), ErrorExit);
+
+        status = spdmGetHeartbeatResponder(pGpu, pSpdm, &heartbeatResponder);
+
+        if (status == NV_ERR_NOT_SUPPORTED)
+        {
+            // Don't support heartbeat, just return NV_OK
+            status = NV_OK;
+            goto ErrorExit;
+        }
+        else if (status != NV_OK)
+        {
+            goto ErrorExit;
+        }
+
+        if (heartbeatResponder == SPDM_HEARTBEAT_RESPONDER_SEC2)
+        {
+            pSpdm->heartbeatResponder = heartbeatResponder;
+
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                                spdmLoadHeartbeatKey_HAL(pGpu, pSpdm),
+                                ErrorExit);
+            NV_PRINTF(LEVEL_INFO,
+                          SPDM_HBEAT_LOG "StatePostLoad: heartbeat key loaded\n");
+
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                                spdmRegisterForHeartbeats_HAL(
+                                    pGpu, pSpdm, SPDM_SEC2_HEARTBEAT_PERIOD_NSEC),
+                                ErrorExit);
+            NV_PRINTF(LEVEL_INFO,
+                      SPDM_HBEAT_LOG "StatePostLoad: heartbeat timer registered\n");
+
+        }
+        else
+        {
+             NV_PRINTF(LEVEL_ERROR,
+                      SPDM_HBEAT_LOG "StatePostLoad: invalid responder 0x%x\n",
+                      heartbeatResponder);
+            return NV_ERR_INVALID_DATA;
+        }
     }
 
 ErrorExit:

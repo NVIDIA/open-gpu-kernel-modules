@@ -112,13 +112,6 @@ static void AssignDpyEvoName              (NVDpyEvoPtr pDpyEvo);
 
 static NvBool IsConnectorTMDS             (NVConnectorEvoPtr);
 
-static const NVT_TIMING VesaEstablished640x480 =
-{
-    640, 0, 16, 96, 800, NVT_H_SYNC_NEGATIVE, 480, 0, 10, 2, 525,
-    NVT_V_SYNC_NEGATIVE, NVT_PROGRESSIVE, 2518, 25175, 0,
-    {0, 60, 60000, 0, 1, {0}, {0}, {0}, {0}, NVT_STATUS_EDID_EST, "EDID_Established"}
-};
-
 static void DpyDisconnectEvo(NVDpyEvoPtr pDpyEvo, const NvBool bSendHdmiCapsToRm)
 {
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
@@ -163,6 +156,7 @@ static NvBool DpyConnectEvo(
         }
     } else {
         ReadAndApplyEdidEvo(pDpyEvo, pParams);
+        nvHdmiRefreshScdcSrcTestConfig(pDpyEvo);
     }
 
     nvUpdateInfoFrames(pDpyEvo, FALSE);
@@ -492,6 +486,11 @@ static void ApplyNewEdid(
          * Check HDMI VRR capability
          */
         nvDpyUpdateHdmiVRRCaps(pDpyEvo);
+
+        /*
+         * Check HDMI ALLM capability from EDID HF-VSDB
+         */
+        nvDpyUpdateHdmiAllmCaps(pDpyEvo);
     }
 
     if (pDpyEvo->pConnectorEvo->legacyType ==
@@ -560,7 +559,8 @@ static NvBool ReadDSITimingsFromResman(
                        dsiModeTimingParams.vSyncWidth +
                        dsiModeTimingParams.vBackPorch;
 
-    pTimings->pclk = HzToKHz(dsiModeTimingParams.pclkHz) / 10;
+    pTimings->pclk1khz = HzToKHz(dsiModeTimingParams.pclkHz);
+    pTimings->pclk = pTimings->pclk1khz / 10;
 
     // DSI only supports RGB444
     *pBpc = dsiModeTimingParams.bpp / 3;
@@ -691,7 +691,8 @@ static NvBool ReadDPSerializerTimings(
     pTimings->VTotal = timingParams.vActive + timingParams.vFrontPorch +
                        timingParams.vSyncWidth + timingParams.vBackPorch;
 
-    pTimings->pclk = timingParams.pclkKHz / 10;
+    pTimings->pclk1khz = timingParams.pclkKHz;
+    pTimings->pclk = pTimings->pclk1khz / 10;
     pTimings->etc.rrx1k = timingParams.rrx1k;
 
     *pBpc = 0;
@@ -2460,13 +2461,6 @@ static void PatchAndParseEdid(
             status = NvTiming_DisplayId20MapToEdidInfo(&pParsedEdid->info.ext_displayid20,
                                                        &pParsedEdid->info);
         }
-       
-        if ((status == NVT_STATUS_SUCCESS) &&
-            (pParsedEdid->info.total_timings < NVT_EDID_MAX_TOTAL_TIMING)) {
-            /* Patch in the fallback 640x480 timing */
-            pParsedEdid->info.timing[pParsedEdid->info.total_timings] = VesaEstablished640x480;
-            pParsedEdid->info.total_timings++;
-        } 
     } else {
         PrePatchEdid(pDpyEvo, pEdid, pInfoString);
         /* parse the majority of information from the EDID */
@@ -3125,13 +3119,13 @@ void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo, NvBool flipSynchronized)
 NvBool nvDpyRequiresDualLinkEvo(const NVDpyEvoRec *pDpyEvo,
                                 const NVHwModeTimingsEvo *pTimings)
 {
-    const NvU32 pixelClock = (pTimings->yuv420Mode == NV_YUV420_MODE_HW) ?
-        (pTimings->pixelClock / 2) : pTimings->pixelClock;
+    const NvU64 pixelClock = (pTimings->yuv420Mode == NV_YUV420_MODE_HW) ?
+        (pTimings->pixelClockHz / 2) : pTimings->pixelClockHz;
 
     // Dual link HDMI is not possible.
     nvAssert(!(nvDpyIsHdmiEvo(pDpyEvo) &&
-               (pixelClock > pDpyEvo->maxSingleLinkPixelClockKHz)));
-    return (pixelClock > pDpyEvo->maxSingleLinkPixelClockKHz);
+               (pixelClock > KHzToHz(pDpyEvo->maxSingleLinkPixelClockKHz))));
+    return (pixelClock > KHzToHz(pDpyEvo->maxSingleLinkPixelClockKHz));
 }
 
 /*!
@@ -3420,6 +3414,7 @@ NvBool nvDpyGetDynamicData(
     pReply->isVirtualRealityHeadMountedDisplay = pDpyEvo->isVrHmd;
 
     pReply->vrrType = pDpyEvo->vrr.type;
+    pReply->allmCapable = pDpyEvo->allmCapable;
     pReply->supportsHDR = nvDpyIsHDRCapable(pDpyEvo);
 
     pReply->stereo3DVision.supported = pDpyEvo->stereo3DVision.supported;
@@ -3889,6 +3884,7 @@ NvU32 nvDpyGetPossibleApiHeadsMask(const NVDpyEvoRec *pDpyEvo)
 
 NvBool nvDpyIsHDRCapable(const NVDpyEvoRec *pDpyEvo)
 {
+    const NVDevEvoRec *pDevEvo = pDpyEvo->pDispEvo->pDevEvo;
     const NVT_EDID_INFO *pInfo = &pDpyEvo->parsedEdid.info;
     const NVT_HDR_STATIC_METADATA *pHdrInfo =
         &pInfo->hdr_static_metadata_info;
@@ -3920,16 +3916,18 @@ NvBool nvDpyIsHDRCapable(const NVDpyEvoRec *pDpyEvo)
     }
 
     /*
-     * XXX HDR is not supported with HDMI 3D due to both using VSI
-     * infoframes.
+     * When the HAL does not support generic shared infoframes (e.g. on EVO1),
+     * HDR and HDMI3D both share the VSIF slot. Skip HDR if HDMI 3D is supported.
      */
-    if (pInfo->HDMI3DSupported) {
+    if (!pDevEvo->caps.supportsGenericSharedInfoFrames &&
+        pInfo->HDMI3DSupported) {
         return FALSE;
     }
 
-    // Sink should support ST2084 EOTF.
-    if (!pHdrInfo->supported_eotf.smpte_st_2084_eotf) {
-        return FALSE;
+    // Sink should support ST2084 EOTF or HLG
+    if (!(pHdrInfo->supported_eotf.smpte_st_2084_eotf ||
+          pHdrInfo->supported_eotf.hybrid_log_gamma_eotf)) {
+      return FALSE;
     }
 
     /*

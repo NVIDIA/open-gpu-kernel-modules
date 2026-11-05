@@ -35,6 +35,7 @@ NVDPLibConnectorPtr nvDPCreateConnector(NVConnectorEvoPtr pConnectorEvo);
 void nvDPNotifyLongPulse(NVConnectorEvoPtr pConnectorEvo,
                          NvBool connected);
 
+// Client-forced connection without physical HPD (fake EDID / forceConnected).
 void nvDPSetClientForcedConnected(NVConnectorEvoPtr pConnectorEvo,
                         NvBool enabled);
 

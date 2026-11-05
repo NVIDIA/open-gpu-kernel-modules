@@ -24,9 +24,11 @@
 #include "kernel/gpu/rc/kernel_rc.h"
 
 #include "kernel/diagnostics/journal.h"
+#include "kernel/gpu/gr/kernel_graphics_manager.h"
 #include "kernel/gpu/subdevice/subdevice.h"
 #include "kernel/rmapi/client.h"
 #include "kernel/rmapi/client_resource.h"
+#include "ctrl/ctrl2080/ctrl2080internal.h"
 
 #include "g_all_dcl_pb.h"
 #include "lib/protobuf/prb_util.h"
@@ -327,4 +329,75 @@ NV_STATUS subdeviceCtrlCmdGetRcRecovery_VF
     pRcRecovery->rcEnable = NV2080_CTRL_CMD_RC_RECOVERY_DISABLED;
 
     return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdRcWatchdogSetTestMode_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_RC_WATCHDOG_SET_TEST_MODE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_INTERNAL_RC_WATCHDOG_SET_TEST_MODE_PARAMS internalParams = {0};
+    NvBool bCurrentEnabled;
+    NvHandle hCurrentClient;
+    NvHandle hCurrentSubdevice;
+    NV_STATUS status;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelGraphicsManager != NULL, NV_ERR_NOT_SUPPORTED);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE), NV_ERR_NOT_SUPPORTED);
+
+    bCurrentEnabled = kgrmgrGetRcWatchdogTestMode(pGpu, pKernelGraphicsManager);
+    hCurrentClient = kgrmgrGetRcWatchdogTestClient(pGpu, pKernelGraphicsManager);
+    hCurrentSubdevice = kgrmgrGetRcWatchdogTestSubdevice(pGpu, pKernelGraphicsManager);
+
+    if (bCurrentEnabled)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                           ((hCurrentClient != NV01_NULL_OBJECT) &&
+                            (hCurrentSubdevice != NV01_NULL_OBJECT)),
+                           NV_ERR_INVALID_STATE);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                           ((hCurrentClient == RES_GET_CLIENT_HANDLE(pSubdevice)) &&
+                            (hCurrentSubdevice == RES_GET_HANDLE(pSubdevice))),
+                           NV_ERR_INVALID_OPERATION);
+    }
+
+    if (!bCurrentEnabled)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                           ((hCurrentClient == NV01_NULL_OBJECT) &&
+                            (hCurrentSubdevice == NV01_NULL_OBJECT)),
+                           NV_ERR_INVALID_STATE);
+    }
+
+    if (bCurrentEnabled == pParams->bEnable)
+    {
+        return NV_OK;
+    }
+
+    internalParams.bEnable = pParams->bEnable;
+
+    status = pRmApi->Control(pRmApi,
+                             RES_GET_CLIENT_HANDLE(pSubdevice),
+                             RES_GET_HANDLE(pSubdevice),
+                             NV2080_CTRL_CMD_INTERNAL_RC_WATCHDOG_SET_TEST_MODE,
+                             &internalParams,
+                             sizeof(internalParams));
+    if (pParams->bEnable && (status != NV_OK))
+    {
+        return status;
+    }
+
+    kgrmgrSetRcWatchdogTestMode(pGpu, pKernelGraphicsManager, pParams->bEnable);
+    kgrmgrSetRcWatchdogTestClient(pGpu, pKernelGraphicsManager,
+                                  pParams->bEnable ? RES_GET_CLIENT_HANDLE(pSubdevice) : NV01_NULL_OBJECT);
+    kgrmgrSetRcWatchdogTestSubdevice(pGpu, pKernelGraphicsManager,
+                                     pParams->bEnable ? RES_GET_HANDLE(pSubdevice) : NV01_NULL_OBJECT);
+
+    return status;
 }

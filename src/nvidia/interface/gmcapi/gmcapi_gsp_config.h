@@ -71,6 +71,12 @@
 
 #define NVGMC_SC_VGX_VERSION                                                   0x0210
 
+/* Array of engine descriptors, each identified by an NVGMC engine ID */
+#define NVGMC_SC_ENGINE_COUNT                                                  0x0500
+#define NVGMC_SC_ENGINE_ID                                                     0x0501
+#define NVGMC_SC_ENGINE_FLAGS                                                  0x0502
+#define NVGMC_SC_ENGINE_FLAGS_IS_HOST_DRIVEN                                   0:0
+
 /* Note: These are only valid if using RMAPI RPCs with GSP and should be avoided/ignored
    as any RPCs that rely on them are considered ABI unstable. */
 #define NVGMC_SC_INTERNAL_CLIENT_HANDLE                                        0x0FF0

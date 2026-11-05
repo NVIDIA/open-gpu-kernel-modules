@@ -31,6 +31,7 @@
 #include "published/maxwell/gm107/dev_nv_xve.h"
 #include "published/maxwell/gm107/dev_nv_xve1.h"
 #include "published/maxwell/gm107/dev_fuse.h"
+#include "published/maxwell/gm107/dev_pmc.h"
 #include "published/maxwell/gm107/dev_pri_ringstation_sys.h"
 
 #include "ctrl/ctrl0080/ctrl0080gpu.h" // NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS
@@ -388,13 +389,11 @@ gpuHandleSanityCheckRegReadError_GM107
         // suppress the rest, and emit a summary when the message changes
         // or the window expires (Bug 6265510).
         //
-        NvU32 nowSec, nowUsec;
+        NvU64 nowNs = osGetMonotonicTimeNs();
         NvBool bSame = (addr == pGpu->priReadErrLastAddr) &&
                        (value == pGpu->priReadErrLastValue);
 
-        osGetSystemTime(&nowSec, &nowUsec);
-
-        if (!bSame || (nowSec - pGpu->priReadErrTimeSec) >= 1)
+        if (!bSame || (nowNs - pGpu->priReadErrTimeNs) >= NSEC_PER_SEC)
         {
             if (pGpu->priReadErrCount > 2)
             {
@@ -405,7 +404,7 @@ gpuHandleSanityCheckRegReadError_GM107
                           pGpu->priReadErrCount - 2);
             }
 
-            pGpu->priReadErrTimeSec  = nowSec;
+            pGpu->priReadErrTimeNs   = nowNs;
             pGpu->priReadErrLastAddr  = addr;
             pGpu->priReadErrLastValue = value;
             pGpu->priReadErrCount     = 0;
@@ -509,6 +508,7 @@ gpuChildOrderList_GM200[] =
     {classId(OBJVBIOS),           GCO_ALL},
     {classId(ConfidentialCompute),      GCO_ALL},
     {classId(Spdm),               GCO_ALL},
+    {classId(TdispMgr),              GCO_ALL},
     {classId(Pxuc),               GCO_ALL},
     {classId(OBJBIF),             GCO_ALL},
     {classId(KernelBif),          GCO_ALL},
@@ -799,4 +799,18 @@ if (DRF_VAL(_PPRIV, _SYS_PRI_ERROR, _CODE, value) == err) \
     PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_DEAD_RING);
     PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_TRAP);
     PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_PRI_CLIENT_ERR);
+}
+
+/*!
+ *  @brief Get absolute BAR0 address of PMC_BOOT_0.
+ *
+ *  Pre-Blackwell layout: PMC is anchored at BAR0 offset 0.
+ */
+NvU32
+gpuGetPmcBoot0Addr_GM107
+(
+    OBJGPU *pGpu
+)
+{
+    return NV_PMC_BOOT_0;
 }

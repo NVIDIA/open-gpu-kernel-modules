@@ -112,7 +112,10 @@
 // renamed from PHYSMEM_END by commit afe789b7367a ("kaslr: rename physmem_end
 // and PHYSMEM_END to direct_map_physmem_end") in v6.12 in  which occurred after
 // the necessary redefinition of PHYSMEM_END for aarch64.
-    #if defined(NVCPU_AARCH64) && !defined(DIRECT_MAP_PHYSMEM_END)
+//
+// For riscv64 this is currently still broken in the kernel
+// Bug: 5986560
+    #if (defined(NVCPU_AARCH64) && !defined(DIRECT_MAP_PHYSMEM_END)) || defined(NVCPU_RISCV64)
         #define UVM_CAN_USE_DEVICE_PRIVATE_MEMREMAP_PAGES() 0
     #else
         #define UVM_CAN_USE_DEVICE_PRIVATE_MEMREMAP_PAGES() 1
@@ -149,10 +152,7 @@
 /* Return a nanosecond-precise value */
 static inline NvU64 NV_GETTIME(void)
 {
-    struct timespec64 tm;
-
-    ktime_get_raw_ts64(&tm);
-    return (NvU64) timespec64_to_ns(&tm);
+    return nv_ktime_get_raw_ns();
 }
 
 typedef struct

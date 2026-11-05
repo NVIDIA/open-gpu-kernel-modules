@@ -148,7 +148,7 @@ void nvEvo1SendHdmiInfoFrame(const NVDispEvoRec *pDispEvo,
     /*
      * The 'type' the timing library is not the type that the HDMI
      * library expects to see in its NvHdmiPkt_PacketWrite call; those
-     * are NVHDMIPKT_TYPE_*.  Determine both below.
+     * are NVHDMIPKT_TYPE_*. Determine both below.
      */
     switch (pInfoFrameHeader->type) {
         default:

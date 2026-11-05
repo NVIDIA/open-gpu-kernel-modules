@@ -32,10 +32,8 @@
 #include "nvmisc.h"
 #include "kernel/gpu/mc/kernel_mc.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
-#include "gpu/mem_sys/kern_mem_sys.h"
 
 #include "published/maxwell/gm107/dev_pmc.h"
-#include "published/maxwell/gm107/dev_nv_xp.h"
 #include "published/maxwell/gm107/dev_nv_xve.h"
 #include "published/maxwell/gm107/dev_nv_xve_addendum.h"
 #include "published/maxwell/gm107/dev_nv_xve1.h"
@@ -1298,7 +1296,6 @@ kbifPrepareForFullChipReset_GM107
 {
     KernelBus    *pKernelBus                = GPU_GET_KERNEL_BUS(pGpu);
     KernelMc     *pKernelMc                 = GPU_GET_KERNEL_MC(pGpu);
-    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     KernelNvlink *pKernelNvlink             = GPU_GET_KERNEL_NVLINK(pGpu);
 
     pGpu->setProperty(pGpu, PDB_PROP_GPU_PREPARING_FULLCHIP_RESET, NV_TRUE);
@@ -1310,15 +1307,6 @@ kbifPrepareForFullChipReset_GM107
     if (kmcPrepareForXVEReset_HAL(pGpu, pKernelMc) != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "MC prepare for XVE reset failed.\n");
-
-        DBG_BREAKPOINT();
-    }
-
-    // Set FB_IFACE to disable
-    if (kmemsysPrepareForXVEReset_HAL(pGpu, pKernelMemorySystem) != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "FB_IFACE disable for fullchip reset failed.\n");
 
         DBG_BREAKPOINT();
     }
@@ -1458,83 +1446,6 @@ kbifDestruct_GM107
 
 
 
-
-/*!
- * @brief  Reset the chip.
- *
- * Use the XVE sw reset logic to reset as much of the chip as possible.
- *
- * @param[in]  pGpu       GPU object pointer
- * @param[in]  pKernelBif KernelBif object pointer
- *
- * @return  NV_STATUS
- */
-NV_STATUS
-kbifDoFullChipReset_GM107
-(
-    OBJGPU *pGpu,
-    KernelBif  *pKernelBif
-)
-{
-    OBJSYS *pSys  = SYS_GET_INSTANCE();
-    OBJCL *pCl = SYS_GET_CL(pSys);
-    NvU32  tempRegVal;
-    NvU32  oldPmc, newPmc;
-
-    // First Reset PMC
-    oldPmc = GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
-    newPmc = oldPmc;
-
-    newPmc &= ~(DRF_DEF(_PMC, _ENABLE, _MSPPP, _ENABLE) |
-                DRF_DEF(_PMC, _ENABLE, _PMEDIA, _ENABLED) |
-                DRF_DEF(_PMC, _ENABLE, _CE0, _ENABLED) |
-                DRF_DEF(_PMC, _ENABLE, _CE1, _ENABLED) |
-                DRF_DEF(_PMC, _ENABLE, _PFIFO, _ENABLED) |
-                DRF_DEF(_PMC, _ENABLE, _PGRAPH, _ENABLED) |
-                DRF_DEF(_PMC, _ENABLE, _PWR, _ENABLED) |
-                DRF_DEF(_PMC, _ENABLE, _MSVLD, _ENABLED) |
-                DRF_DEF(_PMC, _ENABLE, _MSPDEC, _ENABLED) |
-                DRF_DEF(_PMC, _ENABLE, _PDISP, _ENABLED));
-
-    GPU_REG_WR32(pGpu, NV_PMC_ENABLE, newPmc);
-    GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
-    GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
-
-    //
-    // Before doing SW_RESET, init NV_XP_PL_CYA_1_BLOCK_HOST2XP_HOLD_LTSSM to 1.
-    // else when NV_XVE_SW_RESET to 0, host will try to do rom init and will assert
-    // HOST2XP_HOLD_LTSSM to 0 which will cause ltssm to goto detect.
-    //
-    tempRegVal = GPU_REG_RD32(pGpu, NV_XP_PL_CYA_1(0));
-    do
-    {
-        tempRegVal |= DRF_NUM(_XP, _PL_CYA_1, _BLOCK_HOST2XP_HOLD_LTSSM, 1);
-        GPU_REG_WR32(pGpu, NV_XP_PL_CYA_1(0), tempRegVal);
-        tempRegVal = GPU_REG_RD32(pGpu, NV_XP_PL_CYA_1(0));
-    } while ((tempRegVal & DRF_NUM(_XP, _PL_CYA_1, _BLOCK_HOST2XP_HOLD_LTSSM, 1)) == 0);
-
-    NV_ASSERT_OK_OR_RETURN(GPU_BUS_CFG_RD32(pGpu, NV_XVE_SW_RESET, &tempRegVal));
-    tempRegVal = FLD_SET_DRF(_XVE, _SW_RESET, _RESET, _ENABLE, tempRegVal);
-    clPcieWriteDword(pCl, gpuGetDomain(pGpu), gpuGetBus(pGpu),
-                     gpuGetDevice(pGpu), 0, NV_XVE_SW_RESET, tempRegVal);
-
-    pGpu->setProperty(pGpu, PDB_PROP_GPU_IN_FULLCHIP_RESET, NV_TRUE);
-
-    // wait a bit to make sure GPU is reset
-    osDelay(1);
-
-    //
-    // Come out of reset. Note that when SW/full-chip reset is triggered by the
-    // above write to NV_XVE_SW_RESET, BAR0 priv writes do not work and thus
-    // this write must be a PCI config bus write.
-    //
-    tempRegVal = FLD_SET_DRF(_XVE, _SW_RESET, _RESET, _DISABLE, tempRegVal);
-    clPcieWriteDword(pCl, gpuGetDomain(pGpu), gpuGetBus(pGpu),
-                     gpuGetDevice(pGpu), 0, NV_XVE_SW_RESET, tempRegVal);
-
-
-    return NV_OK;
-}
 
 /**
  *

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -293,14 +293,16 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
 
     pFbsr->op = op;
     pFbsr->bOperationFailed = NV_FALSE;
+    NV_ASSERT(!pFbsr->bSysMemLocked);
 
     if (op != FBSR_OP_SIZE_BUF && op != FBSR_OP_DESTROY)
     {
         if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu))
         {
-            pFbsr->pCe = NULL;
             bVirtualMode = pMemoryManager->bUseVirtualCopyOnSuspend;
-            NV_ASSERT_OK_OR_RETURN(memmgrInitCeUtils(pMemoryManager, NV_FALSE, bVirtualMode));
+            NV_ASSERT_OK_OR_GOTO(status,
+                                 memmgrInitCeUtils(pMemoryManager, NV_FALSE, bVirtualMode),
+                                 done);
         }
 
         NV_PRINTF(LEVEL_INFO, "%s %lld bytes of data\n",
@@ -391,6 +393,7 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
                             pFbsr->pSysMemDesc = NULL;
                             break;
                         }
+                        pFbsr->bSysMemLocked = NV_TRUE;
                     }
                 }
 
@@ -510,7 +513,7 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
         // Initialize FBSR on GSP
         if ((status == NV_OK) && IS_GSP_CLIENT(pGpu) && (pFbsr->pSysMemDesc != NULL))
         {
-            NV_ASSERT_OK_OR_RETURN(_fbsrInitGsp(pGpu, pFbsr));
+            NV_ASSERT_OK_OR_GOTO(status, _fbsrInitGsp(pGpu, pFbsr), done);
         }
     }
     else if (pFbsr->op == FBSR_OP_RESTORE || pFbsr->op == FBSR_OP_DESTROY)
@@ -520,6 +523,10 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
             case FBSR_TYPE_PAGED_DMA:
                 status = memdescLock(pFbsr->pSysMemDesc);
                 NV_ASSERT(status == NV_OK);
+                if (status == NV_OK)
+                {
+                    pFbsr->bSysMemLocked = NV_TRUE;
+                }
                 break;
             case FBSR_TYPE_FILE:
                  if (!pFbsr->pagedBufferInfo.sectionHandle)
@@ -602,10 +609,16 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
         }
     }
 
+done:
     pFbsr->pSysMemNodeCurrent = pFbsr->pSysMemNodeHead;
     pFbsr->length = 0;
     pFbsr->sysOffset = 0;
 
+    if (status != NV_OK)
+    {
+        pFbsr->bOperationFailed = NV_TRUE;
+        (void)fbsrEnd_HAL(pGpu, pFbsr);
+    }
     return status;
 }
 
@@ -640,9 +653,15 @@ fbsrEnd_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
             case FBSR_TYPE_PAGED_DMA:
             case FBSR_TYPE_DMA:
                 {
-                    if (pFbsr->type == FBSR_TYPE_PAGED_DMA)
+                    if (pFbsr->pSysMemDesc == NULL)
+                    {
+                        break;
+                    }
+                    if ((pFbsr->type == FBSR_TYPE_PAGED_DMA) &&
+                        pFbsr->bSysMemLocked)
                     {
                         memdescUnlock(pFbsr->pSysMemDesc);
+                        pFbsr->bSysMemLocked = NV_FALSE;
                     }
                     memdescFree(pFbsr->pSysMemDesc);
                     memdescDestroy(pFbsr->pSysMemDesc);
@@ -666,9 +685,11 @@ fbsrEnd_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
                 // Flush out writes
                 osFlushCpuWriteCombineBuffer();
 
-                // Close the file
-                osCloseFile(pFbsr->pagedBufferInfo.sectionHandle);
-                pFbsr->pagedBufferInfo.sectionHandle = NULL;
+                if (pFbsr->pagedBufferInfo.sectionHandle != NULL)
+                {
+                    osCloseFile(pFbsr->pagedBufferInfo.sectionHandle);
+                    pFbsr->pagedBufferInfo.sectionHandle = NULL;
+                }
                 break;
             case FBSR_TYPE_CPU:
                 {
@@ -689,11 +710,16 @@ fbsrEnd_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
                     }
 
                     pFbsr->pSysMemNodeHead = NULL;
+                    pFbsr->pSysMemNodeCurrent = NULL;
 
                     break;
                 }
 
             case FBSR_TYPE_WDDM_FAST_DMA_DEFERRED_NONPAGED:
+                if (pFbsr->pSysMemDesc == NULL)
+                {
+                    break;
+                }
                 memdescDestroy(pFbsr->pSysMemDesc);
                 pFbsr->pSysMemDesc = NULL;
                 if(bIommuEnabled)
@@ -719,9 +745,17 @@ fbsrEnd_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
         switch (pFbsr->type)
         {
             case FBSR_TYPE_PAGED_DMA:
-                memdescUnlock(pFbsr->pSysMemDesc);
+                if ((pFbsr->pSysMemDesc != NULL) && pFbsr->bSysMemLocked)
+                {
+                    memdescUnlock(pFbsr->pSysMemDesc);
+                    pFbsr->bSysMemLocked = NV_FALSE;
+                }
                 break;
             case FBSR_TYPE_WDDM_FAST_DMA_DEFERRED_NONPAGED:
+                if (pFbsr->pSysMemDesc == NULL)
+                {
+                    break;
+                }
                 memdescDestroy(pFbsr->pSysMemDesc);
                 pFbsr->pSysMemDesc = NULL;
                 if(bIommuEnabled)
@@ -800,7 +834,7 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
                     PFBSR_NODE pNode;
 
                     pNode = portMemAllocNonPaged(
-                        sizeof(FBSR_NODE) + (NvU32)pVidMemDesc->Size - sizeof(pNode->data));
+                        sizeof(FBSR_NODE) + pVidMemDesc->Size - sizeof(pNode->data));
 
                     if (pNode == NULL)
                     {
@@ -882,13 +916,20 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
 
                     if (pFbsr->op == FBSR_OP_RESTORE)
                     {
-                        NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface, pVidMemDesc->Size,
-                                                   TRANSFER_FLAGS_PREFER_CE | TRANSFER_FLAGS_CE_PRI_DEFER_FLUSH));
+                        status = memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface,
+                                               pVidMemDesc->Size, TRANSFER_FLAGS_PREFER_CE);
                     }
                     else
                     {
-                        NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface, pVidMemDesc->Size,
-                                                   TRANSFER_FLAGS_PREFER_CE | TRANSFER_FLAGS_CE_PRI_DEFER_FLUSH));
+                        status = memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface,
+                                               pVidMemDesc->Size, TRANSFER_FLAGS_PREFER_CE);
+                    }
+
+                    if (status != NV_OK)
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "FBSR DMA copy failed: 0x%x\n", status);
+                        pFbsr->bOperationFailed = NV_TRUE;
+                        return;
                     }
                     break;
                 }
@@ -902,13 +943,20 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
 
                     if (pFbsr->op == FBSR_OP_RESTORE)
                     {
-                        NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface, pVidMemDesc->Size,
-                                                   TRANSFER_FLAGS_PREFER_CE | TRANSFER_FLAGS_CE_PRI_DEFER_FLUSH));
+                        status = memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface,
+                                               pVidMemDesc->Size, TRANSFER_FLAGS_PREFER_CE);
                     }
                     else
                     {
-                        NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface, pVidMemDesc->Size,
-                                                   TRANSFER_FLAGS_PREFER_CE | TRANSFER_FLAGS_CE_PRI_DEFER_FLUSH));
+                        status = memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface,
+                                               pVidMemDesc->Size, TRANSFER_FLAGS_PREFER_CE);
+                    }
+
+                    if (status != NV_OK)
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "FBSR persistent copy failed: 0x%x\n", status);
+                        pFbsr->bOperationFailed = NV_TRUE;
+                        return;
                     }
                     break;
                 }
@@ -972,11 +1020,20 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
 
                         if (pFbsr->op == FBSR_OP_RESTORE)
                         {
-                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
+                            status = memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface,
+                                                   copySize, TRANSFER_FLAGS_PREFER_CE);
                         }
                         else
                         {
-                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
+                            status = memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface,
+                                                   copySize, TRANSFER_FLAGS_PREFER_CE);
+                        }
+
+                        if (status != NV_OK)
+                        {
+                            NV_PRINTF(LEVEL_ERROR, "FBSR WDDM copy failed: 0x%x\n", status);
+                            pFbsr->bOperationFailed = NV_TRUE;
+                            break;
                         }
 
                         if (pFbsr->op == FBSR_OP_SAVE)
@@ -1076,11 +1133,20 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
 
                         if (pFbsr->op == FBSR_OP_RESTORE)
                         {
-                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
+                            status = memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface,
+                                                   copySize, TRANSFER_FLAGS_PREFER_CE);
                         }
                         else
                         {
-                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
+                            status = memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface,
+                                                   copySize, TRANSFER_FLAGS_PREFER_CE);
+                        }
+
+                        if (status != NV_OK)
+                        {
+                            NV_PRINTF(LEVEL_ERROR, "FBSR file copy failed: 0x%x\n", status);
+                            pFbsr->bOperationFailed = NV_TRUE;
+                            break;
                         }
 
                         if (pFbsr->op == FBSR_OP_SAVE)
@@ -1124,7 +1190,7 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
                         {
                             for (i = 0; i < (copySize / 4); i++)
                             {
-                                pFbsr->pPinnedBuffer[i] = pNode->data[i];
+                                pFbsr->pPinnedBuffer[i] = pNode->data[vidOffset / 4 + i];
                             }
                         }
 
@@ -1137,18 +1203,27 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
 
                         if (pFbsr->op == FBSR_OP_RESTORE)
                         {
-                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
+                            status = memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface,
+                                                  copySize, TRANSFER_FLAGS_PREFER_CE);
                         }
                         else
                         {
-                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
+                            status = memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface,
+                                                  copySize, TRANSFER_FLAGS_PREFER_CE);
+                        }
+
+                        if (status != NV_OK)
+                        {
+                            NV_PRINTF(LEVEL_ERROR, "FBSR CPU copy failed: 0x%x\n", status);
+                            pFbsr->bOperationFailed = NV_TRUE;
+                            return;
                         }
 
                         if (pFbsr->op == FBSR_OP_SAVE)
                         {
                             for (i = 0; i < (copySize / 4); i++)
                             {
-                                pNode->data[i] = pFbsr->pPinnedBuffer[i];
+                                pNode->data[vidOffset / 4 + i] = pFbsr->pPinnedBuffer[i];
                             }
                         }
 

@@ -233,12 +233,6 @@ typedef enum NV2080_CTRL_PERF_RATED_TDP_CLIENT {
      */
     NV2080_CTRL_PERF_RATED_TDP_CLIENT_GLOBAL = 2,
     /*!
-     * Operating system request.  This client is expected to be used by the
-     * operating system to set @ref NV2080_CTRL_PERF_RATED_TDP_ACTION_FORCE_LOCK
-     * for performance profiling.
-     */
-    NV2080_CTRL_PERF_RATED_TDP_CLIENT_OS = 3,
-    /*!
      * App profile client requests.  This client is expected to be used by the
      * app-profile settings to either default to whatever was requested by
      * higher-priority clients (@ref NV2080_CTRL_PERF_RATED_TDP_ACTION_DEFAULT)
@@ -246,7 +240,13 @@ typedef enum NV2080_CTRL_PERF_RATED_TDP_CLIENT {
      * NV2080_CTRL_PERF_RATED_TDP_ACTION_FORCE_LIMIT) for apps which have shown
      * bad behavior when boosting.
      */
-    NV2080_CTRL_PERF_RATED_TDP_CLIENT_PROFILE = 4,
+    NV2080_CTRL_PERF_RATED_TDP_CLIENT_PROFILE = 3,
+    /*!
+     * Operating system request.  This client is expected to be used by the
+     * operating system to set @ref NV2080_CTRL_PERF_RATED_TDP_ACTION_FORCE_LOCK
+     * for performance profiling.
+     */
+    NV2080_CTRL_PERF_RATED_TDP_CLIENT_OS = 4,
     /*!
      * Number of supported clients.
      *

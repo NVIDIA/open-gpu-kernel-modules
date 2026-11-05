@@ -34,6 +34,11 @@
 #include "nvkms-surface.h"
 #include "nvkms-sync.h"
 
+#include "nvkms-rm.h"
+#include "nvkms-rmapi.h"
+#include <class/cla080.h> /* KEPLER_DEVICE_VGPU */
+#include <ctrl/ctrla080.h> /* NVA080_CTRL_CMD_VGPU_DISPLAY_* */
+
 #include <class/cla083.h>
 
 static NvU32 DisplaylessAllocSurface(
@@ -238,6 +243,199 @@ static void SetLastSemaphore(
     pDevEvo->displaylessWorker.head[apiHead].lastReleaseValue = releaseValue;
 }
 
+static void ReleaseLastScanoutSurface(NVDevEvoPtr pDevEvo, NvU32 apiHead)
+{
+    NVSurfaceEvoPtr pScanoutSurface =
+        pDevEvo->displaylessWorker.head[apiHead].lastScanoutSurface;
+
+    if (pScanoutSurface != NULL) {
+        nvEvoDecrementSurfaceRefCnts(pDevEvo, pScanoutSurface);
+        pDevEvo->displaylessWorker.head[apiHead].lastScanoutSurface = NULL;
+    }
+}
+
+static NvBool MapFormatToVgpuFormat(enum NvKmsSurfaceMemoryFormat format,
+                                    NvU32 *pVgpuFormat)
+{
+    switch (format) {
+        case NvKmsSurfaceMemoryFormatI8:
+            *pVgpuFormat = NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_FORMAT_I8;
+            return TRUE;
+        case NvKmsSurfaceMemoryFormatA1R5G5B5:
+        case NvKmsSurfaceMemoryFormatX1R5G5B5:
+            *pVgpuFormat = NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_FORMAT_A1R5G5B5;
+            return TRUE;
+        case NvKmsSurfaceMemoryFormatR5G6B5:
+            *pVgpuFormat = NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_FORMAT_R5G6B5;
+            return TRUE;
+        case NvKmsSurfaceMemoryFormatA8R8G8B8:
+        case NvKmsSurfaceMemoryFormatX8R8G8B8:
+            *pVgpuFormat = NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_FORMAT_A8R8G8B8;
+            return TRUE;
+        case NvKmsSurfaceMemoryFormatA8B8G8R8:
+        case NvKmsSurfaceMemoryFormatX8B8G8R8:
+            *pVgpuFormat = NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_FORMAT_A8B8G8R8;
+            return TRUE;
+        case NvKmsSurfaceMemoryFormatA2B10G10R10:
+        case NvKmsSurfaceMemoryFormatX2B10G10R10:
+            *pVgpuFormat = NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_FORMAT_A2B10G10R10;
+            return TRUE;
+        case NvKmsSurfaceMemoryFormatRF16GF16BF16AF16:
+            *pVgpuFormat = NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_FORMAT_RF16_GF16_BF16_AF16;
+            return TRUE;
+        case NvKmsSurfaceMemoryFormatR16G16B16A16:
+            *pVgpuFormat = NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_FORMAT_R16_G16_B16_A16;
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
+static NvBool BuildVncSetSurfaceParams(
+    NVDevEvoPtr pDevEvo,
+    const NVSurfaceEvoRec *pSurfaceEvo,
+    NvU32 head,
+    NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES *pParams)
+{
+    const NvKmsSurfaceMemoryFormatInfo *pFormatInfo;
+    const NVHwModeViewPortEvo *pViewPort;
+    NvU32 vgpuFormat;
+    NvU32 surfacePitch = pSurfaceEvo->planes[0].pitch;
+
+    pFormatInfo = nvKmsGetSurfaceMemoryFormatInfo(pSurfaceEvo->format);
+    if ((pFormatInfo == NULL) || (pFormatInfo->numPlanes != 1)) {
+        return FALSE;
+    }
+
+    if (!MapFormatToVgpuFormat(pSurfaceEvo->format, &vgpuFormat)) {
+        return FALSE;
+    }
+
+    if (pSurfaceEvo->layout != NvKmsSurfaceMemoryLayoutBlockLinear) {
+        if ((surfacePitch & 0xffU) != 0) {
+            return FALSE;
+        }
+
+        surfacePitch >>= 8;
+    }
+
+    pViewPort = &pDevEvo->pDispEvo[0]->headState[head].timings.viewPort;
+
+    nvkms_memset(pParams, 0, sizeof(*pParams));
+    pParams->headIndex          = 0;
+    pParams->isPrimary          = 1;
+    pParams->hMemory            = pSurfaceEvo->planes[0].rmHandle;
+    pParams->offset             = (NvU32)pSurfaceEvo->planes[0].offset;
+    pParams->surfaceType        =
+        (pSurfaceEvo->layout == NvKmsSurfaceMemoryLayoutBlockLinear) ?
+        NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_MEMORY_LAYOUT_BLOCKLINEAR :
+        NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_MEMORY_LAYOUT_PITCH;
+    pParams->surfaceBlockHeight = pSurfaceEvo->log2GobsPerBlockY;
+    pParams->surfacePitch       = surfacePitch;
+    pParams->surfaceFormat      = vgpuFormat;
+    pParams->surfaceWidth       = pSurfaceEvo->widthInPixels;
+    pParams->surfaceHeight      = pSurfaceEvo->heightInPixels;
+    pParams->rectWidth          = pViewPort->in.width;
+    pParams->rectHeight         = pViewPort->in.height;
+    pParams->surfaceSize        = (NvU32)pSurfaceEvo->planes[0].rmObjectSizeInBytes;
+
+    return TRUE;
+}
+
+static NvBool IssueVncSetSurfaceProperties(
+    NVDevEvoPtr pDevEvo,
+    NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES *pParams)
+{
+    NvU32 ret;
+
+    if (pDevEvo->displaylessWorker.hVgpuDevice == 0) {
+        return FALSE;
+    }
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displaylessWorker.hVgpuDevice,
+                         NVA080_CTRL_CMD_VGPU_DISPLAY_SET_SURFACE_PROPERTIES,
+                         pParams, sizeof(*pParams));
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_WARN,
+            "NVA080_CTRL_CMD_VGPU_DISPLAY_SET_SURFACE_PROPERTIES "
+            "failed on apiHead %u (0x%x)", pParams->headIndex, ret);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static void ConsumeScanoutSurface(
+    NVDevEvoPtr pDevEvo,
+    NVDispEvoPtr pDispEvo,
+    NVSurfaceEvoPtr pScanoutSurface)
+{
+    NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES params;
+    NvU32 head;
+
+    if (pScanoutSurface == NULL) {
+        return;
+    }
+
+    head = nvGetPrimaryHwHead(pDispEvo, 0);
+    if ((head == NV_INVALID_HEAD) ||
+        !BuildVncSetSurfaceParams(pDevEvo, pScanoutSurface, head, &params) ||
+        !IssueVncSetSurfaceProperties(pDevEvo, &params)) {
+        nvEvoDecrementSurfaceRefCnts(pDevEvo, pScanoutSurface);
+        return;
+    }
+
+    /*
+     * The vGPU plugin caches the surface we just told it about and keeps blitting
+     * from it across compositor ticks until the next SET supersedes it. Hold a
+     * reference until then (or until teardown) so the surface can't be freed
+     * out from under the plugin.
+     */
+    ReleaseLastScanoutSurface(pDevEvo, 0);
+    pDevEvo->displaylessWorker.head[0].lastScanoutSurface =
+        pScanoutSurface;
+}
+
+static void CoalesceFlipScanoutSurface(
+    NVDevEvoPtr pDevEvo,
+    NVSurfaceEvoPtr *ppScanoutSurface,
+    NVDisplaylessPendingFlipRec *pFlip)
+{
+    if (*ppScanoutSurface != NULL) {
+        nvEvoDecrementSurfaceRefCnts(pDevEvo, *ppScanoutSurface);
+    }
+
+    *ppScanoutSurface = pFlip->pScanoutSurface;
+    pFlip->pScanoutSurface = NULL;
+}
+
+static void SetPendingFlipScanoutSurface(
+    NVDisplaylessPendingFlipRec *pFlip,
+    NVSurfaceEvoPtr pScanoutSurface)
+{
+    pFlip->pScanoutSurface = pScanoutSurface;
+    if (pScanoutSurface != NULL) {
+        nvEvoIncrementSurfaceRefCnts(pScanoutSurface);
+    }
+}
+
+static NVSurfaceEvoPtr GetConsoleVncScanoutSurface(
+    NVDevEvoPtr pDevEvo,
+    NvU32 apiHead,
+    NvU32 head,
+    NVEvoChannelPtr pChannel,
+    const NVFlipChannelEvoHwState *pHwState)
+{
+    if ((apiHead == 0) &&
+        (pDevEvo->displaylessWorker.hVgpuDevice != 0) &&
+        (pChannel == pDevEvo->head[head].layer[NVKMS_MAIN_LAYER])) {
+        return pHwState->pSurfaceEvo[NVKMS_LEFT];
+    }
+
+    return NULL;
+}
+
 static NvBool ProcessPendingFlips(
     NVDevEvoPtr pDevEvo,
     NVDispEvoPtr pDispEvo,
@@ -249,6 +447,12 @@ static NvBool ProcessPendingFlips(
     for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
         NvU8 *pHead = &pDevEvo->displaylessWorker.head[apiHead].head;
         NvU8 *pTail = &pDevEvo->displaylessWorker.head[apiHead].tail;
+        /*
+         * The vGPU plugin consumes SET asynchronously, so only expose the
+         * newest scanout from this worker pass and release intermediate
+         * candidates.
+         */
+        NVSurfaceEvoPtr pVncScanoutSurface = NULL;
 
         /* Consume flips from tail until empty or blocked */
         while (!QueueIsEmpty(*pHead, *pTail)) {
@@ -256,6 +460,7 @@ static NvBool ProcessPendingFlips(
                 &pDevEvo->displaylessWorker.head[apiHead].q[*pTail];
 
             if (!pFlip->usingSema) {
+                CoalesceFlipScanoutSurface(pDevEvo, &pVncScanoutSurface, pFlip);
                 nvSendFlipOccurredEventEvo(pDispEvo, apiHead, NVKMS_MAIN_LAYER);
             } else {
                 void *pCpuAddress = pFlip->semaSurface.pSurfaceEvo->cpuAddress[0];
@@ -274,6 +479,7 @@ static NvBool ProcessPendingFlips(
                      */
                     ReleaseLastSemaphore(pDevEvo, apiHead);
                     SetLastSemaphore(pDevEvo, &pFlip->semaSurface, pFlip->releaseValue, apiHead);
+                    CoalesceFlipScanoutSurface(pDevEvo, &pVncScanoutSurface, pFlip);
                     nvSendFlipOccurredEventEvo(pDispEvo, apiHead, NVKMS_MAIN_LAYER);
                 } else {
                     /* Blocked: stop processing this head */
@@ -284,6 +490,8 @@ static NvBool ProcessPendingFlips(
 
             *pTail = (*pTail + 1) % DISPLAYLESS_MAX_PENDING_FLIPS;
         }
+
+        ConsumeScanoutSurface(pDevEvo, pDispEvo, pVncScanoutSurface);
 
         /*
          * During teardown (skipWaitingForSema=true), the above loop
@@ -330,7 +538,8 @@ static void DisplaylessEnqueueFlip(
     NvBool usingSyncpt,
     const NVFlipNIsoSurfaceEvoHwState *pSemaSurface,
     NvU32 acquireValue,
-    NvU32 releaseValue)
+    NvU32 releaseValue,
+    NVSurfaceEvoPtr pScanoutSurface)
 {
     NVDisplaylessPendingFlipRec *pFlip;
     NvU8 *pHead, *pTail;
@@ -367,6 +576,8 @@ static void DisplaylessEnqueueFlip(
         pFlip->semaSurface.pSurfaceEvo = NULL;
     }
 
+    SetPendingFlipScanoutSurface(pFlip, pScanoutSurface);
+
     *pHead = (*pHead + 1) % DISPLAYLESS_MAX_PENDING_FLIPS;
 
     if (pDevEvo->displaylessWorker.timer == NULL) {
@@ -377,6 +588,74 @@ static void DisplaylessEnqueueFlip(
                 0,   /* dataU32 */
                 0);  /* timeout: schedule the work immediately */
     }
+}
+
+static void DisplaylessCleanupConsoleVnc(NVDevEvoPtr pDevEvo, NvU32 apiHead)
+{
+    NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS params = { 0 };
+    NvU32 ret;
+
+    if (pDevEvo->displaylessWorker.hVgpuDevice == 0) {
+        return;
+    }
+
+    params.headIndex = apiHead;
+    params.blankingEnabled = 0;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displaylessWorker.hVgpuDevice,
+                         NVA080_CTRL_CMD_VGPU_DISPLAY_CLEANUP_SURFACE,
+                         &params, sizeof(params));
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_WARN,
+            "NVA080_CTRL_CMD_VGPU_DISPLAY_CLEANUP_SURFACE "
+            "failed on apiHead %u (0x%x)", apiHead, ret);
+    }
+}
+
+static void DisplaylessAllocConsoleVnc(NVDevEvoPtr pDevEvo)
+{
+    NvU32 hVgpuDevice = nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
+    NvU32 ret;
+
+    ret = nvRmApiAlloc(nvEvoGlobal.clientHandle,
+                       pDevEvo->deviceHandle,
+                       hVgpuDevice,
+                       KEPLER_DEVICE_VGPU, NULL);
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_WARN,
+            "Failed to allocate KEPLER_DEVICE_VGPU; console VNC mirroring "
+            "will be disabled (0x%x)", ret);
+        nvFreeUnixRmHandle(&pDevEvo->handleAllocator, hVgpuDevice);
+    } else {
+        pDevEvo->displaylessWorker.hVgpuDevice = hVgpuDevice;
+    }
+}
+
+static void DisplaylessDestroyConsoleVnc(NVDevEvoPtr pDevEvo)
+{
+    NvU32 ret;
+
+    if (pDevEvo->displaylessWorker.hVgpuDevice == 0) {
+        return;
+    }
+
+    DisplaylessCleanupConsoleVnc(pDevEvo, 0);
+
+    /*
+     * The plugin has been told to drop its cached surface, so it is now
+     * safe to release the reference we held on its behalf.
+     */
+    ReleaseLastScanoutSurface(pDevEvo, 0);
+
+    ret = nvRmApiFree(nvEvoGlobal.clientHandle,
+                      pDevEvo->deviceHandle,
+                      pDevEvo->displaylessWorker.hVgpuDevice);
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvAssert(!"Free(hVgpuDevice) failed");
+    }
+    nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
+                       pDevEvo->displaylessWorker.hVgpuDevice);
 }
 
 static void DisplaylessFlip(
@@ -402,12 +681,20 @@ static void DisplaylessFlip(
     return;
 
 api_head_found:
-    DisplaylessEnqueueFlip(
-        pDevEvo, apiHead,
-        pHwState->syncObject.usingSyncpt,
-        &pHwState->syncObject.u.semaphores.acquireSurface,
-        pHwState->syncObject.u.semaphores.acquireValue,
-        pHwState->syncObject.u.semaphores.releaseValue);
+    {
+        NVSurfaceEvoPtr pScanoutSurface = NULL;
+
+        pScanoutSurface = GetConsoleVncScanoutSurface(pDevEvo, apiHead, head,
+                                                      pChannel, pHwState);
+
+        DisplaylessEnqueueFlip(
+            pDevEvo, apiHead,
+            pHwState->syncObject.usingSyncpt,
+            &pHwState->syncObject.u.semaphores.acquireSurface,
+            pHwState->syncObject.u.semaphores.acquireValue,
+            pHwState->syncObject.u.semaphores.releaseValue,
+            pScanoutSurface);
+    }
 }
 
 static void DisplaylessFlipTransitionWAR(
@@ -595,6 +882,9 @@ static void DisplaylessInitFlipWorker(NVDevEvoPtr pDevEvo)
 static NvBool DisplaylessAllocRmCtrlObject(NVDevEvoPtr pDevEvo)
 {
     DisplaylessInitFlipWorker(pDevEvo);
+
+    DisplaylessAllocConsoleVnc(pDevEvo);
+
     return true;
 }
 
@@ -604,6 +894,8 @@ static void DisplaylessDestroyFlipWorker(NVDevEvoPtr pDevEvo)
 
     nvkms_free_timer(pDevEvo->displaylessWorker.timer);
     ProcessPendingFlips(pDevEvo, pDispEvo, TRUE /* skipWaitingForSema */);
+
+    DisplaylessDestroyConsoleVnc(pDevEvo);
 
     nvkms_memset(&pDevEvo->displaylessWorker, 0, sizeof(pDevEvo->displaylessWorker));
 }
@@ -830,6 +1122,7 @@ NVEvoHAL nvDisplayless = {
     DisplaylessComputeWindowScalingTaps,                /* ComputeWindowScalingTaps */
     NULL,                                               /* GetWindowScalingCaps */
     NULL,                                               /* SetMergeMode */
+    NULL,                                               /* SendHdmiVrrVtem */
     DisplaylessSendHdmiInfoFrame,                       /* SendHdmiInfoFrame */
     DisplaylessDisableHdmiInfoFrame,                    /* DisableHdmiInfoFrame */
     DisplaylessSendDpInfoFrameSdp,                      /* SendDpInfoFrameSdp */
@@ -849,6 +1142,7 @@ NVEvoHAL nvDisplayless = {
     DisplaylessSetAcqSemaphoreSurfaceAddressAndControl, /* SetAcqSemaphoreSurfaceAddressAndControl */
     NULL,                                               /* SetCoreFid */
     NULL,                                               /* SetupVBlankRgSemaphoreInterrupt */
+    NULL,                                               /* SetVTotalAndFraction */
     {                                                   /* caps */
         FALSE,                                          /* supportsHDMIFRL */
         FALSE,                                          /* supportsSetStorageMemoryLayout */

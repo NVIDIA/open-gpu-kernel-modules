@@ -263,7 +263,7 @@ NvBool nvAllocNvPushDevice(NVDevEvoPtr pDevEvo)
     params.pImports = &NvKmsNvPushImports;
     params.clientHandle = nvEvoGlobal.clientHandle;
     params.subDevice[0].deviceHandle = pDevEvo->deviceHandle;
-    params.numSubDevices = pDevEvo->numSubDevices;
+    params.numSubDevices = 1;
 
     params.numClasses = pDevEvo->numClasses;
     params.supportedClasses = pDevEvo->supportedClasses;

@@ -701,6 +701,7 @@ typedef struct NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS {
 } NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS;
 
 
+
 /*!
  * NVB0CC_CTRL_CMD_RESERVE_CCU_PROF
  *
@@ -724,5 +725,35 @@ typedef struct NVB0CC_CTRL_RESERVE_CCUPROF_PARAMS {
 #define NVB0CC_CTRL_CMD_RELEASE_CCU_PROF (0xb0cc011a) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | 0x1a" */
 
 
+
+/*!
+ * NVB0CC_CTRL_CMD_PERMISSION_QUERY
+ *
+ * Queries the profiling/tracing permissions granted to the calling client for
+ * the profiler object. The permissions are determined at profiler object
+ * allocation time based on the client's privilege level and capabilities.
+ *
+ * This command does not change any state; it only reports the permissions.
+ *
+ */
+#define NVB0CC_CTRL_CMD_PERMISSION_QUERY (0xb0cc011d) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_PERMISSION_QUERY_PARAMS_MESSAGE_ID" */
+#define NVB0CC_CTRL_PERMISSION_QUERY_PARAMS_MESSAGE_ID (0x1dU)
+
+typedef struct NVB0CC_CTRL_PERMISSION_QUERY_PARAMS {
+    /*!
+     * [out] Set to TRUE if device-level profiling is permitted.
+     */
+    NvBool bDevProfilingPermitted;
+
+    /*!
+     * [out] Set to TRUE if context-level profiling is permitted.
+     */
+    NvBool bCtxProfilingPermitted;
+
+    /*!
+     * [out] Set to TRUE if device-level GPU tracing is permitted.
+     */
+    NvBool bDevTracingPermitted;
+} NVB0CC_CTRL_PERMISSION_QUERY_PARAMS;
 
 /* _ctrlb0ccprofiler_h_ */

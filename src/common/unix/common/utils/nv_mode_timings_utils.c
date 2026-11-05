@@ -76,9 +76,7 @@ void NVT_TIMINGtoNvModeTimings(const NVT_TIMING *pTiming,
 
     pModeTimings->RRx1k = pTiming->etc.rrx1k;
 
-    /* pTiming->pclk is in 10*kHz; pModeTimings->pixelClockHz is in Hz */
-
-    pModeTimings->pixelClockHz = KHzToHz(pTiming->pclk) * 10;
+    pModeTimings->pixelClockHz = KHzToHz(pTiming->pclk1khz);
 
     pModeTimings->hVisible = pTiming->HVisible;
     pModeTimings->hSyncStart = pTiming->HFrontPorch + pTiming->HVisible;

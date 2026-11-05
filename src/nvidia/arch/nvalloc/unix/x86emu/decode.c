@@ -37,6 +37,9 @@
 *
 ****************************************************************************/
 
+#include <cpuopsys.h>
+
+#if NVCPU_IS_X86_64
 
 #include "x86emu/x86emui.h"
 
@@ -1092,3 +1095,5 @@ u32 decode_rm10_address(
     return 0;
     /*NOTREACHED */
 }
+
+#endif /* NVCPU_IS_X86_64 */

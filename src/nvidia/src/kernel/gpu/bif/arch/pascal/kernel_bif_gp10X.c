@@ -37,32 +37,6 @@
 
 
 /*!
- * @brief  Get the PMC bit of the valid Engines to reset.
- *
- * @return All valid engines
- */
-NvU32
-kbifGetValidEnginesToReset_GP10X
-(
-    OBJGPU    *pGpu,
-    KernelBif *pKernelBif
-)
-{
-    return (DRF_DEF(_PMC, _ENABLE, _PGRAPH, _ENABLED) |
-            DRF_DEF(_PMC, _ENABLE, _PMEDIA, _ENABLED) |
-            DRF_DEF(_PMC, _ENABLE, _CE0, _ENABLED) |
-            DRF_DEF(_PMC, _ENABLE, _CE1, _ENABLED) |
-            DRF_DEF(_PMC, _ENABLE, _CE2, _ENABLED) |
-            DRF_DEF(_PMC, _ENABLE, _PFIFO, _ENABLED) |
-            DRF_DEF(_PMC, _ENABLE, _PDISP, _ENABLED) |
-            DRF_DEF(_PMC, _ENABLE, _NVDEC, _ENABLED) |
-            DRF_DEF(_PMC, _ENABLE, _NVENC0, _ENABLED) |
-            DRF_DEF(_PMC, _ENABLE, _NVENC1, _ENABLED) |
-            DRF_DEF(_PMC, _ENABLE, _SEC, _ENABLED));
-}
-
-
-/*!
  * @brief  Reset the chip.
  *
  * Use Function Level Reset(FLR) to reset as much of the chip as possible.

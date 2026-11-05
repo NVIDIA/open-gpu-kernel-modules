@@ -22,14 +22,20 @@
  */
 
 #include "kernel/gpu/fifo/kernel_channel.h"
+#include "kernel/gpu/fifo/kernel_channel_group.h"
+#include "kernel/gpu/fifo/kernel_channel_group_api.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
+#include "kernel/gpu/bus/kern_bus.h"
+
 
 #include "platform/sli/sli.h"
 
+#include "containers/eheap_old.h"
 #include "gpu/gpu_access.h"
 #include "gpu/gpu.h"
 
+#include "published/turing/tu102/dev_ram.h"
 #include "published/turing/tu102/dev_fault.h"
 #include "published/turing/tu102/dev_vm.h"
 #include "published/turing/tu102/dev_ctrl.h"
@@ -418,4 +424,286 @@ kchannelGetMapAddrSpace_TU102
         *pAddrSpace = userdAperture;
 
     return NV_OK;
+}
+
+/**
+ * @brief Update the subcontext info in channel instance block
+ *
+ * The subcontext info is written to the SC array indexed by the VEID.
+ *
+ * Passing a NULL VASpace object pointer will clear the subcontext entry.
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelChannel
+ * @param[in] subctxId
+ * @param[in] pSubctxVAS
+ * @param[in] pSubctxHandleVAS
+ * @param[in] bSkipHandleVASpaceUpdate
+ */
+NV_STATUS
+kchannelUpdateSubcontextTable_TU102
+(
+    OBJGPU           *pGpu,
+    KernelChannel    *pKernelChannel,
+    NvU32            subctxId,
+    OBJVASPACE      *pSubctxVAS,
+    HANDLE_VASPACE  *pSubctxHandleVAS,
+    NvBool           bSkipHandleVASpaceUpdate
+)
+{
+    MEMORY_DESCRIPTOR   *pMemDesc        = NULL;
+    INST_BLK_INIT_PARAMS params          = {0};
+    NV_STATUS            status          = NV_OK;
+    KernelFifo          *pKernelFifo     = GPU_GET_KERNEL_FIFO(pGpu);
+
+    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
+    NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(pKernelChannel->pKernelChannelGroup != NULL,
+                        NV_ERR_INVALID_STATE);
+
+    // Defer bus flush until subcontext array init
+    params.bDeferFlush = NV_TRUE;
+
+    if (pSubctxVAS != NULL)
+    {
+        params.bIsFaultReplayable = pKernelFifo->bReplayableFaultsOverride ?
+            pKernelFifo->replayableFaultsOverride : vaspaceIsFaultCapable(pSubctxVAS);
+    }
+
+    status = kfifoChannelGetFifoContextMemDesc_HAL(pGpu, pKernelFifo,
+                                                   pKernelChannel,
+                                                   FIFO_CTX_INST_BLOCK,
+                                                   &pMemDesc);
+    if (status != NV_OK)
+    {
+        DBG_BREAKPOINT();
+        return status;
+    }
+
+    params.pInstBlk = kbusMapRmAperture_HAL(pGpu, pMemDesc);
+    NV_ASSERT_OR_RETURN(params.pInstBlk != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+
+    params.bIsZombieSubctx = kchangrpGetSubcontextZombieState(
+        pGpu,
+        pKernelChannel->pKernelChannelGroup,
+        subctxId);
+
+    status = kgmmuInstBlkInit(GPU_GET_KERNEL_GMMU(pGpu),
+                              pMemDesc, pSubctxVAS, pSubctxHandleVAS,
+                              subctxId, &params);
+
+    kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &params.pInstBlk, NV_FALSE);
+
+    if (status != NV_OK)
+    {
+        DBG_BREAKPOINT();
+        return status;
+    }
+
+    return NV_OK;
+}
+
+/**
+ * @brief Commit the valid subcontext mask in the channel instance block
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelChannel
+ *
+ */
+NV_STATUS
+kchannelCommitSubcontextMask_TU102
+(
+    OBJGPU        *pGpu,
+    KernelChannel *pKernelChannel
+)
+{
+    KernelFifo        *pKernelFifo  = GPU_GET_KERNEL_FIFO(pGpu);
+    PMEMORY_DESCRIPTOR pInstBlkDesc = NULL;
+    NvU8              *pInstBlk     = NULL;
+    NV_STATUS          status       = NV_OK;
+    NvU32             *pSubCtxMask;
+    NvU32              offset, numDwords, i;
+
+    NV_ASSERT(pKernelChannel != NULL);
+    NV_ASSERT_OR_RETURN(pKernelChannel->pKernelChannelGroup != NULL, NV_ERR_INVALID_STATE);    
+    NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
+
+    offset = SF_OFFSET(NV_RAMIN_SC_PDB_VALID(0));
+
+    numDwords = kfifoGetMaxSubcontext_HAL(pGpu, pKernelFifo, NV_FALSE);
+    numDwords /= (sizeof(NvU32) * 8);
+    NV_ASSERT(numDwords == SUBCTX_MASK_ARRAY_SIZE);
+
+    status = kfifoChannelGetFifoContextMemDesc_HAL(pGpu, pKernelFifo, pKernelChannel,
+                                            FIFO_CTX_INST_BLOCK, &pInstBlkDesc);
+    if (status != NV_OK)
+    {
+        DBG_BREAKPOINT();
+        return status;
+    }
+
+    pSubCtxMask = pKernelChannel->pKernelChannelGroup
+                      ->ppSubctxMask[gpumgrGetSubDeviceInstanceFromGpu(pGpu)];
+    pInstBlk = kbusMapRmAperture_HAL(pGpu, pInstBlkDesc);
+    NV_ASSERT_OR_RETURN(pInstBlk != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+
+    for(i = 0; i < numDwords; i++)
+    {
+        MEM_WR32(pInstBlk + offset, pSubCtxMask[i]);
+        offset += sizeof(NvU32);
+    }
+
+    kbusUnmapRmAperture_HAL(pGpu, pInstBlkDesc, &pInstBlk, NV_FALSE);
+    return NV_OK;
+}
+
+NV_STATUS
+kchannelCommitPdb_TU102
+(
+    OBJGPU         *pGpu,
+    KernelChannel  *pKernelChannel
+)
+{
+    KernelBus           *pKernelBusLoop;
+    KernelGmmu          *pKernelGmmuLoop;
+    KernelFifo          *pKernelFifoLoop;
+    KernelChannelGroup  *pKernelChannelGroup;
+    FIFO_INSTANCE_BLOCK *pInstanceBlock;
+    MEMORY_DESCRIPTOR   *pGpuInstMemDesc;
+    OBJVASPACE          *pVAS;
+    HANDLE_VASPACE      *pHandleVAS;
+    NV_STATUS            status  = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
+    NV_ASSERT_OR_RETURN(pKernelChannel->pKernelChannelGroupApi != NULL, NV_ERR_INVALID_CHANNEL);
+
+    pKernelChannelGroup = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup;
+    NV_ASSERT_OR_RETURN(pKernelChannelGroup != NULL, NV_ERR_INVALID_STATE);
+ 
+    pVAS = pKernelChannel->pVAS;
+    NV_ASSERT_OR_RETURN(pVAS != NULL, NV_ERR_INVALID_STATE);
+    pHandleVAS = pKernelChannel->pHandleVAS;
+
+    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
+
+    pKernelFifoLoop  = GPU_GET_KERNEL_FIFO(pGpu);
+    pKernelGmmuLoop  = GPU_GET_KERNEL_GMMU(pGpu);
+    pKernelBusLoop   = GPU_GET_KERNEL_BUS(pGpu);
+    pGpuInstMemDesc  = NULL;
+
+    pInstanceBlock = pKernelChannel->pFifoHalData[gpumgrGetSubDeviceInstanceFromGpu(pGpu)];
+    if (pInstanceBlock == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to retrieve channel instance block!\n");
+        SLI_LOOP_RETURN(NV_ERR_INSUFFICIENT_RESOURCES);
+    }
+
+    pGpuInstMemDesc = pInstanceBlock->pInstanceBlockDesc;
+
+    if (!pGpuInstMemDesc)
+        SLI_LOOP_RETURN(NV_ERR_INSUFFICIENT_RESOURCES);
+
+    NV_ASSERT(!memdescHasSubDeviceMemDescs(pGpuInstMemDesc));
+    
+    INST_BLK_INIT_PARAMS params = {0};
+    // Defer bus flush until subcontext array init
+    params.bDeferFlush = NV_TRUE;
+
+    params.bIsFaultReplayable = pKernelFifoLoop->bReplayableFaultsOverride ?
+        pKernelFifoLoop->replayableFaultsOverride : vaspaceIsFaultCapable(pVAS);
+
+    params.pInstBlk = kbusMapRmAperture_HAL(pGpu, pGpuInstMemDesc);
+    if (params.pInstBlk == NULL)
+    {
+        status = NV_ERR_INSUFFICIENT_RESOURCES;
+        goto fail;
+    }
+  
+    status = kgmmuInstBlkInit(pKernelGmmuLoop, pGpuInstMemDesc, pVAS, pHandleVAS,
+                             FIFO_PDB_IDX_BASE, &params);
+
+    if (status != NV_OK)
+    {
+        NV_ASSERT_OK_FAILED("kgmmuInstBlkInit failed", status);
+        goto fail;
+    }
+
+    if (kfifoIsSubcontextSupported(pKernelFifoLoop))
+    {
+        //
+        // If the channel is within a TSG, we use TSG's subcontext
+        // Eheap to search for valid SubctxId within a TSG and
+        // initialize instance block.
+        // From Volta and onwards, we should also populate the
+        // subcontext PDBs.
+        //
+        OBJVASPACE     *pSubctxVAS       = NULL;
+        HANDLE_VASPACE *pSubctxHandleVAS = NULL;
+        OBJEHEAP       *pSubctxIdHeap;
+        NvU32           maxSubCtx;
+        NvU32           i;
+
+        maxSubCtx = kfifoChannelGroupGetLocalMaxSubcontext_HAL(pGpu,
+            pKernelFifoLoop, pKernelChannelGroup, NV_FALSE);
+
+        NV_ASSERT_OR_ELSE(pKernelChannelGroup != NULL,
+                          status = NV_ERR_INVALID_STATE; goto fail);
+
+
+        pSubctxIdHeap = pKernelChannelGroup->pSubctxIdHeap;
+        
+        for (i = 0; i < maxSubCtx; i++)
+        {
+            EMEMBLOCK *pBlock;
+            params.bIsFaultReplayable  = NV_FALSE;
+
+            pBlock = pSubctxIdHeap->eheapGetBlock(pSubctxIdHeap,
+                                                  i,
+                                                  NV_FALSE);
+            
+            //
+            // If a Valid sub context is found with given
+            // SubctxId, then we obtain that sub context's VAS.
+            // Otherwise, it means that a subcontext is not
+            // allocated with the given SubctxId, so we set VAS
+            // to be NULL, since VAS being NULL indicates that
+            // the following PDB(SubctxId) is invalid.
+            //
+            if (pBlock)
+            {
+                KernelCtxShare *pShare = (KernelCtxShare *)pBlock->pData;
+                pSubctxVAS             = pShare->pVAS;
+                pSubctxHandleVAS       = pShare->pHandleVAS;
+            }
+            else
+            {
+                pSubctxVAS       = NULL;
+                pSubctxHandleVAS = NULL;
+            }
+
+            NV_ASSERT_OK_OR_GOTO(
+                status,
+                kchannelUpdateSubcontextTable_HAL(pGpu, pKernelChannel, i, pSubctxVAS, pSubctxHandleVAS, NV_FALSE),
+                fail);
+        }
+
+        NV_ASSERT_OK_OR_GOTO(status,
+            kchannelCommitSubcontextMask_HAL(pGpu, pKernelChannel),
+            fail);
+    }
+
+    kbusUnmapRmAperture_HAL(pGpu, pGpuInstMemDesc, &params.pInstBlk, NV_FALSE);
+
+    kbusFlush_HAL(pGpu, pKernelBusLoop,
+                  kbusGetFlushAperture(pKernelBusLoop, memdescGetAddressSpace(pGpuInstMemDesc)));
+
+fail:
+    if (status != NV_OK)
+    {
+        kbusUnmapRmAperture_HAL(pGpu, pGpuInstMemDesc, &params.pInstBlk, NV_FALSE);
+        SLI_LOOP_BREAK;
+    }
+    SLI_LOOP_END
+
+    return status;
 }

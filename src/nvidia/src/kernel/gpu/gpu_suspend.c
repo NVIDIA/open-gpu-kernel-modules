@@ -32,7 +32,6 @@
 #include "platform/platform.h"
 #include "platform/chipset/chipset.h"
 #include "gpu/bif/kernel_bif.h"
-#include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/fbsr.h"
 #include "gpu/gsp/gsp_init_args.h"
@@ -218,7 +217,7 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
             _gpuWaitForGfwBootOkFailureStore(
                 pGpu, status);
 
-            OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x99);
+            GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_GFW_BOOT_TIMEOUT_ERROR);
 
             goto done;
         }
@@ -247,7 +246,7 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
                 _gpuInitLibosLoggingStructuresFailureStore(
                     pGpu, status);
 
-                OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x98);
+                GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_LIBOS_LOGGING_INIT_ERROR);
 
                 goto done;
             }
@@ -269,7 +268,7 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
             _gpuGspPrepareForBootstrapFailureStore(
                 pGpu, status);
 
-            OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x97);
+            GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_GSP_PREPARE_BOOTSTRAP_ERROR);
 
             goto done;
         }
@@ -281,7 +280,7 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
             _gpuGspBootstrapFailureStore(
                 pGpu, status);
 
-            OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x96);
+            GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_GSP_BOOTSTRAP_ERROR);
 
             goto done;
         }
@@ -297,7 +296,7 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
                 NV_PRINTF(LEVEL_ERROR, "GSP-RM proxy boot command failed during resume.\n");
                 _gpuBootGspRmProxyFailureStore(
                     pGpu, status);
-                OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x95);
+                GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_GSP_RM_PROXY_BOOT_ERROR);
                 goto done;
             }
         }
@@ -318,7 +317,7 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
 
     if (status != NV_OK)
     {
-        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x93);
+        GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_STATE_LOAD_ERROR);
         goto done;
     }
 
@@ -328,7 +327,7 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
     status = gpuPowerManagementResumePostLoadPhysical(pGpu);
     if (status != NV_OK)
     {
-        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x92);
+        GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_RESUME_POST_LOAD_ERROR);
         goto done;
     }
 
@@ -576,6 +575,7 @@ gpuEnterStandby_IMPL(OBJGPU *pGpu)
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH, NV_TRUE);
 
     gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POWER_SUSPEND, NULL, 0, 0, 0);
+
     suspendStatus = gpuPowerManagementEnter(pGpu, NV2080_CTRL_GPU_SET_POWER_STATE_GPU_LEVEL_3, GPU_STATE_FLAGS_PM_SUSPEND);
 
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IN_STANDBY, NV_TRUE);

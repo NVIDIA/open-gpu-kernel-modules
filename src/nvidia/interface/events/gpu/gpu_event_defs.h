@@ -103,4 +103,24 @@ enum
     GPU_OP_EVENT_CODE_C2C_CONTAINMENT = 0x0002U,
 };
 
+typedef struct nv_gpu_op_event
+{
+    NvU8  device_uuid[16];
+    NvU16 category;
+    NvU16 event_code;
+    NvU8  severity;
+    NvU8  scope;
+    NvU8  originator;
+    NvU8  attributes;
+    NvU8  group_attributes;
+    NvU8  log_level;
+    NvU64 trace_id;
+    NvU64 instance_id;
+    NvU64 timestamp;
+    char  module_sig[16];
+    NvU8  module_instance;
+    NvU8  chiplet_id;
+    NvU8  mig_attribution;
+} nv_gpu_op_event_t;
+
 #endif // _GPU_EVENT_DEFS_H_

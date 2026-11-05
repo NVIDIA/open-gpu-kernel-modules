@@ -28,6 +28,7 @@
 #include "gpu/fifo/kernel_fifo.h"
 #include "gpu/nvlink/kernel_nvlink.h"
 #include "published/ampere/ga100/dev_pmc.h"
+#include "published/ampere/ga100/dev_nv_xve3g_vf.h"
 #include "kernel/gpu/mc/kernel_mc.h"
 #include "platform/chipset/chipset.h"
 #include "published/ampere/ga100/dev_nv_xve.h"
@@ -707,3 +708,39 @@ kbifClearDownstreamReadCounter_GA100
                      gpuGetDevice(pGpu), 0, NV_XVE_DBG0, tempRegVal);
 }
 
+NV_STATUS
+kbifGetBusOptionsAddr_GA100_VF
+(
+ OBJGPU     *pGpu,
+ KernelBif  *pKernelBif,
+ BUS_OPTIONS options,
+ NvU32      *pAddrReg
+)
+{
+    NV_STATUS  status = NV_OK;
+    NvU32      capHeader = 0;
+
+    status = GPU_BUS_CFG_RD32(pGpu, NV_XVE_VF_PCIE_CAP0, &capHeader);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    if (DRF_VAL(_XVE, _VF_PCIE_CAP0, _LIST_CAPABILITY_ID, capHeader) !=
+        NV_XVE_VF_PCIE_CAP0_LIST_CAPABILITY_ID_INIT)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    switch (options)
+    {
+        case BUS_OPTIONS_LINK_CAPABILITIES:
+            *pAddrReg =  NV_XVE_VF_PCIE_CAP3;
+            break;
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Invalid register type passed 0x%x\n", options);
+            status = NV_ERR_GENERIC;
+            break;
+    }
+    return status;
+}

@@ -185,6 +185,21 @@ NV_STATUS_CODE(NV_ERR_GMCAPI_MAX_RESPONSE_SIZE_TOO_SMALL,       0x00000095, "GMC
 NV_STATUS_CODE(NV_ERR_GMCAPI_INTERNAL_RM_ERROR,                 0x0000009E, "RM has hit an internal error while servicing GMCAPI")
 NV_STATUS_CODE(NV_ERR_GMCAPI_GENERIC_ERROR,                     0x0000009F, "Failed to service GMCAPI: Generic error")
 
+// bug 6141566: Unable to add new NV_STATUS values via NV_STATUS_CODE() temporarily;
+// add SEC2 PlayReady fuse-gate codes as #defines instead (mirrors 0x96/0x97 above).
+//NV_STATUS_CODE(NV_ERR_PLAYREADY_PRHS_GATE_FAIL,                 0x000000A0, "PlayReady not supported: PRHS fuse gate failed")
+//NV_STATUS_CODE(NV_ERR_PLAYREADY_DISPLAY_GATE_FAIL,              0x000000A1, "PlayReady not supported: PRHS+VPR display fuse gate failed")
+//NV_STATUS_CODE(NV_ERR_PLAYREADY_VPR_SW_GATE_FAIL,               0x000000A2, "PlayReady not supported: VPR SW fuse gate failed")
+//NV_STATUS_CODE(NV_ERR_PLAYREADY_VPR_HW_GATE_FAIL,               0x000000A3, "PlayReady not supported: VPR HW fuse gate failed")
+#define NV_ERR_PLAYREADY_PRHS_GATE_FAIL             ((NV_STATUS)0x000000A0)
+#define NV_ERR_PLAYREADY_DISPLAY_GATE_FAIL          ((NV_STATUS)0x000000A1)
+#define NV_ERR_PLAYREADY_VPR_SW_GATE_FAIL           ((NV_STATUS)0x000000A2)
+#define NV_ERR_PLAYREADY_VPR_HW_GATE_FAIL           ((NV_STATUS)0x000000A3)
+//NV_STATUS_CODE(NV_OK_PLAYREADY_PROD,                          0x000000A4, "PlayReady supported: production fuse profile")
+//NV_STATUS_CODE(NV_OK_PLAYREADY_DEBUG,                         0x000000A5, "PlayReady supported: debug/internal SKU fuse profile")
+#define NV_OK_PLAYREADY_PROD                          ((NV_STATUS)0x000000A4)
+#define NV_OK_PLAYREADY_DEBUG                       ((NV_STATUS)0x000000A5)
+
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                              0x00010001, "WARNING Hot switch")
 NV_STATUS_CODE(NV_WARN_INCORRECT_PERFMON_DATA,                  0x00010002, "WARNING Incorrect performance monitor data")

@@ -598,7 +598,7 @@ kfifoConvertInstToKernelChannel_GM107
 
     memdescCreateExisting(&instMemDesc, pGpu, NV_RAMIN_ALLOC_SIZE,
                           instAperture, NV_MEMORY_UNCACHED,
-                          MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE);
+                          MEMDESC_FLAGS_NONE);
 
     memdescDescribe(&instMemDesc, instAperture, pInst->address, NV_RAMIN_ALLOC_SIZE);
 

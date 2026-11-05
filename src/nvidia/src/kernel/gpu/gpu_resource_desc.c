@@ -467,18 +467,44 @@ gpuAddClassToClassDBByEngTagClassId_IMPL(OBJGPU *pGpu, ENGDESCRIPTOR engDesc, Nv
 }
 
 /*!
- * @brief Add a class to class DB with given Engine Tag.
+ * @brief Add classes to class DB with given Engine Tag.
  *
  * @side Sets engineDB.bValid to NV_FALSE.
  *
  * @param[in] pGpu      OBJGPU pointer
- * @param[in] engDesc   Engine ID of Class to be added to Class DB
+ * @param[in] engDesc   Engine ID of Classes to be added to Class DB
  *
  * @returns NV_STATUS - NV_OK always.
  */
 NV_STATUS gpuAddClassToClassDBByEngTag_IMPL(OBJGPU *pGpu, ENGDESCRIPTOR engDesc)
 {
-    return _gpuAddClassToClassDBByEngTagClassId(pGpu, &engDesc, NULL);
+    GpuEngineOrder        *pEngineOrder = &pGpu->engineOrder;
+    const CLASSDESCRIPTOR *pClassDesc = &pEngineOrder->pClassDescriptors[0];
+    NV_STATUS              status;
+    NvU32                  i;
+
+    //
+    // Restore every static class descriptor for this engine since stubbing
+    // removes all descriptors for the engine.
+    //
+    for (i = 0; i < pEngineOrder->numClassDescriptors; i++)
+    {
+        NvU32 externalClassId;
+
+        // RMCONFIG: skip over any that are not supported
+        if (pClassDesc[i].externalClassId == (NvU32)~0 ||
+            pClassDesc[i].engDesc == ENG_INVALID)
+            continue;
+
+        if (pClassDesc[i].engDesc != engDesc)
+            continue;
+
+        externalClassId = pClassDesc[i].externalClassId;
+        status = _gpuAddClassToClassDBByEngTagClassId(pGpu, &engDesc, &externalClassId);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
+    }
+
+    return NV_OK;
 }
 
 /*!

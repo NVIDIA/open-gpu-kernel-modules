@@ -167,6 +167,7 @@ NvBool nvLayerSetPositionEvo(
 
 NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
                                    const struct NvKmsMode *pKmsMode,
+                                   const enum NvYuv420Mode yuv420Mode,
                                    const struct NvKmsSize *pViewPortSizeIn,
                                    const struct NvKmsRect *pViewPortOut,
                                    const NvBool dscPassThrough,
@@ -437,7 +438,7 @@ NvBool nvEvoUse2Heads1OR(const NVDpyEvoRec *pDpyEvo,
                          const NVHwModeTimingsEvo *pTimings,
                          const struct NvKmsModeValidationParams *pParams);
 
-NvU32 nvGetRefreshRate10kHz(const NVHwModeTimingsEvo *pTimings);
+NvU32 nvGetRefreshRatex10K(const NVHwModeTimingsEvo *pTimings);
 
 NvBool nvIsLockGroupFlipLocked(const NVLockGroup *pLockGroup);
 

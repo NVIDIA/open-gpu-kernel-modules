@@ -28,6 +28,7 @@
 #include "kernel/os/os.h"
 #include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "nvrm_registry.h"
+#include "ctrl/ctrla080.h"
 #include "vgpu/sdk-structures.h"
 
 KernelVideoEngine *
@@ -60,11 +61,15 @@ kvidengIsVideoTraceLogSupported_IMPL
 
     if (IS_VIRTUAL(pGpu))
     {
-        // ensure profiling capability is enabled
+        // ensure profiling or video tracing capability is enabled
         // only full SRIOV platforms is supported
         VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
         bSupported &= (pVSI != NULL) &&
-                      pVSI->vgpuStaticProperties.bProfilingTracingEnabled &&
+                      (pVSI->vgpuStaticProperties.bProfilingTracingEnabled ||
+                       FLD_TEST_DRF(A080, _CTRL_CMD_VGPU_GET_CONFIG,
+                                    _PARAMS_VGPU_DEV_CAPS_VIDEO_TRACE_ENABLED,
+                                    _TRUE,
+                                    pVSI->vgpuConfig.vgpuDeviceCapsBits)) &&
                       IS_VIRTUAL_WITH_FULL_SRIOV(pGpu);
     }
 

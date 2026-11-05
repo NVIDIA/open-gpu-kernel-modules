@@ -56,6 +56,7 @@ typedef NvBool EHeapOwnershipComparator(void*, void*);
 
 typedef NV_STATUS  (*EHeapDestruct)(OBJEHEAP *);
 typedef NV_STATUS  (*EHeapAlloc)(OBJEHEAP *, NvU32, NvU32 *, NvU64 *, NvU64 *, NvU64 , NvU64, EMEMBLOCK **, void*, EHeapOwnershipComparator*);
+typedef NV_STATUS  (*EHeapAllocInRange)(OBJEHEAP *, NvU32, NvU32 *, NvU64 *, NvU64 *, NvU64 , NvU64, NvU64, NvU64, EMEMBLOCK **, void*, EHeapOwnershipComparator*);
 typedef NV_STATUS  (*EHeapFree)(OBJEHEAP *, NvU64);
 typedef void       (*EHeapInfo)(OBJEHEAP *, NvU64 *, NvU64 *,NvU64 *, NvU64 *, NvU32 *, NvU64 *);
 typedef void       (*EHeapInfoForRange)(OBJEHEAP *, NV_RANGE, NvU64 *, NvU64 *, NvU32 *, NvU64 *);
@@ -74,6 +75,7 @@ struct OBJEHEAP
     // Public heap interface methods
     EHeapDestruct          eheapDestruct;
     EHeapAlloc             eheapAlloc;
+    EHeapAllocInRange      eheapAllocInRange;
     EHeapFree              eheapFree;
     EHeapInfo              eheapInfo;
     EHeapInfoForRange      eheapInfoForRange;

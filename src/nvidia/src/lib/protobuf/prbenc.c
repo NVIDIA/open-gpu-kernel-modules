@@ -47,6 +47,21 @@ static NV_STATUS prbStartPackedField(PRB_ENCODER *encoder,
 #define FIXED_FLAG(encoder) ((encoder->flags & PRB_FIXED_MODE) != 0)
 
 /*!
+ * @brief Tracks the maximum size of the innermost frame's buffer position.
+ * @param [in] encoder The encoder structure
+ */
+static void
+prbCountUpdatePeak(PRB_ENCODER *encoder)
+{
+    if (COUNT_FLAG(encoder))
+    {
+        NvU8 *cur = encoder->stack[encoder->depth - 1].buf.pos;
+        if ((NvUPtr)cur > (NvUPtr)encoder->pPeakPos)
+            encoder->pPeakPos = cur;
+    }
+}
+
+/*!
  * @brief Initializes a memory buffer. Sets the position to the base address.
  * @param [in] buf Memory buffer
  * @param [in] data Base address of memory
@@ -251,6 +266,7 @@ prbEncStart
     prbBufInit(&encoder->stack[0].buf, data, len);
     encoder->stack[0].field_desc = NULL;
     encoder->stack[0].msg_desc = msg_desc;
+    encoder->pPeakPos = (NvU8 *)data;
 
     encoder->pBufferCallback = pBufferCallback;
     if (pBufferCallback != NULL)
@@ -349,6 +365,10 @@ prbEncFinish(PRB_ENCODER *encoder, void **buff)
 
     *buff = encoder->stack[0].buf.base;
     encoder->flags |= PRB_ENCODE_DISABLED;
+
+    if (COUNT_FLAG(encoder))
+        return (NvU32)(encoder->pPeakPos - encoder->stack[0].buf.base);
+
     return prbBufUsed(&encoder->stack[0].buf);
 }
 
@@ -410,6 +430,7 @@ prbEncNestedStart(PRB_ENCODER *encoder,
 
     prbBufInit(&new_frame->buf, frame->buf.pos + MSG_RESERVE_BYTES,
                   prbBufLeft(&frame->buf) - MSG_RESERVE_BYTES);
+    prbCountUpdatePeak(encoder);
     return NV_OK;
 }
 
@@ -448,6 +469,7 @@ prbEncStubbedAddBytes(PRB_ENCODER *encoder, NvU8 *buffer, NvU32 len)
 
     // Adjust current buffer position
     frame->buf.pos += len;
+    prbCountUpdatePeak(encoder);
     return NV_OK;
 }
 
@@ -500,6 +522,7 @@ prbStartPackedField(PRB_ENCODER *encoder,
 
     prbBufInit(&new_frame->buf, frame->buf.pos + MSG_RESERVE_BYTES,
                   prbBufLeft(&frame->buf) - MSG_RESERVE_BYTES);
+    prbCountUpdatePeak(encoder);
     return NV_OK;
 }
 
@@ -624,6 +647,7 @@ prbEndPackedField(PRB_ENCODER *encoder)
         if (!COUNT_FLAG(encoder))
             portMemMove(frame->buf.pos, packed_len, packed_start, packed_len);
         frame->buf.pos += packed_len;
+        prbCountUpdatePeak(encoder);
     }
     return NV_OK;
 }
@@ -837,6 +861,7 @@ prbEncAddField(PRB_ENCODER *encoder,
             break;
     }
 
+    prbCountUpdatePeak(encoder);
     return NV_OK;
 }
 

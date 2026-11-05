@@ -783,76 +783,8 @@ kbusUnmapBar2ApertureCached_VBAR2
     DBG_BREAKPOINT();
 }
 
-/*!
- * @brief Rubber-stamp scratch mapping as valid
- */
-NvU8 *
-kbusValidateBar2ApertureMapping_SCRATCH
-(
-    OBJGPU            *pGpu,
-    KernelBus         *pKernelBus,
-    MEMORY_DESCRIPTOR *pMemDesc,
-    NvU8              *pCpu
-)
-{
-    return pCpu;
-}
-
-/*!
- * @brief validate existing BAR2 mapping is still valid vs GPU reset
- *
- * @returns Existing or updated scratch buffer pointer
- */
-NvU8 *
-kbusValidateBar2ApertureMapping_VBAR2
-(
-    OBJGPU            *pGpu,
-    KernelBus         *pKernelBus,
-    MEMORY_DESCRIPTOR *pMemDesc,
-    NvU8              *pCpu
-)
-{
-    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu) &&
-        !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET))
-    {
-        //
-        // Release existing mapping and replace it with a new mapping.
-        //
-        // The callee is responsbile for updating the pointer
-        // after it is validated.  We cannot handle fixing stale
-        // pointers to allocated before a GPU reset here.
-        //
-        kbusUnmapBar2ApertureWithFlags_HAL(pGpu, pKernelBus, pMemDesc, &pCpu,
-                                           TRANSFER_FLAGS_NONE);
-        return kbusMapBar2Aperture_HAL(pGpu, pKernelBus, pMemDesc,
-                                           TRANSFER_FLAGS_NONE);
-    }
-
-    return pCpu;
-}
-
-/*!
- * @brief validate existing BAR2 mapping is still valid vs GPU reset
- *
- * @returns Existing or updated scratch buffer pointer
- */
-NvU8 *
-kbusValidateBar2ApertureMapping_VBAR2_SRIOV
-(
-    OBJGPU            *pGpu,
-    KernelBus         *pKernelBus,
-    MEMORY_DESCRIPTOR *pMemDesc,
-    NvU8              *pCpu
-)
-{
-    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) || gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
-        return kbusValidateBar2ApertureMapping_SCRATCH(pGpu, pKernelBus, pMemDesc, pCpu);
-
-    return kbusValidateBar2ApertureMapping_VBAR2(pGpu, pKernelBus, pMemDesc, pCpu);
-}
-
-NvBool
-kbusBar2IsReady_SCRATCH
+static NvBool
+Bar2IsReady_SCRATCH
 (
     OBJGPU *pGpu,
     KernelBus *pKernelBus
@@ -867,8 +799,8 @@ kbusBar2IsReady_SCRATCH
  *
  * Use for old VGPU w/o SRIOV guard cases, and when we are recovering from TDR.
  */
-NvU8 *
-kbusMapBar2Aperture_SCRATCH
+static NvU8 *
+MapBar2Aperture_SCRATCH
 (
     OBJGPU            *pGpu,
     KernelBus         *pKernelBus,
@@ -938,18 +870,6 @@ kbusMapBar2Aperture_VBAR2
         return NULL;
     }
 
-    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
-    {
-        //
-        // If the gpu is no longer in a state where any gpu access is allowed,
-        // create some dummy system memory and return the pointer to the
-        // caller.  All of the caller operations should now become nops.  Only
-        // reads of this data might cause problems.
-        //
-        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET, NV_TRUE);
-        return kbusMapBar2Aperture_SCRATCH(pGpu, pKernelBus, pMemDesc, flags);
-    }
-
 #if 0 // Useful for finding leaks
     NV_PRINTF(LEVEL_ERROR,
                 "memDesc %p from function %p\n",
@@ -990,7 +910,7 @@ kbusBar2IsReady_VBAR2_SRIOV
 )
 {
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) || gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
-        return kbusBar2IsReady_SCRATCH(pGpu, pKernelBus);
+        return Bar2IsReady_SCRATCH(pGpu, pKernelBus);
 
     return kbusBar2IsReady_VBAR2(pGpu, pKernelBus);
 }
@@ -1010,7 +930,7 @@ kbusMapBar2Aperture_VBAR2_SRIOV
 )
 {
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) || gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
-        return kbusMapBar2Aperture_SCRATCH(pGpu, pKernelBus, pMemDesc, flags);
+        return MapBar2Aperture_SCRATCH(pGpu, pKernelBus, pMemDesc, flags);
 
     return kbusMapBar2Aperture_VBAR2(pGpu, pKernelBus, pMemDesc, flags);
 }
@@ -1020,8 +940,8 @@ kbusMapBar2Aperture_VBAR2_SRIOV
  *
  * Use for old VGPU w/o SRIOV guard cases, and when we are recovering from TDR.
  */
-void
-kbusUnmapBar2ApertureWithFlags_SCRATCH
+static void
+UnmapBar2ApertureWithFlags_SCRATCH
 (
     OBJGPU            *pGpu,
     KernelBus         *pKernelBus,
@@ -1077,18 +997,6 @@ kbusUnmapBar2ApertureWithFlags_VBAR2
         return;
     }
 
-    //
-    // Free the dummy data we allocated for handling a reset GPU.
-    // Let a map created before the reset go through the normal path
-    // to clear out the memory.
-    //
-    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET))
-    {
-        kbusUnmapBar2ApertureWithFlags_SCRATCH(pGpu, pKernelBus, pMemDesc, pCpuPtr, flags);
-        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET, NV_FALSE);
-        return;
-    }
-
     // Call the lower-level routine
     kbusUnmapBar2ApertureCached_VBAR2(pGpu, pKernelBus, pMemDesc, flags);
 }
@@ -1111,7 +1019,7 @@ kbusUnmapBar2ApertureWithFlags_VBAR2_SRIOV
     // If SR-IOV is enabled, BAR2 mappings are managed by the guest.
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) || gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
     {
-        kbusUnmapBar2ApertureWithFlags_SCRATCH(pGpu, pKernelBus, pMemDesc, pCpuPtr, flags);
+        UnmapBar2ApertureWithFlags_SCRATCH(pGpu, pKernelBus, pMemDesc, pCpuPtr, flags);
         return;
     }
 

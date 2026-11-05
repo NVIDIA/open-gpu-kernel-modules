@@ -172,6 +172,7 @@ static NV_STATUS uvm_user_channel_create(uvm_va_space_t *va_space,
     user_channel->chram_channel_register    = channel_info->pChramChannelRegister;
     user_channel->work_submission_offset    = channel_info->workSubmissionOffset;
     user_channel->work_submission_token     = channel_info->workSubmissionToken;
+    user_channel->p_work_submission_token   = channel_info->pWorkSubmissionToken;
     user_channel->smc_engine_id             = channel_info->smcEngineId;
     user_channel->smc_engine_ve_id_offset   = channel_info->smcEngineVeIdOffset;
 

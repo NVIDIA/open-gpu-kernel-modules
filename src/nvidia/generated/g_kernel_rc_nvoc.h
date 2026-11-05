@@ -53,8 +53,6 @@ extern "C" {
 #include "kernel/gpu/rc/rc_channel_info.h"
 #include "kernel/gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/gr/kernel_watchdog.h"
-#include "kernel/gpu/rc/kernel_rc_watchdog.h"
-#include "kernel/gpu/rc/kernel_rc_watchdog_private.h"
 #include "kernel/gpu/gpu_engine_type.h"
 #include "kernel/rmapi/client_resource.h"
 
@@ -69,10 +67,12 @@ typedef struct Subdevice Subdevice;
 
 
 
-typedef enum {
+enum rc_notifier_scope_t {
     RC_NOTIFIER_SCOPE_CHANNEL = 0,
     RC_NOTIFIER_SCOPE_TSG,
-} RC_NOTIFIER_SCOPE;
+};
+
+typedef enum rc_notifier_scope_t RC_NOTIFIER_SCOPE;
 
 #define NV_ROBUST_CHANNEL_ALLOCFAIL_CLIENT      0x00000001
 #define NV_ROBUST_CHANNEL_ALLOCFAIL_DEVICE      0x00000002
@@ -106,10 +106,9 @@ MAKE_LIST(MmuExceptionCache, MMU_EXCEPTION_CACHE_ENTRY);
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelRc;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__KernelRc;
 
 
 struct KernelRc {
@@ -128,11 +127,8 @@ struct KernelRc {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelRc *__nvoc_pbase_KernelRc;    // krc
 
-    // Vtable with 4 per-object function pointers
-    NV_STATUS (*__krcWatchdogInit__)(struct OBJGPU *, struct KernelRc * /*this*/, struct KernelWatchdog *);  // halified (2 hals) body
-    void (*__krcWatchdogInitPushbuffer__)(struct OBJGPU *, struct KernelRc * /*this*/, struct KernelWatchdog *);  // halified (2 hals) body
-    void (*__krcWatchdog__)(struct OBJGPU *, struct KernelRc * /*this*/, struct KernelWatchdog *);  // halified (2 hals) body
-    void (*__krcWatchdogRecovery__)(struct OBJGPU *, struct KernelRc * /*this*/, struct KernelWatchdog *);  // halified (2 hals) body
+    // Vtable with 1 per-object function pointer
+    struct KernelChannel * (*__krcGetChannelInError__)(struct KernelRc * /*this*/);  // halified (2 hals) body
 
     // 1 PDB property
 //  NvBool PDB_PROP_KRC_IS_MISSING inherited from OBJENGSTATE
@@ -144,36 +140,14 @@ struct KernelRc {
     struct KernelChannel *pPreviousChannelInError;
     NvBool bRcOnBar2Fault;
     NvBool bGpuUuidLoggedOnce;
-    KernelWatchdogState watchdog;
-    KernelWatchdogPersistent watchdogPersistent;
-    KernelWatchdogChannelInfo watchdogChannelInfo;
     MmuExceptionCache mmuExceptionCache;
 };
 
 
-// Vtable with 14 per-class function pointers
-struct NVOC_VTABLE__KernelRc {
-    NV_STATUS (*__krcConstructEngine__)(struct OBJGPU *, struct KernelRc * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    void (*__krcStateDestroy__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual override (engstate) base (engstate)
-    void (*__krcInitMissing__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePreInitLocked__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePreInitUnlocked__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStateInitLocked__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStateInitUnlocked__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePreLoad__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStateLoad__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePostLoad__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePreUnload__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStateUnload__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePostUnload__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__krcIsPresent__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelRc {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__KernelRc vtable;
 };
 
 #ifndef __nvoc_class_id_KernelRc
@@ -263,16 +237,6 @@ static inline void krcReportXid(struct OBJGPU *pGpu, struct KernelRc *pKernelRc,
 #define krcReportXid(pGpu, pKernelRc, context, pMsg) krcReportXid_IMPL(pGpu, pKernelRc, context, pMsg)
 #endif // __nvoc_kernel_rc_h_disabled
 
-NvBool krcTestAllowAlloc_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, NvU32 failMask);
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline NvBool krcTestAllowAlloc(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, NvU32 failMask) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-    return NV_FALSE;
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcTestAllowAlloc(pGpu, pKernelRc, failMask) krcTestAllowAlloc_IMPL(pGpu, pKernelRc, failMask)
-#endif // __nvoc_kernel_rc_h_disabled
-
 NvBool krcErrorInvokeCallback_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelChannel *pKernelChannel, FIFO_MMU_EXCEPTION_DATA *pMmuExceptionData, NvU32 exceptType, NvU32 exceptLevel, RM_ENGINE_TYPE rmEngineType, NvU32 rcDiagStart);
 #ifdef __nvoc_kernel_rc_h_disabled
 static inline NvBool krcErrorInvokeCallback(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelChannel *pKernelChannel, FIFO_MMU_EXCEPTION_DATA *pMmuExceptionData, NvU32 exceptType, NvU32 exceptLevel, RM_ENGINE_TYPE rmEngineType, NvU32 rcDiagStart) {
@@ -298,7 +262,7 @@ static inline NV_STATUS krcErrorNotifyCpu(struct OBJGPU *pGpu, struct KernelRc *
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_kernel_rc_h_disabled
-#define krcErrorNotifyCpu(pGpu, pKernelRc, pRcChannelInfo, rmEngineType, exceptLevel, exceptType, scope, partitionAttributionId, bOsRcCallbackNeeded) krcErrorNotifyCpu_5baef9(pGpu, pKernelRc, pRcChannelInfo, rmEngineType, exceptLevel, exceptType, scope, partitionAttributionId, bOsRcCallbackNeeded)
+#define krcErrorNotifyCpu(pGpu, pKernelRc, pRcChannelInfo, rmEngineType, exceptLevel, exceptType, scope, partitionAttributionId, bOsRcCallbackNeeded) krcErrorNotifyCpu_f4f420(pGpu, pKernelRc, pRcChannelInfo, rmEngineType, exceptLevel, exceptType, scope, partitionAttributionId, bOsRcCallbackNeeded)
 #endif // __nvoc_kernel_rc_h_disabled
 
 #ifdef __nvoc_kernel_rc_h_disabled
@@ -325,15 +289,6 @@ static inline void krcGetMigAttributionForError(struct KernelRc *pKernelRc, NvU3
 }
 #else // __nvoc_kernel_rc_h_disabled
 #define krcGetMigAttributionForError(pKernelRc, exceptType, pGpuPartitionId, pComputeInstanceId) krcGetMigAttributionForError_KERNEL(pKernelRc, exceptType, pGpuPartitionId, pComputeInstanceId)
-#endif // __nvoc_kernel_rc_h_disabled
-
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline struct KernelChannel * krcGetChannelInError(struct KernelRc *pKernelRc) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-    return NULL;
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcGetChannelInError(pKernelRc) krcGetChannelInError_FWCLIENT(pKernelRc)
 #endif // __nvoc_kernel_rc_h_disabled
 
 NV_STATUS krcSubdeviceCtrlCmdRcGetErrorCount_IMPL(struct KernelRc *pKernelRc, struct Subdevice *pSubdevice, NV2080_CTRL_RC_GET_ERROR_COUNT_PARAMS *pParams);
@@ -383,97 +338,6 @@ static inline NV_STATUS krcCliresCtrlNvdGetRcerrRptCheckPermissions(struct Kerne
 #define krcCliresCtrlNvdGetRcerrRptCheckPermissions(pKernelRc, pRmCliRes, pReportParams) krcCliresCtrlNvdGetRcerrRptCheckPermissions_KERNEL(pKernelRc, pRmCliRes, pReportParams)
 #endif // __nvoc_kernel_rc_h_disabled
 
-NV_STATUS krcWatchdogChangeState_IMPL(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog, struct Subdevice *pSubdevice, RC_CHANGE_WATCHDOG_STATE_OPERATION_TYPE operation);
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline NV_STATUS krcWatchdogChangeState(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog, struct Subdevice *pSubdevice, RC_CHANGE_WATCHDOG_STATE_OPERATION_TYPE operation) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcWatchdogChangeState(pKernelRc, pKernelWatchdog, pSubdevice, operation) krcWatchdogChangeState_IMPL(pKernelRc, pKernelWatchdog, pSubdevice, operation)
-#endif // __nvoc_kernel_rc_h_disabled
-
-void krcWatchdogEnable_IMPL(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog, NvBool bOverRide);
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline void krcWatchdogEnable(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog, NvBool bOverRide) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcWatchdogEnable(pKernelRc, pKernelWatchdog, bOverRide) krcWatchdogEnable_IMPL(pKernelRc, pKernelWatchdog, bOverRide)
-#endif // __nvoc_kernel_rc_h_disabled
-
-void krcWatchdogDisable_IMPL(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog);
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline void krcWatchdogDisable(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcWatchdogDisable(pKernelRc, pKernelWatchdog) krcWatchdogDisable_IMPL(pKernelRc, pKernelWatchdog)
-#endif // __nvoc_kernel_rc_h_disabled
-
-void krcWatchdogPause_IMPL(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog);
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline void krcWatchdogPause(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcWatchdogPause(pKernelRc, pKernelWatchdog) krcWatchdogPause_IMPL(pKernelRc, pKernelWatchdog)
-#endif // __nvoc_kernel_rc_h_disabled
-
-void krcWatchdogResume_IMPL(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog);
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline void krcWatchdogResume(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcWatchdogResume(pKernelRc, pKernelWatchdog) krcWatchdogResume_IMPL(pKernelRc, pKernelWatchdog)
-#endif // __nvoc_kernel_rc_h_disabled
-
-NV_STATUS krcWatchdogShutdown_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog);
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline NV_STATUS krcWatchdogShutdown(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcWatchdogShutdown(pGpu, pKernelRc, pKernelWatchdog) krcWatchdogShutdown_IMPL(pGpu, pKernelRc, pKernelWatchdog)
-#endif // __nvoc_kernel_rc_h_disabled
-
-void krcWatchdogGetReservationCounts_IMPL(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog, NvS32 *pEnable, NvS32 *pDisable, NvS32 *pSoftDisable);
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline void krcWatchdogGetReservationCounts(struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog, NvS32 *pEnable, NvS32 *pDisable, NvS32 *pSoftDisable) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcWatchdogGetReservationCounts(pKernelRc, pKernelWatchdog, pEnable, pDisable, pSoftDisable) krcWatchdogGetReservationCounts_IMPL(pKernelRc, pKernelWatchdog, pEnable, pDisable, pSoftDisable)
-#endif // __nvoc_kernel_rc_h_disabled
-
-void krcWatchdogWriteNotifierToGpfifo_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog);
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline void krcWatchdogWriteNotifierToGpfifo(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcWatchdogWriteNotifierToGpfifo(pGpu, pKernelRc, pKernelWatchdog) krcWatchdogWriteNotifierToGpfifo_IMPL(pGpu, pKernelRc, pKernelWatchdog)
-#endif // __nvoc_kernel_rc_h_disabled
-
-void krcWatchdogCallbackVblankRecovery_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog);
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline void krcWatchdogCallbackVblankRecovery(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcWatchdogCallbackVblankRecovery(pGpu, pKernelRc, pKernelWatchdog) krcWatchdogCallbackVblankRecovery_IMPL(pGpu, pKernelRc, pKernelWatchdog)
-#endif // __nvoc_kernel_rc_h_disabled
-
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline void krcWatchdogCallbackPerf(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-}
-#else // __nvoc_kernel_rc_h_disabled
-#define krcWatchdogCallbackPerf(pGpu, pKernelRc, pKernelWatchdog) krcWatchdogCallbackPerf_d44104(pGpu, pKernelRc, pKernelWatchdog)
-#endif // __nvoc_kernel_rc_h_disabled
-
 void krcChannelInfoFromChannelInfo_IMPL(const FIFO_CHANNEL_INFO *arg1, NvU32 gfid, RC_CHANNEL_INFO *arg3);
 #define krcChannelInfoFromChannelInfo(arg1, gfid, arg3) krcChannelInfoFromChannelInfo_IMPL(arg1, gfid, arg3)
 
@@ -514,32 +378,25 @@ static inline void krcMmuExceptionCacheDelete(struct KernelRc *arg_this, const I
 
 
 // Wrapper macros for halified functions
-#define krcConstructEngine_FNPTR(pKernelRc) pKernelRc->__nvoc_metadata_ptr->vtable.__krcConstructEngine__
+#define krcConstructEngine_FNPTR(pKernelRc) pKernelRc->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define krcConstructEngine(pGpu, pKernelRc, engDescriptor) krcConstructEngine_DISPATCH(pGpu, pKernelRc, engDescriptor)
-#define krcStateDestroy_FNPTR(pKernelRc) pKernelRc->__nvoc_metadata_ptr->vtable.__krcStateDestroy__
+#define krcStateDestroy_FNPTR(pKernelRc) pKernelRc->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__
 #define krcStateDestroy(pGpu, pKernelRc) krcStateDestroy_DISPATCH(pGpu, pKernelRc)
 #define krcErrorWriteNotifier_HAL(pGpu, pKernelRc, pKernelChannel, exceptType, localRmEngineType, notifierStatus, pFlushFlags) krcErrorWriteNotifier(pGpu, pKernelRc, pKernelChannel, exceptType, localRmEngineType, notifierStatus, pFlushFlags)
 #define krcErrorNotifyCpu_HAL(pGpu, pKernelRc, pRcChannelInfo, rmEngineType, exceptLevel, exceptType, scope, partitionAttributionId, bOsRcCallbackNeeded) krcErrorNotifyCpu(pGpu, pKernelRc, pRcChannelInfo, rmEngineType, exceptLevel, exceptType, scope, partitionAttributionId, bOsRcCallbackNeeded)
 #define krcErrorNotifyClients_HAL(pGpu, pKernelRc, pKernelChannel, exceptType, scope, partitionAttributionId) krcErrorNotifyClients(pGpu, pKernelRc, pKernelChannel, exceptType, scope, partitionAttributionId)
 #define krcErrorSendEventNotificationsCtxDma_HAL(pGpu, pKernelRc, pKernelChannel, scope) krcErrorSendEventNotificationsCtxDma(pGpu, pKernelRc, pKernelChannel, scope)
 #define krcGetMigAttributionForError_HAL(pKernelRc, exceptType, pGpuPartitionId, pComputeInstanceId) krcGetMigAttributionForError(pKernelRc, exceptType, pGpuPartitionId, pComputeInstanceId)
-#define krcGetChannelInError_HAL(pKernelRc) krcGetChannelInError(pKernelRc)
+#define krcGetChannelInError_FNPTR(pKernelRc) pKernelRc->__krcGetChannelInError__
+#define krcGetChannelInError(pKernelRc) krcGetChannelInError_DISPATCH(pKernelRc)
+#define krcGetChannelInError_HAL(pKernelRc) krcGetChannelInError_DISPATCH(pKernelRc)
 #define krcSubdeviceCtrlGetErrorInfoCheckPermissions_HAL(pKernelRc, pSubdevice) krcSubdeviceCtrlGetErrorInfoCheckPermissions(pKernelRc, pSubdevice)
 #define krcCheckBusError_HAL(pGpu, pKernelRc) krcCheckBusError(pGpu, pKernelRc)
 #define krcCliresCtrlNvdGetRcerrRptCheckPermissions_HAL(pKernelRc, pRmCliRes, pReportParams) krcCliresCtrlNvdGetRcerrRptCheckPermissions(pKernelRc, pRmCliRes, pReportParams)
-#define krcWatchdogInit_FNPTR(pKernelRc) pKernelRc->__krcWatchdogInit__
-#define krcWatchdogInit(pGpu, pKernelRc, pKernelWatchdog) krcWatchdogInit_DISPATCH(pGpu, pKernelRc, pKernelWatchdog)
-#define krcWatchdogInit_HAL(pGpu, pKernelRc, pKernelWatchdog) krcWatchdogInit_DISPATCH(pGpu, pKernelRc, pKernelWatchdog)
-#define krcWatchdogInitPushbuffer_FNPTR(pKernelRc) pKernelRc->__krcWatchdogInitPushbuffer__
-#define krcWatchdogInitPushbuffer(pGpu, pKernelRc, pKernelWatchdog) krcWatchdogInitPushbuffer_DISPATCH(pGpu, pKernelRc, pKernelWatchdog)
-#define krcWatchdogInitPushbuffer_HAL(pGpu, pKernelRc, pKernelWatchdog) krcWatchdogInitPushbuffer_DISPATCH(pGpu, pKernelRc, pKernelWatchdog)
-#define krcWatchdog_FNPTR(pKernelRc) pKernelRc->__krcWatchdog__
-#define krcWatchdog(pGpu, pKernelRc, pKernelWatchdog) krcWatchdog_DISPATCH(pGpu, pKernelRc, pKernelWatchdog)
-#define krcWatchdog_HAL(pGpu, pKernelRc, pKernelWatchdog) krcWatchdog_DISPATCH(pGpu, pKernelRc, pKernelWatchdog)
-#define krcWatchdogRecovery_FNPTR(pKernelRc) pKernelRc->__krcWatchdogRecovery__
-#define krcWatchdogRecovery(pGpu, pKernelRc, pKernelWatchdog) krcWatchdogRecovery_DISPATCH(pGpu, pKernelRc, pKernelWatchdog)
-#define krcWatchdogRecovery_HAL(pGpu, pKernelRc, pKernelWatchdog) krcWatchdogRecovery_DISPATCH(pGpu, pKernelRc, pKernelWatchdog)
-#define krcWatchdogCallbackPerf_HAL(pGpu, pKernelRc, pKernelWatchdog) krcWatchdogCallbackPerf(pGpu, pKernelRc, pKernelWatchdog)
+#define krcConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define krcConstructApertures(pGpu, pEngstate) krcConstructApertures_DISPATCH(pGpu, pEngstate)
+#define krcDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define krcDestructApertures(pGpu, pEngstate) krcDestructApertures_DISPATCH(pGpu, pEngstate)
 #define krcInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define krcInitMissing(pGpu, pEngstate) krcInitMissing_DISPATCH(pGpu, pEngstate)
 #define krcStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -567,75 +424,71 @@ static inline void krcMmuExceptionCacheDelete(struct KernelRc *arg_this, const I
 
 // Dispatch functions
 static inline NV_STATUS krcConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, ENGDESCRIPTOR engDescriptor) {
-    return pKernelRc->__nvoc_metadata_ptr->vtable.__krcConstructEngine__(pGpu, pKernelRc, engDescriptor);
+    return pKernelRc->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(pGpu, staticCast(pKernelRc, OBJENGSTATE), engDescriptor);
 }
 
 static inline void krcStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pKernelRc) {
-    pKernelRc->__nvoc_metadata_ptr->vtable.__krcStateDestroy__(pGpu, pKernelRc);
+    pKernelRc->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(pGpu, staticCast(pKernelRc, OBJENGSTATE));
 }
 
-static inline NV_STATUS krcWatchdogInit_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog) {
-    return pKernelRc->__krcWatchdogInit__(pGpu, pKernelRc, pKernelWatchdog);
+static inline struct KernelChannel * krcGetChannelInError_DISPATCH(struct KernelRc *pKernelRc) {
+    return pKernelRc->__krcGetChannelInError__(pKernelRc);
 }
 
-static inline void krcWatchdogInitPushbuffer_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog) {
-    pKernelRc->__krcWatchdogInitPushbuffer__(pGpu, pKernelRc, pKernelWatchdog);
+static inline NV_STATUS krcConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
-static inline void krcWatchdog_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog) {
-    pKernelRc->__krcWatchdog__(pGpu, pKernelRc, pKernelWatchdog);
-}
-
-static inline void krcWatchdogRecovery_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog) {
-    pKernelRc->__krcWatchdogRecovery__(pGpu, pKernelRc, pKernelWatchdog);
+static inline void krcDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline void krcInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__krcInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS krcStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS krcStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS krcStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS krcStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS krcStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS krcStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS krcStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS krcStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS krcStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS krcStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__krcStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NvBool krcIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__krcIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions
@@ -661,37 +514,13 @@ NV_STATUS krcCheckBusError_KERNEL(struct OBJGPU *pGpu, struct KernelRc *pKernelR
 
 NV_STATUS krcCliresCtrlNvdGetRcerrRptCheckPermissions_KERNEL(struct KernelRc *pKernelRc, struct RmClientResource *pRmCliRes, NV0000_CTRL_CMD_NVD_GET_RCERR_RPT_PARAMS *pReportParams);
 
-NV_STATUS krcWatchdogInit_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog);
-
-void krcWatchdogInitPushbuffer_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog);
-
-void krcWatchdog_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog);
-
-void krcWatchdogRecovery_KERNEL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog);
-
 // Inline HAL method definitions
-static inline NV_STATUS krcErrorNotifyCpu_5baef9(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, const RC_CHANNEL_INFO *pRcChannelInfo, RM_ENGINE_TYPE rmEngineType, NvU32 exceptLevel, NvU32 exceptType, RC_NOTIFIER_SCOPE scope, NvU16 partitionAttributionId, NvBool bOsRcCallbackNeeded){
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+static inline NV_STATUS krcErrorNotifyCpu_f4f420(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, const RC_CHANNEL_INFO *pRcChannelInfo, RM_ENGINE_TYPE rmEngineType, NvU32 exceptLevel, NvU32 exceptType, RC_NOTIFIER_SCOPE scope, NvU16 partitionAttributionId, NvBool bOsRcCallbackNeeded){
+    __builtin_unreachable();
 }
 
-static inline NV_STATUS krcWatchdogInit_395e98(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog){
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline void krcWatchdogInitPushbuffer_d44104(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog){
-    return;
-}
-
-static inline void krcWatchdog_d44104(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog){
-    return;
-}
-
-static inline void krcWatchdogRecovery_f2d351(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog){
-    NV_ASSERT_PRECOMP(0);
-}
-
-static inline void krcWatchdogCallbackPerf_d44104(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelWatchdog *pKernelWatchdog){
-    return;
+static inline struct KernelChannel * krcGetChannelInError_9e2234(struct KernelRc *pKernelRc){
+    return ((void *)0);
 }
 
 // Static dispatch method declarations
@@ -708,9 +537,6 @@ NvU32 krcResetCallback(NvHandle hClient,
                        void    *pContext,
                        NvBool   bClearRc);
 
-
-/*! Watchdog timer function */
-void krcWatchdogTimerProc(struct OBJGPU *pGpu, void *);
 
 /* Helper functions for NVLog */
 void krcDumpNvLog(struct OBJGPU *pGpu,

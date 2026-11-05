@@ -53,7 +53,9 @@ extern "C" {
 #include "events/gpu/gpu_events.h"
 #include "events/gpu/ras/ras_event_defs.h"
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
+#include "gpu/error_cont.h"
 #define ECC_ROW_REMAPPING_FAILURE_STRING_MAX_LENGTH 128U
+#define ECC_DRAM_BANK_REMAP_XID_VALUE_INVALID 0xFFFFFFFFU
 
 typedef NvU32 ECC_DRAM_RETIREMENT_INTERNAL_ERROR_REASON;
 enum
@@ -104,15 +106,199 @@ typedef struct LtsRepairCtx
     char errorString[ECC_ROW_REMAPPING_FAILURE_STRING_MAX_LENGTH];
 } LtsRepairCtx;
 
-typedef struct TpcRepairCtx
+typedef struct DramEccIntrStormCtx
+{
+    EventContextHeader header;
+    NvU32 fbpaIndexVirt;
+} DramEccIntrStormCtx;
+
+typedef struct SmEccIntrStormCtx
+{
+    EventContextHeader header;
+} SmEccIntrStormCtx;
+
+typedef struct EccResidualUncorrectableErrorCtx
+{
+    EventContextHeader header;
+    NvU32 dramCount;
+    NvU32 ltcCount;
+    NvU32 mmuCount;
+    NvU32 pcieCount;
+} EccResidualUncorrectableErrorCtx;
+
+typedef enum L2_ERROR_TYPE
+{
+    L2_ERROR_TYPE_DSTG = 0,
+    L2_ERROR_TYPE_TSTG = 1,
+    L2_ERROR_TYPE_RSTG = 2,
+    L2_ERROR_TYPE_UNKNOWN = 3,
+} L2_ERROR_TYPE;
+
+typedef struct LtcErrorCtx
+{
+    EventContextHeader header;
+    NvU32 dieletType;
+    NvU32 dieletId;
+    NvU32 ltc;
+    NvU32 slice;
+    NvBool bvidL2;
+    L2_ERROR_TYPE errorType;
+} LtcErrorCtx;
+
+typedef struct LtcUnsupportedClientPoisonErrorCtx
+{
+    EventContextHeader header;
+    NvU32 partition;
+    NvU32 slice;
+} LtcUnsupportedClientPoisonErrorCtx;
+
+typedef struct LrcFatalErrorCtx
+{
+    EventContextHeader header;
+    NvU32 partition;
+    NvU32 slice;
+} LrcFatalErrorCtx;
+
+typedef struct PcieIngressPoisonContainedErrorCtx
+{
+    EventContextHeader header;
+    NvU32 gfid;
+} PcieIngressPoisonContainedErrorCtx;
+
+typedef struct PciePoisonErrorCtx
+{
+    EventContextHeader header;
+} PciePoisonErrorCtx;
+
+typedef struct FbHubPoisonErrorCtx
+{
+    EventContextHeader header;
+} FbHubPoisonErrorCtx;
+
+typedef struct MmuPoisonErrorCtx
+{
+    EventContextHeader header;
+} MmuPoisonErrorCtx;
+
+typedef struct SmPoisonErrorCtx
+{
+    EventContextHeader header;
+    NvU32 nv2080EngineType;
+} SmPoisonErrorCtx;
+
+typedef struct GccPoisonErrorCtx
+{
+    EventContextHeader header;
+    NvU32 nv2080EngineType;
+} GccPoisonErrorCtx;
+
+typedef struct ContextSwitchPoisonErrorCtx
+{
+    EventContextHeader header;
+    NvU32 nv2080EngineType;
+} ContextSwitchPoisonErrorCtx;
+
+typedef struct GspPoisonErrorCtx
+{
+    EventContextHeader header;
+} GspPoisonErrorCtx;
+
+typedef struct PmuPoisonErrorCtx
+{
+    EventContextHeader header;
+} PmuPoisonErrorCtx;
+
+typedef struct Sec2PoisonErrorCtx
+{
+    EventContextHeader header;
+} Sec2PoisonErrorCtx;
+
+typedef struct FbFalconPoisonErrorCtx
+{
+    EventContextHeader header;
+} FbFalconPoisonErrorCtx;
+
+typedef struct VideoEnginePoisonErrorCtx
+{
+    EventContextHeader header;
+    NvU32 nv2080EngineType;
+} VideoEnginePoisonErrorCtx;
+
+typedef struct CopyEnginePoisonErrorCtx
+{
+    EventContextHeader header;
+    NvU32 nv2080EngineType;
+} CopyEnginePoisonErrorCtx;
+
+typedef struct DramErrorCtx
+{
+    EventContextHeader header;
+    NvU32 fbpa;
+    NvU32 sublocation;
+    NvBool bHbm;
+    NvU32 encodedBankRemapRegVal;
+    NvU64 physicalAddress;
+} DramErrorCtx;
+
+typedef struct DramCbcErrorCtx
+{
+    EventContextHeader header;
+    NvU32 ltcPart;
+    NvU32 slice;
+    NvU32 fbpaPart;
+    NvU32 fbpaSubloc;
+    NvBool bHbm;
+    NvU64 physicalAddress;
+} DramCbcErrorCtx;
+
+typedef struct EccUnitUncorrectableErrorCtx
+{
+    EventContextHeader header;
+    NvU32 unit;
+} EccUnitUncorrectableErrorCtx;
+
+typedef struct CopyEngineUncorrectableErrorCtx
+{
+    EventContextHeader header;
+    NvU32 dieletType;
+    NvU32 dieletId;
+    NvU32 pce;
+} CopyEngineUncorrectableErrorCtx;
+
+typedef struct SmUncorrectableErrorCtx
+{
+    EventContextHeader header;
+    NvU32 unit;
+    NvU32 gpc;
+    NvU32 tpc;
+} SmUncorrectableErrorCtx;
+
+typedef struct GrUncorrectableErrorCtx
+{
+    EventContextHeader header;
+    NvU32 gpc;
+} GrUncorrectableErrorCtx;
+
+typedef struct RiscvUncorrectableErrorCtx
 {
     EventContextHeader header;
     NvU32 location;
-    NvU32 sublocation;
-    NvU32 destinationLocation;
-    NV2080_CTRL_GPU_RECOVERY_ACTION recoveryAction;
-    char errorString[ECC_ROW_REMAPPING_FAILURE_STRING_MAX_LENGTH];
-} TpcRepairCtx;
+    NvBool bHasLocation;
+} RiscvUncorrectableErrorCtx;
+
+typedef struct PmuUncorrectableErrorCtx
+{
+    EventContextHeader header;
+    NvU32 location;
+    NvBool bHasLocation;
+    NvBool bIsFalcon;
+} PmuUncorrectableErrorCtx;
+
+typedef struct LpsecUncorrectableErrorCtx
+{
+    EventContextHeader header;
+    NvU32 sequencer;
+} LpsecUncorrectableErrorCtx;
 
 /* ------------------------ Row Remapping ---------------------------------------- */
 
@@ -292,6 +478,15 @@ NV_STATUS rrtablefullConstruct_IMPL(struct RowRemappingFailureTableFull *pEvent,
 // Static inline method definitions
 #undef PRIVATE_FIELD
 
+
+NV_STATUS rrpendingDeserialize(OBJGPU *pGpu,
+                               const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+                               const NvU8 *pContextData,
+                               NvU32 contextDataSize);
+NV_STATUS rrtablefullDeserialize(OBJGPU *pGpu,
+                                 const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+                                 const NvU8 *pContextData,
+                                 NvU32 contextDataSize);
 
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
@@ -1453,7 +1648,7 @@ NV_STATUS memorychannelrepairfailureConstruct_IMPL(struct MemoryChannelRepairFai
 #undef PRIVATE_FIELD
 
 
-/* ------------------------ TPC Repair  ---------------------------------------- */
+/* ------------------------ Sparing Repair  ------------------------------------ */
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
 // the matching C source file, but causes diagnostics to be issued if another
@@ -1466,15 +1661,15 @@ NV_STATUS memorychannelrepairfailureConstruct_IMPL(struct MemoryChannelRepairFai
 
 
 // Metadata with per-class RTTI with ancestor(s)
-struct NVOC_METADATA__TpcRepairPendingSameGpc;
+struct NVOC_METADATA__SparingRepairPending;
 struct NVOC_METADATA__GpuResourceRetirement;
 
 
-struct TpcRepairPendingSameGpc {
+struct SparingRepairPending {
 
     // Metadata starts with RTTI structure.
     union {
-         const struct NVOC_METADATA__TpcRepairPendingSameGpc *__nvoc_metadata_ptr;
+         const struct NVOC_METADATA__SparingRepairPending *__nvoc_metadata_ptr;
          const struct NVOC_RTTI *__nvoc_rtti;
     };
 
@@ -1487,48 +1682,47 @@ struct TpcRepairPendingSameGpc {
     struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
     struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
     struct GpuResourceRetirement *__nvoc_pbase_GpuResourceRetirement;    // gpuresret super
-    struct TpcRepairPendingSameGpc *__nvoc_pbase_TpcRepairPendingSameGpc;    // tpcrepairpendingsamegpc
+    struct SparingRepairPending *__nvoc_pbase_SparingRepairPending;    // sparingrepairpending
 
     // Data members
-    TpcRepairCtx context;
     GpuXidEventCtx xid156;
 };
 
 
 // Metadata with per-class RTTI with ancestor(s)
-struct NVOC_METADATA__TpcRepairPendingSameGpc {
+struct NVOC_METADATA__SparingRepairPending {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResourceRetirement metadata__GpuResourceRetirement;
 };
 
-#ifndef __nvoc_class_id_TpcRepairPendingSameGpc
-#define __nvoc_class_id_TpcRepairPendingSameGpc 0x758a69u
-typedef struct TpcRepairPendingSameGpc TpcRepairPendingSameGpc;
-#endif /* __nvoc_class_id_TpcRepairPendingSameGpc */
+#ifndef __nvoc_class_id_SparingRepairPending
+#define __nvoc_class_id_SparingRepairPending 0xbe89e4u
+typedef struct SparingRepairPending SparingRepairPending;
+#endif /* __nvoc_class_id_SparingRepairPending */
 
 // Casting support
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairPendingSameGpc;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_SparingRepairPending;
 
-#define __staticCast_TpcRepairPendingSameGpc(pThis) \
-    ((pThis)->__nvoc_pbase_TpcRepairPendingSameGpc)
+#define __staticCast_SparingRepairPending(pThis) \
+    ((pThis)->__nvoc_pbase_SparingRepairPending)
 
 #ifdef __nvoc_ras_events_h_disabled
-#define __dynamicCast_TpcRepairPendingSameGpc(pThis) ((TpcRepairPendingSameGpc*) NULL)
+#define __dynamicCast_SparingRepairPending(pThis) ((SparingRepairPending*) NULL)
 #else //__nvoc_ras_events_h_disabled
-#define __dynamicCast_TpcRepairPendingSameGpc(pThis) \
-    ((TpcRepairPendingSameGpc*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(TpcRepairPendingSameGpc)))
+#define __dynamicCast_SparingRepairPending(pThis) \
+    ((SparingRepairPending*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(SparingRepairPending)))
 #endif //__nvoc_ras_events_h_disabled
 
-NV_STATUS __nvoc_objCreateDynamic_TpcRepairPendingSameGpc(Dynamic**, Dynamic*, NvU32, va_list);
+NV_STATUS __nvoc_objCreateDynamic_SparingRepairPending(Dynamic**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_TpcRepairPendingSameGpc(TpcRepairPendingSameGpc**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-#define __objCreate_TpcRepairPendingSameGpc(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, tpcId, gpcId) \
-    __nvoc_objCreate_TpcRepairPendingSameGpc((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, tpcId, gpcId)
+NV_STATUS __nvoc_objCreate_SparingRepairPending(SparingRepairPending**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_SparingRepairPending(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_SparingRepairPending((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS tpcrepairpendingsamegpcConstruct_IMPL(struct TpcRepairPendingSameGpc *pEvent, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-#define __nvoc_tpcrepairpendingsamegpcConstruct(pEvent, pEventBus, tpcId, gpcId) tpcrepairpendingsamegpcConstruct_IMPL(pEvent, pEventBus, tpcId, gpcId)
+NV_STATUS sparingrepairpendingConstruct_IMPL(struct SparingRepairPending *pEvent, struct EventBus *pEventBus);
+#define __nvoc_sparingrepairpendingConstruct(pEvent, pEventBus) sparingrepairpendingConstruct_IMPL(pEvent, pEventBus)
 
 
 // Wrapper macros for halified functions
@@ -1555,104 +1749,15 @@ NV_STATUS tpcrepairpendingsamegpcConstruct_IMPL(struct TpcRepairPendingSameGpc *
 
 
 // Metadata with per-class RTTI with ancestor(s)
-struct NVOC_METADATA__TpcRepairPendingDifferentGpc;
-struct NVOC_METADATA__GpuResourceRetirement;
-
-
-struct TpcRepairPendingDifferentGpc {
-
-    // Metadata starts with RTTI structure.
-    union {
-         const struct NVOC_METADATA__TpcRepairPendingDifferentGpc *__nvoc_metadata_ptr;
-         const struct NVOC_RTTI *__nvoc_rtti;
-    };
-
-    // Parent (i.e. superclass or base class) objects
-    struct GpuResourceRetirement __nvoc_base_GpuResourceRetirement;
-
-    // Ancestor object pointers for `staticCast` feature
-    struct Object *__nvoc_pbase_Object;    // obj super^5
-    struct Event *__nvoc_pbase_Event;    // event super^4
-    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
-    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
-    struct GpuResourceRetirement *__nvoc_pbase_GpuResourceRetirement;    // gpuresret super
-    struct TpcRepairPendingDifferentGpc *__nvoc_pbase_TpcRepairPendingDifferentGpc;    // tpcrepairpendingdifferentgpc
-
-    // Data members
-    TpcRepairCtx context;
-    GpuXidEventCtx xid156;
-};
-
-
-// Metadata with per-class RTTI with ancestor(s)
-struct NVOC_METADATA__TpcRepairPendingDifferentGpc {
-    const struct NVOC_RTTI rtti;
-    const struct NVOC_METADATA__GpuResourceRetirement metadata__GpuResourceRetirement;
-};
-
-#ifndef __nvoc_class_id_TpcRepairPendingDifferentGpc
-#define __nvoc_class_id_TpcRepairPendingDifferentGpc 0x98d3e3u
-typedef struct TpcRepairPendingDifferentGpc TpcRepairPendingDifferentGpc;
-#endif /* __nvoc_class_id_TpcRepairPendingDifferentGpc */
-
-// Casting support
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairPendingDifferentGpc;
-
-#define __staticCast_TpcRepairPendingDifferentGpc(pThis) \
-    ((pThis)->__nvoc_pbase_TpcRepairPendingDifferentGpc)
-
-#ifdef __nvoc_ras_events_h_disabled
-#define __dynamicCast_TpcRepairPendingDifferentGpc(pThis) ((TpcRepairPendingDifferentGpc*) NULL)
-#else //__nvoc_ras_events_h_disabled
-#define __dynamicCast_TpcRepairPendingDifferentGpc(pThis) \
-    ((TpcRepairPendingDifferentGpc*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(TpcRepairPendingDifferentGpc)))
-#endif //__nvoc_ras_events_h_disabled
-
-NV_STATUS __nvoc_objCreateDynamic_TpcRepairPendingDifferentGpc(Dynamic**, Dynamic*, NvU32, va_list);
-
-NV_STATUS __nvoc_objCreate_TpcRepairPendingDifferentGpc(TpcRepairPendingDifferentGpc**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-#define __objCreate_TpcRepairPendingDifferentGpc(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, tpcId, gpcId) \
-    __nvoc_objCreate_TpcRepairPendingDifferentGpc((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, tpcId, gpcId)
-
-
-// Wrapper macros for implementation functions
-NV_STATUS tpcrepairpendingdifferentgpcConstruct_IMPL(struct TpcRepairPendingDifferentGpc *pEvent, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-#define __nvoc_tpcrepairpendingdifferentgpcConstruct(pEvent, pEventBus, tpcId, gpcId) tpcrepairpendingdifferentgpcConstruct_IMPL(pEvent, pEventBus, tpcId, gpcId)
-
-
-// Wrapper macros for halified functions
-
-// Dispatch functions
-// Virtual method declarations and/or inline definitions
-// Exported method declarations and/or inline definitions
-// HAL method declarations without bodies
-// Inline HAL method definitions
-// Static dispatch method declarations
-// Static inline method definitions
-#undef PRIVATE_FIELD
-
-
-
-// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
-// the matching C source file, but causes diagnostics to be issued if another
-// source file references the field.
-#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
-#define PRIVATE_FIELD(x) x
-#else
-#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
-#endif
-
-
-// Metadata with per-class RTTI with ancestor(s)
-struct NVOC_METADATA__TpcRepairFailureNoSpare;
+struct NVOC_METADATA__SparingRepairNotPossible;
 struct NVOC_METADATA__GpuResourceExhausted;
 
 
-struct TpcRepairFailureNoSpare {
+struct SparingRepairNotPossible {
 
     // Metadata starts with RTTI structure.
     union {
-         const struct NVOC_METADATA__TpcRepairFailureNoSpare *__nvoc_metadata_ptr;
+         const struct NVOC_METADATA__SparingRepairNotPossible *__nvoc_metadata_ptr;
          const struct NVOC_RTTI *__nvoc_rtti;
     };
 
@@ -1665,48 +1770,47 @@ struct TpcRepairFailureNoSpare {
     struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
     struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
     struct GpuResourceExhausted *__nvoc_pbase_GpuResourceExhausted;    // gpuresexh super
-    struct TpcRepairFailureNoSpare *__nvoc_pbase_TpcRepairFailureNoSpare;    // tpcrepairfailurenospare
+    struct SparingRepairNotPossible *__nvoc_pbase_SparingRepairNotPossible;    // sparingrepairnotpossible
 
     // Data members
-    TpcRepairCtx context;
     GpuXidEventCtx xid157;
 };
 
 
 // Metadata with per-class RTTI with ancestor(s)
-struct NVOC_METADATA__TpcRepairFailureNoSpare {
+struct NVOC_METADATA__SparingRepairNotPossible {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResourceExhausted metadata__GpuResourceExhausted;
 };
 
-#ifndef __nvoc_class_id_TpcRepairFailureNoSpare
-#define __nvoc_class_id_TpcRepairFailureNoSpare 0x78f4feu
-typedef struct TpcRepairFailureNoSpare TpcRepairFailureNoSpare;
-#endif /* __nvoc_class_id_TpcRepairFailureNoSpare */
+#ifndef __nvoc_class_id_SparingRepairNotPossible
+#define __nvoc_class_id_SparingRepairNotPossible 0xa29d84u
+typedef struct SparingRepairNotPossible SparingRepairNotPossible;
+#endif /* __nvoc_class_id_SparingRepairNotPossible */
 
 // Casting support
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairFailureNoSpare;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_SparingRepairNotPossible;
 
-#define __staticCast_TpcRepairFailureNoSpare(pThis) \
-    ((pThis)->__nvoc_pbase_TpcRepairFailureNoSpare)
+#define __staticCast_SparingRepairNotPossible(pThis) \
+    ((pThis)->__nvoc_pbase_SparingRepairNotPossible)
 
 #ifdef __nvoc_ras_events_h_disabled
-#define __dynamicCast_TpcRepairFailureNoSpare(pThis) ((TpcRepairFailureNoSpare*) NULL)
+#define __dynamicCast_SparingRepairNotPossible(pThis) ((SparingRepairNotPossible*) NULL)
 #else //__nvoc_ras_events_h_disabled
-#define __dynamicCast_TpcRepairFailureNoSpare(pThis) \
-    ((TpcRepairFailureNoSpare*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(TpcRepairFailureNoSpare)))
+#define __dynamicCast_SparingRepairNotPossible(pThis) \
+    ((SparingRepairNotPossible*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(SparingRepairNotPossible)))
 #endif //__nvoc_ras_events_h_disabled
 
-NV_STATUS __nvoc_objCreateDynamic_TpcRepairFailureNoSpare(Dynamic**, Dynamic*, NvU32, va_list);
+NV_STATUS __nvoc_objCreateDynamic_SparingRepairNotPossible(Dynamic**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_TpcRepairFailureNoSpare(TpcRepairFailureNoSpare**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-#define __objCreate_TpcRepairFailureNoSpare(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, tpcId, gpcId) \
-    __nvoc_objCreate_TpcRepairFailureNoSpare((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, tpcId, gpcId)
+NV_STATUS __nvoc_objCreate_SparingRepairNotPossible(SparingRepairNotPossible**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_SparingRepairNotPossible(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_SparingRepairNotPossible((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS tpcrepairfailurenospareConstruct_IMPL(struct TpcRepairFailureNoSpare *pEvent, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-#define __nvoc_tpcrepairfailurenospareConstruct(pEvent, pEventBus, tpcId, gpcId) tpcrepairfailurenospareConstruct_IMPL(pEvent, pEventBus, tpcId, gpcId)
+NV_STATUS sparingrepairnotpossibleConstruct_IMPL(struct SparingRepairNotPossible *pEvent, struct EventBus *pEventBus);
+#define __nvoc_sparingrepairnotpossibleConstruct(pEvent, pEventBus) sparingrepairnotpossibleConstruct_IMPL(pEvent, pEventBus)
 
 
 // Wrapper macros for halified functions
@@ -1733,69 +1837,2305 @@ NV_STATUS tpcrepairfailurenospareConstruct_IMPL(struct TpcRepairFailureNoSpare *
 
 
 // Metadata with per-class RTTI with ancestor(s)
-struct NVOC_METADATA__TpcRepairFailureNoSpareMig;
-struct NVOC_METADATA__GpuResourceExhausted;
+struct NVOC_METADATA__SparingEvent;
+struct NVOC_METADATA__GpuStateChanged;
 
 
-struct TpcRepairFailureNoSpareMig {
+struct SparingEvent {
 
     // Metadata starts with RTTI structure.
     union {
-         const struct NVOC_METADATA__TpcRepairFailureNoSpareMig *__nvoc_metadata_ptr;
+         const struct NVOC_METADATA__SparingEvent *__nvoc_metadata_ptr;
          const struct NVOC_RTTI *__nvoc_rtti;
     };
 
     // Parent (i.e. superclass or base class) objects
-    struct GpuResourceExhausted __nvoc_base_GpuResourceExhausted;
+    struct GpuStateChanged __nvoc_base_GpuStateChanged;
 
     // Ancestor object pointers for `staticCast` feature
     struct Object *__nvoc_pbase_Object;    // obj super^5
     struct Event *__nvoc_pbase_Event;    // event super^4
     struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
     struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
-    struct GpuResourceExhausted *__nvoc_pbase_GpuResourceExhausted;    // gpuresexh super
-    struct TpcRepairFailureNoSpareMig *__nvoc_pbase_TpcRepairFailureNoSpareMig;    // tpcrepairfailurenosparemig
+    struct GpuStateChanged *__nvoc_pbase_GpuStateChanged;    // gpustatechanged super
+    struct SparingEvent *__nvoc_pbase_SparingEvent;    // sparingevent
 
     // Data members
-    TpcRepairCtx context;
-    GpuXidEventCtx xid157;
+    GpuXidEventCtx xid184;
 };
 
 
 // Metadata with per-class RTTI with ancestor(s)
-struct NVOC_METADATA__TpcRepairFailureNoSpareMig {
+struct NVOC_METADATA__SparingEvent {
     const struct NVOC_RTTI rtti;
-    const struct NVOC_METADATA__GpuResourceExhausted metadata__GpuResourceExhausted;
+    const struct NVOC_METADATA__GpuStateChanged metadata__GpuStateChanged;
 };
 
-#ifndef __nvoc_class_id_TpcRepairFailureNoSpareMig
-#define __nvoc_class_id_TpcRepairFailureNoSpareMig 0xb6fda9u
-typedef struct TpcRepairFailureNoSpareMig TpcRepairFailureNoSpareMig;
-#endif /* __nvoc_class_id_TpcRepairFailureNoSpareMig */
+#ifndef __nvoc_class_id_SparingEvent
+#define __nvoc_class_id_SparingEvent 0xe78eddu
+typedef struct SparingEvent SparingEvent;
+#endif /* __nvoc_class_id_SparingEvent */
 
 // Casting support
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairFailureNoSpareMig;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_SparingEvent;
 
-#define __staticCast_TpcRepairFailureNoSpareMig(pThis) \
-    ((pThis)->__nvoc_pbase_TpcRepairFailureNoSpareMig)
+#define __staticCast_SparingEvent(pThis) \
+    ((pThis)->__nvoc_pbase_SparingEvent)
 
 #ifdef __nvoc_ras_events_h_disabled
-#define __dynamicCast_TpcRepairFailureNoSpareMig(pThis) ((TpcRepairFailureNoSpareMig*) NULL)
+#define __dynamicCast_SparingEvent(pThis) ((SparingEvent*) NULL)
 #else //__nvoc_ras_events_h_disabled
-#define __dynamicCast_TpcRepairFailureNoSpareMig(pThis) \
-    ((TpcRepairFailureNoSpareMig*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(TpcRepairFailureNoSpareMig)))
+#define __dynamicCast_SparingEvent(pThis) \
+    ((SparingEvent*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(SparingEvent)))
 #endif //__nvoc_ras_events_h_disabled
 
-NV_STATUS __nvoc_objCreateDynamic_TpcRepairFailureNoSpareMig(Dynamic**, Dynamic*, NvU32, va_list);
+NV_STATUS __nvoc_objCreateDynamic_SparingEvent(Dynamic**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-#define __objCreate_TpcRepairFailureNoSpareMig(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, tpcId, gpcId) \
-    __nvoc_objCreate_TpcRepairFailureNoSpareMig((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, tpcId, gpcId)
+NV_STATUS __nvoc_objCreate_SparingEvent(SparingEvent**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_SparingEvent(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_SparingEvent((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
 
 
 // Wrapper macros for implementation functions
-NV_STATUS tpcrepairfailurenosparemigConstruct_IMPL(struct TpcRepairFailureNoSpareMig *pEvent, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-#define __nvoc_tpcrepairfailurenosparemigConstruct(pEvent, pEventBus, tpcId, gpcId) tpcrepairfailurenosparemigConstruct_IMPL(pEvent, pEventBus, tpcId, gpcId)
+NV_STATUS sparingeventConstruct_IMPL(struct SparingEvent *pEvent, struct EventBus *pEventBus);
+#define __nvoc_sparingeventConstruct(pEvent, pEventBus) sparingeventConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+/* ------------------------ MemSys ECC errors ---------------------------- */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LtcError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct LtcError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__LtcError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct LtcError *__nvoc_pbase_LtcError;    // ltcerr
+
+    // Data members
+    LtcErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LtcError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_LtcError
+#define __nvoc_class_id_LtcError 0x62b176u
+typedef struct LtcError LtcError;
+#endif /* __nvoc_class_id_LtcError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LtcError;
+
+#define __staticCast_LtcError(pThis) \
+    ((pThis)->__nvoc_pbase_LtcError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_LtcError(pThis) ((LtcError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_LtcError(pThis) \
+    ((LtcError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(LtcError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_LtcError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_LtcError(LtcError**, Dynamic*, NvU32, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc);
+#define __objCreate_LtcError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc) \
+    __nvoc_objCreate_LtcError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, loc)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS ltcerrConstruct_IMPL(struct LtcError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc);
+#define __nvoc_ltcerrConstruct(pEvent, pEventBus, loc) ltcerrConstruct_IMPL(pEvent, pEventBus, loc)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__DramError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct DramError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__DramError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct DramError *__nvoc_pbase_DramError;    // dramerr
+
+    // Data members
+    DramErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid171;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__DramError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_DramError
+#define __nvoc_class_id_DramError 0x3080d3u
+typedef struct DramError DramError;
+#endif /* __nvoc_class_id_DramError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_DramError;
+
+#define __staticCast_DramError(pThis) \
+    ((pThis)->__nvoc_pbase_DramError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_DramError(pThis) ((DramError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_DramError(pThis) \
+    ((DramError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DramError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_DramError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_DramError(DramError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 fbpa, NvU32 sublocation, NvU64 physicalAddress, NvBool bHbm, NvU32 encodedBankRemapRegVal);
+#define __objCreate_DramError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, fbpa, sublocation, physicalAddress, bHbm, encodedBankRemapRegVal) \
+    __nvoc_objCreate_DramError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, fbpa, sublocation, physicalAddress, bHbm, encodedBankRemapRegVal)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS dramerrConstruct_IMPL(struct DramError *pEvent, struct EventBus *pEventBus, NvU32 fbpa, NvU32 sublocation, NvU64 physicalAddress, NvBool bHbm, NvU32 encodedBankRemapRegVal);
+#define __nvoc_dramerrConstruct(pEvent, pEventBus, fbpa, sublocation, physicalAddress, bHbm, encodedBankRemapRegVal) dramerrConstruct_IMPL(pEvent, pEventBus, fbpa, sublocation, physicalAddress, bHbm, encodedBankRemapRegVal)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__DramSidebandError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct DramSidebandError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__DramSidebandError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct DramSidebandError *__nvoc_pbase_DramSidebandError;    // dramsidebanderr
+
+    // Data members
+    DramErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid171;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__DramSidebandError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_DramSidebandError
+#define __nvoc_class_id_DramSidebandError 0xa8a87cu
+typedef struct DramSidebandError DramSidebandError;
+#endif /* __nvoc_class_id_DramSidebandError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_DramSidebandError;
+
+#define __staticCast_DramSidebandError(pThis) \
+    ((pThis)->__nvoc_pbase_DramSidebandError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_DramSidebandError(pThis) ((DramSidebandError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_DramSidebandError(pThis) \
+    ((DramSidebandError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DramSidebandError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_DramSidebandError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_DramSidebandError(DramSidebandError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 fbpa, NvU32 sublocation, NvU64 physicalAddress, NvU32 encodedBankRemapRegVal);
+#define __objCreate_DramSidebandError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, fbpa, sublocation, physicalAddress, encodedBankRemapRegVal) \
+    __nvoc_objCreate_DramSidebandError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, fbpa, sublocation, physicalAddress, encodedBankRemapRegVal)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS dramsidebanderrConstruct_IMPL(struct DramSidebandError *pEvent, struct EventBus *pEventBus, NvU32 fbpa, NvU32 sublocation, NvU64 physicalAddress, NvU32 encodedBankRemapRegVal);
+#define __nvoc_dramsidebanderrConstruct(pEvent, pEventBus, fbpa, sublocation, physicalAddress, encodedBankRemapRegVal) dramsidebanderrConstruct_IMPL(pEvent, pEventBus, fbpa, sublocation, physicalAddress, encodedBankRemapRegVal)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__DramCbcFatalError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct DramCbcFatalError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__DramCbcFatalError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct DramCbcFatalError *__nvoc_pbase_DramCbcFatalError;    // dramcbcfatalerr
+
+    // Data members
+    DramCbcErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid171;
+    GpuXidEventCtx xid95;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__DramCbcFatalError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_DramCbcFatalError
+#define __nvoc_class_id_DramCbcFatalError 0x1689b9u
+typedef struct DramCbcFatalError DramCbcFatalError;
+#endif /* __nvoc_class_id_DramCbcFatalError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_DramCbcFatalError;
+
+#define __staticCast_DramCbcFatalError(pThis) \
+    ((pThis)->__nvoc_pbase_DramCbcFatalError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_DramCbcFatalError(pThis) ((DramCbcFatalError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_DramCbcFatalError(pThis) \
+    ((DramCbcFatalError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DramCbcFatalError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_DramCbcFatalError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_DramCbcFatalError(DramCbcFatalError**, Dynamic*, NvU32, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, NvBool bHbm);
+#define __objCreate_DramCbcFatalError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc, bHbm) \
+    __nvoc_objCreate_DramCbcFatalError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, loc, bHbm)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS dramcbcfatalerrConstruct_IMPL(struct DramCbcFatalError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, NvBool bHbm);
+#define __nvoc_dramcbcfatalerrConstruct(pEvent, pEventBus, loc, bHbm) dramcbcfatalerrConstruct_IMPL(pEvent, pEventBus, loc, bHbm)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__DramCbcNonFatalError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct DramCbcNonFatalError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__DramCbcNonFatalError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct DramCbcNonFatalError *__nvoc_pbase_DramCbcNonFatalError;    // dramcbcnonfatalerr
+
+    // Data members
+    DramCbcErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid171;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__DramCbcNonFatalError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_DramCbcNonFatalError
+#define __nvoc_class_id_DramCbcNonFatalError 0xb1540au
+typedef struct DramCbcNonFatalError DramCbcNonFatalError;
+#endif /* __nvoc_class_id_DramCbcNonFatalError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_DramCbcNonFatalError;
+
+#define __staticCast_DramCbcNonFatalError(pThis) \
+    ((pThis)->__nvoc_pbase_DramCbcNonFatalError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_DramCbcNonFatalError(pThis) ((DramCbcNonFatalError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_DramCbcNonFatalError(pThis) \
+    ((DramCbcNonFatalError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(DramCbcNonFatalError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_DramCbcNonFatalError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_DramCbcNonFatalError(DramCbcNonFatalError**, Dynamic*, NvU32, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, NvBool bHbm);
+#define __objCreate_DramCbcNonFatalError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc, bHbm) \
+    __nvoc_objCreate_DramCbcNonFatalError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, loc, bHbm)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS dramcbcnonfatalerrConstruct_IMPL(struct DramCbcNonFatalError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, NvBool bHbm);
+#define __nvoc_dramcbcnonfatalerrConstruct(pEvent, pEventBus, loc, bHbm) dramcbcnonfatalerrConstruct_IMPL(pEvent, pEventBus, loc, bHbm)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+// Intentionally not uncontained since the L2 will go into containment
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LtcFatalError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct LtcFatalError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__LtcFatalError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct LtcFatalError *__nvoc_pbase_LtcFatalError;    // ltcfatalerr
+
+    // Data members
+    LtcErrorCtx context;
+    GpuXidEventCtx xid95;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LtcFatalError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_LtcFatalError
+#define __nvoc_class_id_LtcFatalError 0x9cb3f5u
+typedef struct LtcFatalError LtcFatalError;
+#endif /* __nvoc_class_id_LtcFatalError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LtcFatalError;
+
+#define __staticCast_LtcFatalError(pThis) \
+    ((pThis)->__nvoc_pbase_LtcFatalError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_LtcFatalError(pThis) ((LtcFatalError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_LtcFatalError(pThis) \
+    ((LtcFatalError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(LtcFatalError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_LtcFatalError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_LtcFatalError(LtcFatalError**, Dynamic*, NvU32, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, L2_ERROR_TYPE errorType);
+#define __objCreate_LtcFatalError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc, errorType) \
+    __nvoc_objCreate_LtcFatalError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, loc, errorType)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS ltcfatalerrConstruct_IMPL(struct LtcFatalError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, L2_ERROR_TYPE errorType);
+#define __nvoc_ltcfatalerrConstruct(pEvent, pEventBus, loc, errorType) ltcfatalerrConstruct_IMPL(pEvent, pEventBus, loc, errorType)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LtcUnsupportedClientPoisonUncontainedError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct LtcUnsupportedClientPoisonUncontainedError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__LtcUnsupportedClientPoisonUncontainedError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct LtcUnsupportedClientPoisonUncontainedError *__nvoc_pbase_LtcUnsupportedClientPoisonUncontainedError;    // ltcclientpoisonuncontainederr
+
+    // Data members
+    LtcUnsupportedClientPoisonErrorCtx context;
+    GpuXidEventCtx xid95;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LtcUnsupportedClientPoisonUncontainedError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_LtcUnsupportedClientPoisonUncontainedError
+#define __nvoc_class_id_LtcUnsupportedClientPoisonUncontainedError 0xd5e463u
+typedef struct LtcUnsupportedClientPoisonUncontainedError LtcUnsupportedClientPoisonUncontainedError;
+#endif /* __nvoc_class_id_LtcUnsupportedClientPoisonUncontainedError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LtcUnsupportedClientPoisonUncontainedError;
+
+#define __staticCast_LtcUnsupportedClientPoisonUncontainedError(pThis) \
+    ((pThis)->__nvoc_pbase_LtcUnsupportedClientPoisonUncontainedError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_LtcUnsupportedClientPoisonUncontainedError(pThis) ((LtcUnsupportedClientPoisonUncontainedError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_LtcUnsupportedClientPoisonUncontainedError(pThis) \
+    ((LtcUnsupportedClientPoisonUncontainedError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(LtcUnsupportedClientPoisonUncontainedError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_LtcUnsupportedClientPoisonUncontainedError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_LtcUnsupportedClientPoisonUncontainedError(LtcUnsupportedClientPoisonUncontainedError**, Dynamic*, NvU32, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc);
+#define __objCreate_LtcUnsupportedClientPoisonUncontainedError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc) \
+    __nvoc_objCreate_LtcUnsupportedClientPoisonUncontainedError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, loc)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS ltcclientpoisonuncontainederrConstruct_IMPL(struct LtcUnsupportedClientPoisonUncontainedError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc);
+#define __nvoc_ltcclientpoisonuncontainederrConstruct(pEvent, pEventBus, loc) ltcclientpoisonuncontainederrConstruct_IMPL(pEvent, pEventBus, loc)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LtcUnsupportedClientPoisonContainedError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct LtcUnsupportedClientPoisonContainedError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__LtcUnsupportedClientPoisonContainedError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct LtcUnsupportedClientPoisonContainedError *__nvoc_pbase_LtcUnsupportedClientPoisonContainedError;    // ltcclientpoisoncontainederr
+
+    // Data members
+    LtcUnsupportedClientPoisonErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LtcUnsupportedClientPoisonContainedError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_LtcUnsupportedClientPoisonContainedError
+#define __nvoc_class_id_LtcUnsupportedClientPoisonContainedError 0x355a88u
+typedef struct LtcUnsupportedClientPoisonContainedError LtcUnsupportedClientPoisonContainedError;
+#endif /* __nvoc_class_id_LtcUnsupportedClientPoisonContainedError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LtcUnsupportedClientPoisonContainedError;
+
+#define __staticCast_LtcUnsupportedClientPoisonContainedError(pThis) \
+    ((pThis)->__nvoc_pbase_LtcUnsupportedClientPoisonContainedError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_LtcUnsupportedClientPoisonContainedError(pThis) ((LtcUnsupportedClientPoisonContainedError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_LtcUnsupportedClientPoisonContainedError(pThis) \
+    ((LtcUnsupportedClientPoisonContainedError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(LtcUnsupportedClientPoisonContainedError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_LtcUnsupportedClientPoisonContainedError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_LtcUnsupportedClientPoisonContainedError(LtcUnsupportedClientPoisonContainedError**, Dynamic*, NvU32, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc);
+#define __objCreate_LtcUnsupportedClientPoisonContainedError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc) \
+    __nvoc_objCreate_LtcUnsupportedClientPoisonContainedError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, loc)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS ltcclientpoisoncontainederrConstruct_IMPL(struct LtcUnsupportedClientPoisonContainedError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc);
+#define __nvoc_ltcclientpoisoncontainederrConstruct(pEvent, pEventBus, loc) ltcclientpoisoncontainederrConstruct_IMPL(pEvent, pEventBus, loc)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LrcFatalError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct LrcFatalError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__LrcFatalError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct LrcFatalError *__nvoc_pbase_LrcFatalError;    // lrcfatalerr
+
+    // Data members
+    LrcFatalErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+    GpuXidEventCtx xid95;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LrcFatalError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_LrcFatalError
+#define __nvoc_class_id_LrcFatalError 0x075c90u
+typedef struct LrcFatalError LrcFatalError;
+#endif /* __nvoc_class_id_LrcFatalError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LrcFatalError;
+
+#define __staticCast_LrcFatalError(pThis) \
+    ((pThis)->__nvoc_pbase_LrcFatalError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_LrcFatalError(pThis) ((LrcFatalError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_LrcFatalError(pThis) \
+    ((LrcFatalError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(LrcFatalError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_LrcFatalError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_LrcFatalError(LrcFatalError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 partition, NvU32 slice);
+#define __objCreate_LrcFatalError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, partition, slice) \
+    __nvoc_objCreate_LrcFatalError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, partition, slice)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS lrcfatalerrConstruct_IMPL(struct LrcFatalError *pEvent, struct EventBus *pEventBus, NvU32 partition, NvU32 slice);
+#define __nvoc_lrcfatalerrConstruct(pEvent, pEventBus, partition, slice) lrcfatalerrConstruct_IMPL(pEvent, pEventBus, partition, slice)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+/* ------------------------ Poison errors ---------------------------- */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PcieIngressPoisonContainedError;
+struct NVOC_METADATA__GpuInterconnectError;
+
+
+struct PcieIngressPoisonContainedError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__PcieIngressPoisonContainedError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuInterconnectError __nvoc_base_GpuInterconnectError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuInterconnectError *__nvoc_pbase_GpuInterconnectError;    // gpuinterconnecterr super
+    struct PcieIngressPoisonContainedError *__nvoc_pbase_PcieIngressPoisonContainedError;    // pcieingresspoisoncontainederr
+
+    // Data members
+    PcieIngressPoisonContainedErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PcieIngressPoisonContainedError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuInterconnectError metadata__GpuInterconnectError;
+};
+
+#ifndef __nvoc_class_id_PcieIngressPoisonContainedError
+#define __nvoc_class_id_PcieIngressPoisonContainedError 0xfce4f3u
+typedef struct PcieIngressPoisonContainedError PcieIngressPoisonContainedError;
+#endif /* __nvoc_class_id_PcieIngressPoisonContainedError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PcieIngressPoisonContainedError;
+
+#define __staticCast_PcieIngressPoisonContainedError(pThis) \
+    ((pThis)->__nvoc_pbase_PcieIngressPoisonContainedError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_PcieIngressPoisonContainedError(pThis) ((PcieIngressPoisonContainedError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_PcieIngressPoisonContainedError(pThis) \
+    ((PcieIngressPoisonContainedError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(PcieIngressPoisonContainedError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_PcieIngressPoisonContainedError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_PcieIngressPoisonContainedError(PcieIngressPoisonContainedError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 gfid);
+#define __objCreate_PcieIngressPoisonContainedError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, gfid) \
+    __nvoc_objCreate_PcieIngressPoisonContainedError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, gfid)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS pcieingresspoisoncontainederrConstruct_IMPL(struct PcieIngressPoisonContainedError *pEvent, struct EventBus *pEventBus, NvU32 gfid);
+#define __nvoc_pcieingresspoisoncontainederrConstruct(pEvent, pEventBus, gfid) pcieingresspoisoncontainederrConstruct_IMPL(pEvent, pEventBus, gfid)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PcieIngressPoisonUncontainedError;
+struct NVOC_METADATA__GpuInterconnectError;
+
+
+struct PcieIngressPoisonUncontainedError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__PcieIngressPoisonUncontainedError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuInterconnectError __nvoc_base_GpuInterconnectError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuInterconnectError *__nvoc_pbase_GpuInterconnectError;    // gpuinterconnecterr super
+    struct PcieIngressPoisonUncontainedError *__nvoc_pbase_PcieIngressPoisonUncontainedError;    // pcieingresspoisonuncontainederr
+
+    // Data members
+    PciePoisonErrorCtx context;
+    GpuXidEventCtx xid95;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PcieIngressPoisonUncontainedError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuInterconnectError metadata__GpuInterconnectError;
+};
+
+#ifndef __nvoc_class_id_PcieIngressPoisonUncontainedError
+#define __nvoc_class_id_PcieIngressPoisonUncontainedError 0xf20fadu
+typedef struct PcieIngressPoisonUncontainedError PcieIngressPoisonUncontainedError;
+#endif /* __nvoc_class_id_PcieIngressPoisonUncontainedError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PcieIngressPoisonUncontainedError;
+
+#define __staticCast_PcieIngressPoisonUncontainedError(pThis) \
+    ((pThis)->__nvoc_pbase_PcieIngressPoisonUncontainedError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_PcieIngressPoisonUncontainedError(pThis) ((PcieIngressPoisonUncontainedError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_PcieIngressPoisonUncontainedError(pThis) \
+    ((PcieIngressPoisonUncontainedError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(PcieIngressPoisonUncontainedError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_PcieIngressPoisonUncontainedError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_PcieIngressPoisonUncontainedError(PcieIngressPoisonUncontainedError**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_PcieIngressPoisonUncontainedError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_PcieIngressPoisonUncontainedError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS pcieingresspoisonuncontainederrConstruct_IMPL(struct PcieIngressPoisonUncontainedError *pEvent, struct EventBus *pEventBus);
+#define __nvoc_pcieingresspoisonuncontainederrConstruct(pEvent, pEventBus) pcieingresspoisonuncontainederrConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PcieEgressPoisonError;
+struct NVOC_METADATA__GpuInterconnectError;
+
+
+struct PcieEgressPoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__PcieEgressPoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuInterconnectError __nvoc_base_GpuInterconnectError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuInterconnectError *__nvoc_pbase_GpuInterconnectError;    // gpuinterconnecterr super
+    struct PcieEgressPoisonError *__nvoc_pbase_PcieEgressPoisonError;    // pcieegresspoisonerr
+
+    // Data members
+    PciePoisonErrorCtx context;
+    GpuXidEventCtx xid95;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PcieEgressPoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuInterconnectError metadata__GpuInterconnectError;
+};
+
+#ifndef __nvoc_class_id_PcieEgressPoisonError
+#define __nvoc_class_id_PcieEgressPoisonError 0x5f1cc9u
+typedef struct PcieEgressPoisonError PcieEgressPoisonError;
+#endif /* __nvoc_class_id_PcieEgressPoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PcieEgressPoisonError;
+
+#define __staticCast_PcieEgressPoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_PcieEgressPoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_PcieEgressPoisonError(pThis) ((PcieEgressPoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_PcieEgressPoisonError(pThis) \
+    ((PcieEgressPoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(PcieEgressPoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_PcieEgressPoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_PcieEgressPoisonError(PcieEgressPoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_PcieEgressPoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_PcieEgressPoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS pcieegresspoisonerrConstruct_IMPL(struct PcieEgressPoisonError *pEvent, struct EventBus *pEventBus);
+#define __nvoc_pcieegresspoisonerrConstruct(pEvent, pEventBus) pcieegresspoisonerrConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CopyEnginePoisonContainedError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct CopyEnginePoisonContainedError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__CopyEnginePoisonContainedError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct CopyEnginePoisonContainedError *__nvoc_pbase_CopyEnginePoisonContainedError;    // copyenginepoisoncontainederr
+
+    // Data members
+    CopyEnginePoisonErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CopyEnginePoisonContainedError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_CopyEnginePoisonContainedError
+#define __nvoc_class_id_CopyEnginePoisonContainedError 0x4823f5u
+typedef struct CopyEnginePoisonContainedError CopyEnginePoisonContainedError;
+#endif /* __nvoc_class_id_CopyEnginePoisonContainedError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_CopyEnginePoisonContainedError;
+
+#define __staticCast_CopyEnginePoisonContainedError(pThis) \
+    ((pThis)->__nvoc_pbase_CopyEnginePoisonContainedError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_CopyEnginePoisonContainedError(pThis) ((CopyEnginePoisonContainedError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_CopyEnginePoisonContainedError(pThis) \
+    ((CopyEnginePoisonContainedError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(CopyEnginePoisonContainedError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_CopyEnginePoisonContainedError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_CopyEnginePoisonContainedError(CopyEnginePoisonContainedError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __objCreate_CopyEnginePoisonContainedError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType) \
+    __nvoc_objCreate_CopyEnginePoisonContainedError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, nv2080EngineType)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS copyenginepoisoncontainederrConstruct_IMPL(struct CopyEnginePoisonContainedError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __nvoc_copyenginepoisoncontainederrConstruct(pEvent, pEventBus, nv2080EngineType) copyenginepoisoncontainederrConstruct_IMPL(pEvent, pEventBus, nv2080EngineType)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CopyEnginePoisonUncontainedError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct CopyEnginePoisonUncontainedError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__CopyEnginePoisonUncontainedError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct CopyEnginePoisonUncontainedError *__nvoc_pbase_CopyEnginePoisonUncontainedError;    // copyenginepoisonuncontainederr
+
+    // Data members
+    CopyEnginePoisonErrorCtx context;
+    GpuXidEventCtx xid95;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CopyEnginePoisonUncontainedError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_CopyEnginePoisonUncontainedError
+#define __nvoc_class_id_CopyEnginePoisonUncontainedError 0xcd5e25u
+typedef struct CopyEnginePoisonUncontainedError CopyEnginePoisonUncontainedError;
+#endif /* __nvoc_class_id_CopyEnginePoisonUncontainedError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_CopyEnginePoisonUncontainedError;
+
+#define __staticCast_CopyEnginePoisonUncontainedError(pThis) \
+    ((pThis)->__nvoc_pbase_CopyEnginePoisonUncontainedError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_CopyEnginePoisonUncontainedError(pThis) ((CopyEnginePoisonUncontainedError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_CopyEnginePoisonUncontainedError(pThis) \
+    ((CopyEnginePoisonUncontainedError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(CopyEnginePoisonUncontainedError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_CopyEnginePoisonUncontainedError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_CopyEnginePoisonUncontainedError(CopyEnginePoisonUncontainedError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __objCreate_CopyEnginePoisonUncontainedError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType) \
+    __nvoc_objCreate_CopyEnginePoisonUncontainedError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, nv2080EngineType)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS copyenginepoisonuncontainederrConstruct_IMPL(struct CopyEnginePoisonUncontainedError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __nvoc_copyenginepoisonuncontainederrConstruct(pEvent, pEventBus, nv2080EngineType) copyenginepoisonuncontainederrConstruct_IMPL(pEvent, pEventBus, nv2080EngineType)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__SmPoisonError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct SmPoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__SmPoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct SmPoisonError *__nvoc_pbase_SmPoisonError;    // smpoisonerr
+
+    // Data members
+    SmPoisonErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__SmPoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_SmPoisonError
+#define __nvoc_class_id_SmPoisonError 0xec940du
+typedef struct SmPoisonError SmPoisonError;
+#endif /* __nvoc_class_id_SmPoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_SmPoisonError;
+
+#define __staticCast_SmPoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_SmPoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_SmPoisonError(pThis) ((SmPoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_SmPoisonError(pThis) \
+    ((SmPoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(SmPoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_SmPoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_SmPoisonError(SmPoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __objCreate_SmPoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType) \
+    __nvoc_objCreate_SmPoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, nv2080EngineType)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS smpoisonerrConstruct_IMPL(struct SmPoisonError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __nvoc_smpoisonerrConstruct(pEvent, pEventBus, nv2080EngineType) smpoisonerrConstruct_IMPL(pEvent, pEventBus, nv2080EngineType)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GccPoisonError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct GccPoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__GccPoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct GccPoisonError *__nvoc_pbase_GccPoisonError;    // gccpoisonerr
+
+    // Data members
+    GccPoisonErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GccPoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_GccPoisonError
+#define __nvoc_class_id_GccPoisonError 0x055ca3u
+typedef struct GccPoisonError GccPoisonError;
+#endif /* __nvoc_class_id_GccPoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GccPoisonError;
+
+#define __staticCast_GccPoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_GccPoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_GccPoisonError(pThis) ((GccPoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_GccPoisonError(pThis) \
+    ((GccPoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GccPoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_GccPoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_GccPoisonError(GccPoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __objCreate_GccPoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType) \
+    __nvoc_objCreate_GccPoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, nv2080EngineType)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS gccpoisonerrConstruct_IMPL(struct GccPoisonError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __nvoc_gccpoisonerrConstruct(pEvent, pEventBus, nv2080EngineType) gccpoisonerrConstruct_IMPL(pEvent, pEventBus, nv2080EngineType)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__ContextSwitchPoisonError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct ContextSwitchPoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__ContextSwitchPoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct ContextSwitchPoisonError *__nvoc_pbase_ContextSwitchPoisonError;    // ctxswpoisonerr
+
+    // Data members
+    ContextSwitchPoisonErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__ContextSwitchPoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_ContextSwitchPoisonError
+#define __nvoc_class_id_ContextSwitchPoisonError 0x8f50d0u
+typedef struct ContextSwitchPoisonError ContextSwitchPoisonError;
+#endif /* __nvoc_class_id_ContextSwitchPoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_ContextSwitchPoisonError;
+
+#define __staticCast_ContextSwitchPoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_ContextSwitchPoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_ContextSwitchPoisonError(pThis) ((ContextSwitchPoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_ContextSwitchPoisonError(pThis) \
+    ((ContextSwitchPoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(ContextSwitchPoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_ContextSwitchPoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_ContextSwitchPoisonError(ContextSwitchPoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __objCreate_ContextSwitchPoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType) \
+    __nvoc_objCreate_ContextSwitchPoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, nv2080EngineType)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS ctxswpoisonerrConstruct_IMPL(struct ContextSwitchPoisonError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __nvoc_ctxswpoisonerrConstruct(pEvent, pEventBus, nv2080EngineType) ctxswpoisonerrConstruct_IMPL(pEvent, pEventBus, nv2080EngineType)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__MmuPoisonError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct MmuPoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__MmuPoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct MmuPoisonError *__nvoc_pbase_MmuPoisonError;    // mmupoisonerr
+
+    // Data members
+    MmuPoisonErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__MmuPoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_MmuPoisonError
+#define __nvoc_class_id_MmuPoisonError 0x9ef007u
+typedef struct MmuPoisonError MmuPoisonError;
+#endif /* __nvoc_class_id_MmuPoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_MmuPoisonError;
+
+#define __staticCast_MmuPoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_MmuPoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_MmuPoisonError(pThis) ((MmuPoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_MmuPoisonError(pThis) \
+    ((MmuPoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(MmuPoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_MmuPoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_MmuPoisonError(MmuPoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_MmuPoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_MmuPoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS mmupoisonerrConstruct_IMPL(struct MmuPoisonError *pEvent, struct EventBus *pEventBus);
+#define __nvoc_mmupoisonerrConstruct(pEvent, pEventBus) mmupoisonerrConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__FbHubFatalPoisonError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct FbHubFatalPoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__FbHubFatalPoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct FbHubFatalPoisonError *__nvoc_pbase_FbHubFatalPoisonError;    // fbhubfatalpoisonerr
+
+    // Data members
+    FbHubPoisonErrorCtx context;
+    GpuXidEventCtx xid95;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__FbHubFatalPoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_FbHubFatalPoisonError
+#define __nvoc_class_id_FbHubFatalPoisonError 0x2e9cc4u
+typedef struct FbHubFatalPoisonError FbHubFatalPoisonError;
+#endif /* __nvoc_class_id_FbHubFatalPoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_FbHubFatalPoisonError;
+
+#define __staticCast_FbHubFatalPoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_FbHubFatalPoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_FbHubFatalPoisonError(pThis) ((FbHubFatalPoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_FbHubFatalPoisonError(pThis) \
+    ((FbHubFatalPoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(FbHubFatalPoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_FbHubFatalPoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_FbHubFatalPoisonError(FbHubFatalPoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_FbHubFatalPoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_FbHubFatalPoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS fbhubfatalpoisonerrConstruct_IMPL(struct FbHubFatalPoisonError *pEvent, struct EventBus *pEventBus);
+#define __nvoc_fbhubfatalpoisonerrConstruct(pEvent, pEventBus) fbhubfatalpoisonerrConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__FbHubNonFatalPoisonError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct FbHubNonFatalPoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__FbHubNonFatalPoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct FbHubNonFatalPoisonError *__nvoc_pbase_FbHubNonFatalPoisonError;    // fbhubnonfatalpoisonerr
+
+    // Data members
+    FbHubPoisonErrorCtx context;
+    GpuXidEventCtx xid95;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__FbHubNonFatalPoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_FbHubNonFatalPoisonError
+#define __nvoc_class_id_FbHubNonFatalPoisonError 0x148a19u
+typedef struct FbHubNonFatalPoisonError FbHubNonFatalPoisonError;
+#endif /* __nvoc_class_id_FbHubNonFatalPoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_FbHubNonFatalPoisonError;
+
+#define __staticCast_FbHubNonFatalPoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_FbHubNonFatalPoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_FbHubNonFatalPoisonError(pThis) ((FbHubNonFatalPoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_FbHubNonFatalPoisonError(pThis) \
+    ((FbHubNonFatalPoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(FbHubNonFatalPoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_FbHubNonFatalPoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_FbHubNonFatalPoisonError(FbHubNonFatalPoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_FbHubNonFatalPoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_FbHubNonFatalPoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS fbhubnonfatalpoisonerrConstruct_IMPL(struct FbHubNonFatalPoisonError *pEvent, struct EventBus *pEventBus);
+#define __nvoc_fbhubnonfatalpoisonerrConstruct(pEvent, pEventBus) fbhubnonfatalpoisonerrConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GspPoisonError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct GspPoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__GspPoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct GspPoisonError *__nvoc_pbase_GspPoisonError;    // gsppoisonerr
+
+    // Data members
+    GspPoisonErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GspPoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_GspPoisonError
+#define __nvoc_class_id_GspPoisonError 0x690d4bu
+typedef struct GspPoisonError GspPoisonError;
+#endif /* __nvoc_class_id_GspPoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GspPoisonError;
+
+#define __staticCast_GspPoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_GspPoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_GspPoisonError(pThis) ((GspPoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_GspPoisonError(pThis) \
+    ((GspPoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GspPoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_GspPoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_GspPoisonError(GspPoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_GspPoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_GspPoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS gsppoisonerrConstruct_IMPL(struct GspPoisonError *pEvent, struct EventBus *pEventBus);
+#define __nvoc_gsppoisonerrConstruct(pEvent, pEventBus) gsppoisonerrConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PmuPoisonError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct PmuPoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__PmuPoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct PmuPoisonError *__nvoc_pbase_PmuPoisonError;    // pmupoisonerr
+
+    // Data members
+    PmuPoisonErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PmuPoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_PmuPoisonError
+#define __nvoc_class_id_PmuPoisonError 0xf3d5dfu
+typedef struct PmuPoisonError PmuPoisonError;
+#endif /* __nvoc_class_id_PmuPoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PmuPoisonError;
+
+#define __staticCast_PmuPoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_PmuPoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_PmuPoisonError(pThis) ((PmuPoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_PmuPoisonError(pThis) \
+    ((PmuPoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(PmuPoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_PmuPoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_PmuPoisonError(PmuPoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_PmuPoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_PmuPoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS pmupoisonerrConstruct_IMPL(struct PmuPoisonError *pEvent, struct EventBus *pEventBus);
+#define __nvoc_pmupoisonerrConstruct(pEvent, pEventBus) pmupoisonerrConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__Sec2PoisonError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct Sec2PoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__Sec2PoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct Sec2PoisonError *__nvoc_pbase_Sec2PoisonError;    // sec2poisonerr
+
+    // Data members
+    Sec2PoisonErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__Sec2PoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_Sec2PoisonError
+#define __nvoc_class_id_Sec2PoisonError 0xb507fbu
+typedef struct Sec2PoisonError Sec2PoisonError;
+#endif /* __nvoc_class_id_Sec2PoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2PoisonError;
+
+#define __staticCast_Sec2PoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_Sec2PoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_Sec2PoisonError(pThis) ((Sec2PoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_Sec2PoisonError(pThis) \
+    ((Sec2PoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Sec2PoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_Sec2PoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_Sec2PoisonError(Sec2PoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_Sec2PoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_Sec2PoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS sec2poisonerrConstruct_IMPL(struct Sec2PoisonError *pEvent, struct EventBus *pEventBus);
+#define __nvoc_sec2poisonerrConstruct(pEvent, pEventBus) sec2poisonerrConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__FbFalconPoisonError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct FbFalconPoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__FbFalconPoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct FbFalconPoisonError *__nvoc_pbase_FbFalconPoisonError;    // fbfalconpoisonerr
+
+    // Data members
+    FbFalconPoisonErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__FbFalconPoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_FbFalconPoisonError
+#define __nvoc_class_id_FbFalconPoisonError 0x04f443u
+typedef struct FbFalconPoisonError FbFalconPoisonError;
+#endif /* __nvoc_class_id_FbFalconPoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_FbFalconPoisonError;
+
+#define __staticCast_FbFalconPoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_FbFalconPoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_FbFalconPoisonError(pThis) ((FbFalconPoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_FbFalconPoisonError(pThis) \
+    ((FbFalconPoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(FbFalconPoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_FbFalconPoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_FbFalconPoisonError(FbFalconPoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_FbFalconPoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_FbFalconPoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS fbfalconpoisonerrConstruct_IMPL(struct FbFalconPoisonError *pEvent, struct EventBus *pEventBus);
+#define __nvoc_fbfalconpoisonerrConstruct(pEvent, pEventBus) fbfalconpoisonerrConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__VideoEnginePoisonError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct VideoEnginePoisonError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__VideoEnginePoisonError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct VideoEnginePoisonError *__nvoc_pbase_VideoEnginePoisonError;    // videoenginepoisonerr
+
+    // Data members
+    VideoEnginePoisonErrorCtx context;
+    GpuXidEventCtx xid94;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__VideoEnginePoisonError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_VideoEnginePoisonError
+#define __nvoc_class_id_VideoEnginePoisonError 0x0e1cb3u
+typedef struct VideoEnginePoisonError VideoEnginePoisonError;
+#endif /* __nvoc_class_id_VideoEnginePoisonError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_VideoEnginePoisonError;
+
+#define __staticCast_VideoEnginePoisonError(pThis) \
+    ((pThis)->__nvoc_pbase_VideoEnginePoisonError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_VideoEnginePoisonError(pThis) ((VideoEnginePoisonError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_VideoEnginePoisonError(pThis) \
+    ((VideoEnginePoisonError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(VideoEnginePoisonError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_VideoEnginePoisonError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_VideoEnginePoisonError(VideoEnginePoisonError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __objCreate_VideoEnginePoisonError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType) \
+    __nvoc_objCreate_VideoEnginePoisonError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, nv2080EngineType)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS videoenginepoisonerrConstruct_IMPL(struct VideoEnginePoisonError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+#define __nvoc_videoenginepoisonerrConstruct(pEvent, pEventBus, nv2080EngineType) videoenginepoisonerrConstruct_IMPL(pEvent, pEventBus, nv2080EngineType)
 
 
 // Wrapper macros for halified functions
@@ -1811,12 +4151,6 @@ NV_STATUS tpcrepairfailurenosparemigConstruct_IMPL(struct TpcRepairFailureNoSpar
 
 
 /* ------------------------ Misc ---------------------------------------- */
-typedef struct DramEccIntrStormCtx
-{
-    EventContextHeader header;
-    NvU32 fbpaIndexVirt;
-} DramEccIntrStormCtx;
-
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
 // the matching C source file, but causes diagnostics to be issued if another
@@ -1905,11 +4239,6 @@ NV_STATUS cedramstormConstruct_IMPL(struct DramEccIntrStorm *pEvent, struct Even
 // Static inline method definitions
 #undef PRIVATE_FIELD
 
-
-typedef struct SmEccIntrStormCtx
-{
-    EventContextHeader header;
-} SmEccIntrStormCtx;
 
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
@@ -2000,15 +4329,6 @@ NV_STATUS cesmstormConstruct_IMPL(struct SmEccIntrStorm *pEvent, struct EventBus
 #undef PRIVATE_FIELD
 
 
-typedef struct EccResidualUncorrectableErrorCtx
-{
-    EventContextHeader header;
-    NvU32 dramCount;
-    NvU32 ltcCount;
-    NvU32 mmuCount;
-    NvU32 pcieCount;
-} EccResidualUncorrectableErrorCtx;
-
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
 // the matching C source file, but causes diagnostics to be issued if another
@@ -2084,6 +4404,1181 @@ NV_STATUS __nvoc_objCreate_EccResidualUncorrectableError(EccResidualUncorrectabl
 // Wrapper macros for implementation functions
 NV_STATUS eccresidualConstruct_IMPL(struct EccResidualUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 severity, NvU32 dramCount, NvU32 ltcCount, NvU32 mmuCount, NvU32 pcieCount);
 #define __nvoc_eccresidualConstruct(pEvent, pEventBus, severity, dramCount, ltcCount, mmuCount, pcieCount) eccresidualConstruct_IMPL(pEvent, pEventBus, severity, dramCount, ltcCount, mmuCount, pcieCount)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+/* ------------------------ SRAM ECC errors ------------------------------------- */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PcieUncorrectableError;
+struct NVOC_METADATA__GpuInterconnectError;
+
+
+struct PcieUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__PcieUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuInterconnectError __nvoc_base_GpuInterconnectError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuInterconnectError *__nvoc_pbase_GpuInterconnectError;    // gpuinterconnecterr super
+    struct PcieUncorrectableError *__nvoc_pbase_PcieUncorrectableError;    // pcieuceerr
+
+    // Data members
+    EccUnitUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PcieUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuInterconnectError metadata__GpuInterconnectError;
+};
+
+#ifndef __nvoc_class_id_PcieUncorrectableError
+#define __nvoc_class_id_PcieUncorrectableError 0x52be0au
+typedef struct PcieUncorrectableError PcieUncorrectableError;
+#endif /* __nvoc_class_id_PcieUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PcieUncorrectableError;
+
+#define __staticCast_PcieUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_PcieUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_PcieUncorrectableError(pThis) ((PcieUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_PcieUncorrectableError(pThis) \
+    ((PcieUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(PcieUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_PcieUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_PcieUncorrectableError(PcieUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 unit);
+#define __objCreate_PcieUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, unit) \
+    __nvoc_objCreate_PcieUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, unit)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS pcieuceerrConstruct_IMPL(struct PcieUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 unit);
+#define __nvoc_pcieuceerrConstruct(pEvent, pEventBus, unit) pcieuceerrConstruct_IMPL(pEvent, pEventBus, unit)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CopyEngineUncorrectableError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct CopyEngineUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__CopyEngineUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct CopyEngineUncorrectableError *__nvoc_pbase_CopyEngineUncorrectableError;    // copyengineuce
+
+    // Data members
+    CopyEngineUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__CopyEngineUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_CopyEngineUncorrectableError
+#define __nvoc_class_id_CopyEngineUncorrectableError 0x973621u
+typedef struct CopyEngineUncorrectableError CopyEngineUncorrectableError;
+#endif /* __nvoc_class_id_CopyEngineUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_CopyEngineUncorrectableError;
+
+#define __staticCast_CopyEngineUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_CopyEngineUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_CopyEngineUncorrectableError(pThis) ((CopyEngineUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_CopyEngineUncorrectableError(pThis) \
+    ((CopyEngineUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(CopyEngineUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_CopyEngineUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_CopyEngineUncorrectableError(CopyEngineUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 dieletType, NvU32 dieletId, NvU32 pce);
+#define __objCreate_CopyEngineUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, dieletType, dieletId, pce) \
+    __nvoc_objCreate_CopyEngineUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, dieletType, dieletId, pce)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS copyengineuceConstruct_IMPL(struct CopyEngineUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 dieletType, NvU32 dieletId, NvU32 pce);
+#define __nvoc_copyengineuceConstruct(pEvent, pEventBus, dieletType, dieletId, pce) copyengineuceConstruct_IMPL(pEvent, pEventBus, dieletType, dieletId, pce)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__MmuUncorrectableError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct MmuUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__MmuUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct MmuUncorrectableError *__nvoc_pbase_MmuUncorrectableError;    // mmuuceerr
+
+    // Data members
+    EccUnitUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__MmuUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_MmuUncorrectableError
+#define __nvoc_class_id_MmuUncorrectableError 0x7346b4u
+typedef struct MmuUncorrectableError MmuUncorrectableError;
+#endif /* __nvoc_class_id_MmuUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_MmuUncorrectableError;
+
+#define __staticCast_MmuUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_MmuUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_MmuUncorrectableError(pThis) ((MmuUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_MmuUncorrectableError(pThis) \
+    ((MmuUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(MmuUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_MmuUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_MmuUncorrectableError(MmuUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 unit);
+#define __objCreate_MmuUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, unit) \
+    __nvoc_objCreate_MmuUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, unit)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS mmuuceerrConstruct_IMPL(struct MmuUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 unit);
+#define __nvoc_mmuuceerrConstruct(pEvent, pEventBus, unit) mmuuceerrConstruct_IMPL(pEvent, pEventBus, unit)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__FecsUncorrectableError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct FecsUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__FecsUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct FecsUncorrectableError *__nvoc_pbase_FecsUncorrectableError;    // fecsuceerr
+
+    // Data members
+    struct EventContextHeader context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__FecsUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_FecsUncorrectableError
+#define __nvoc_class_id_FecsUncorrectableError 0xde7383u
+typedef struct FecsUncorrectableError FecsUncorrectableError;
+#endif /* __nvoc_class_id_FecsUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_FecsUncorrectableError;
+
+#define __staticCast_FecsUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_FecsUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_FecsUncorrectableError(pThis) ((FecsUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_FecsUncorrectableError(pThis) \
+    ((FecsUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(FecsUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_FecsUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_FecsUncorrectableError(FecsUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_FecsUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_FecsUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS fecsuceerrConstruct_IMPL(struct FecsUncorrectableError *pEvent, struct EventBus *pEventBus);
+#define __nvoc_fecsuceerrConstruct(pEvent, pEventBus) fecsuceerrConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__SmUncorrectableError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct SmUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__SmUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct SmUncorrectableError *__nvoc_pbase_SmUncorrectableError;    // smuceerr
+
+    // Data members
+    SmUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__SmUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_SmUncorrectableError
+#define __nvoc_class_id_SmUncorrectableError 0x66dff4u
+typedef struct SmUncorrectableError SmUncorrectableError;
+#endif /* __nvoc_class_id_SmUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_SmUncorrectableError;
+
+#define __staticCast_SmUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_SmUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_SmUncorrectableError(pThis) ((SmUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_SmUncorrectableError(pThis) \
+    ((SmUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(SmUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_SmUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_SmUncorrectableError(SmUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 unit, NvU32 gpc, NvU32 tpc);
+#define __objCreate_SmUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, unit, gpc, tpc) \
+    __nvoc_objCreate_SmUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, unit, gpc, tpc)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS smuceerrConstruct_IMPL(struct SmUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 unit, NvU32 gpc, NvU32 tpc);
+#define __nvoc_smuceerrConstruct(pEvent, pEventBus, unit, gpc, tpc) smuceerrConstruct_IMPL(pEvent, pEventBus, unit, gpc, tpc)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GccUncorrectableError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct GccUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__GccUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct GccUncorrectableError *__nvoc_pbase_GccUncorrectableError;    // gccuceerr
+
+    // Data members
+    GrUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GccUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_GccUncorrectableError
+#define __nvoc_class_id_GccUncorrectableError 0x46e41fu
+typedef struct GccUncorrectableError GccUncorrectableError;
+#endif /* __nvoc_class_id_GccUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GccUncorrectableError;
+
+#define __staticCast_GccUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_GccUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_GccUncorrectableError(pThis) ((GccUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_GccUncorrectableError(pThis) \
+    ((GccUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GccUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_GccUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_GccUncorrectableError(GccUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 gpc);
+#define __objCreate_GccUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, gpc) \
+    __nvoc_objCreate_GccUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, gpc)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS gccuceerrConstruct_IMPL(struct GccUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 gpc);
+#define __nvoc_gccuceerrConstruct(pEvent, pEventBus, gpc) gccuceerrConstruct_IMPL(pEvent, pEventBus, gpc)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__ContextSwitchUncorrectableError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct ContextSwitchUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__ContextSwitchUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct ContextSwitchUncorrectableError *__nvoc_pbase_ContextSwitchUncorrectableError;    // ctxswuceerr
+
+    // Data members
+    GrUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__ContextSwitchUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_ContextSwitchUncorrectableError
+#define __nvoc_class_id_ContextSwitchUncorrectableError 0xe36111u
+typedef struct ContextSwitchUncorrectableError ContextSwitchUncorrectableError;
+#endif /* __nvoc_class_id_ContextSwitchUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_ContextSwitchUncorrectableError;
+
+#define __staticCast_ContextSwitchUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_ContextSwitchUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_ContextSwitchUncorrectableError(pThis) ((ContextSwitchUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_ContextSwitchUncorrectableError(pThis) \
+    ((ContextSwitchUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(ContextSwitchUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_ContextSwitchUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_ContextSwitchUncorrectableError(ContextSwitchUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 gpc);
+#define __objCreate_ContextSwitchUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, gpc) \
+    __nvoc_objCreate_ContextSwitchUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, gpc)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS ctxswuceerrConstruct_IMPL(struct ContextSwitchUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 gpc);
+#define __nvoc_ctxswuceerrConstruct(pEvent, pEventBus, gpc) ctxswuceerrConstruct_IMPL(pEvent, pEventBus, gpc)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GpcMmuUncorrectableError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct GpcMmuUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__GpcMmuUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct GpcMmuUncorrectableError *__nvoc_pbase_GpcMmuUncorrectableError;    // gpcmmuuceerr
+
+    // Data members
+    GrUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GpcMmuUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_GpcMmuUncorrectableError
+#define __nvoc_class_id_GpcMmuUncorrectableError 0xf31a41u
+typedef struct GpcMmuUncorrectableError GpcMmuUncorrectableError;
+#endif /* __nvoc_class_id_GpcMmuUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpcMmuUncorrectableError;
+
+#define __staticCast_GpcMmuUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_GpcMmuUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_GpcMmuUncorrectableError(pThis) ((GpcMmuUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_GpcMmuUncorrectableError(pThis) \
+    ((GpcMmuUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GpcMmuUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_GpcMmuUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_GpcMmuUncorrectableError(GpcMmuUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 gpc);
+#define __objCreate_GpcMmuUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, gpc) \
+    __nvoc_objCreate_GpcMmuUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, gpc)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS gpcmmuuceerrConstruct_IMPL(struct GpcMmuUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 gpc);
+#define __nvoc_gpcmmuuceerrConstruct(pEvent, pEventBus, gpc) gpcmmuuceerrConstruct_IMPL(pEvent, pEventBus, gpc)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GspUncorrectableError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct GspUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__GspUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct GspUncorrectableError *__nvoc_pbase_GspUncorrectableError;    // gspuceerr
+
+    // Data members
+    RiscvUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__GspUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_GspUncorrectableError
+#define __nvoc_class_id_GspUncorrectableError 0xb8abcbu
+typedef struct GspUncorrectableError GspUncorrectableError;
+#endif /* __nvoc_class_id_GspUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GspUncorrectableError;
+
+#define __staticCast_GspUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_GspUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_GspUncorrectableError(pThis) ((GspUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_GspUncorrectableError(pThis) \
+    ((GspUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GspUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_GspUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_GspUncorrectableError(GspUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvBool bHasLocation, NvU32 location);
+#define __objCreate_GspUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, bHasLocation, location) \
+    __nvoc_objCreate_GspUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, bHasLocation, location)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS gspuceerrConstruct_IMPL(struct GspUncorrectableError *pEvent, struct EventBus *pEventBus, NvBool bHasLocation, NvU32 location);
+#define __nvoc_gspuceerrConstruct(pEvent, pEventBus, bHasLocation, location) gspuceerrConstruct_IMPL(pEvent, pEventBus, bHasLocation, location)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LpsecUncorrectableError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct LpsecUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__LpsecUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct LpsecUncorrectableError *__nvoc_pbase_LpsecUncorrectableError;    // lpsecuceerr
+
+    // Data members
+    LpsecUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__LpsecUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_LpsecUncorrectableError
+#define __nvoc_class_id_LpsecUncorrectableError 0x6a47f6u
+typedef struct LpsecUncorrectableError LpsecUncorrectableError;
+#endif /* __nvoc_class_id_LpsecUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LpsecUncorrectableError;
+
+#define __staticCast_LpsecUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_LpsecUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_LpsecUncorrectableError(pThis) ((LpsecUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_LpsecUncorrectableError(pThis) \
+    ((LpsecUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(LpsecUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_LpsecUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_LpsecUncorrectableError(LpsecUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 sequencer);
+#define __objCreate_LpsecUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, sequencer) \
+    __nvoc_objCreate_LpsecUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, sequencer)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS lpsecuceerrConstruct_IMPL(struct LpsecUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 sequencer);
+#define __nvoc_lpsecuceerrConstruct(pEvent, pEventBus, sequencer) lpsecuceerrConstruct_IMPL(pEvent, pEventBus, sequencer)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__NvlinkUncorrectableError;
+struct NVOC_METADATA__GpuInterconnectError;
+
+
+struct NvlinkUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__NvlinkUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuInterconnectError __nvoc_base_GpuInterconnectError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuInterconnectError *__nvoc_pbase_GpuInterconnectError;    // gpuinterconnecterr super
+    struct NvlinkUncorrectableError *__nvoc_pbase_NvlinkUncorrectableError;    // nvlinkuceerr
+
+    // Data members
+    EccUnitUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__NvlinkUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuInterconnectError metadata__GpuInterconnectError;
+};
+
+#ifndef __nvoc_class_id_NvlinkUncorrectableError
+#define __nvoc_class_id_NvlinkUncorrectableError 0xb35a90u
+typedef struct NvlinkUncorrectableError NvlinkUncorrectableError;
+#endif /* __nvoc_class_id_NvlinkUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvlinkUncorrectableError;
+
+#define __staticCast_NvlinkUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_NvlinkUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_NvlinkUncorrectableError(pThis) ((NvlinkUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_NvlinkUncorrectableError(pThis) \
+    ((NvlinkUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(NvlinkUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_NvlinkUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_NvlinkUncorrectableError(NvlinkUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvU32 nv2080GpuEccUnit);
+#define __objCreate_NvlinkUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080GpuEccUnit) \
+    __nvoc_objCreate_NvlinkUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, nv2080GpuEccUnit)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS nvlinkuceerrConstruct_IMPL(struct NvlinkUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 nv2080GpuEccUnit);
+#define __nvoc_nvlinkuceerrConstruct(pEvent, pEventBus, nv2080GpuEccUnit) nvlinkuceerrConstruct_IMPL(pEvent, pEventBus, nv2080GpuEccUnit)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PmuUncorrectableError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct PmuUncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__PmuUncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct PmuUncorrectableError *__nvoc_pbase_PmuUncorrectableError;    // pmuuceerr
+
+    // Data members
+    PmuUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__PmuUncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_PmuUncorrectableError
+#define __nvoc_class_id_PmuUncorrectableError 0xc6a5e0u
+typedef struct PmuUncorrectableError PmuUncorrectableError;
+#endif /* __nvoc_class_id_PmuUncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PmuUncorrectableError;
+
+#define __staticCast_PmuUncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_PmuUncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_PmuUncorrectableError(pThis) ((PmuUncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_PmuUncorrectableError(pThis) \
+    ((PmuUncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(PmuUncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_PmuUncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_PmuUncorrectableError(PmuUncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvBool bIsFalcon, NvBool bHasLocation, NvU32 location);
+#define __objCreate_PmuUncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, bIsFalcon, bHasLocation, location) \
+    __nvoc_objCreate_PmuUncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, bIsFalcon, bHasLocation, location)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS pmuuceerrConstruct_IMPL(struct PmuUncorrectableError *pEvent, struct EventBus *pEventBus, NvBool bIsFalcon, NvBool bHasLocation, NvU32 location);
+#define __nvoc_pmuuceerrConstruct(pEvent, pEventBus, bIsFalcon, bHasLocation, location) pmuuceerrConstruct_IMPL(pEvent, pEventBus, bIsFalcon, bHasLocation, location)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_RAS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__Sec2UncorrectableError;
+struct NVOC_METADATA__GpuMemoryIntegrityError;
+
+
+struct Sec2UncorrectableError {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__Sec2UncorrectableError *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuMemoryIntegrityError __nvoc_base_GpuMemoryIntegrityError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuMemoryIntegrityError *__nvoc_pbase_GpuMemoryIntegrityError;    // gpumemintegrityerr super
+    struct Sec2UncorrectableError *__nvoc_pbase_Sec2UncorrectableError;    // sec2uceerr
+
+    // Data members
+    RiscvUncorrectableErrorCtx context;
+    GpuXidEventCtx xid48;
+    GpuXidEventCtx xid172;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__Sec2UncorrectableError {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuMemoryIntegrityError metadata__GpuMemoryIntegrityError;
+};
+
+#ifndef __nvoc_class_id_Sec2UncorrectableError
+#define __nvoc_class_id_Sec2UncorrectableError 0x260c4bu
+typedef struct Sec2UncorrectableError Sec2UncorrectableError;
+#endif /* __nvoc_class_id_Sec2UncorrectableError */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2UncorrectableError;
+
+#define __staticCast_Sec2UncorrectableError(pThis) \
+    ((pThis)->__nvoc_pbase_Sec2UncorrectableError)
+
+#ifdef __nvoc_ras_events_h_disabled
+#define __dynamicCast_Sec2UncorrectableError(pThis) ((Sec2UncorrectableError*) NULL)
+#else //__nvoc_ras_events_h_disabled
+#define __dynamicCast_Sec2UncorrectableError(pThis) \
+    ((Sec2UncorrectableError*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Sec2UncorrectableError)))
+#endif //__nvoc_ras_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_Sec2UncorrectableError(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_Sec2UncorrectableError(Sec2UncorrectableError**, Dynamic*, NvU32, struct EventBus *pEventBus, NvBool bHasLocation, NvU32 location);
+#define __objCreate_Sec2UncorrectableError(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus, bHasLocation, location) \
+    __nvoc_objCreate_Sec2UncorrectableError((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus, bHasLocation, location)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS sec2uceerrConstruct_IMPL(struct Sec2UncorrectableError *pEvent, struct EventBus *pEventBus, NvBool bHasLocation, NvU32 location);
+#define __nvoc_sec2uceerrConstruct(pEvent, pEventBus, bHasLocation, location) sec2uceerrConstruct_IMPL(pEvent, pEventBus, bHasLocation, location)
 
 
 // Wrapper macros for halified functions
