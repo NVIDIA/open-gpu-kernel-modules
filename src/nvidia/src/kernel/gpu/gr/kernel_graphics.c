@@ -2158,7 +2158,6 @@ kgraphicsCreateGoldenImageChannel_IMPL
     NvBool                                 bNeedMIGWar;
     NvBool                                 bRetainGoldenImageChannel;
     NvBool                                 bBcStatus;
-    NvBool                                 bAcquireLock = NV_FALSE;
     NvU32                                  sliLoopReentrancy;
     NV_VASPACE_ALLOCATION_PARAMETERS       *pVaParams = NULL;
     NV_MEMORY_ALLOCATION_PARAMS            *pMemAllocParams = NULL;
@@ -2302,19 +2301,10 @@ kgraphicsCreateGoldenImageChannel_IMPL
     if (rmapiLockIsOwner())
     {
         rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
-        bAcquireLock = NV_TRUE;
-        pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
     }
-    else if (rmapiInRtd3PmPath())
-    {
-        pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    }
-    else
-    {
-        NV_PRINTF(LEVEL_ERROR, "Caller missing proper locks\n");
-        status = NV_ERR_INVALID_LOCK_STATE;
-        goto cleanup;
-    }
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+        rmapiGetApiOrRtd3InternalInterface(&pRmApi), cleanup);
 
     // Create a new VAspace for channel
     portMemSet(pVaParams, 0, sizeof(NV_VASPACE_ALLOCATION_PARAMETERS));
@@ -2519,11 +2509,10 @@ kgraphicsCreateGoldenImageChannel_IMPL
                                   VASPACE_RESERVE_FLAGS_NONE));
     }
 
-    // Reaquire the GPU locks
+    // VA-space construction also releases the GPU locks in the RTD3 path.
     NV_ASSERT_OK_OR_GOTO(status,
         rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_GR),
         cleanup);
-    bAcquireLock = NV_FALSE;
     pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
     if (kgraphicsIsGFXSupported(pGpu, pKernelGraphics))
@@ -2555,11 +2544,13 @@ kgraphicsCreateGoldenImageChannel_IMPL
 
 cleanup:
 
-    if (bAcquireLock)
+    // Allocation callees can release GPU locks in the RTD3 path as well.
+    if (!rmGpuLockIsOwner())
     {
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
             rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_GR));
     }
+    pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
     if (pVaParams != NULL)
         portMemFree(pVaParams);

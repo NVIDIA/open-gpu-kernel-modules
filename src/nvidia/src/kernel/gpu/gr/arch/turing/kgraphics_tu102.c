@@ -394,7 +394,6 @@ kgraphicsCreateBug4208224Channel_TU102
     RM_API                                *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     RsClient                              *pClientId;
     NvBool                                 bBcStatus;
-    NvBool                                 bAcquireLock = NV_FALSE;
     NvU32                                  sliLoopReentrancy;
     NV_VASPACE_ALLOCATION_PARAMETERS       vaParams;
     NV_MEMORY_ALLOCATION_PARAMS            memAllocParams;
@@ -462,9 +461,13 @@ kgraphicsCreateBug4208224Channel_TU102
     // UVM/CUDA may be holding the GPU locks here and the allocation may subsequently fail
     // So explicitly release GPU locks before RmVidHeapControl
     //
-    rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
-    bAcquireLock = NV_TRUE;
-    pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
+    if (rmapiLockIsOwner())
+    {
+        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+        rmapiGetApiOrRtd3InternalInterface(&pRmApi), cleanup);
 
     // Create a new VAspace for channel
     portMemSet(&vaParams, 0, sizeof(NV_VASPACE_ALLOCATION_PARAMETERS));
@@ -577,7 +580,6 @@ kgraphicsCreateBug4208224Channel_TU102
     NV_ASSERT_OK_OR_GOTO(status,
         rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_GR),
         cleanup);
-    bAcquireLock = NV_FALSE;
     pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
     // Get KernelGraphicsObject class Id
@@ -593,12 +595,13 @@ kgraphicsCreateBug4208224Channel_TU102
 
 cleanup:
 
-    if (bAcquireLock)
+    // Allocation callees can release GPU locks in the RTD3 path as well.
+    if (!rmGpuLockIsOwner())
     {
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
             rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_GR));
-        pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     }
+    pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
     if (status != NV_OK)
     {

@@ -188,19 +188,8 @@ kchannelConstruct_IMPL
     }
     pKernelChannel->subDeviceId = subDeviceId;
 
-    if (rmapiLockIsOwner())
-    {
-        pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
-    }
-    else if (rmapiInRtd3PmPath())
-    {
-        pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    }
-    else
-    {
-        NV_PRINTF(LEVEL_ERROR, "Caller missing proper locks\n");
-        return NV_ERR_INVALID_LOCK_STATE;
-    }
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        rmapiGetApiOrRtd3InternalInterface(&pRmApi));
 
     // We only support physical channels.
     NV_ASSERT_OR_RETURN(FLD_TEST_DRF(OS04, _FLAGS, _CHANNEL_TYPE, _PHYSICAL, flags),
@@ -1231,19 +1220,8 @@ kchannelDestruct_IMPL
     resGetFreeParams(staticCast(pKernelChannel, RsResource), &pCallContext, &pParams);
     hClient = pCallContext->pClient->hClient;
 
-    if (rmapiLockIsOwner())
-    {
-        pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
-    }
-    else if (rmapiInRtd3PmPath())
-    {
-        pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    }
-    else
-    {
-        NV_PRINTF(LEVEL_ERROR, "Caller missing proper locks\n");
+    if (rmapiGetApiOrRtd3InternalInterface(&pRmApi) != NV_OK)
         return;
-    }
 
     if ((pKernelChannel->privilegeLevel == NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_PRIVILEGE_ADMIN) ||
         (pKernelChannel->privilegeLevel == NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_PRIVILEGE_USER))
