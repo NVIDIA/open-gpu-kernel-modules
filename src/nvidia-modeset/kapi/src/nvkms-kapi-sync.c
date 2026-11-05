@@ -185,7 +185,8 @@ nvKmsKapiImportSemaphoreSurface
     NvU64 nvKmsParamsUser,
     NvU64 nvKmsParamsSize,
     void **pSemaphoreMap,
-    void **pMaxSubmittedMap
+    void **pMaxSubmittedMap,
+    NvU64 *pSurfaceSize
 )
 {
     struct NvKmsKapiSemaphoreSurface *ss = NULL;
@@ -309,6 +310,10 @@ nvKmsKapiImportSemaphoreSurface
         }
     } else {
         *pMaxSubmittedMap = NULL;
+    }
+
+    if (pSurfaceSize != NULL) {
+        *pSurfaceSize = p.semaphoreSurfaceSize;
     }
 
     return ss;
