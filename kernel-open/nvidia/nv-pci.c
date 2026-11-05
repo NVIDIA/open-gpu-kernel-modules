@@ -1801,7 +1801,7 @@ static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_u
         return;
     }
 
-    nv_linux_remove_device_locked(nvl);
+    nv_linux_move_device_to_removing_locked(nvl);
 
     rm_notify_gpu_removal(sp, nv);
 
@@ -1858,6 +1858,8 @@ static void nv_pci_remove_helper(struct pci_dev *pci_dev, bool block_if_gpu_in_u
     nvl->coherent_link_info.gpu_mem_info_discovery_attempted = NV_FALSE;
 
     rm_check_for_gpu_surprise_removal(sp, nv);
+
+    nv_linux_remove_removing_device_locked(nvl);
 
     /* Remove proc entry for this GPU */
     nv_procfs_remove_gpu(nvl);

@@ -102,6 +102,8 @@ void          nv_linux_add_device_locked(nv_linux_state_t *);
 int           nv_linux_assign_minor_locked(nv_linux_state_t *);
 void          nv_linux_remove_minor_locked(nv_linux_state_t *);
 void          nv_linux_remove_device_locked(nv_linux_state_t *);
+void          nv_linux_move_device_to_removing_locked(nv_linux_state_t *);
+void          nv_linux_remove_removing_device_locked(nv_linux_state_t *);
 NvBool        nv_acpi_power_resource_method_present(struct pci_dev *);
 
 int           nv_linux_init_open_q(nv_linux_state_t *);
