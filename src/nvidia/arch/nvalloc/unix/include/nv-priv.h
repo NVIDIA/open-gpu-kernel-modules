@@ -279,6 +279,14 @@ typedef struct nv_dynamic_power_s
     NvBool b_idle_sustained_workitem_queued;
 
     /*
+     * Counter to track how many times RmRemoveIdleHoldoff has rescheduled itself.
+     * Used to prevent infinite rescheduling when GC6 prerequisites cannot be met.
+     * After exceeding MAX_IDLE_HOLDOFF_RESCHEDULES, nv_indicate_idle is called
+     * unconditionally to allow D3cold entry via autosuspend path.
+     */
+    NvU32 idle_holdoff_reschedule_count;
+
+    /*
      * Counter to track clients disallowing GCOFF.
      */
     NvU32 clients_gcoff_disallow_refcount;
