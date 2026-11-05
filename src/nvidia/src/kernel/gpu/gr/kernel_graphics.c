@@ -2559,6 +2559,7 @@ cleanup:
     {
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
             rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_GR));
+        pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     }
 
     if (pVaParams != NULL)
