@@ -1077,8 +1077,20 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
                                     nvDpyIdToNvU32(pConnectorEvo->displayId),
                                     FALSE /* b2Heads1Or */,
                                     0 /* sorExcludeMask */)) {
-                    nvDpyFrlRestoreLastGoodCaps(pDpyEvo,
-                                                "SOR assignment failed");
+                    /*
+                     * The SOR is typically unavailable because this dpy is
+                     * still driving an active head.  If the retained caps
+                     * keep the mode list unchanged but the sink has lost
+                     * its FRL link (e.g. it was power-cycled), ask the
+                     * client to modeset the head so the link is retrained.
+                     */
+                    if (nvDpyFrlRestoreLastGoodCaps(pDpyEvo,
+                                                    "SOR assignment failed") &&
+                        nvHdmiFrlSinkLostActiveLink(pDpyEvo)) {
+                        nvSendDpyEventEvo(
+                            pDpyEvo,
+                            NVKMS_EVENT_TYPE_DPY_LINK_RETRAIN_REQUIRED);
+                    }
                 } else if (!nvHdmiFrlAssessLink(pDpyEvo)) {
                     nvDpyFrlRestoreLastGoodCaps(pDpyEvo,
                                                 "link assessment failed");

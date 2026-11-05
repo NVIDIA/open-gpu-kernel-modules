@@ -84,6 +84,7 @@
 #endif
 
 #include <linux/pci.h>
+#include <linux/delay.h>
 #include <linux/workqueue.h>
 #include <linux/sort.h>
 
@@ -188,6 +189,12 @@ static void nv_drm_event_callback(const struct NvKmsKapiEvent *event)
                 nv_dev,
                 event->u.displayCpTopologyChanged.display,
                 event->u.displayCpTopologyChanged.topology);
+            break;
+
+        case NVKMS_EVENT_TYPE_DPY_LINK_RETRAIN_REQUIRED:
+            nv_drm_handle_display_link_retrain(
+                nv_dev,
+                event->u.displayLinkRetrainRequired.display);
             break;
 
         case NVKMS_EVENT_TYPE_DYNAMIC_DPY_CONNECTED:
@@ -833,6 +840,176 @@ static void nv_drm_handle_content_protection_event_work(struct work_struct *work
     mutex_unlock(&dev->mode_config.mutex);
 }
 
+/*
+ * Number of times, and the delay between them, that the link retrain commit is
+ * attempted when an earlier flip is still outstanding on the CRTC.
+ */
+#define NV_DRM_LINK_RETRAIN_MAX_ATTEMPTS    10
+#define NV_DRM_LINK_RETRAIN_RETRY_DELAY_MS  100
+
+/*
+ * Commit the current state of the active CRTCs driving the connectors in
+ * pending_mask with mode_changed forced, so that a full modeset retrains the
+ * link.  Returns -EBUSY if an earlier flip is still outstanding on a CRTC.
+ *
+ * The commit is non-blocking: NVKMS applies the modeset (including the FRL
+ * link training) before nv_drm_atomic_commit() returns, and a blocking commit
+ * would additionally wait up to 3 seconds for the first flip event.  A
+ * retrain can take longer than that, in which case the wait times out, the
+ * pending flip is force-completed, and the flip event that arrives afterwards
+ * finds nothing queued and trips WARN_ON() in nv_drm_crtc_dequeue_flip().
+ */
+static int nv_drm_link_retrain_commit(struct drm_device *dev,
+                                      NvU64 pending_mask,
+                                      unsigned int *num_crtcs)
+{
+    struct drm_modeset_acquire_ctx *pctx;
+    nv_drm_atomic_state_base_t *state;
+    struct drm_connector *connector;
+    struct drm_connector_list_iter conn_iter;
+    int ret = 0;
+#if NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT == 3
+    struct drm_modeset_acquire_ctx ctx;
+#endif
+
+    *num_crtcs = 0;
+
+#if NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT == 3
+    DRM_MODESET_LOCK_ALL_BEGIN(dev, ctx, 0, ret);
+    pctx = &ctx;
+#else
+    mutex_lock(&dev->mode_config.mutex);
+    pctx = dev->mode_config.acquire_ctx;
+#endif
+
+    state = nv_drm_atomic_state_base_alloc(dev);
+    if (!state) {
+        ret = -ENOMEM;
+        goto done;
+    }
+    state->acquire_ctx = pctx;
+
+    drm_connector_list_iter_begin(dev, &conn_iter);
+    drm_for_each_connector_iter(connector, &conn_iter) {
+        struct drm_crtc *crtc;
+        struct drm_crtc_state *crtc_state;
+
+        if (drm_connector_index(connector) >= 64 ||
+            !(pending_mask & (1ULL << drm_connector_index(connector)))) {
+            continue;
+        }
+
+        crtc = (connector->state != NULL) ? connector->state->crtc : NULL;
+        if (crtc == NULL || crtc->state == NULL || !crtc->state->active) {
+            continue;
+        }
+
+        crtc_state = drm_atomic_get_crtc_state(state, crtc);
+        if (IS_ERR(crtc_state)) {
+            ret = PTR_ERR(crtc_state);
+            break;
+        }
+
+        crtc_state->mode_changed = true;
+
+        ret = drm_atomic_add_affected_connectors(state, crtc);
+        if (ret != 0) {
+            break;
+        }
+
+        ret = drm_atomic_add_affected_planes(state, crtc);
+        if (ret != 0) {
+            break;
+        }
+
+        (*num_crtcs)++;
+    }
+    drm_connector_list_iter_end(&conn_iter);
+
+    if (ret == 0 && *num_crtcs > 0) {
+        ret = drm_atomic_nonblocking_commit(state);
+    }
+
+    nv_drm_atomic_state_base_put(state);
+
+done:
+#if NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT == 3
+    DRM_MODESET_LOCK_ALL_END(dev, ctx, ret);
+#else
+    mutex_unlock(&dev->mode_config.mutex);
+#endif
+
+    return ret;
+}
+
+/*
+ * NVKMS reported (NVKMS_EVENT_TYPE_DPY_LINK_RETRAIN_REQUIRED) that the link of
+ * a display driving an active head was lost without any change to the
+ * display's EDID or mode list, e.g. an HDMI FRL sink that was power-cycled
+ * while the head stayed active.  User space sees nothing to react to in that
+ * case, so re-commit the current state of the affected CRTCs with
+ * mode_changed forced; the resulting full modeset retrains the link.
+ */
+static void nv_drm_handle_link_retrain_event(struct work_struct *work)
+{
+    struct delayed_work *dwork = to_delayed_work(work);
+    struct nv_drm_device *nv_dev =
+        container_of(dwork, struct nv_drm_device, link_retrain_work);
+    struct drm_device *dev = nv_dev->dev;
+    struct drm_connector *connector;
+    struct drm_connector_list_iter conn_iter;
+    NvU64 pending_mask = 0;
+    unsigned int num_crtcs = 0;
+    unsigned int attempt;
+    int ret = 0;
+
+    /*
+     * Snapshot and clear the pending requests before taking the modeset
+     * locks, so that a lock backoff/retry below cannot lose them and a new
+     * request that arrives during the commit schedules this work again.
+     */
+    drm_connector_list_iter_begin(dev, &conn_iter);
+    drm_for_each_connector_iter(connector, &conn_iter) {
+        struct nv_drm_connector *nv_connector = to_nv_connector(connector);
+
+        if (atomic_xchg(&nv_connector->link_retrain_pending, 0) &&
+            drm_connector_index(connector) < 64) {
+            pending_mask |= 1ULL << drm_connector_index(connector);
+        }
+    }
+    drm_connector_list_iter_end(&conn_iter);
+
+    if (pending_mask == 0) {
+        return;
+    }
+
+    for (attempt = 1; attempt <= NV_DRM_LINK_RETRAIN_MAX_ATTEMPTS; attempt++) {
+        ret = nv_drm_link_retrain_commit(dev, pending_mask, &num_crtcs);
+        if (ret != -EBUSY) {
+            break;
+        }
+
+        /* An earlier flip is still outstanding; give it time to complete. */
+        if (attempt < NV_DRM_LINK_RETRAIN_MAX_ATTEMPTS) {
+            msleep(NV_DRM_LINK_RETRAIN_RETRY_DELAY_MS);
+        }
+    }
+
+    if (attempt > NV_DRM_LINK_RETRAIN_MAX_ATTEMPTS) {
+        attempt = NV_DRM_LINK_RETRAIN_MAX_ATTEMPTS;
+    }
+
+    if (ret != 0) {
+        NV_DRM_DEV_LOG_ERR(nv_dev,
+            "Failed to retrain display link with a forced modeset: %d "
+            "(after %u attempt(s))", ret, attempt);
+    } else if (num_crtcs > 0) {
+        NV_DRM_DEV_LOG_INFO(nv_dev,
+            "Retrained display link with a forced modeset of %u CRTC(s) "
+            "(attempt %u)", num_crtcs, attempt);
+    }
+}
+
 static int nv_drm_dev_load(struct drm_device *dev)
 {
     struct NvKmsKapiDevice *pDevice;
@@ -987,6 +1164,7 @@ static int nv_drm_dev_load(struct drm_device *dev)
              (1 << NVKMS_EVENT_TYPE_DYNAMIC_DPY_CONNECTED) |
              (1 << NVKMS_EVENT_TYPE_DPY_CONTENT_PROTECTION_CHANGED) |
              (1 << NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED) |
+             (1 << NVKMS_EVENT_TYPE_DPY_LINK_RETRAIN_REQUIRED) |
              (1 << NVKMS_EVENT_TYPE_FLIP_OCCURRED)))) {
         NV_DRM_DEV_LOG_ERR(nv_dev, "Failed to register event mask");
     }
@@ -1025,6 +1203,8 @@ static int nv_drm_dev_load(struct drm_device *dev)
     INIT_DELAYED_WORK(&nv_dev->hotplug_event_work, nv_drm_handle_hotplug_event);
     INIT_DELAYED_WORK(&nv_dev->content_protection_event_work,
                       nv_drm_handle_content_protection_event_work);
+    INIT_DELAYED_WORK(&nv_dev->link_retrain_work,
+                      nv_drm_handle_link_retrain_event);
     atomic_set(&nv_dev->enable_event_handling, true);
 
     init_waitqueue_head(&nv_dev->flip_event_wq);
@@ -1064,13 +1244,14 @@ static void nv_drm_dev_unload(struct drm_device *dev)
      * Set the flag under nv_dev->lock so that any event callback already
      * holding the lock has finished before we clear it, ensuring no callback
      * can see enable_event_handling=true and call schedule_delayed_work() after
-     * the cancel calls below return.  Neither worker takes nv_dev->lock, so
+     * the cancel calls below return.  None of the workers take nv_dev->lock, so
      * cancel_delayed_work_sync() cannot deadlock here.
      */
 
     atomic_set(&nv_dev->enable_event_handling, false);
     cancel_delayed_work_sync(&nv_dev->hotplug_event_work);
     cancel_delayed_work_sync(&nv_dev->content_protection_event_work);
+    cancel_delayed_work_sync(&nv_dev->link_retrain_work);
 
     /* Clean up output polling */
 
