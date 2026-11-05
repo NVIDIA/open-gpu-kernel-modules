@@ -92,7 +92,7 @@ module_param_named(disable_vrr_memclk_switch, disable_vrr_memclk_switch, bool, 0
 static bool hdmi_deepcolor = true;
 module_param_named(hdmi_deepcolor, hdmi_deepcolor, bool, 0444);
 
-static unsigned int max_output_color_depth = 10;
+static unsigned int max_output_color_depth = 12;
 module_param_named(max_output_color_depth, max_output_color_depth, uint, 0444);
 
 static bool opportunistic_display_sync = true;
