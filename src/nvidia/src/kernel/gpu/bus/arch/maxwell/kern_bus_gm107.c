@@ -3165,7 +3165,7 @@ kbusMapFbAperture_GM107
         }
     }
 
-    NV_ASSERT_OK_OR_GOTO(rmStatus, reusemappingdbMap(&pBar1VaInfo->reuseDb, pMappingType,
+    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_INFO, reusemappingdbMap(&pBar1VaInfo->reuseDb, pMappingType,
             mapRange, pMemArea, cachingFlags), err_mapping);
 
     pMappingType->refCount++;
