@@ -33,6 +33,7 @@
 #include "nvkms-dpy.h"
 #include "nvkms-utils.h"
 #include "nvkms-vrr.h"
+#include "nvkms-hdmi.h"
 
 #include "nvkms-attributes.h"
 #include "nvkms-private.h"
@@ -219,6 +220,46 @@ static void nvDPAddDeviceToActiveGroup(NVDpyEvoPtr pDpyEvo)
             pDpLibConnector->pGroup[head]->insert(
                 pDpyEvo->dp.pDpLibDevice->device);
             break;
+        }
+    }
+}
+
+//
+// A zombie device that reappears while its heads are still driven gets its
+// stream back from the DP library without a modeset, but the HPD that brought
+// it back leaves the source audio stream muted, and audio stays silent until
+// the next modeset. Run the audio part of a modeset again for those heads:
+// disable as before a modeset, then enable as after one.
+//
+static void nvDPRestoreAudioOnReappearedDpy(NVDpyEvoPtr pDpyEvo)
+{
+    const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NvU32 apiHead, head;
+
+    if (pDpyEvo->pConnectorEvo->pDpLibConnector->headInFirmware) {
+        return;
+    }
+
+    for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        const NVDispApiHeadStateEvoRec *pApiHeadState =
+            &pDispEvo->apiHeadState[apiHead];
+
+        if (!nvDpyIdIsInDpyIdList(pDpyEvo->id, pApiHeadState->activeDpys)) {
+            continue;
+        }
+
+        if (nvDoDebugLogging()) {
+            nvEvoLogDisp(pDispEvo, EVO_LOG_INFO,
+                         "Restoring audio on reappeared %s, heads 0x%x",
+                         pDpyEvo->name, pApiHeadState->hwHeadsMask);
+        }
+
+        FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
+            nvHdmiDpEnableDisableAudio(pDispEvo, head, FALSE /* enable */);
+        }
+        FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
+            nvHdmiDpEnableDisableAudio(pDispEvo, head, TRUE /* enable */);
         }
     }
 }
@@ -510,6 +551,7 @@ void ConnectorEventSink::notifyZombieStateChange(DisplayPort::Device *dev,
         EnableVRR(pDpyEvo);
 
         nvDPAddDeviceToActiveGroup(pDpyEvo);
+        nvDPRestoreAudioOnReappearedDpy(pDpyEvo);
     }
 
     if (sendEvent) {

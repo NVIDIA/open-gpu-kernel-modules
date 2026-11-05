@@ -632,7 +632,10 @@ void ConnectorImpl::processNewDevice(const ProcessNewDeviceParams &params)
     // Complete match, make sure its marked as plugged
     existingDev->plugged = true;
     if (existingDev->isActive())
+    {
+        restoreDscOnReappearedDevice(existingDev);
         existingDev->activeGroup->update(existingDev, true);
+    }
 
     fireEvents();
     return;
@@ -4143,6 +4146,79 @@ bool ConnectorImpl::setDeviceDscState(Device * dev, bool bEnableDsc)
             dscEnabledDevices.remove(dev);
     }
     return true;
+}
+
+//
+// A device that reappears while its head is still driven gets the active
+// stream back without a modeset, so notifyAttachBegin() does not run again.
+// Depending on the client this happens either in processNewDevice(), when the
+// device was left in its group, or in GroupImpl::insert(), when the client
+// removed the zombie device from its group and adds it back. The HPD that
+// brought the device back may come from a sink reset, which clears DSC_ENABLE
+// along with the rest of the sink configuration. Link training restores
+// FEC_READY, but nothing else re-enables decompression, and a compressed stream
+// sent to a sink with decompression disabled stays blank until the next
+// modeset. This is the DSC counterpart of the zombie VRR re-enablement in
+// notifyLongPulseInternal().
+//
+void ConnectorImpl::restoreDscOnReappearedDevice(DeviceImpl * dev)
+{
+    bool bDscEnabled = false;
+
+    if (bPConConnected || !dev->activeGroup ||
+        !dev->activeGroup->lastModesetInfo.bEnableDsc || !dev->isDSCPossible())
+    {
+        return;
+    }
+
+    if (!dev->getDscEnable(&bDscEnabled))
+    {
+        DP_PRINTF(DP_WARNING, "DP-CONN> Not able to get DSC Enable State of reappeared device!");
+        return;
+    }
+
+    if (!bDscEnabled)
+    {
+        DP_PRINTF(DP_NOTICE, "DP-CONN> DSC decompression was lost on reappeared device, restoring it");
+    }
+
+    //
+    // Also needed when the sink kept DSC enabled: GroupImpl::remove() dropped
+    // the device from dscEnabledDevices. Only the bits that differ are written.
+    //
+    if (!setDeviceDscState(dev, true /*bEnableDsc*/))
+    {
+        DP_PRINTF(DP_ERROR, "DP-CONN> Failed to restore DSC decompression on reappeared device!");
+        return;
+    }
+
+    // The sink kept its configuration, the stream does not need a restart.
+    if (bDscEnabled)
+    {
+        return;
+    }
+
+    //
+    // In MST the stream reaches the device only once its payload is allocated
+    // again, which the caller does next. In SST link assessment has already
+    // restored the stream, so restart it the way a link loss is recovered and
+    // the sink sees it begin with decompression enabled, as after
+    // notifyAttachBegin().
+    //
+    if (!linkUseMultistream())
+    {
+        LinkConfiguration originalActiveLinkConfig = activeLinkConfig;
+
+        if (originalActiveLinkConfig.isValid() && enableFlush())
+        {
+            if (!train(originalActiveLinkConfig, false))
+            {
+                DP_PRINTF(DP_ERROR, "DP-CONN> Link config could not be restored after DSC restore. Forcing config");
+                train(originalActiveLinkConfig, true);
+            }
+            disableFlush();
+        }
+    }
 }
 
 bool ConnectorImpl::needToEnableFEC(const DpPreModesetParams &params)

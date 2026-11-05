@@ -751,6 +751,9 @@ namespace DisplayPort
         // Set Device DSC state based on current DSC state of all active devices on this connector
         bool setDeviceDscState(Device * dev, bool bEnableDsc);
 
+        // Re-enable DSC on a device that rejoins an active stream after a sink reset
+        void restoreDscOnReappearedDevice(DeviceImpl * dev);
+
         // the lowest level function(nearest to the hal) for the connector.
         bool rawTrain(const LinkConfiguration &lConfig, bool force, LinkTrainingType linkTrainingType,
                       bool bAllowFullFallback = false);
