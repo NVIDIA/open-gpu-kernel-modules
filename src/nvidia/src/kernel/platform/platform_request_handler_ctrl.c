@@ -2465,7 +2465,7 @@ _pfmreqhndlrCallPshareStatus
             }
         }
 
-        if (pPfmreqhndlrData->PFMREQHNDLRACPIData.bSystemParamLimitUpdate)
+        if (pPfmreqhndlrData->PFMREQHNDLRACPIData.bSystemParamLimitUpdate && !bInit)
         {
             timeStamp = _pfmreqhndlrGetTimeStamp(pPlatformRequestHandler);
             _pfmreqhndlrResetCounter(pPfmreqhndlrData, PFM_REQ_HNDLR_LIMIT(PFM_REQ_HNDLR_TGPU_SENSOR), timeStamp);
