@@ -13,7 +13,7 @@
 
 /* Get the definition of size_t. */
 #if defined(__KERNEL__)
-#	include <linux/stddef.h>
+#	include <linux/types.h>
 #else
 #	include <stddef.h>
 #endif

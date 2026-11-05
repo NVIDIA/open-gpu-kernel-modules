@@ -29,7 +29,7 @@
 #ifndef __NVIDIA_PUSH_TYPES_H__
 #define __NVIDIA_PUSH_TYPES_H__
 
-#include <stddef.h>          /* size_t */
+#include <nv_stddef.h>          /* size_t */
 
 
 

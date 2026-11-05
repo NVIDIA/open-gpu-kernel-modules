@@ -47,7 +47,7 @@ bool libspdm_requester_data_sign
     uint16_t              req_base_asym_alg,
     uint32_t              base_hash_algo,
     bool                  is_data_hash,
-    uint8_t              *message,
+    const uint8_t        *message,
     size_t                message_size,
     uint8_t              *signature,
     size_t               *sig_size
