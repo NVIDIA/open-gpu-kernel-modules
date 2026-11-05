@@ -94,6 +94,49 @@ static bool tlb_batch_should_invalidate_all(uvm_tlb_batch_t *batch)
     return batch->total_ranges > batch->tree->gpu->parent->tlb_batch.max_ranges;
 }
 
+static bool tlb_batch_try_coalesce(uvm_tlb_batch_t *batch,
+                                   NvU64 start,
+                                   NvU64 size,
+                                   NvU64 page_sizes)
+{
+    uvm_tlb_batch_range_t *last;
+    NvU64 last_end, new_end;
+    NvU64 old_start, old_size, old_page_sizes;
+
+    if (batch->count == 0 || batch->count > UVM_TLB_BATCH_MAX_ENTRIES)
+        return false;
+
+    if (start + size < start)
+        return false;
+
+    last = &batch->ranges[batch->count - 1];
+
+    if (last->start + last->size < last->start)
+        return false;
+
+    last_end = last->start + last->size;
+    new_end = start + size;
+
+    if (last->start > new_end || start > last_end)
+        return false;
+
+    old_start = last->start;
+    old_size = last->size;
+    old_page_sizes = last->page_sizes;
+
+    last->start = min(old_start, start);
+    last->size = max(last_end, new_end) - last->start;
+    last->page_sizes = old_page_sizes | page_sizes;
+
+    UVM_ASSERT(last->start <= old_start);
+    UVM_ASSERT(last->start + last->size >= old_start + old_size);
+    UVM_ASSERT(last->start <= start);
+    UVM_ASSERT(last->start + last->size >= start + size);
+    UVM_ASSERT(last->page_sizes == (old_page_sizes | page_sizes));
+
+    return true;
+}
+
 void uvm_tlb_batch_end(uvm_tlb_batch_t *batch, uvm_push_t *push, uvm_membar_t tlb_membar)
 {
     if (batch->count == 0)
@@ -111,13 +154,17 @@ void uvm_tlb_batch_invalidate(uvm_tlb_batch_t *batch, NvU64 start, NvU64 size, N
 {
     uvm_tlb_batch_range_t *new_entry;
 
+    UVM_ASSERT(size > 0);
+    UVM_ASSERT(page_sizes != 0);
+
     batch->membar = uvm_membar_max(tlb_membar, batch->membar);
+    batch->biggest_page_size = max(batch->biggest_page_size, biggest_page_size(page_sizes));
+
+    if (tlb_batch_try_coalesce(batch, start, size, page_sizes))
+        return;
 
     ++batch->count;
-
     batch->total_ranges++;
-
-    batch->biggest_page_size = max(batch->biggest_page_size, biggest_page_size(page_sizes));
 
     if (tlb_batch_should_invalidate_all(batch))
         return;
