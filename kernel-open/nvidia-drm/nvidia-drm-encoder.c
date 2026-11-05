@@ -299,6 +299,27 @@ void nv_drm_handle_display_change(struct nv_drm_device *nv_dev,
     schedule_delayed_work(&nv_dev->hotplug_event_work, 0);
 }
 
+void nv_drm_handle_display_link_retrain(struct nv_drm_device *nv_dev,
+                                        NvKmsKapiDisplay hDisplay)
+{
+    struct drm_device *dev = nv_dev->dev;
+    struct nv_drm_encoder *nv_encoder = NULL;
+
+    mutex_lock(&dev->mode_config.mutex);
+
+    nv_encoder = get_nv_encoder_from_nvkms_display(dev, hDisplay);
+
+    mutex_unlock(&dev->mode_config.mutex);
+
+    if (nv_encoder == NULL || nv_encoder->nv_connector == NULL) {
+        return;
+    }
+
+    atomic_set(&nv_encoder->nv_connector->link_retrain_pending, 1);
+
+    schedule_delayed_work(&nv_dev->link_retrain_work, 0);
+}
+
 void nv_drm_handle_display_cp_change(struct nv_drm_device *nv_dev,
                                      NvKmsKapiDisplay hDisplay,
                                      enum NvKmsContentProtection cp)

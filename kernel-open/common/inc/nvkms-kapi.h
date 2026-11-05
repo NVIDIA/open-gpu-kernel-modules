@@ -502,6 +502,15 @@ struct NvKmsKapiEventDisplayCpTopologyChanged {
     const void *topology;
 };
 
+/*
+ * The display lost its link while driving an active head, without any change
+ * to its EDID or mode list; a full modeset of the head is needed to retrain
+ * the link.
+ */
+struct NvKmsKapiEventDisplayLinkRetrainRequired {
+    NvKmsKapiDisplay display;
+};
+
 struct NvKmsKapiEventDynamicDisplayConnected {
     NvKmsKapiDisplay display;
 };
@@ -535,6 +544,7 @@ struct NvKmsKapiEvent {
         struct NvKmsKapiEventFlipOccurred flipOccurred;
         struct NvKmsKapiEventDisplayCpChanged displayCpChanged;
         struct NvKmsKapiEventDisplayCpTopologyChanged displayCpTopologyChanged;
+        struct NvKmsKapiEventDisplayLinkRetrainRequired displayLinkRetrainRequired;
     } u;
 };
 

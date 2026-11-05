@@ -2358,6 +2358,87 @@ NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo)
     return pDpyEvo->hdmi.sinkCaps.linkMaxFRLRate != HDMI_FRL_DATA_RATE_NONE;
 }
 
+/* SCDC Config_1 (0x31) bits 3:0: FRL_Rate (0 = sink is not in FRL mode). */
+#define NVKMS_SCDC_CONFIG_1_FRL_RATE_MASK           0x0F
+/* SCDC Status_Flags_0 (0x40) bits 4:1: Ln0..Ln3 locked. */
+#define NVKMS_SCDC_STATUS_FLAGS_0_LANES_LOCKED_MASK 0x1E
+
+static NvBool HdmiReadScdc(const NVDpyEvoRec *pDpyEvo, NvU8 offset,
+                           NvU8 *pData)
+{
+    const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NV0073_CTRL_SPECIFIC_GET_HDMI_SCDC_DATA_PARAMS params;
+
+    nvkms_memset(&params, 0, sizeof(params));
+    params.subDeviceInstance = pDispEvo->displayOwner;
+    params.displayId = nvDpyIdToNvU32(pDpyEvo->pConnectorEvo->displayId);
+    params.offset = offset;
+
+    if (nvRmApiControl(nvEvoGlobal.clientHandle,
+                       pDevEvo->displayCommonHandle,
+                       NV0073_CTRL_CMD_SPECIFIC_GET_HDMI_SCDC_DATA,
+                       &params,
+                       sizeof(params)) != NVOS_STATUS_SUCCESS) {
+        return FALSE;
+    }
+
+    *pData = params.data;
+    return TRUE;
+}
+
+/*
+ * Determine whether pDpyEvo is driving an active head over HDMI FRL while the
+ * sink no longer has an FRL link, e.g. because the sink was power-cycled and
+ * reset its SCDC state while the head stayed active.
+ *
+ * In that state nothing about the dpy (EDID, mode list) changes, so a client
+ * that only reacts to mode list changes will never perform the modeset that
+ * is needed to retrain the link.
+ *
+ * Only reads SCDC; never writes or clears any SCDC flags.  Returns FALSE if
+ * the head is not active with FRL or if SCDC cannot be read.
+ */
+NvBool nvHdmiFrlSinkLostActiveLink(const NVDpyEvoRec *pDpyEvo)
+{
+    const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    const NvU32 head = nvGetPrimaryHwHead(pDispEvo, pDpyEvo->apiHead);
+    const NvU32 displayId =
+        nvDpyIdToNvU32(pDpyEvo->pConnectorEvo->displayId);
+    NvU8 config1, statusFlags0;
+    NvBool lost;
+
+    if ((head == NV_INVALID_HEAD) ||
+        (pDispEvo->headState[head].hdmiFrlConfig.frlRate ==
+            HDMI_FRL_DATA_RATE_NONE) ||
+        !pDpyEvo->parsedEdid.info.hdmiForumInfo.scdc_present) {
+        return FALSE;
+    }
+
+    if (!HdmiReadScdc(pDpyEvo,
+                      NV0073_CTRL_CMD_SPECIFIC_GET_HDMI_SCDC_DATA_OFFSET_CONFIGURATION_1,
+                      &config1) ||
+        !HdmiReadScdc(pDpyEvo,
+                      NV0073_CTRL_CMD_SPECIFIC_GET_HDMI_SCDC_DATA_OFFSET_STATUS_FLAGS_0,
+                      &statusFlags0)) {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
+                     "HDMI FRL: unable to read SCDC to check the active link "
+                     "on display 0x%08x", displayId);
+        return FALSE;
+    }
+
+    lost = ((config1 & NVKMS_SCDC_CONFIG_1_FRL_RATE_MASK) == 0) ||
+           ((statusFlags0 & NVKMS_SCDC_STATUS_FLAGS_0_LANES_LOCKED_MASK) == 0);
+
+    nvEvoLogDisp(pDispEvo, lost ? EVO_LOG_WARN : EVO_LOG_INFO,
+                 "HDMI FRL: active link check on display 0x%08x: "
+                 "scdc_config_1=0x%02x scdc_status_flags_0=0x%02x (%s)",
+                 displayId, config1, statusFlags0,
+                 lost ? "sink lost FRL link" : "ok");
+
+    return lost;
+}
+
 /*
  * Determine if the given HDMI dpy supports FRL.
  *
