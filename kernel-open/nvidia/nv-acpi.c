@@ -28,6 +28,8 @@
 #include "nv-reg.h"
 
 #include <linux/acpi.h>
+#include <linux/power_supply.h>
+#include <linux/workqueue.h>
 #include <acpi/video.h>
 
 #if defined(NV_LINUX_ACPI_EVENTS_SUPPORTED)
@@ -52,6 +54,24 @@ static acpi_handle psr_device_handle = NULL;
 static nv_acpi_t  *psr_nv_acpi_object = NULL;
 
 static NvBool battery_present = NV_FALSE;
+
+//
+// Used for AC Power Source Hotplug Handling on platforms without _PSR
+// (e.g. Microsoft Surface, where the AC state lives in the embedded
+// controller and is only exposed through the power_supply class).
+//
+// The power_supply class is never queried from RM context: RM init can run
+// from PCI probe with RM locks held. A delayed work item queries it in
+// process context, caches the result and reports changes to RM.
+//
+#define NV_PSY_INITIAL_DELAY_MS 10000
+#define NV_REG_STR_RM_SKIP_ACPI_BATT_CAP "RMSkipACPIBattCap"
+static NvBool psy_fallback = NV_FALSE;
+static nvidia_stack_t *psy_sp = NULL;
+static NvBool psy_notifier_registered = NV_FALSE;
+static atomic_t psy_ac_state = ATOMIC_INIT(-1);
+static void nv_psy_powersource_work(struct work_struct *work);
+static DECLARE_DELAYED_WORK(psy_work, nv_psy_powersource_work);
 
 #define BIX_BATTERY_TECHNOLOGY_OFFSET 0x4
 #define BIF_BATTERY_TECHNOLOGY_OFFSET 0x3
@@ -109,7 +129,16 @@ NV_STATUS NV_API_CALL nv_acpi_get_powersource(NvU32 *ac_plugged)
         return NV_ERR_INVALID_ARGUMENT;
 
     if (!psr_device_handle)
-        return NV_ERR_INVALID_ARGUMENT;
+    {
+        // No _PSR: use the state cached from the power_supply class, if known
+        int ac_state = atomic_read(&psy_ac_state);
+
+        if (ac_state < 0)
+            return NV_ERR_INVALID_ARGUMENT;
+
+        *ac_plugged = ac_state;
+        return NV_OK;
+    }
 
     // Check whether or not AC power is plugged in
     status = acpi_evaluate_integer(psr_device_handle, "_PSR", NULL, &val);
@@ -142,6 +171,120 @@ static void nv_acpi_powersource_hotplug_event(acpi_handle handle, u32 event_type
 
         rm_power_source_change_event(pNvAcpiObject->sp, !ac_plugged);
     }
+}
+
+static void nv_psy_powersource_work(struct work_struct *work)
+{
+    int supplied;
+
+    supplied = power_supply_is_system_supplied();
+    if (supplied < 0)
+        return;
+
+    atomic_set(&psy_ac_state, supplied > 0);
+
+    // rm_power_source_change_event() filters out unchanged states
+    rm_power_source_change_event(psy_sp, !(supplied > 0));
+}
+
+static int nv_psy_powersource_notifier(struct notifier_block *nb,
+                                       unsigned long event, void *data)
+{
+    struct power_supply *psy = data;
+
+    // Called in atomic context; defer to process context
+    if ((event == PSY_EVENT_PROP_CHANGED) &&
+        (psy->desc->type != POWER_SUPPLY_TYPE_BATTERY))
+    {
+        mod_delayed_work(system_wq, &psy_work, 0);
+    }
+
+    return NOTIFY_OK;
+}
+
+static struct notifier_block nv_psy_powersource_nb = {
+    .notifier_call = nv_psy_powersource_notifier,
+};
+
+static acpi_status nv_acpi_find_psr(
+    acpi_handle handle,
+    u32 nest_level,
+    void *context,
+    void **return_value
+)
+{
+    acpi_handle method_handle;
+
+    if (!acpi_get_handle(handle, "_PSR", &method_handle))
+    {
+        *(NvBool *)context = NV_TRUE;
+        return AE_CTRL_TERMINATE;
+    }
+
+    return AE_OK;
+}
+
+/* Called at module init, before the GPUs are probed */
+void nv_acpi_psy_early_init(nvidia_stack_t *sp)
+{
+    NvBool has_psr = NV_FALSE;
+    NvU32 data;
+
+    NV_ACPI_WALK_NAMESPACE(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+                           ACPI_UINT32_MAX, nv_acpi_find_psr, &has_psr, NULL);
+    if (has_psr)
+        return;
+
+    psy_fallback = NV_TRUE;
+
+    //
+    // Without _PSR, RM was never told about battery power, so it never
+    // applied its ACPI battery cap. Keep that behaviour now that it is told:
+    // on such platforms (e.g. Microsoft Surface, whose Windows driver sets
+    // the same key) the cap drops the GPU to its lowest pstate on battery.
+    // An explicit setting from the user takes precedence.
+    //
+    if (rm_read_registry_dword(sp, NULL, NV_REG_STR_RM_SKIP_ACPI_BATT_CAP,
+                               &data) != NV_OK)
+    {
+        rm_write_registry_dword(sp, NULL, NV_REG_STR_RM_SKIP_ACPI_BATT_CAP, 1);
+    }
+}
+
+/* Called at module init, outside of RM locks */
+void nv_acpi_psy_init(void)
+{
+    if (!psy_fallback || psy_notifier_registered)
+        return;
+
+    if (nv_kmem_cache_alloc_stack(&psy_sp) != 0)
+        return;
+
+    if (power_supply_reg_notifier(&nv_psy_powersource_nb) != 0)
+    {
+        nv_kmem_cache_free_stack(psy_sp);
+        psy_sp = NULL;
+        return;
+    }
+
+    psy_notifier_registered = NV_TRUE;
+
+    // Report the initial state once RM init has settled
+    schedule_delayed_work(&psy_work, msecs_to_jiffies(NV_PSY_INITIAL_DELAY_MS));
+}
+
+/* Called at module exit, outside of RM locks */
+void nv_acpi_psy_exit(void)
+{
+    if (!psy_notifier_registered)
+        return;
+
+    power_supply_unreg_notifier(&nv_psy_powersource_nb);
+    cancel_delayed_work_sync(&psy_work);
+    nv_kmem_cache_free_stack(psy_sp);
+    psy_sp = NULL;
+    atomic_set(&psy_ac_state, -1);
+    psy_notifier_registered = NV_FALSE;
 }
 
 static void nv_acpi_nvpcf_event(acpi_handle handle, u32 event_type, void *data)
@@ -1432,6 +1575,18 @@ void NV_API_CALL nv_acpi_methods_init(NvU32 *handlePresent)
 void NV_API_CALL nv_acpi_methods_uninit(void)
 {
     return;
+}
+
+void nv_acpi_psy_early_init(nvidia_stack_t *sp)
+{
+}
+
+void nv_acpi_psy_init(void)
+{
+}
+
+void nv_acpi_psy_exit(void)
+{
 }
 
 NV_STATUS NV_API_CALL nv_acpi_method(

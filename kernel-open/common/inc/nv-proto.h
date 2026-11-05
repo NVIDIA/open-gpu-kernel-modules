@@ -31,6 +31,9 @@ extern const char *nv_device_name;
 
 void        nv_acpi_register_notifier   (nv_linux_state_t *);
 void        nv_acpi_unregister_notifier (nv_linux_state_t *);
+void        nv_acpi_psy_early_init      (nvidia_stack_t *);
+void        nv_acpi_psy_init            (void);
+void        nv_acpi_psy_exit            (void);
 
 NvU8        nv_find_pci_capability      (struct pci_dev *, NvU8);
 
