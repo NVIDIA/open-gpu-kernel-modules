@@ -211,7 +211,11 @@ NV_STATUS uvm_tracker_add_tracker(uvm_tracker_t *dst, uvm_tracker_t *src)
     if (uvm_tracker_is_empty(src))
         return NV_OK;
 
-    status = uvm_tracker_reserve(dst, src->size);
+    if (dst->size + src->size > dst->max_size)
+        status = reserve_for_entries_from_tracker(dst, src);
+    else
+        status = NV_OK;
+
     if (status == NV_ERR_NO_MEMORY) {
         uvm_tracker_remove_completed(dst);
         uvm_tracker_remove_completed(src);
