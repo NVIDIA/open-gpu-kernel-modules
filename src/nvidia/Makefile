@@ -76,6 +76,22 @@ CFLAGS += -fno-common
 CFLAGS += -ffreestanding
 CFLAGS += -fno-stack-protector
 
+##############################################################################
+# GCC 16.1.x's instruction scheduler can crash with an internal compiler
+# error (segfault during the "sched2" RTL pass) while compiling
+# _flcnDmemTransfer_LS10() in flcn_ls10.c at the default optimization level.
+# This is a compiler bug, not a problem with the source; disable the two
+# GCC instruction-scheduling passes for this single translation unit to
+# avoid triggering it, without giving up scheduling anywhere else in the
+# build. See https://github.com/NVIDIA/open-gpu-kernel-modules/issues/1213
+##############################################################################
+FLCN_LS10_CC_TYPE := $(call GET_COMPILER_TYPE, $(CC))
+ifeq ($(FLCN_LS10_CC_TYPE),gcc)
+  ifeq ($(shell $(VERSION_MK_DIR)/nv-compiler.sh version_is_at_least $(CC) 160000),1)
+    $(call BUILD_OBJECT_LIST,$(SRC_COMMON)/nvswitch/kernel/ls10/flcn_ls10.c): CFLAGS += -fno-schedule-insns2 -fno-schedule-insns
+  endif
+endif
+
 ifeq ($(TARGET_ARCH),x86_64)
   CFLAGS += -msoft-float
   CFLAGS += -mno-red-zone
