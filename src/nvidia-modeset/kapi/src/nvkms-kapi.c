@@ -3064,12 +3064,23 @@ static NvBool NvKmsKapiPrimaryLayerConfigToKms(
                 layerConfig->surface->hKmsHandle;
 
             if (params->layer[NVKMS_MAIN_LAYER].surface.handle[0] != 0) {
-                params->layer[NVKMS_MAIN_LAYER].sizeIn.val.width = layerConfig->srcWidth;
-                params->layer[NVKMS_MAIN_LAYER].sizeIn.val.height = layerConfig->srcHeight;
+                NvU16 inWidth = layerConfig->srcWidth;
+                NvU16 inHeight = layerConfig->srcHeight;
+                NvU16 outWidth = layerConfig->dstWidth;
+                NvU16 outHeight = layerConfig->dstHeight;
+
+                /* srcX/Y pan the viewport; without scaling, fetch from 0,0 */
+                if (inWidth == outWidth && inHeight == outHeight) {
+                    inWidth = outWidth = layerConfig->srcX + layerConfig->srcWidth;
+                    inHeight = outHeight = layerConfig->srcY + layerConfig->srcHeight;
+                }
+
+                params->layer[NVKMS_MAIN_LAYER].sizeIn.val.width = inWidth;
+                params->layer[NVKMS_MAIN_LAYER].sizeIn.val.height = inHeight;
                 params->layer[NVKMS_MAIN_LAYER].sizeIn.specified = TRUE;
 
-                params->layer[NVKMS_MAIN_LAYER].sizeOut.val.width = layerConfig->dstWidth;
-                params->layer[NVKMS_MAIN_LAYER].sizeOut.val.height = layerConfig->dstHeight;
+                params->layer[NVKMS_MAIN_LAYER].sizeOut.val.width = outWidth;
+                params->layer[NVKMS_MAIN_LAYER].sizeOut.val.height = outHeight;
                 params->layer[NVKMS_MAIN_LAYER].sizeOut.specified = TRUE;
             }
         }
