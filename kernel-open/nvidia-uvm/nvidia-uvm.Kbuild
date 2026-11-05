@@ -13,8 +13,10 @@ NVIDIA_UVM_OBJECTS =
 include $(src)/nvidia-uvm/nvidia-uvm-sources.Kbuild
 NVIDIA_UVM_OBJECTS += $(patsubst %.c,%.o,$(NVIDIA_UVM_SOURCES))
 
+ifneq ($(NV_PREPARE_ONLY),1)
 obj-m += nvidia-uvm.o
 nvidia-uvm-y := $(NVIDIA_UVM_OBJECTS)
+endif
 
 NVIDIA_UVM_KO = nvidia-uvm/nvidia-uvm.ko
 
@@ -71,6 +73,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += sg_dma_page_iter
 NV_CONFTEST_TYPE_COMPILE_TESTS += struct_page_has_zone_device_data
 NV_CONFTEST_TYPE_COMPILE_TESTS += memory_device_coherent_present
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_buf_supports_dynamic_importer
+NV_CONFTEST_TYPE_COMPILE_TESTS += atomic_unchecked_t
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_migrate_vma_setup

@@ -585,7 +585,7 @@ memory space, allowing the user application to override these functions
 and hook them out as necessary for their application.
 ****************************************************************************/
 void X86EMU_setupMemFuncs(
-        X86EMU_memFuncs *funcs)
+        const X86EMU_memFuncs *funcs)
 {
     sys_rdb = funcs->rdb;
     sys_rdw = funcs->rdw;
@@ -605,7 +605,7 @@ I/O space, allowing the user application to override these functions
 and hook them out as necessary for their application.
 ****************************************************************************/
 void X86EMU_setupPioFuncs(
-        X86EMU_pioFuncs *funcs)
+        const X86EMU_pioFuncs *funcs)
 {
     sys_inb = funcs->inb;
     sys_inw = funcs->inw;

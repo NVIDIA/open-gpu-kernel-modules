@@ -41,7 +41,7 @@
 // This is really a struct UvmEventsLinux *. It needs to be an atomic because it
 // can be read outside of the g_pNvUvmEventsLock. Use getUvmEvents and
 // setUvmEvents to access it.
-static atomic_long_t g_pNvUvmEvents;
+static atomic_long_unchecked_t g_pNvUvmEvents;
 static struct semaphore g_pNvUvmEventsLock;
 
 static struct UvmEventsLinux *getUvmEvents(void)
@@ -62,7 +62,7 @@ static struct semaphore g_spLock;
 #define DEBUG_GLOBAL_STACK 0
 #define DEBUG_GLOBAL_STACK_THRESHOLD 2
 
-static atomic_t g_debugGlobalStackCount = ATOMIC_INIT(0);
+static atomic_unchecked_t g_debugGlobalStackCount = ATOMIC_INIT(0);
 
 // Called at module load, not by an external client
 int nv_uvm_init(void)

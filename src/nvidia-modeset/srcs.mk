@@ -1,5 +1,5 @@
-SRCS ?=
-SRCS_CXX ?=
+SRCS :=
+SRCS_CXX :=
 
 SRCS += ../common/shared/nvstatus/nvstatus.c
 SRCS += ../common/softfloat/source/8086-SSE/s_commonNaNToF16UI.c
@@ -225,3 +225,12 @@ SRCS += ../common/unix/xzminidec/src/xz_crc32.c
 SRCS += ../common/unix/xzminidec/src/xz_dec_bcj.c
 SRCS += ../common/unix/xzminidec/src/xz_dec_lzma2.c
 SRCS += ../common/unix/xzminidec/src/xz_dec_stream.c
+
+# shaders
+SHADERS += turing
+SHADERS += ampere
+SHADERS += hopper
+SHADERS += blackwell
+SHADERS += gb20x
+
+LINKER_SCRIPT := nv-modeset-kernel.ld

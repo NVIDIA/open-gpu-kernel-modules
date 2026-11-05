@@ -95,7 +95,7 @@ typedef struct {
     NV_STATUS   (*debugBufferDestroy)               (struct nvswitch_device *, struct FLCN *);
     NV_STATUS   (*debugBufferDisplay)               (struct nvswitch_device *, struct FLCN *);
     NvBool      (*debugBufferIsEmpty)               (struct nvswitch_device *, struct FLCN *);
-} flcn_hal;
+} __mutable_const flcn_hal;
 
 void flcnQueueSetupHal(struct FLCN *pFlcn);
 void flcnRtosSetupHal(struct FLCN *pFlcn);

@@ -15,8 +15,10 @@
  * but they are bigger and use more memory for the lookup table.
  */
 
+#include "xz.h"
 #include "xz_private.h"
 
+#if XZ_INTERNAL_CRC32
 /*
  * STATIC_RW_DATA is used in the pre-boot environment on some architectures.
  * See <linux/decompress/mm.h> for details.
@@ -57,3 +59,4 @@ XZ_EXTERN uint32_t xz_crc32(const uint8_t *buf, size_t size, uint32_t crc)
 
 	return ~crc;
 }
+#endif

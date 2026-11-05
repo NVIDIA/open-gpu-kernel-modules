@@ -35,6 +35,9 @@
 #if PORT_COMPILER_IS_CLANG
 // For Android clang
 #include "nvport/clang/stdatomic.h"
+#elif PORT_COMPILER_IS_GCC
+// For freestanding support
+#include "nvport/gcc/stdatomic.h"
 #else
 #include <stdatomic.h>
 #endif
