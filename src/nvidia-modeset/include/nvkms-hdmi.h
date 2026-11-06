@@ -70,6 +70,7 @@ NvBool nvInitHdmiLibrary(NVDevEvoRec *pDevEvo);
 void nvTeardownHdmiLibrary(NVDevEvoRec *pDevEvo);
 
 NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo);
+NvBool nvHdmiFrlSinkLostActiveLink(const NVDpyEvoRec *pDpyEvo);
 NvBool nvHdmiDpySupportsFrl(const NVDpyEvoRec *pDpyEvo);
 NvBool nvHdmiScdcWantsForceFrl(const NVDpyEvoRec *pDpyEvo);
 void nvHdmiRefreshScdcSrcTestConfig(NVDpyEvoPtr pDpyEvo);

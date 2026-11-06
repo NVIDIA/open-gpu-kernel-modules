@@ -118,6 +118,8 @@ enum NvKmsFrlRateForce {
 
 NvBool nvkms_test_fail_alloc_core_channel(enum NvKmsFailAllocCoreChannelMethod method);
 enum NvKmsFrlRateForce nvkms_force_frl_rate(void);
+NvU32 nvkms_frl_train_backoff_ms(void);
+NvBool nvkms_frl_caps_retention(void);
 NvBool nvkms_conceal_vrr_caps(void);
 NvBool nvkms_enhanced_pcon_support(void);
 NvBool nvkms_output_rounding_fix(void);

@@ -58,6 +58,14 @@ struct nv_drm_connector {
 
     atomic_t connection_status_dirty;
 
+    /*
+     * Set when NVKMS reports that the link of the display on this
+     * connector must be retrained by a full modeset (see
+     * NVKMS_EVENT_TYPE_DPY_LINK_RETRAIN_REQUIRED); consumed by
+     * nv_drm_device::link_retrain_work.
+     */
+    atomic_t link_retrain_pending;
+
     /**
      * @modeset_permission_filep:
      *

@@ -154,6 +154,7 @@ struct nv_drm_device {
 
     struct delayed_work hotplug_event_work;
     struct delayed_work content_protection_event_work;
+    struct delayed_work link_retrain_work;
     atomic_t enable_event_handling;
 
     /**

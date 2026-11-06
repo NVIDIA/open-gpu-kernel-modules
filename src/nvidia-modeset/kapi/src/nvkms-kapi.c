@@ -71,6 +71,7 @@ ct_assert(NVKMS_KAPI_LAYER_MAX == NVKMS_MAX_LAYERS_PER_HEAD);
      (1 << NVKMS_EVENT_TYPE_DYNAMIC_DPY_CONNECTED) | \
      (1 << NVKMS_EVENT_TYPE_DPY_CONTENT_PROTECTION_CHANGED) | \
      (1 << NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED) | \
+     (1 << NVKMS_EVENT_TYPE_DPY_LINK_RETRAIN_REQUIRED) | \
      (1 << NVKMS_EVENT_TYPE_FLIP_OCCURRED))
 
 static NvU32 EnumerateGpus(void (*gpuCallback)(const struct NvKmsKapiGpuInfo *info))
@@ -3929,6 +3930,11 @@ void nvKmsKapiHandleEventQueueChange
                                    reply.event.u.dpyCpTopologyChanged.dpyId);
                 kapiEvent.u.displayCpTopologyChanged.topology =
                     kmsEventParams.reply.event.u.dpyCpTopologyChanged.topology;
+                break;
+            case NVKMS_EVENT_TYPE_DPY_LINK_RETRAIN_REQUIRED:
+                kapiEvent.u.displayLinkRetrainRequired.display =
+                    nvDpyIdToNvU32(kmsEventParams.
+                                   reply.event.u.dpyLinkRetrainRequired.dpyId);
                 break;
             case NVKMS_EVENT_TYPE_DYNAMIC_DPY_CONNECTED:
                 kapiEvent.u.dynamicDisplayConnected.display =
