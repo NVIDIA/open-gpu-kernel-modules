@@ -108,6 +108,9 @@ int nv_drm_atomic_helper_disable_all(struct drm_device *dev,
     state->acquire_ctx = ctx;
 
     nv_drm_for_each_crtc(crtc, dev) {
+        if (!crtc->state->mode_blob && !crtc->state->active)
+            continue;
+
         crtc_state = drm_atomic_get_crtc_state(state, crtc);
         if (IS_ERR(crtc_state)) {
             ret = PTR_ERR(crtc_state);
@@ -129,16 +132,6 @@ int nv_drm_atomic_helper_disable_all(struct drm_device *dev,
             goto free;
     }
 
-    nv_drm_for_each_plane(plane, dev) {
-        plane_state = drm_atomic_get_plane_state(state, plane);
-        if (IS_ERR(plane_state)) {
-            ret = PTR_ERR(plane_state);
-            goto free;
-        }
-
-        plane_state->rotation = DRM_MODE_ROTATE_0;
-    }
-
     for_each_new_connector_in_state(state, conn, conn_state, i) {
         ret = drm_atomic_set_crtc_for_connector(conn_state, NULL);
         if (ret < 0)
@@ -150,6 +143,7 @@ int nv_drm_atomic_helper_disable_all(struct drm_device *dev,
         if (ret < 0)
             goto free;
 
+        plane_state->rotation = DRM_MODE_ROTATE_0;
         drm_atomic_set_fb_for_plane(plane_state, NULL);
         plane_mask |= NVBIT(drm_plane_index(plane));
         plane->old_fb = plane->fb;
