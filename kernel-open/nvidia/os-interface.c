@@ -3603,9 +3603,9 @@ void* NV_API_CALL os_dmem_cgroup_register_region(const char *name, NvU64 size, N
     {
         .size = size,
     };
-    region = dmem_cgroup_register_region(&init, name);
+    region = dmem_cgroup_register_region(&init, "%s", name);
 #else
-    region = dmem_cgroup_register_region(size, name);
+    region = dmem_cgroup_register_region(size, "%s", name);
 #endif
     if (IS_ERR(region))
     {
