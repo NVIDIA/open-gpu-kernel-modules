@@ -32,6 +32,7 @@
 
 #if !RS_STANDALONE
 #include "os/os.h"
+#include "gpu/mem_mgr/mem_desc.h"
 #include "rmapi/resource.h"
 #endif
 
@@ -2434,6 +2435,46 @@ serverInterUnmapMapping
     NvBool          bMappingReadded   = NV_FALSE;
     NvBool          bNewMappingLeftAdded  = NV_FALSE;
     NvBool          bNewMappingRightAdded = NV_FALSE;
+
+#if !RS_STANDALONE
+    //
+    // The client-side inter-mapping table is keyed on page aligned ranges and
+    // cannot represent a fragment which starts or ends in the middle of a
+    // page.  Round the unmap request to the mapping's page boundaries before
+    // splitting it below, so that the left/right fragments we re-register here
+    // line up exactly with what the client side will actually unmap.  Without
+    // this, a sub-page partial unmap leaves a byte sized fragment in the
+    // server table that is never removed on the client side, and a later
+    // mapping reusing the same dmaOffset fails with a spurious
+    // "Duplicate inter mapping".
+    //
+    if (bPartialUnmap && (pMapping->pMemDesc != NULL))
+    {
+        NvU64 pageSize = memdescGetPageSize((MEMORY_DESCRIPTOR *)pMapping->pMemDesc, AT_GPU);
+
+        if ((pageSize > 1) && (0 == (pageSize & (pageSize - 1))))
+        {
+            NvU64 mapLo   = pMapping->dmaOffset;
+            NvU64 mapHi   = pMapping->dmaOffset + pMapping->size;
+            NvU64 unmapLo = pParams->dmaOffset & ~(pageSize - 1);
+            NvU64 unmapHi = (pParams->dmaOffset + pParams->size + pageSize - 1) & ~(pageSize - 1);
+
+            if (unmapLo < mapLo)
+            {
+                unmapLo = mapLo;
+            }
+            if (unmapHi > mapHi)
+            {
+                unmapHi = mapHi;
+            }
+            if (unmapHi > unmapLo)
+            {
+                pParams->dmaOffset = unmapLo;
+                pParams->size      = unmapHi - unmapLo;
+            }
+        }
+    }
+#endif
 
     // Keep the context-level map allocated. Otherwise refAddInterMapping() can OOM, resulting in an invalid state
     refRemoveInterMapping(pMapperRef, pMapping, NV_TRUE);

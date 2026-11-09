@@ -1583,9 +1583,85 @@ virtmemUnmapFrom_IMPL
 
     // Get DMA mapping info.
     pDmaMappingInfo = intermapGetDmaMapping(pVirtualMemory, dmaOffset);
-    NV_ASSERT_OR_RETURN(pDmaMappingInfo != NULL, NV_ERR_INVALID_OBJECT_HANDLE);
+    if (pDmaMappingInfo == NULL)
+    {
+        //
+        // Nothing is registered for this range any more.
+        //
+        // This happens when an earlier partial unmap already released the
+        // pages containing the request (the VA space splits at mapping page
+        // boundaries while the resource server tracks byte ranges), or when
+        // inter-mapping registration failed after the client mapping had
+        // been torn down.  Treat the unmap as a no-op so that cleanup paths
+        // (notably the automatic unmapping of back references in
+        // rs_client.c) can retire their own bookkeeping instead of failing
+        // and leaving stale inter-mapping nodes behind, which later surface
+        // as "Duplicate inter mapping" / "0 == (pMapNode->gpuMask & gpuMask)"
+        // failures on unrelated mappings.
+        //
+        NV_PRINTF(LEVEL_ERROR,
+                  "Unmap of unregistered DMA mapping range [0x%llX, 0x%llX); ignoring.\n",
+                  dmaOffset, dmaOffset + pParams->size);
+        return NV_OK;
+    }
     NvBool bPartialUnmap = dmaOffset != pDmaMappingInfo->DmaOffset || pParams->size != pDmaMappingInfo->pMemDesc->Size;
     NV_ASSERT_OR_RETURN(!bPartialUnmap || !bIsIndirectPeer, NV_ERR_INVALID_ARGUMENT);
+
+    //
+    // A partial unmap has to be split at the same granularity at which
+    // dmaFreeMapping() and gpu_vaspace update the mapping:
+    //
+    //  1. the page tables, updated by dmaAllocMapping()/dmaFreeMapping() using
+    //     pDmaMappingInfo->mapPageSize (it aligns the start down and the end
+    //     up),
+    //  2. the VA space block bookkeeping in gpu_vaspace.c, which splits the
+    //     registered range at those page aligned boundaries, and
+    //  3. pVirtualMemory->pDmaMappingList, which is split below at the exact
+    //     byte range the client asked for.
+    //
+    // If a client unmaps a sub-range that does not cover whole mapping pages,
+    // (2) releases the pages containing the request while (3) keeps
+    // descriptors that still cover part of them.  The next unmap of such a
+    // descriptor searches for a registration the VA space no longer has
+    // (gpu_vaspace.c "_gvaspaceMappingRemove(): NV_OK == status") and the
+    // error path then tears down the whole VA space block, which is what
+    // makes a single bad unmap turn into "already mapped"/"mapping not
+    // found" failures for unrelated mappings.
+    //
+    // Aligning the split boundaries makes (1), (2) and (3) agree again.  The
+    // invalidated page range is unchanged: dmaFreeMapping() already rounds
+    // outwards to the mapping page size, so only the client side DMA mapping
+    // list becomes page aligned.
+    //
+    NvU64 unmapSize = pParams->size;
+
+    if (bPartialUnmap && pDmaMappingInfo->mapPageSize != 0)
+    {
+        const NvU64 mapPageSize = pDmaMappingInfo->mapPageSize;
+        const NvU64 mappedLo    = pDmaMappingInfo->DmaOffset;
+        const NvU64 mappedHi    = pDmaMappingInfo->DmaOffset + pDmaMappingInfo->pMemDesc->Size;
+        NvU64       alignedLo;
+        NvU64       alignedHi;
+
+        NV_ASSERT_OR_RETURN((mapPageSize & (mapPageSize - 1)) == 0, NV_ERR_INVALID_STATE);
+
+        alignedLo = RM_ALIGN_DOWN(dmaOffset, mapPageSize);
+        alignedHi = RM_ALIGN_UP(dmaOffset + unmapSize, mapPageSize);
+
+        if (alignedLo < mappedLo)
+            alignedLo = mappedLo;
+        if (alignedHi > mappedHi)
+            alignedHi = mappedHi;
+
+        if (alignedHi <= alignedLo)
+            return NV_ERR_INVALID_ARGUMENT;
+
+        dmaOffset = alignedLo;
+        unmapSize = alignedHi - alignedLo;
+
+        bPartialUnmap = dmaOffset != pDmaMappingInfo->DmaOffset ||
+                        unmapSize != pDmaMappingInfo->pMemDesc->Size;
+    }
 
     if (FLD_TEST_DRF(OS46, _FLAGS, _KERNEL_MAPPING, _ENABLE, pDmaMappingInfo->Flags))
     {
@@ -1634,13 +1710,13 @@ virtmemUnmapFrom_IMPL
             failed);
     }
 
-    if (dmaOffset + pParams->size < pDmaMappingInfo->DmaOffset + pDmaMappingInfo->pMemDesc->Size)
+    if (dmaOffset + unmapSize < pDmaMappingInfo->DmaOffset + pDmaMappingInfo->pMemDesc->Size)
     {
         NV_ASSERT_OK_OR_GOTO(status,
             intermapCreateDmaMapping(pClient, pVirtualMemory, &pDmaMappingInfoRight, pDmaMappingInfo->Flags, pDmaMappingInfo->Flags2),
             failed);
 
-        pDmaMappingInfoRight->DmaOffset          = dmaOffset + pParams->size;
+        pDmaMappingInfoRight->DmaOffset          = dmaOffset + unmapSize;
         pDmaMappingInfoRight->bP2P               = pDmaMappingInfo->bP2P;
         pDmaMappingInfoRight->addressTranslation = pDmaMappingInfo->addressTranslation;
         pDmaMappingInfoRight->mapPageSize        = pDmaMappingInfo->mapPageSize;
@@ -1667,7 +1743,7 @@ virtmemUnmapFrom_IMPL
         NV_ASSERT_OK_OR_GOTO(status,
             memdescCreateSubMem(&pDmaMappingInfoUnmap->pMemDesc, pDmaMappingInfo->pMemDesc, pGpu,
                                 pDmaMappingInfoUnmap->DmaOffset - pDmaMappingInfo->DmaOffset,
-                                pParams->size),
+                                unmapSize),
             failed);
     }
 
