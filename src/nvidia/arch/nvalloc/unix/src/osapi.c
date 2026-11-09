@@ -5638,38 +5638,217 @@ NvBool NV_API_CALL rm_is_altstack_in_use(void)
 #endif
 }
 
+extern NV_STATUS cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams);
+
+/*
+ * Notify(NPCF, 0xC0) is also raised on resume and on battery ticks that
+ * republish the same budget. Compare a new sample with the last one before
+ * issuing NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO again, and do
+ * not wake clients for a duplicate.
+ *
+ * This does not fix a board where NPCF is not bound, or where the SBIOS
+ * query returns invalid data. There is then no budget to compare.
+ */
+static NvBool
+rm_nvpcf_same_budget
+(
+    const NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pA,
+    const NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pB
+)
+{
+    return (pA->version == pB->version) &&
+           (pA->ctgpOffsetmW == pB->ctgpOffsetmW) &&
+           (pA->targetTppOffsetmW == pB->targetTppOffsetmW) &&
+           (pA->maxOutputOffsetmW == pB->maxOutputOffsetmW) &&
+           (pA->minOutputOffsetmW == pB->minOutputOffsetmW) &&
+           (pA->ctgpBattOffsetmW == pB->ctgpBattOffsetmW) &&
+           (pA->targetTppBattOffsetmW == pB->targetTppBattOffsetmW) &&
+           (pA->maxOutputBattOffsetmW == pB->maxOutputBattOffsetmW) &&
+           (pA->minOutputBattOffsetmW == pB->minOutputBattOffsetmW) &&
+           (pA->bEnableForAC == pB->bEnableForAC) &&
+           (pA->bEnableForDC == pB->bEnableForDC) &&
+           (pA->tpp == pB->tpp) &&
+           (pA->ratedTgp == pB->ratedTgp) &&
+           (pA->dcRosReserveOverridemW == pB->dcRosReserveOverridemW);
+}
+
+static NvBool
+rm_nvpcf_read_budget
+(
+    OBJGPU *pGpu,
+    NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    static const NvU8 versions[] = { 0x25, 0x24, 0x23, 0x22, 0x21, 0x20 };
+    NvU8 preferred = pParams->version;
+    NvU8 i;
+    NV_STATUS status;
+
+    if (preferred != 0)
+    {
+        portMemSet(pParams, 0, sizeof(*pParams));
+        pParams->gpuId = pGpu->gpuId;
+        pParams->subFunc = NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DYNAMIC_CASE;
+        pParams->version = preferred;
+        status = cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL(NULL, pParams);
+        if (status == NV_OK)
+            return NV_TRUE;
+    }
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(versions); i++)
+    {
+        if (versions[i] == preferred)
+            continue;
+
+        portMemSet(pParams, 0, sizeof(*pParams));
+        pParams->gpuId = pGpu->gpuId;
+        pParams->subFunc = NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DYNAMIC_CASE;
+        pParams->version = versions[i];
+        status = cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL(NULL, pParams);
+        if (status == NV_OK)
+            return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
+/* NV_TRUE when the published budget changed and clients should be woken. */
+static NvBool
+rm_nvpcf_resample_power_budget
+(
+    OBJGPU *pGpu
+)
+{
+    static NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS lastBudget;
+    static NvBool haveLastBudget;
+    static NvU32 coalesced;
+    static NvBool notedLimitation;
+    NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS params;
+
+    if ((pGpu->hInternalClient == 0) || (pGpu->hInternalSubdevice == 0))
+    {
+        if (!notedLimitation)
+        {
+            notedLimitation = NV_TRUE;
+            NV_PRINTF(LEVEL_ERROR,
+                      "NVRM: NVPCF resample skipped; no RM client. An unbound NPCF is not repaired by this path.\n");
+        }
+        return NV_FALSE;
+    }
+
+    portMemSet(&params, 0, sizeof(params));
+    if (haveLastBudget)
+        params.version = lastBudget.version;
+
+    if (!rm_nvpcf_read_budget(pGpu, &params))
+    {
+        if (!notedLimitation)
+        {
+            notedLimitation = NV_TRUE;
+            NV_PRINTF(LEVEL_ERROR,
+                      "NVRM: NVPCF resample failed. Invalid SBIOS data or an unbound NPCF is not repaired by repeating this read.\n");
+        }
+        return NV_FALSE;
+    }
+
+    if (haveLastBudget && rm_nvpcf_same_budget(&params, &lastBudget))
+    {
+        coalesced++;
+        if (coalesced == 1)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "NVRM: NVPCF 0xC0 coalesced; budget unchanged ctgp %d mW tppOff %d mW\n",
+                      params.ctgpOffsetmW, params.targetTppOffsetmW);
+        }
+        return NV_FALSE;
+    }
+
+    if (coalesced != 0)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "NVRM: NVPCF budget changed after %u coalesced 0xC0 version 0x%x ctgp %d mW tppOff %d mW\n",
+                  coalesced, params.version, params.ctgpOffsetmW, params.targetTppOffsetmW);
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "NVRM: NVPCF resample version 0x%x ctgp %d mW tppOff %d mW\n",
+                  params.version, params.ctgpOffsetmW, params.targetTppOffsetmW);
+    }
+
+    lastBudget = params;
+    haveLastBudget = NV_TRUE;
+    coalesced = 0;
+    return NV_TRUE;
+}
+
 void NV_API_CALL rm_acpi_nvpcf_notify(
     nvidia_stack_t *sp
 )
 {
+    static NvBool active;
+    static NvBool pending;
     void              *fp;
     THREAD_STATE_NODE threadState;
-    NV_STATUS         rmStatus = NV_OK;
+
+    /* A resume or battery-tick burst collapses to one sample in flight. */
+    if (active)
+    {
+        pending = NV_TRUE;
+        return;
+    }
+    active = NV_TRUE;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    // LOCK: acquire API lock
-    if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE,
-                                     RM_LOCK_MODULES_EVENT)) == NV_OK)
+    do
     {
-        OBJGPU *pGpu = gpumgrGetGpu(0);
-        if (pGpu != NULL)
+        NV_STATUS rmStatus = NV_OK;
+        NvBool budgetChanged = NV_FALSE;
+
+        pending = NV_FALSE;
+
+        // LOCK: acquire API lock
+        if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE,
+                                         RM_LOCK_MODULES_EVENT)) == NV_OK)
         {
-            nv_state_t *nv = NV_GET_NV_STATE(pGpu);
-            if ((rmStatus = os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE)) ==
-                                                                         NV_OK)
+            OBJGPU *pGpu = gpumgrGetGpu(0);
+            if (pGpu != NULL)
             {
-               gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS,
-                                       NULL, 0, 0, 0);
+                nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+                if ((rmStatus = os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE)) ==
+                                                                             NV_OK)
+                {
+                    // LOCK: acquire GPU lock
+                    if ((rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE,
+                                                       RM_LOCK_MODULES_EVENT)) == NV_OK)
+                    {
+                        budgetChanged = rm_nvpcf_resample_power_budget(pGpu);
+                        // UNLOCK: release GPU lock
+                        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+                    }
+                    if (budgetChanged)
+                    {
+                        gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS,
+                                                NULL, 0, 0, 0);
+                    }
+                    os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
+                }
             }
-            os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
+            // UNLOCK: release API lock
+            rmapiLockRelease();
         }
-        rmapiLockRelease();
-    }
+    } while (pending);
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
+    active = NV_FALSE;
+    if (pending)
+    {
+        pending = NV_FALSE;
+        rm_acpi_nvpcf_notify(sp);
+    }
 }
 
 static void rm_notify_gpu_addition_removal_helper(

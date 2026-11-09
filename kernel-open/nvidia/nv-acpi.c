@@ -327,6 +327,10 @@ void NV_API_CALL nv_acpi_methods_init(NvU32 *handlesPresent)
 
     if (nvpcf_handle && (nvpcf_nv_acpi_object == NULL))
     {
+        /*
+         * No NPCF node means this never binds. A later SBIOS query that
+         * returns invalid data is not repaired by the notify handler.
+         */
         nvpcf_nv_acpi_object = nv_install_notifier(nvpcf_device_handle, nv_acpi_nvpcf_event, NULL);
     }
 
@@ -360,8 +364,19 @@ acpi_status nv_acpi_find_methods(
 
     if (!acpi_get_handle(handle, "NPCF", &method_handle))
     {
+        acpi_object_type nvpcf_type = ACPI_TYPE_ANY;
+
         nvpcf_handle = method_handle;
-        nvpcf_device_handle = handle;
+        /*
+         * NPCF may be a device of its own. Notify(NPCF, 0xC0) is delivered
+         * to that device. When NPCF is a method, the notify is delivered
+         * to its parent.
+         */
+        if (!ACPI_FAILURE(acpi_get_type(method_handle, &nvpcf_type)) &&
+            (nvpcf_type == ACPI_TYPE_DEVICE))
+            nvpcf_device_handle = method_handle;
+        else
+            nvpcf_device_handle = handle;
     }
 
     return 0;
