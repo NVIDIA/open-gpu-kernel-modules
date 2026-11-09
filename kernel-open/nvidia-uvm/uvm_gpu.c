@@ -4066,6 +4066,8 @@ NV_STATUS uvm_gpu_map_cpu_pages_for_egm(uvm_parent_gpu_t *parent_gpu,
     // sub GPU for API symmetry with uvm_gpu_map_cpu_pages().
     UVM_ASSERT(PAGE_ALIGNED(size));
 
+    *dma_address_out = 0;
+
     // If EGM is not enabled, we don't create any mappings. They shouldn't
     // be needed in such a case anyway.
     // If EGM is enabled but it's legacy EGM, we also don't need a mapping
