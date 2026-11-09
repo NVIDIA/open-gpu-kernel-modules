@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -685,46 +685,44 @@ RS_RESOURCE_DESC *RsResInfoByExternalClassId(NvU32);
 NvU32 RsResInfoGetInternalClassId(const RS_RESOURCE_DESC *);
 
 /**
+ * An edge in the RsResourceRef dependency graph
+ * Maps a dependency edge from A to B (A->B): "A depends-on B"
+ *
+ * The dependent child pDependentRef depends on the dependency parent pDependencyRef.
+ */
+struct RsDependencyEdge
+{
+    RsResourceRef *pDependentRef; ///< A: Dependency child: the resource that depends on pDependencyRef
+    RsResourceRef *pDependencyRef; ///< B: Dependency parent: the resource depended on by pDependentRef
+    ListNode dependencyListNode; ///< Links into pDependentRef->depBackRefList
+    ListNode dependentListNode; ///< Links into pDependencyRef->depRefList
+};
+MAKE_INTRUSIVE_LIST(RsRefDependencyList, RsDependencyEdge, dependencyListNode);
+MAKE_INTRUSIVE_LIST(RsRefDependentList, RsDependencyEdge, dependentListNode);
+
+/**
+ * Bit masks for RsResourceRef.flags
+ *
+ * These are masks, not bit indices: use them directly against the flags member
+ * rather than wrapping them in NVBIT().
+ */
+typedef enum RS_RESOURCE_REF_FLAGS
+{
+    RS_RESOURCE_REF_SHARE_POLICY_LIST_MODIFIED = NVBIT(0), ///< Resource share policy has been modified by an API after resource creation
+    RS_RESOURCE_REF_INVALIDATED                = NVBIT(1)  ///< Reference has been freed but not removed yet
+} RS_RESOURCE_REF_FLAGS;
+
+/**
  * A reference to a resource that has been allocated in RM.
  */
 struct RsResourceRef
 {
     struct RsClient   *pClient;            ///< Pointer to the client that owns the ref
     struct RsResource *pResource;          ///< Pointer to the actual resource
-    NvHandle    hResource;          ///< Resource handle
+    NvU32       externalClassId;    ///< External resource class id
+    NvU32       internalClassId;    ///< Internal resource class id
     struct RsResourceRef *pParentRef; ///< Parent resource reference
-    RsIndex     childRefMap;        ///< Child reference multi-map: { internalClassId -> { handle -> RsResourceRef } }
-
-    /**
-     * Cached reference multi-map: { internalClassId -> { handle -> RsResourceRef } }
-     *
-     * The resource reference cache is a one-way association between this resource reference and
-     * any other resource reference. Resource server does not populate the cache so it is up to the
-     * resource implementation to manage it. clientRefIter can be used to iterate this cache.
-     */
-    RsIndex     cachedRefMap;
-
-    /**
-     * Dependants reference multi-map: { internalClassId -> { handle -> RsResourceRef } }
-     *
-     * A map of all resources that strongly depend on this resource.
-     */
-    RsIndex     depRefMap;
-
-    /**
-     * Dependants back-reference multi-map: { internalClassId -> { handle -> RsResourceRef } }
-     *
-     * AKA dependencies map
-     *
-     * A map of all resources that this resource strongly depends on.
-     */
-    RsIndex     depBackRefMap;
-
-    /**
-     * Policy under which this resource can be shared with other clients
-     */
-    RsShareList     sharePolicyList;
-    NvBool          bSharePolicyListModified;
+    NvHandle    hResource;          ///< Resource handle
 
     /**
      * A mask of the access rights that the owner client has on this object.
@@ -732,10 +730,36 @@ struct RsResourceRef
     RS_ACCESS_MASK accessMask;
 
     const RS_RESOURCE_DESC *pResourceDesc; ///< Cached pointer to the resource descriptor
-    NvU32       internalClassId;    ///< Internal resource class id
-    NvU32       externalClassId;    ///< External resource class id
-    NvU32       depth;              ///< The depth of this reference in the resource graph
-    NvBool      bInvalidated;       ///< Reference has been freed but not removed yet
+    NvU8        depth;              ///< The depth of this reference in the resource graph
+    NvU8        flags;              ///< RS_RESOURCE_REF_* bits
+
+    //
+    // Deprecated mirror of RS_RESOURCE_REF_INVALIDATED. Retained only because
+    // drivers/nvpcf reads it directly and cannot be modified from chips_a.
+    // Do not add new readers, and do not set it without also setting the flag;
+    // delete once the out-of-tree readers have moved to flags.
+    //
+    NvBool      bInvalidated;
+
+    IntrusiveMap childRefMap;       ///< Child map: { (internal class ID << 32 | handle) -> RsResourceRef }
+    MapNode     childNode;          ///< Links to parent RsResourceRef's childRefMap
+
+    /**
+     * Dependency edges to resources that strongly depend on this resource.
+     * This reference is pDependencyRef on each edge.
+     */
+    RsRefDependentList depRefList;
+
+    /**
+     * Dependency edges to resources that this resource strongly depends on.
+     * This reference is pDependentRef on each edge.
+     */
+    RsRefDependencyList depBackRefList;
+
+    /**
+     * Policy under which this resource can be shared with other clients
+     */
+    RsShareList     sharePolicyList;
 
     RsCpuMappingList cpuMappings;   ///< List of CPU mappings to the resource from this resource reference
     RsCpuMappingBackRefList backRefs;  ///< List of references that have this reference as a mapping context
@@ -749,10 +773,29 @@ struct RsResourceRef
 
     ListNode   freeNode;        ///< Links to the client's pendingFreeList
 
-    PORT_MEM_ALLOCATOR *pAllocator; ///< Allocator for internal resources
 };
 MAKE_MAP(RsRefMap, RsResourceRef);
+MAKE_INTRUSIVE_MAP(RsRefChildMap, RsResourceRef, childNode);
 MAKE_INTRUSIVE_LIST(RsRefFreeList, RsResourceRef, freeNode);
+
+//
+// childRefMap is declared as an untyped IntrusiveMap because RsRefChildMap
+// cannot be generated until RsResourceRef is complete. Access it through
+// RES_CHILD_MAP so the container macros see the typed form.
+//
+#define RES_CHILD_MAP(pRef) ((RsRefChildMap *)&(pRef)->childRefMap)
+
+//
+// Children are keyed on (internalClassId, hResource) so that a class's
+// children occupy one contiguous key range. Handles are unique within a
+// client, so the composite key is unique within a parent.
+//
+#define RES_CHILD_MAKE_KEY(classId, handle) ((((NvU64)(classId)) << 32) | (handle))
+#define RES_CHILD_KEY(pRef) RES_CHILD_MAKE_KEY((pRef)->internalClassId, (pRef)->hResource)
+
+/// Inclusive key bounds of the range holding every child of a given class.
+#define RES_CHILD_KEY_FIRST(classId) RES_CHILD_MAKE_KEY(classId, 0)
+#define RES_CHILD_KEY_LAST(classId)  RES_CHILD_MAKE_KEY(classId, NV_U32_MAX)
 
 
 // Iterator data structure to save state while walking through a list
@@ -761,7 +804,7 @@ struct RS_ITERATOR
     union
     {
         RsRefMapIter      mapIt; ///< Map iterator for all resource references under a client
-        RsIndexIter idxIt; ///< Index iterator for child references of a resource reference
+        RsRefChildMapIter childIt; ///< Map iterator for child references of a resource reference
     };
 
     struct RsClient *pClient;
@@ -776,7 +819,7 @@ struct RS_ITERATOR
 struct RS_ORDERED_ITERATOR
 {
     NvS8 depth; ///< Depth of index stack; special value of -1 implies that the scope reference should be iterated over as well
-    RsIndexIter idxIt[RS_MAX_RESOURCE_DEPTH+1]; ///< Stack of index iterators for child references of a resource reference
+    RsRefChildMapIter childIt[RS_MAX_RESOURCE_DEPTH+1]; ///< Stack of map iterators for child references of a resource reference
 
     struct RsClient *pClient;
     RsResourceRef *pScopeRef;    ///< Reference to the resource that limits the scope of iteration
@@ -914,13 +957,19 @@ NV_STATUS refAddDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependant
 void refRemoveDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependantRef);
 
 /**
+ * Remove a dependency edge from both endpoint lists, and free it.
+ */
+void refRemoveDependencyEdge(RsDependencyEdge *pDependencyEdge, PORT_MEM_ALLOCATOR *pAllocator);
+
+/**
  * Allocates/Destroys a new inter-mapping
+ * @param[in] pServer Resource Server instance
  * @param[in] pMapperRef The reference which owns the inter-mapping
  * @param[in] pInterMapping (Destroy) The inter-mapping to destroy
  * @param[out] ppInterMapping (Create) Allocates new inter-mapping
  */
-NV_STATUS refCreateInterMapping(RsResourceRef *pMapperRef, RsInterMapping **ppInterMapping);
-NV_STATUS refDestroyInterMapping(RsResourceRef *pMapperRef, RsInterMapping *pInterMapping);
+NV_STATUS refCreateInterMapping(RsServer *pServer, RsResourceRef *pMapperRef, RsInterMapping **ppInterMapping);
+NV_STATUS refDestroyInterMapping(RsServer *pServer, RsResourceRef *pMapperRef, RsInterMapping *pInterMapping);
 
 /**
  * Find, Add, or Remove an inter-mapping between two resources to the Mapper's list of inter-mappings
@@ -936,20 +985,6 @@ NV_STATUS refDestroyInterMapping(RsResourceRef *pMapperRef, RsInterMapping *pInt
  */
 NV_STATUS refAddInterMapping(RsResourceRef *pMapperRef, RsResourceRef *pMappableRef, NvU64 dmaOffset, RsResourceRef *pContextRef, RsInterMapping *pInterMapping);
 void      refRemoveInterMapping(RsResourceRef *pMapperRef, RsInterMapping *pMapping, NvBool bKeepPerContextMap);
-
-/**
- * Store a resource reference in another reference's cache.
- * @param[in]   pParentRef The resource reference that owns the cache
- * @param[in]   pResourceRef The resource reference to store in the cache
- */
-NV_STATUS refCacheRef(RsResourceRef *pParentRef, RsResourceRef *pResourceRef);
-
-/**
- * Remove a resource reference from another reference's cache
- * @param[in]   pParentRef The resource reference that owns the cache
- * @param[in]   pResourceRef The resource reference to de-index
- */
-NV_STATUS refUncacheRef(RsResourceRef *pParentRef, RsResourceRef *pResourceRef);
 
 /**
  * Determine whether a reference is queued for removal

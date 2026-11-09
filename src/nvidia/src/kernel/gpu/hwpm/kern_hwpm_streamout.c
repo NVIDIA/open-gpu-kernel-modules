@@ -589,7 +589,7 @@ khwpmStreamoutCreatePmaVaSpace_IMPL
             VASPACE_FLAGS_ENABLE_VMM |
             VASPACE_FLAGS_HWPM;
 
-    status = vmmCreateVaspace(pVmm, FERMI_VASPACE_A, 0, NVBIT(pGpu->gpuInstance),
+    status = vmmCreateVaspace(pVmm, FERMI_VASPACE_A, 0, pGpu,
                               vaSpaceStartAddr, vaRangeLimit, 0, 0, NULL,
                               flags, &pVAS);
     if (status != NV_OK)

@@ -221,7 +221,7 @@ NvU32 ceCountGrCe(OBJGPU *pGpu)
 
     //
     // bug 2188230: Until FIFO reports max instance id for a given engine type,
-    // start by iterating over all CE indices supported by POBJGPU
+    // start by iterating over all CE indices supported by OBJGPU
     //
     for (engIdx = 0; engIdx < GPU_MAX_CES; ++engIdx)
     {

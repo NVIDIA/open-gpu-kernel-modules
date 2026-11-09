@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,6 +62,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB202[] =
     GPU_CHILD_PRESENT(OBJTMR, 1),
     GPU_CHILD_PRESENT(KernelMIGManager, 1),
     GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelVbios, 1),
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
@@ -91,6 +92,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB202[] =
     GPU_CHILD_PRESENT(KernelSec2, 1),
     GPU_CHILD_PRESENT(KernelGsplite, 4),
     GPU_CHILD_PRESENT(KernelCcu, 1),
+    GPU_CHILD_PRESENT(TdispMgr, 1),
     GPU_CHILD_PRESENT(KernelOob, 1),
 };
 
@@ -324,7 +326,7 @@ gpuGetFirstAsyncLce_GB202
     NV_STATUS status = NV_OK;
     NvU32 pCeInstance;
 
-    status = ceutilsGetFirstAsyncCe(NULL, pGpu, 0, 0, &pCeInstance, NV_TRUE);
+    status = ceutilsGetFirstCe(pGpu, 0, 0, &pCeInstance, NV_TRUE, NV_TRUE);
     if (status != NV_OK)
     {
         return NV2080_ENGINE_TYPE_NULL;

@@ -322,8 +322,8 @@ nvswitch_i2c_del_adapter
 {
     if (adapter != NULL)
     {
-        nvswitch_os_free(adapter->algo_data);
         i2c_del_adapter(adapter);
+        nvswitch_os_free(adapter->algo_data);
         nvswitch_os_free(adapter);
     }
 }

@@ -62,8 +62,6 @@
 #define NV_DRM_AVAILABLE
 #endif
 
-#if IS_ENABLED(CONFIG_DRM_FBDEV_EMULATION) || defined(__FreeBSD__)
-
 #if defined(NV_DRM_FBDEV_GENERIC_SETUP_PRESENT) &&                             \
     defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_PRESENT)
 #define NV_DRM_FBDEV_AVAILABLE
@@ -89,7 +87,6 @@
 #endif
 #endif
 
-#endif /* IS_ENABLED(CONFIG_DRM_FBDEV_EMULATION) || defined(__FreeBSD__) */
 
 /*
  * DRM color pipeline support (drm_colorop) was added by commit cfc27680ee20
@@ -134,6 +131,13 @@
 #endif
 
 /*
+ * For now just use set_page_dirty as the lock variant
+ * is not ported for FreeBSD. (in progress). This calls
+ * vm_page_dirty. Used in nv-mm.h, and must be defined before including it
+ */
+#define set_page_dirty_lock set_page_dirty
+
+/*
  * FreeBSD does not define vm_flags_t in its linuxkpi, since there is already
  * a FreeBSD vm_flags_t (of a different size) and they don't want the names to
  * collide. Temporarily redefine it when including nv-mm.h
@@ -148,13 +152,6 @@
  */
 #undef _NV_H_
 #include <sys/nv.h>
-
-/*
- * For now just use set_page_dirty as the lock variant
- * is not ported for FreeBSD. (in progress). This calls
- * vm_page_dirty. Used in nv-mm.h
- */
-#define set_page_dirty_lock set_page_dirty
 
 /*
  * FreeBSD does not implement drm_atomic_state_free, simply

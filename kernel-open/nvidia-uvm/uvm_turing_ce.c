@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2025 NVIDIA Corporation
+    Copyright (c) 2025-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -149,24 +149,6 @@ void uvm_hal_turing_ce_offset_in_out(uvm_push_t *push, NvU64 offset_in, NvU64 of
                      OFFSET_IN_LOWER,  HWVALUE(C5B5, OFFSET_IN_LOWER,  VALUE, NvOffset_LO32(offset_in)),
                      OFFSET_OUT_UPPER, HWVALUE(C5B5, OFFSET_OUT_UPPER, UPPER, NvOffset_HI32(offset_out)),
                      OFFSET_OUT_LOWER, HWVALUE(C5B5, OFFSET_OUT_LOWER, VALUE, NvOffset_LO32(offset_out)));
-}
-
-static void turing_membar_after_transfer(uvm_push_t *push)
-{
-    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
-
-    if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE))
-        return;
-
-    // Flush on transfers only works when paired with a semaphore release. Use a
-    // host WFI + MEMBAR.
-    // Bug 1709888
-    gpu->parent->host_hal->wait_for_idle(push);
-
-    if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU))
-        gpu->parent->host_hal->membar_gpu(push);
-    else
-        gpu->parent->host_hal->membar_sys(push);
 }
 
 static NvU32 ce_aperture(uvm_aperture_t aperture)

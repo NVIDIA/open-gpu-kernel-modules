@@ -44,7 +44,6 @@
 #include "disp/nvfbc_session.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/intr/intr.h"
-#include "kernel/gpu/mc/kernel_mc.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "gpu/gpu_fabric_probe.h"
 #include "kernel/mem_mgr/fabric_vaspace.h"
@@ -62,6 +61,7 @@
 #include "gpu/ce/kernel_ce.h"
 #include "rmapi/resource_fwd_decls.h"
 #include "rmapi/client.h"
+#include "os/os.h"
 
 #include "class/cl00de.h"
 #include "class/cl900e.h"
@@ -491,6 +491,13 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 }
                 break;
             }
+            case NV2080_CTRL_GPU_INFO_INDEX_GPU_CXL_DEVICE:
+            {
+                data = osGpuIsCxlDevice(pGpu) ?
+                           NV2080_CTRL_GPU_INFO_INDEX_GPU_CXL_DEVICE_YES :
+                           NV2080_CTRL_GPU_INFO_INDEX_GPU_CXL_DEVICE_NO;
+                break;
+            }
             case NV2080_CTRL_GPU_INFO_INDEX_COHERENT_GPU_MEMORY_MODE:
             {
                 if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
@@ -591,6 +598,12 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                                NV2080_CTRL_GPU_INFO_INDEX_GPU_COHERENT_CACHING_CPU_MEMORY_CAPABILITY_NO;
                     }
                 }
+                break;
+            }
+            case NV2080_CTRL_GPU_INFO_INDEX_GPU_UPTIME:
+            {
+                NvU64 elapsedUs = portTimeGetUptimeMicroseconds() - pGpu->gpuInitUptimeValueUs;
+                data = (NvU32)(elapsedUs / 1000000ULL);
                 break;
             }
             default:
@@ -2775,6 +2788,24 @@ subdeviceCtrlCmdGpuSetComputePolicyConfig_IMPL
 
             policyInfo.timeslice = pParams->config.data.timeslice;
             break;
+        case NV2080_CTRL_GPU_COMPUTE_POLICY_SCHEDULING_PRIORITY:
+            if (!kfifoIsComputePolicySchedulingPrioritySupported(pGpu))
+            {
+                NV_PRINTF(LEVEL_ERROR, "Setting the scheduling-priority policy is not supported for gpu with pci id 0x%llx\n",
+                          gpuGetDBDF(pGpu));
+                return NV_ERR_NOT_SUPPORTED;
+            }
+
+            // Cast: the enum's underlying type may be signed; compare as unsigned.
+            if ((NvU32)pParams->config.data.schedulingPriority >= NV2080_CTRL_CMD_GPU_COMPUTE_SCHEDULING_PRIORITY_MAX)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Unsupported scheduling-priority value %u specified for gpu with pci id 0x%llx\n",
+                          pParams->config.data.schedulingPriority, gpuGetDBDF(pGpu));
+                return NV_ERR_INVALID_ARGUMENT;
+            }
+
+            policyInfo.schedulingPriority = pParams->config.data.schedulingPriority;
+            break;
         default:
             NV_PRINTF(LEVEL_ERROR, "Unsupported compute policy %u specified for gpu id 0x%llx\n",
                       pParams->config.type, gpuGetDBDF(pGpu));
@@ -2842,7 +2873,11 @@ subdeviceCtrlCmdGpuGetComputePolicyConfig_IMPL
     }
 
     pParams->numConfigs = 0;
-    // Loop through all compute policies and retrieve the configured settings
+    //
+    // Loop through all compute policies and retrieve the configured settings.
+    // Entries are appended at numConfigs, not indexed by policyId, so that
+    // skipped (unsupported) policies do not leave holes in the list.
+    //
     for (policyId = NV2080_CTRL_GPU_COMPUTE_POLICY_TIMESLICE;
          policyId < NV2080_CTRL_GPU_COMPUTE_POLICY_MAX;
          policyId++)
@@ -2850,8 +2885,18 @@ subdeviceCtrlCmdGpuGetComputePolicyConfig_IMPL
         switch (policyId)
         {
             case NV2080_CTRL_GPU_COMPUTE_POLICY_TIMESLICE:
-                pParams->configList[policyId].type = NV2080_CTRL_GPU_COMPUTE_POLICY_TIMESLICE;
-                pParams->configList[policyId].data.timeslice = policyInfo.timeslice;
+                pParams->configList[pParams->numConfigs].type = NV2080_CTRL_GPU_COMPUTE_POLICY_TIMESLICE;
+                pParams->configList[pParams->numConfigs].data.timeslice = policyInfo.timeslice;
+                pParams->numConfigs++;
+                break;
+            case NV2080_CTRL_GPU_COMPUTE_POLICY_SCHEDULING_PRIORITY:
+                // Do not report a policy that the SET control rejects.
+                if (!kfifoIsComputePolicySchedulingPrioritySupported(pGpu))
+                {
+                    break;
+                }
+                pParams->configList[pParams->numConfigs].type = NV2080_CTRL_GPU_COMPUTE_POLICY_SCHEDULING_PRIORITY;
+                pParams->configList[pParams->numConfigs].data.schedulingPriority = policyInfo.schedulingPriority;
                 pParams->numConfigs++;
                 break;
             default:
@@ -2861,137 +2906,6 @@ subdeviceCtrlCmdGpuGetComputePolicyConfig_IMPL
     }
 
     return status;
-}
-
-/*!
- * @brief Check if address range is within the provided limits
- *
- * @param[in]  addrStart       Staring address of address range
- * @param[in]  addrLength      Size of address range
- * @param[in]  limitStart      Staring address of limit
- * @param[in]  limitLength     Size of limit
- *
- * @return
- *     NV_TRUE, if address range is within the provided limits
- *     NV_FALSE, if address range is outside the provided limits
- *
- */
-static NvBool isAddressWithinLimits
-(
-    NvU64 addrStart,
-    NvU64 addrLength,
-    NvU64 limitStart,
-    NvU64 limitLength
-)
-{
-    NvU64 addrEnd  = 0;
-    NvU64 limitEnd = 0;
-
-    //
-    // Calculate End address of address range and limit,
-    // Return NV_FALSE in case of 64-bit addition overflow
-    //
-    if (!portSafeAddU64(addrStart, addrLength - 1, &addrEnd) ||
-        !portSafeAddU64(limitStart, limitLength - 1, &limitEnd))
-    {
-        return NV_FALSE;
-    }
-
-    return ((addrStart >= limitStart) && (addrEnd <= limitEnd));
-}
-
-/*!
- * @brief Validate the address range for Memory Map request by comparing the
- *        user supplied address range with GPU BAR0/BAR1 range.
- *
- * Lock Requirements:
- *      Assert that API and GPUs lock held on entry
- *
- * @param[in] pSubdevice
- * @param[in] pParams    pointer to control parameters
- *
- * Possible status values returned are:
- *     NV_OK
- *     NV_ERR_PROTECTION_FAULT
- *
- */
-NV_STATUS subdeviceCtrlCmdValidateMemMapRequest_IMPL
-(
-    Subdevice                                       *pSubdevice,
-    NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS *pParams
-)
-{
-    OBJGPU       *pGpu     = GPU_RES_GET_GPU(pSubdevice);
-    NvU64         start    = pParams->addressStart;
-    NvU64         length   = pParams->addressLength;
-    NV_STATUS     rmStatus;
-    NvU32         bar0MapSize;
-    NvU64         bar0MapOffset;
-
-    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance),
-        NV_ERR_INVALID_LOCK_STATE);
-
-    pParams->protection = NV_PROTECT_READ_WRITE;
-
-    if (isAddressWithinLimits(start, length, pGpu->busInfo.gpuPhysAddr,
-                        pGpu->deviceMappings[0].gpuNvLength))
-    {
-        start -= pGpu->busInfo.gpuPhysAddr;
-
-        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-        rmStatus = tmrGetTimerBar0MapInfo_HAL(pGpu, pTmr,
-                                              &bar0MapOffset, &bar0MapSize);
-        if ((rmStatus == NV_OK) &&
-            isAddressWithinLimits(start, length, bar0MapOffset, bar0MapSize))
-        {
-            pParams->protection = NV_PROTECT_READABLE;
-            return NV_OK;
-        }
-
-        KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
-        rmStatus = kfifoGetUsermodeMapInfo_HAL(pGpu, pKernelFifo,
-                                               &bar0MapOffset, &bar0MapSize);
-        if ((rmStatus == NV_OK) &&
-            isAddressWithinLimits(start, length, bar0MapOffset, bar0MapSize))
-        {
-            return NV_OK;
-        }
-
-        KernelMc *pKernelMc = GPU_GET_KERNEL_MC(pGpu);
-        rmStatus = kmcGetMcBar0MapInfo_HAL(pGpu, pKernelMc,
-                &bar0MapOffset, &bar0MapSize);
-        if ((rmStatus == NV_OK) &&
-            isAddressWithinLimits(start, length, bar0MapOffset, bar0MapSize))
-        {
-            pParams->protection = NV_PROTECT_READABLE;
-            return NV_OK;
-        }
-
-        //
-        // If the kernel side does not know about the object being mapped,
-        // fall-through to GSP and see if it knows anything.
-        //
-        if (IS_FW_CLIENT(pGpu))
-        {
-            RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-
-            return pRmApi->Control(pRmApi,
-                                   pGpu->hInternalClient,
-                                   pGpu->hInternalSubdevice,
-                                   NV2080_CTRL_CMD_GPU_VALIDATE_MEM_MAP_REQUEST,
-                                   pParams, sizeof(*pParams));
-        }
-
-        return NV_ERR_PROTECTION_FAULT;
-    }
-    // See bug 1784955
-    else if (isAddressWithinLimits(start, length, pGpu->busInfo.gpuPhysFbAddr, pGpu->fbLength)
-            || GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu)->coherentCpuFbBase)
-    {
-        return NV_OK;
-    }
-
-    return NV_ERR_PROTECTION_FAULT;
 }
 
 /*!
@@ -3253,7 +3167,8 @@ subdeviceCtrlCmdGpuSetFabricAddr_IMPL
 static NvU64
 _convertGpuFabricProbeInfoCaps
 (
-    NvU64 fmCaps
+    OBJGPU *pGpu,
+    NvU64   fmCaps
 )
 {
     NvU64 fabricCaps = 0;
@@ -3629,7 +3544,7 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
 
     if (!gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu) && !gpuIsCCMultiGpuNvleModeEnabled(pGpu))
     {
-        pParams->fabricCaps = _convertGpuFabricProbeInfoCaps(fmCaps);
+        pParams->fabricCaps = _convertGpuFabricProbeInfoCaps(pGpu, fmCaps);
     }
 
     pParams->fabricCliques[index].type = NV_FABRIC_CLIQUE_TYPE_UNICAST_POINTER;
@@ -4008,6 +3923,11 @@ subdeviceCtrlCmdGpuRpcGspTest_IMPL
 
     if (pParams->test == NV2080_CTRL_GPU_RPC_GSP_TEST_SERIALIZED_INTEGRITY)
     {
+        if ((pParams->dataSize != 0) && (data == NULL))
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+
         for (NvU32 i = 0; i < pParams->dataSize; i++)
         {
             if (data[i] != i * 2) {
@@ -4461,6 +4381,7 @@ subdeviceCtrlCmdThermalSystemExecuteV2_IMPL(Subdevice *pSubdevice,
 
 #define GDMA_FUZZ_BUFFER_SIZE (1024 * 1024)
 #define GDMA_ADDR_ALIGN       4
+#define GDMA_BUFFER_ALIGN     16
 
 /*!
  * @brief  This command asks GSP-RM to perform GDMA transfer tests.
@@ -4521,13 +4442,32 @@ subdeviceCtrlCmdGpuErrorInjectionControl_IMPL(Subdevice *pSubdevice,
         OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
         OBJRPC *pRpc = GPU_GET_RPC(pGpu);
         MESSAGE_QUEUE_INFO *pMQI = pRpc->pMessageQueueInfo;
+
         pMQI->bErrorInjectionEnabled = NV_TRUE;
-        return NV_OK;
+    }
+    else if (pParams->errorType == NV2080_CTRL_GPU_INJECT_ERROR_MEMORY_SUBSYSTEM_TIMEOUT)
+    {
+#if RMCFG_MODULE_KERNEL_GMMU && (defined(DEBUG) || defined(DEVELOP) || defined(NV_VERIF_FEATURES))
+        OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+        KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+
+        if ((pKernelGmmu == NULL) || !pGpu->bMemsubsysErrDetectionEnabled)
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+
+        pKernelGmmu->bInjectMemSubsysErrorTimeout = NV_TRUE;
+#else
+        return NV_ERR_NOT_SUPPORTED;
+#endif // RMCFG_MODULE_KERNEL_GMMU && (defined(DEBUG) || defined(DEVELOP) || defined(NV_VERIF_FEATURES))
     }
     else
     {
         return NV_ERR_NOT_SUPPORTED;
     }
+
+    NV_PRINTF(LEVEL_ERROR, "GSP-RM Error Injection: Received error injection request.\n");
+    return NV_OK;
 }
 
 /*!

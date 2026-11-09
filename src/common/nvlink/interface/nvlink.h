@@ -68,6 +68,7 @@ extern "C" {
 #define NVLINK_DEVICE_VERSION_31           0x00000006
 #define NVLINK_DEVICE_VERSION_40           0x00000007
 #define NVLINK_DEVICE_VERSION_50           0x00000008
+#define NVLINK_DEVICE_VERSION_60           0x00000009
 
 // Link Transition Timeouts in miliseconds
 #define NVLINK_TRANSITION_OFF_TIMEOUT        1

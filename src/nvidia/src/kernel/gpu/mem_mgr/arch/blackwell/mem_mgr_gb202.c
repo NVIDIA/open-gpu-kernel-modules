@@ -32,8 +32,7 @@
 
 /*!
  * @brief Determine the kind of uncompressed PTE for a given allocation.
- * GB20X only supported GMK or GMK compression kinds. If bOverrideToGMK is true, only return GMK otherwise
- * call the _TU102 function.
+ * GB20X only supports GMK.
  *
  * @param[in] pFbAllocPageFormat FB_ALLOC_PAGE_FORMAT pointer
  *
@@ -65,13 +64,16 @@ memmgrChooseKindCompressZ_GB202
     FB_ALLOC_PAGE_FORMAT *pFbAllocPageFormat
 )
 {
+    if (pMemoryManager->bDisableCompressiblePteKinds)
+    {
+        return NV_MMU_PTE_KIND_GENERIC_MEMORY;
+    }
+
     return NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE;
 }
 
 /*
- * @brief Return an uncompressible kind for the given kind.  
- * GB20X only supports GMK or compressible-GMK. Return GMK if bOverrideToGMK
- * is set or if mods want to bypass uncompression, otherwise call the _TU102 function.
+ * @brief Return a non-compressible kind for the given kind
  * @param[in] NvU32   - PTE kind
  * @param[in] NvBool  - ReleaseReacquire / full-fledge mode
  *
@@ -99,7 +101,12 @@ memmgrGetCompressedKind_GB202
     NvU32          kind,
     NvBool         bDisablePlc
 )
-{
+{    
+    if (pMemoryManager->bDisableCompressiblePteKinds)
+    {
+        return NV_MMU_PTE_KIND_GENERIC_MEMORY;
+    }
+
     return bDisablePlc ? NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE_DISABLE_PLC
                        : NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE;
 }

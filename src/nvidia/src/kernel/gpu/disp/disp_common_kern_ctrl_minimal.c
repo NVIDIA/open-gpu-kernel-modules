@@ -439,7 +439,18 @@ dispcmnCtrlCmdSystemGetVblankCounter_IMPL
     }
     else
     {
-        pVBCounterParams->verticalBlankCounter = kheadGetVblankNormLatencyCounter_HAL(pKernelHead);
+        if (pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_HAS_SEPARATE_LOW_LATENCY_LINE))
+        {
+            //
+            // Vblank only raises DISP_LOW on these chips, so the low-latency
+            // counter is the only one tracking it - return it regardless of the hint for non-GSP.
+            //
+            pVBCounterParams->verticalBlankCounter = kheadGetVblankLowLatencyCounter_HAL(pKernelHead);
+        }
+        else
+        {
+            pVBCounterParams->verticalBlankCounter = kheadGetVblankNormLatencyCounter_HAL(pKernelHead);
+        }
     }
 
     return NV_OK;

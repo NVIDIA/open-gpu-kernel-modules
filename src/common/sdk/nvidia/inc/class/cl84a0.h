@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -92,6 +92,7 @@ typedef struct NV_MEMORY_LIST_ALLOCATION_PARAMS {
     NvU32    zcullcovg;      /* FBMEM: Z-cull coverage */
     NvU32    pageCount;      /* count of elements in pageNumber array */
     NvU32    heapOwner;      /* heap owner information from client */
+    NvU32    pageArrayGranularity; /* page array granularity */
 
     NV_DECLARE_ALIGNED(NvU64 guestId, 8);
                              /* ID of the guest VM. e.g., domain ID in case of Xen */
@@ -106,5 +107,6 @@ typedef struct NV_MEMORY_LIST_ALLOCATION_PARAMS {
     NV_DECLARE_ALIGNED(NvP64 pageNumberList, 8);
     NV_DECLARE_ALIGNED(NvU64 limit, 8);
     NvU32    flagsOs02;
+    NvS32    numaNode;      /* CPU NUMA node associated with the page list */
 } NV_MEMORY_LIST_ALLOCATION_PARAMS;
 

@@ -735,6 +735,7 @@ static NV_STATUS uvm_ext_gpu_map_split(uvm_range_tree_t *tree,
     new->is_sysmem = existing_map->is_sysmem;
     new->is_egm = existing_map->is_egm;
     new->is_fabricmem = existing_map->is_fabricmem;
+    new->need_l2_invalidate_at_unmap = existing_map->need_l2_invalidate_at_unmap;
 
     // Initialize the new ext_gpu_map tracker as a copy of the existing_map tracker.
     // This way, any operations on any of the two ext_gpu_maps will be able to

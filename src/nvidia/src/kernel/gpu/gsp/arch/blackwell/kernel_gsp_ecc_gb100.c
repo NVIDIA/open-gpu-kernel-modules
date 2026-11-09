@@ -31,6 +31,9 @@
 #include "gpu/rc/kernel_rc.h"
 #include "gpu/gpu_mods_error.h"
 
+#include "events/gpu/ras/ras_events.h"
+#include "nvoc/event_bus.h"
+
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
 
 #include "published/blackwell/gb100/dev_gsp.h"
@@ -174,6 +177,5 @@ kgspEccServiceUncorrError_GB100
     // Notify of and log the error
     gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_ECC_DBE, NULL, 0, 0,
                             (NvU16)NV2080_CTRL_GPU_ECC_UNIT_GSP);
-    nvErrorLog_va((void *)pGpu, ROBUST_CHANNEL_GPU_ECC_DBE, "An uncorrectable ECC error has been detected on GPU in GSP-RISCV");
-    nvErrorLog_va((void *)pGpu, UNCORRECTABLE_SRAM_ERROR, "GSP-RISCV, Uncorrectable SRAM error");
+    eventEmit(GspUncorrectableError, pGpu, NV_FALSE, 0);
 }

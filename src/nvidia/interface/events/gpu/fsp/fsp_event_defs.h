@@ -33,4 +33,6 @@ enum
     FSP_OP_EVENT_CODE_FUSE_ERROR   = 0x0002U,
 };
 
+#define FSP_BOOT_TIMEOUT_WAIT_TARGET "FSP boot completion"
+
 #endif // _FSP_EVENT_DEFS_H_

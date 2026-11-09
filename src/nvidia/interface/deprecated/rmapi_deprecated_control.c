@@ -766,6 +766,13 @@ static NV_STATUS V2_CONVERTER(_NV0080_CTRL_CMD_MSENC_GET_CAPS)
                             ctrlparamRelease(pSecInfo, &token, pArgs);
                             return NV_ERR_INVALID_ARGUMENT;
                         }
+                        if (NvP64_VALUE(pParams->capsTbl) == NULL)
+                        {
+                            NV_PRINTF(LEVEL_NOTICE, "pParams capsTbl is NULL\n");
+                            portMemFree(pParams2);
+                            ctrlparamRelease(pSecInfo, &token, pArgs);
+                            return NV_ERR_INVALID_ARGUMENT;
+                        }
                         pParams2->instanceId = 0;
                      },
                      // Custom data out back to user

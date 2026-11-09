@@ -215,27 +215,42 @@ _gpumgrGetP2PCapsStatusOverNvLink
             knvlinkDiscoverPostRxDetLinks_HAL(pFirstGpu, pKernelNvlink, pGpu) == NV_OK)
         {
             // Check to make sure that the links are active
-
-            gpuSetTimeout(pGpu, linkTrainingTimeout, &timeout, IS_SILICON(pGpu) ?
-                (GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE | GPU_TIMEOUT_FLAGS_DEFAULT) : 0);
-            do
+            // Direct connect system
+            if (!knvlinkIsGpuConnectedToNvswitch(pFirstGpu, pKernelNvlink) &&
+                pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_P2P_CAPS_DIRECT_CONNECT))
             {
-                status = gpuCheckTimeout(pGpu, &timeout);
-
-                if (knvlinkCheckTrainingIsComplete(pFirstGpu, pGpu, pKernelNvlink) == NV_OK)
+                status = knvlinkCheckLinksAreActive(pFirstGpu, pKernelNvlink);
+                if (status != NV_OK)
                 {
-                    break;
-                }
-
-                if (status == NV_ERR_TIMEOUT)
-                {
-                    NV_PRINTF(LEVEL_ERROR,
-                            "Links failed to train for the given gpu pairs!\n");
-                    knvlinkLogAliDebugMessages(pFirstGpu, pKernelNvlink, NV_TRUE);
-                    return status;
+                    *pP2PReadCapStatus  = NV0000_P2P_CAPS_STATUS_NOT_READY;
+                    *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_NOT_READY;
+                    return NV_OK;
                 }
             }
-            while(status != NV_ERR_TIMEOUT);
+            else
+            {
+                // Switch system and legacy direct connect
+                gpuSetTimeout(pGpu, linkTrainingTimeout, &timeout, IS_SILICON(pGpu) ?
+                    (GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE | GPU_TIMEOUT_FLAGS_DEFAULT) : 0);
+                do
+                {
+                    status = gpuCheckTimeout(pGpu, &timeout);
+
+                    if (knvlinkCheckTrainingIsComplete(pFirstGpu, pGpu, pKernelNvlink) == NV_OK)
+                    {
+                        break;
+                    }
+
+                    if (status == NV_ERR_TIMEOUT)
+                    {
+                        NV_PRINTF(LEVEL_ERROR,
+                                "Links failed to train for the given gpu pairs!\n");
+                        knvlinkLogAliDebugMessages(pFirstGpu, pKernelNvlink, NV_TRUE);
+                        return status;
+                    }
+                }
+                while(status != NV_ERR_TIMEOUT);
+            }
         }
 
         // Ensure that we can create a NvLink P2P object between the two object
@@ -415,6 +430,23 @@ _kp2pCapsGetStatusOverPcie
     NV_STATUS status = NV_OK;
     OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
     NvU8 unused; // atomics are never supported for mailbox PCIe.
+
+    //
+    // PCIe P2P is not supported on vGPU platform.
+    // Regkey overrides should also not apply to vGPU.
+    //
+    gpuInstance = 0;
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        if (IS_VIRTUAL(pGpu))
+        {
+            *pP2PReadCapStatus  = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+            *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+
+            NV_PRINTF(LEVEL_INFO, "PCIe P2P is not supported on vGPU\n");
+            return NV_OK;
+        }
+    }
 
     // Check if any overrides are enabled.
     if (_kp2pCapsCheckStatusOverridesForPcie(gpuMask, pP2PWriteCapStatus,
@@ -872,6 +904,13 @@ p2pGetCapsStatus
         {
             *pConnectivity = P2P_CONNECTIVITY_NVLINK;
             *pP2PAtomicsCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+            return NV_OK;
+        }
+        else if (*pP2PWriteCapStatus == NV0000_P2P_CAPS_STATUS_NOT_READY &&
+                 *pP2PReadCapStatus == NV0000_P2P_CAPS_STATUS_NOT_READY)
+        {
+            *pConnectivity = P2P_CONNECTIVITY_NVLINK;
+            *pP2PAtomicsCapStatus = NV0000_P2P_CAPS_STATUS_NOT_READY;
             return NV_OK;
         }
     }

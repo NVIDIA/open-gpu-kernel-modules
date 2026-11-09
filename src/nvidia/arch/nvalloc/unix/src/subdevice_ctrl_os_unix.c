@@ -96,3 +96,38 @@ subdeviceCtrlCmdOsUnixUpdateTgpStatus_IMPL
 
     return NV_OK;
 }
+
+/*!
+ * @brief Implements the NV2080_CTRL_CMD_OS_UNIX_GET_PCIE_PEER_MMIO_REMAP_INFO
+ *        RmControl request. Reports whether the driver can DMA-map a PCIe
+ *        peer's MMIO (BAR) through the IOMMU for this GPU, i.e. whether peer
+ *        MMIO remap via dma_map_resource()/map_phys() is usable.
+ *
+ * @param[in]  pSubdevice
+ * @param[out] pParams
+ *
+ * @return
+ *      NV_OK                   Success
+ *      NV_ERR_NOT_SUPPORTED    The GPU is coherently attached to the CPU
+ *                              (self-hosted): no PCIe peer path, so peer MMIO
+ *                              remap does not apply.
+ */
+NV_STATUS
+subdeviceCtrlCmdOsUnixGetPciePeerMmioRemapInfo_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_OS_UNIX_GET_PCIE_PEER_MMIO_REMAP_INFO_PARAMS *pParams
+)
+{
+    OBJGPU     *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    nv_state_t *nv   = NV_GET_NV_STATE(pGpu);
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    pParams->bMmioRemapUsable = nv_dma_is_map_resource_usable(nv->dma_dev);
+
+    return NV_OK;
+}

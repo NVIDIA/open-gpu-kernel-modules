@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -204,7 +204,7 @@ _memoryFabricDetachMem
         RsInterMapping *pInterMapping = pAttachMemInfoNode->pInterMapping;
 
         refRemoveInterMapping(pMemoryFabricRef, pInterMapping, NV_FALSE);
-        refDestroyInterMapping(pMemoryFabricRef, pInterMapping);
+        refDestroyInterMapping(&g_resServ, pMemoryFabricRef, pInterMapping);
     }
 
     btreeUnlink(&pAttachMemInfoNode->node, &pMemdescData->pAttachMemInfoTree);
@@ -246,7 +246,7 @@ _memoryFabricAttachMem
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
 
-    NV_ASSERT_OK_OR_RETURN(refCreateInterMapping(pMemoryFabricRef, &pInterMapping));
+    NV_ASSERT_OK_OR_RETURN(refCreateInterMapping(&g_resServ, pMemoryFabricRef, &pInterMapping));
 
     // No partial unmap supported
     pInterMapping->size = 0;
@@ -259,7 +259,7 @@ _memoryFabricAttachMem
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to setup inter mapping\n");
-        refDestroyInterMapping(pMemoryFabricRef, pInterMapping);
+        refDestroyInterMapping(&g_resServ, pMemoryFabricRef, pInterMapping);
         return status;
     }
 
@@ -312,7 +312,7 @@ unmapVas:
 
 freeInterMapping:
     refRemoveInterMapping(pMemoryFabricRef, pInterMapping, NV_FALSE);
-    refDestroyInterMapping(pMemoryFabricRef, pInterMapping);
+    refDestroyInterMapping(&g_resServ, pMemoryFabricRef, pInterMapping);
 
     return status;
 }
@@ -514,6 +514,8 @@ _memoryfabricAllocFabricVa
     OBJGPU                       *pGpu,
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams,
     NV00F8_ALLOCATION_PARAMETERS *pAllocParams,
+    NvU64                         fabricBaseOverride,
+    FABRIC_ALLOC_FLAGS            fabricFlags,
     VAS_ALLOC_FLAGS               flags,
     NvU64                       **ppAddr,
     NvU32                        *pNumAddr
@@ -525,37 +527,14 @@ _memoryfabricAllocFabricVa
                                                pAllocParams, ppAddr,
                                                pNumAddr);
     }
-    else
-    {
-        NvBool bEmulatedHandle = !!(pAllocParams->allocFlags &
-                                    NV00F8_ALLOC_FLAGS_HANDLE_TRANSLATION);
-        NvU64 rangeLo;
-        NvU64 rangeHi;
 
-        if (bEmulatedHandle)
-        {
-            if (fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS) == 0)
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                          "UC emulated-handle heap not configured on this platform\n");
-                return NV_ERR_NOT_SUPPORTED;
-            }
-            rangeLo = fabricvaspaceGetUCEmulatedHandleFlaStart(pFabricVAS);
-            rangeHi = fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS);
-        }
-        else
-        {
-            rangeLo = fabricvaspaceGetUCFlaStart(pFabricVAS);
-            rangeHi = fabricvaspaceGetUCFlaLimit(pFabricVAS);
-        }
-
-        return fabricvaspaceAllocNonContiguous(pFabricVAS,
-                                               pAllocParams->allocSize,
-                                               pAllocParams->alignment,
-                                               rangeLo, rangeHi,
-                                               pAllocParams->pageSize, flags,
-                                               ppAddr, pNumAddr);
-    }
+    return fabricvaspaceAllocPtrResources(pFabricVAS, pGpu,
+                                          pAllocParams->allocSize,
+                                          pAllocParams->alignment,
+                                          pAllocParams->pageSize,
+                                          fabricBaseOverride,
+                                          fabricFlags, flags,
+                                          ppAddr, pNumAddr);
 }
 
 static void
@@ -619,6 +598,7 @@ memoryfabricConstruct_IMPL
     FABRIC_MEMDESC_DATA *pMemdescData = NULL;
     MEM_DESC_DESTROY_CALLBACK *pCallback = NULL;
     VAS_ALLOC_FLAGS flags = {0};
+    FABRIC_ALLOC_FLAGS fabricFlags = {0};
     NvU64   *pAddr = NULL;
     NvU32    numAddr = 0;
     NvU32    pteKind = 0;
@@ -627,6 +607,7 @@ memoryfabricConstruct_IMPL
     NvBool   bFlexible = NV_FALSE;
     NvU32    mapFlags = 0;
     NV_ADDRESS_SPACE addrSpace = ADDR_UNKNOWN;
+    NvU64 fabricBaseOverride = 0;
 
     if (RS_IS_COPY_CTOR(pParams))
     {
@@ -731,29 +712,17 @@ memoryfabricConstruct_IMPL
     flags.bForceNonContig = !!(pAllocParams->allocFlags &
                                NV00F8_ALLOC_FLAGS_FORCE_NONCONTIGUOUS);
 
-    {
-        NvBool bEmulatedHandle = !!(pAllocParams->allocFlags &
-                                    NV00F8_ALLOC_FLAGS_HANDLE_TRANSLATION);
+    // Translate NV00F8 alloc flags into the fabric-level FABRIC_ALLOC_FLAGS.
+    fabricFlags.bHandleTranslation = !!(pAllocParams->allocFlags &
+                                        NV00F8_ALLOC_FLAGS_HANDLE_TRANSLATION);
 
+    {
         status = _memoryfabricAllocFabricVa(pFabricVAS, pGpu,
                                             pParams, pAllocParams,
-                                            flags, &pAddr, &numAddr);
+                                            fabricBaseOverride, fabricFlags, flags,
+                                            &pAddr, &numAddr);
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR,
-                      "VA Space alloc failed! Status Code: 0x%x Size: 0x%llx "
-                      "RangeLo: 0x%llx, RangeHi: 0x%llx, page size: 0x%llx, "
-                      "heap: %s\n",
-                      status, pAllocParams->allocSize,
-                      bEmulatedHandle
-                          ? fabricvaspaceGetUCEmulatedHandleFlaStart(pFabricVAS)
-                          : fabricvaspaceGetUCFlaStart(pFabricVAS),
-                      bEmulatedHandle
-                          ? fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS)
-                          : fabricvaspaceGetUCFlaLimit(pFabricVAS),
-                      pAllocParams->pageSize,
-                      bEmulatedHandle ? "uc-emulated-handle" : "uc-pointer");
-
             return status;
         }
 

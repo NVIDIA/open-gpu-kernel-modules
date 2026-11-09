@@ -112,6 +112,13 @@ NvBool rmapiLockIsWriteOwner(void);
 void rmapiLockGetTimes(NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *);
 
 /**
+ * Bug 5785851 WAR: emit a no-op KeSetPriorityThread call on the calling thread
+ * to nudge DxgKrnl's DC-mode priority-promotion heuristic. Gated on the
+ * RmWar5785851 regkey; callers scope this to NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT.
+ */
+void rmapiDxgkrnlNudge(void);
+
+/**
  * Indicates current thread is in the RTD3 PM path (rm_transition_dynamic_power) which
  * means that certain locking asserts/checks must be skipped due to inability to acquire
  * the API lock in this path.

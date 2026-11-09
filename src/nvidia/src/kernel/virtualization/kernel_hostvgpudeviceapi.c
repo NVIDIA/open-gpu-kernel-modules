@@ -109,6 +109,21 @@ kernelhostvgpudeviceapiConstruct_IMPL
         return kernelhostvgpudeviceapiCopyConstruct_IMPL(pKernelHostVgpuDeviceApi, pCallContext, pParams);
     }
 
+    // Reject new host vGPU device alloc when GPU is marked for reset.
+    // Drain is a separate state machine, not triggered by gpuMarkDeviceForReset (XID 154);
+    // out of scope here.
+    {
+        NvBool bResetRequired = NV_FALSE;
+
+        if (gpuIsDeviceMarkedForReset(pGpu, &bResetRequired) == NV_OK && bResetRequired)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "GPU marked for reset (recovery=%s); rejecting new vGPU host device allocation.\n",
+                      gpuRecoveryActionName(pGpu, pGpu->currentRecoveryAction));
+            return NV_ERR_GPU_IN_FULLCHIP_RESET;
+        }
+    }
+
     pClient = pCallContext->pClient;
 
     status = kvgpumgrGuestRegister(pGpu,
@@ -1208,7 +1223,6 @@ done:
             pKernelHostVgpuDevice->pGspPluginHeapMemDesc = NULL;
         }
 
-        kvgpumgrGuestUnregister(pGpu, pKernelHostVgpuDevice);
     }
     else
     {
@@ -1331,10 +1345,8 @@ _kernelhostvgpudeviceapiKVEncodeBootloadParams
                                INIT_TASK_LOG_BUFF_SIZE, pBootloadParams->initTaskLogBuffSize,
                                VGPU_TASK_LOG_BUFF_OFFSET, pBootloadParams->vgpuTaskLogBuffOffset,
                                VGPU_TASK_LOG_BUFF_SIZE, pBootloadParams->vgpuTaskLogBuffSize);
-    NVKV_SET_SEQ64_4U(&ctx, 0, KERNEL_LOG_BUFF_OFFSET, pBootloadParams->kernelLogBuffOffset,
-                               KERNEL_LOG_BUFF_SIZE, pBootloadParams->kernelLogBuffSize,
-                               MIG_RM_HEAP_MEMORY_PHYS_ADDR, pBootloadParams->migRmHeapMemoryPhysAddr,
-                               MIG_RM_HEAP_MEMORY_LENGTH, pBootloadParams->migRmHeapMemoryLength);
+    NVKV_SET_SEQ64_2U(&ctx, 0, KERNEL_LOG_BUFF_OFFSET, pBootloadParams->kernelLogBuffOffset,
+                               KERNEL_LOG_BUFF_SIZE, pBootloadParams->kernelLogBuffSize);
     {
         NvU64 options = NVKV_NUM64(OPTIONS_DEVICE_PROFILING_ENABLED, pBootloadParams->bDeviceProfilingEnabled) |
                         NVKV_NUM64(OPTIONS_DISABLE_DEFAULT_SMC_EXEC_PART_RESTORE, pBootloadParams->bDisableDefaultSmcExecPartRestore);

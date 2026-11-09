@@ -320,6 +320,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_AMPERE,      0xE20E, CS_AMPERE_AMPEREONE192, "Ampere AmpereOne-192", Ampere_AmpereOne_setupFunc},
     {PCI_VENDOR_ID_AMPERE,      0xE20F, CS_AMPERE_AMPEREONE192, "Ampere AmpereOne-192", Ampere_AmpereOne_setupFunc},
     {PCI_VENDOR_ID_NVIDIA,      0x22D1, CS_NVIDIA_T254,         "T254",                 Nvidia_T194_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x2F88, CS_NVIDIA_T256,         "T256",                 Nvidia_T194_setupFunc},
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -454,6 +455,7 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_AMPERE,      0xE20F, CS_AMPERE_AMPEREONE192},   // Ampere AmpereOne-192
     {PCI_VENDOR_ID_NVIDIA,      0x3400, CS_NVIDIA_T268},        // NVIDIA Tegra RP iGPU
     {PCI_VENDOR_ID_NVIDIA,      0x22D1, CS_NVIDIA_T254},
+    {PCI_VENDOR_ID_NVIDIA,      0x2F88, CS_NVIDIA_T256},        // NVIDIA T256 (N1)
 
     // last element must have chipset CS_UNKNOWN (zero)
     {0,                         0,      CS_UNKNOWN}

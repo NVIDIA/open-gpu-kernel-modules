@@ -59,6 +59,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB20B[] =
     GPU_CHILD_PRESENT(OBJTMR, 1),
     GPU_CHILD_PRESENT(KernelMIGManager, 1),
     GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelVbios, 1),
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
@@ -86,7 +87,8 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB20B[] =
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelGsplite, 1),
     GPU_CHILD_PRESENT(KernelHFRP, 1),
-    GPU_CHILD_PRESENT(KernelOob, 1),
+    GPU_CHILD_PRESENT(TdispMgr, 1),
+    GPU_CHILD_PRESENT(KernelOob, 0),
 };
 
 const GPUCHILDPRESENT *
@@ -234,7 +236,7 @@ gpuPowerOn_GB20B(OBJGPU *pGpu)
         NV_PRINTF(LEVEL_ERROR,
                   "ERROR: HFRP_CMD_failed to turn on iGPU power with status = 0x%x\n",
                   status);
-        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x80);
+        GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_PON_GPU_HFRP_STATUS_ERROR);
         return status;
     }
 
@@ -245,7 +247,7 @@ gpuPowerOn_GB20B(OBJGPU *pGpu)
                   "ERROR: HFRP_CMD_failed to turn on iGPU power with HFRP response status = 0x%x\n",
                   responseStatus);
 
-        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x81);
+        GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_PON_GPU_HFRP_RESPONSE_ERROR);
 
         return NV_ERR_GENERIC;
     }
@@ -260,7 +262,7 @@ gpuPowerOn_GB20B(OBJGPU *pGpu)
         NV_PRINTF(LEVEL_ERROR,
                   "ERROR: HFRP_CMD_failed to turn on HDA power\n");
 
-        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x82);
+        GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_PON_HDA_HFRP_ERROR);
 
         status = NV_OK;
     }
@@ -309,7 +311,7 @@ gpuPowerOff_GB20B(OBJGPU *pGpu)
                   "ERROR: HFRP_CMD_failed to turn off iGPU power with status = 0x%x\n",
                   status);
 
-        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x83);
+        GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_POFF_GPU_HFRP_STATUS_ERROR);
 
         return status;
     }
@@ -321,7 +323,7 @@ gpuPowerOff_GB20B(OBJGPU *pGpu)
                   "ERROR: HFRP_CMD_failed to turn off iGPU power with HFRP response status = 0x%x\n",
                   responseStatus);
 
-        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x84);
+        GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_POFF_GPU_HFRP_RESPONSE_ERROR);
 
         return NV_ERR_GENERIC;
     }
@@ -377,7 +379,7 @@ gpuPowerOnHda_GB20B(OBJGPU *pGpu)
         NV_PRINTF(LEVEL_ERROR,
                   "ERROR: HFRP_CMD_failed to turn on iGPU HDA power with status = 0x%x\n",
                   status);
-        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x85);
+        GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_PON_HDA_HFRP_STATUS_ERROR);
 
         return status;
     }
@@ -389,7 +391,7 @@ gpuPowerOnHda_GB20B(OBJGPU *pGpu)
                   "ERROR: HFRP_CMD_failed to turn on iGPU HDA power with HFRP response status = 0x%x\n",
                   responseStatus);
 
-        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x86);
+        GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_PON_HDA_HFRP_RESPONSE_ERROR);
 
         return NV_ERR_GENERIC;
     }
@@ -444,7 +446,7 @@ gpuPowerOffHda_GB20B(OBJGPU *pGpu)
                   "ERROR: HFRP_CMD_failed to turn off iGPU HDA power with status = 0x%x\n",
                   status);
 
-        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x87);
+        GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_POFF_HDA_HFRP_STATUS_ERROR);
 
         return status;
     }
@@ -455,7 +457,7 @@ gpuPowerOffHda_GB20B(OBJGPU *pGpu)
         NV_PRINTF(LEVEL_ERROR,
                   "ERROR: HFRP_CMD_failed to turn off iGPU HDA power with HFRP response status = 0x%x\n",
                   responseStatus);
-        OS_POWER_ASSERT_OR_BUGCHECK(pGpu, 0x88);
+        GCX_D3BREAK_AND_BUGCHECK(pGpu, GCX_BREAK_BUGCHECK_CODE_POFF_HDA_HFRP_RESPONSE_ERROR);
 
         return NV_ERR_GENERIC;
     }

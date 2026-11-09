@@ -496,21 +496,9 @@ static inline void kheadSetVblankNormLatencyCounter_d44104(struct KernelHead *pK
     return;
 }
 
-static inline void kheadResetPendingLastData_f2d351(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState){
-    NV_ASSERT_PRECOMP(0);
-}
-
 static inline NvBool kheadReadVblankIntrEnable_72a2e1(struct OBJGPU *pGpu, struct KernelHead *pKernelHead){
     NV_ASSERT_PRECOMP(0);
     return NV_FALSE;
-}
-
-static inline NvBool kheadReadVblankIntrEnable_86b752(struct OBJGPU *pGpu, struct KernelHead *pKernelHead){
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_FALSE);
-}
-
-static inline NvBool kheadGetDisplayInitialized_86b752(struct OBJGPU *pGpu, struct KernelHead *pKernelHead){
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_FALSE);
 }
 
 static inline void kheadWriteVblankIntrEnable_e426af(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvBool arg3){
@@ -518,27 +506,8 @@ static inline void kheadWriteVblankIntrEnable_e426af(struct OBJGPU *pGpu, struct
     return;
 }
 
-static inline void kheadProcessVblankCallbacks_e426af(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 arg3){
-    NV_ASSERT_PRECOMP(0);
-    return;
-}
-
-static inline void kheadResetPendingVblank_f2d351(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState){
-    NV_ASSERT_PRECOMP(0);
-}
-
 static inline void kheadResetPendingVblank_d715ac(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState){
     kheadResetPendingLastData(pGpu, pKernelHead, pThreadState);
-}
-
-static inline void kheadResetPendingVblank_e426af(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState){
-    NV_ASSERT_PRECOMP(0);
-    return;
-}
-
-static inline NvBool kheadReadPendingVblank_72a2e1(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 *pCachedIntr, THREAD_STATE_NODE *pThreadState){
-    NV_ASSERT_PRECOMP(0);
-    return NV_FALSE;
 }
 
 static inline NvU32 kheadGetLoadVCounter_b2b553(struct OBJGPU *pGpu, struct KernelHead *pKernelHead){
@@ -559,10 +528,6 @@ static inline void kheadVsyncNotificationOverRgVblankIntr_d44104(struct OBJGPU *
 
 static inline void kheadResetRgLineIntrMask_d44104(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 headIntrMask, THREAD_STATE_NODE *pThreadState){
     return;
-}
-
-static inline void kheadProcessRgLineCallbacks_ca557d(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 head, NvU32 *headIntrMask, NvU32 *clearIntrMask, NvBool isIsr){
-    NV_ASSERT_OR_RETURN_VOID_PRECOMP(0);
 }
 
 static inline void kheadReadPendingRgSemIntr_d44104(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, HEADINTRMASK *pHeadIntrMask, THREAD_STATE_NODE *pThreadState, NvU32 *pCachedIntr){

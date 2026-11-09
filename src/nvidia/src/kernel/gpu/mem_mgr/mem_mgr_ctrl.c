@@ -102,18 +102,7 @@ memmgrGetDeviceCaps
         RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _SUPPORT_SYSMEM_COMPRESSION);
     }
 
-    if (pKernelMemorySystem->bDisableTiledCachingInvalidatesWithEccBug1521641)
-    {
-        if (pMemorySystemConfig->bEnabledEccFBPA || IS_VIRTUAL(pGpu))
-        {
-            RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _DISABLE_TILED_CACHING_INVALIDATES_WITH_ECC_BUG_1521641);
-        }
-    }
-
-    if (pMemoryManager->bGenericKindSupport)
-    {
-        RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _GENERIC_PAGE_KIND);
-    }
+    RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _GENERIC_PAGE_KIND);
 
     if (memmgrIsScrubOnFreeEnabled(pMemoryManager)) {
         RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _VIDMEM_ALLOCS_ARE_CLEARED);
@@ -750,8 +739,7 @@ subdeviceCtrlCmdGbGetSemaphoreSurfaceLayout_IMPL
     
     pParams->caps = 0;
 
-    if (pMemoryManager->bMonitoredFenceSupported)
-        pParams->caps |= NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_CAPS_MONITORED_FENCE_SUPPORTED;
+    pParams->caps |= NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_CAPS_MONITORED_FENCE_SUPPORTED;
 
     if (pMemoryManager->b64BitSemaphoresSupported)
         pParams->caps |= NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_CAPS_64BIT_SEMAPHORES_SUPPORTED;

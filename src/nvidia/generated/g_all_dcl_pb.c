@@ -32,6 +32,18 @@ const PRB_FIELD_DESC prb_fields_dcl_engines[] = {
         PRB_MAYBE_FIELD_NAME("eng_mc")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
+    {
+        26,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_ENG_HANGDEBUG,
+        0,
+        PRB_MAYBE_FIELD_NAME("eng_hang_debug")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
 };
 
 // 'DclMsg' field defaults
@@ -182,6 +194,42 @@ const PRB_FIELD_DESC prb_fields_dcl_dclmsg[] = {
         PRB_MAYBE_FIELD_NAME("gsp_rpcperf")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
+    {
+        349,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        GSP_TIMEOUTREPORT,
+        0,
+        PRB_MAYBE_FIELD_NAME("gsp_timeoutreport")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        350,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        GSP_COREDUMPREPORT,
+        0,
+        PRB_MAYBE_FIELD_NAME("gsp_coredumpreport")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        351,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        GSP_RMSTATEDUMPREPORT,
+        0,
+        PRB_MAYBE_FIELD_NAME("gsp_rmstatedumpreport")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
 };
 
 // 'ErrorBlock' field defaults
@@ -205,12 +253,12 @@ const PRB_FIELD_DESC prb_fields_dcl_errorblock[] = {
 // Message descriptors
 const PRB_MSG_DESC prb_messages_dcl[] = {
     {
-        2,
+        3,
         prb_fields_dcl_engines,
         PRB_MAYBE_MESSAGE_NAME("Dcl.Engines")
     },
     {
-        12,
+        15,
         prb_fields_dcl_dclmsg,
         PRB_MAYBE_MESSAGE_NAME("Dcl.DclMsg")
     },

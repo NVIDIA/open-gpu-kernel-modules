@@ -45,13 +45,21 @@ kgspGetLibos3BaremetalMinWprHeapSizeMB_GR100
     // Self-hosted mode is cached only after GSP-RM boots, but the WPR heap size
     // is selected before boot. Self-hosted GR100 platforms are AArch64.
     //
-    if (pGpu->busInfo.oorArch == OOR_ARCH_AARCH64)
+    if (IsGR100(pGpu) &&
+        (pGpu->busInfo.oorArch == OOR_ARCH_AARCH64))
     {
         // Temporary WAR for Bug 6492810 while investigating GSP-RM heap fragmentation.
         return GSP_FW_HEAP_SIZE_GR100_BAREMETAL_MIN_MB;
     }
 
-    return GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MIN_MB;
+    //
+    // The shared minimum is sized for Blackwell boot usage. Rubin+ needs about
+    // twice that, so double it until the per-chip minimums are derived from
+    // measured boot peaks.
+    //
+    // TODO (GSPRM-1693): replace with a measured per-chip minimum.
+    //
+    return 2 * GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MIN_MB;
 }
 
 /*!
@@ -107,4 +115,47 @@ kgspReleaseGspScratchAperture_GR100
         objDelete(*ppAperture);
         *ppAperture = NULL;
     }
+}
+
+const char*
+kgspGetTdispSignatureSectionNamePrefix_GR100
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    return GSP_CC_SIGNATURE_SECTION_NAME_PREFIX;
+}
+
+/*!
+ * Get concatenated FMC descriptor for TDISP
+ */
+const BINDATA_ARCHIVE *
+kgspGetBinArchiveConcatenatedFMCDescTdisp_GR100
+(
+    KernelGsp *pKernelGsp
+)
+{
+    return kgspGetBinArchiveConcatenatedFMCDesc_GR100(pKernelGsp);
+}
+
+/*!
+ * Get concatenated FMC ucode for TDISP
+ */
+const BINDATA_ARCHIVE *
+kgspGetBinArchiveConcatenatedFMCTdisp_GR100
+(
+    KernelGsp *pKernelGsp
+)
+{
+    return kgspGetBinArchiveConcatenatedFMC_GR100(pKernelGsp);
+}
+
+const BINDATA_ARCHIVE *
+kgspGetBinArchiveGspRmFmcTdispGfwProdSigned_GR100
+(
+    KernelGsp *pKernelGsp
+)
+{
+    return kgspGetBinArchiveGspRmCcFmcGfwProdSigned_GR100(pKernelGsp);
 }

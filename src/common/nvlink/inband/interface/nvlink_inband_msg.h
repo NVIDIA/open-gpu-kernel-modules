@@ -400,7 +400,9 @@ typedef struct
 {
     NvU64 mcAllocSize;           /* Multicast allocation size requested */
     NvU32 flags;                 /* NVLINK_INBAND_MC_TEAM_SETUP_FLAG_X */
-    NvU8  doNotUse[8];           /* Don't not use, NVL5+ doesn't copy these fields */
+    NvU16 numUnitMin;            /* Min number of resource units needed */
+    NvU16 numUnitMax;            /* Max number of resource units needed */
+    NvU8  doNotUse[4];           /* Don't not use, NVL5+ doesn't copy these fields */
     NvU16 numGpuHandles;         /* Number of GPUs in this team */
     NvU16 numKeys;               /* Number of keys (a.k.a request ID) used by FM to send response */
     NvU64 gpuHandlesAndKeys[];   /* Array of probed handles and keys, should be last */
@@ -428,7 +430,8 @@ typedef struct
 {
     NvU64 mcTeamHandle;          /* Unique handle assigned for this Multicast team */
     NvU32 flags;                 /* For future use. Must be initialized to zero */
-    NvU8  reserved[8];           /* For future use. Must be initialized to zero */
+    NvU16 numUnitAllocated;      /* Number of resource units allocated */
+    NvU8  reserved[6];           /* For future use. Must be initialized to zero */
     NvU64 mcAddressBase;         /* FLA starting address assigned for the Multicast slot */
     NvU64 mcAddressSize;         /* Should be same as mcAllocSize */
 } nvlink_inband_mc_team_setup_rsp_t;
@@ -504,8 +507,8 @@ typedef struct
 typedef nvlink_inband_mc_team_setup_rsp_t nvlink_inband_mc_team_setup_replay_rsp_t;
 typedef nvlink_inband_mc_team_setup_rsp_msg_t nvlink_inband_mc_team_setup_replay_rsp_msg_t;
 
-#define NVLINK_INBAND_MAX_HSHUB 6
-#define NVLINK_INBAND_MAX_NVLMUX 12
+#define NVLINK_INBAND_MAX_NUM_HSHUB 6
+#define NVLINK_INBAND_MAX_NUM_NVLMUX 12
 #define NVLINK_INBAND_MAX_NVLINK_PER_HSHUB 12
 
 #define NVLINK_INBAND_AMAP_INVALID_CFG   0 // invalidate all AMAP config on the GPU
@@ -541,14 +544,14 @@ typedef struct
 {
     NvU64  gpuHandle;        /* GPU Handle allocated in GPU probe response */
     NvU8   numMUXes;         /* number of MUXs on the GPU */
-    nvlink_inband_gpu_nvlmux_cfg_t muxConfig[NVLINK_INBAND_MAX_NVLMUX];
+    nvlink_inband_gpu_nvlmux_cfg_t muxConfig[NVLINK_INBAND_MAX_NUM_NVLMUX];
     NvU8   amapId;           /* an identifier to support multiple amaps on the GPU */
     NvU8   cfgType;          /* NVLINK_INBAND_AMAP_INVALID/UNICAST/MULTICAST_CFG */
     NvU64  enabledLinkMask0; /* updated enabled link mask: [0,64) */
     NvU64  enabledLinkMask64;/* updated enabled link mask: [64,128) */
     NvU32  flags;            /* NVLINK_INBAND_HSHUB_CFG_FLAG_ */
     NvU8   numHSHUBs;        /* number of HSHUBs on the GPU */
-    nvlink_inband_gpu_hshub_cfg_t  hshubConfig[NVLINK_INBAND_MAX_HSHUB];
+    nvlink_inband_gpu_hshub_cfg_t  hshubConfig[NVLINK_INBAND_MAX_NUM_HSHUB];
 } nvlink_inband_gpu_amap_cfg_req_t;
 
 typedef struct

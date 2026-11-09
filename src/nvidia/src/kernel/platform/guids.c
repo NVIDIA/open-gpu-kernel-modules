@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,8 +67,8 @@ GUID_CONST (PCFG_DSM_GUID,
         0x81C6147DL, 0x735F, 0x42D9, 0x9E, 0x41, 0xB0, 0x02, 0xCB, 0xC6, 0x57, 0x1D);
 // Buffer(0x10){0x7D, 0x14, 0C6, 0x81, 0x5F, 0x73, 0xD9, 0x42, 0x9E, 0x41, 0xB0, 0x02, 0xCB, 0xC6, 0x57, 0x1D},
 
-// _DSM GPS GUID {A3132D01-8CDA-49BA-A52E-BC9D46DF6B81}
-GUID_CONST (GPS_DSM_GUID,
+// _DSM PRH GUID {A3132D01-8CDA-49BA-A52E-BC9D46DF6B81}
+GUID_CONST (PRH_DSM_GUID,
         0xA3132D01L, 0x8CDA, 0x49BA, 0xA5, 0x2E, 0xBC, 0x9D, 0x46, 0xDF, 0x6B, 0x81);
 
 // _DSM_ JT GUID {CBECA351-067B-4924-9CBD-B46B00B86F34}

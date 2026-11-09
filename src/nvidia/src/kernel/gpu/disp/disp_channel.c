@@ -444,12 +444,28 @@ kdispMapDispChannel_IMPL
     // Only need the map for the parent GPU since we require the client to
     // use RmMapMemory for subdevice channel mapping.
     //
-    rmStatus = osMapGPU(pGpu, privLevel,
-                        pDispChannel->ControlOffset,
-                        pDispChannel->ControlLength,
-                        NV_PROTECT_READ_WRITE,
-                       &pDispChannel->pControl,
-                       &pDispChannel->pPriv);
+#if defined(NV_UNIX) && (!defined(NV_MODS))
+    if (privLevel < RS_PRIV_LEVEL_KERNEL)
+    {
+        //
+        // The client creates the userspace mapping through RmMapMemory.
+        // Return the first physical address without creating an mmap context.
+        //
+        pDispChannel->pControl =
+            (NvP64)(pGpu->busInfo.gpuPhysAddr + pDispChannel->ControlOffset);
+        pDispChannel->pPriv = NvP64_NULL;
+        rmStatus = NV_OK;
+    }
+    else
+#endif
+    {
+        rmStatus = osMapGPU(pGpu, privLevel,
+                            pDispChannel->ControlOffset,
+                            pDispChannel->ControlLength,
+                            NV_PROTECT_READ_WRITE,
+                           &pDispChannel->pControl,
+                           &pDispChannel->pPriv);
+    }
     if (rmStatus != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -484,8 +500,14 @@ void kdispUnbindUnmapDispChannel_IMPL
     dispchnUnbindAllCtx(pGpu, pDispChannel);
 
     // Unmap the channel
-    osUnmapGPU(pGpu->pOsGpuInfo, privLevel, pDispChannel->pControl,
-               pDispChannel->ControlLength, pDispChannel->pPriv);
+#if defined(NV_UNIX) && (!defined(NV_MODS))
+    // No allocation-time mapping was created for a userspace client.
+    if (privLevel >= RS_PRIV_LEVEL_KERNEL)
+#endif
+    {
+        osUnmapGPU(pGpu->pOsGpuInfo, privLevel, pDispChannel->pControl,
+                   pDispChannel->ControlLength, pDispChannel->pPriv);
+    }
 }
 
 void

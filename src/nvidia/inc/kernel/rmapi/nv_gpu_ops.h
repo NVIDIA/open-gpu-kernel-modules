@@ -53,6 +53,8 @@ NV_STATUS calculatePCIELinkRateMBps(NvU32 lanes,
 
 NV_STATUS nvGpuOpsCreateSession(struct gpuSession **session);
 
+NV_STATUS nvGpuOpsIsTdispEnabled(NvBool *pTdispEnabled);
+
 NV_STATUS nvGpuOpsDestroySession(struct gpuSession *session);
 
 NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,

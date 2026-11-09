@@ -75,7 +75,7 @@ bool DisplayPort::decodeHeader(BitStreamReader * reader, MessageHeader * header,
     {
         // Corrupt packet received
         char buffer[48*3+1];
-        dpHexDump(&buffer[0], sizeof(buffer), (NvU8*)reader->buffer() + startOffset, reader->offset() - startOffset);
+        dpHexDump(&buffer[0], sizeof(buffer), reader->buffer()->data + startOffset / 8, (reader->offset() - startOffset) / 8);
         DP_PRINTF(DP_ERROR, "DP-MM> Corrupt message transaction.  Expected CRC %d. Message = {%s}",  dpCalculateHeaderCRC(&crcReader), buffer);
 
         return false;

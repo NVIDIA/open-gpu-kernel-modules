@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,6 +81,8 @@ typedef enum
     NVDUMP_COMPONENT_ENG_GCX,
     NVDUMP_COMPONENT_ENG_KGSP,
     NVDUMP_COMPONENT_ENG_KERNEL_NVLINK,
+    NVDUMP_COMPONENT_ENG_NVLINK_REMAP_TABLE,
+    NVDUMP_COMPONENT_ENG_NVLINK_MSE,
     // The following components are global to the system:
     NVDUMP_COMPONENT_SYS_RCDB = 0x400,
     NVDUMP_COMPONENT_SYS_SYSINFO,
@@ -130,7 +132,7 @@ typedef struct
 } NVDUMP_BUFFER;
 
 // Max number of bytes that can be returned in a dump buffer
-#define NVDUMP_MAX_DUMP_SIZE (1 << 20) // 1 MB
+#define NVDUMP_MAX_DUMP_SIZE (8 << 20) // 8 MB
 
 typedef struct
 {

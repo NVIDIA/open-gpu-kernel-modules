@@ -75,6 +75,7 @@ void crashcatReportLogSource_V1_LIBOS3(CrashCatReport *pReport)
     NvCrashCatNvriscvPartition sourcePartition = crashcatReportV1SourcePartition(pReportV1);
     NvCrashCatNvriscvUcodeId sourceUcodeId = crashcatReportV1SourceUcodeId(pReportV1);    
     NvCrashCatGfid sourceGfid = crashcatReportV1SourceLibos3Gfid(pReportV1);
+    NvCrashCatGfid servingGfid = crashcatReportV1SourceLibos3ServingGfid(pReportV1);
 
     /*
      * We use the CRASHCAT_REPORT_LOG_PACKET_TYPE macro to get the correct 
@@ -91,6 +92,8 @@ void crashcatReportLogSource_V1_LIBOS3(CrashCatReport *pReport)
         else                                                                                        \
             crashcatEnginePrintf(pReport->pEngine, CRASHCAT_DEFAULT_XID, fmt ", partition:%u#%u, task:%u, gfid: %u", \
                                  ##__VA_ARGS__, sourcePartition, sourceUcodeId, taskId, sourceGfid);                    \
+        if ((servingGfid != NV_CRASHCAT_GFID_UNSPECIFIED) && (servingGfid != 0))                    \
+            CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "serving_gfid: %u\n", servingGfid);            \
     } while(0)
 
     const char *pModeStr = crashcatReportModeToString_LIBOS3(crashcatReportV1SourceMode(pReportV1));

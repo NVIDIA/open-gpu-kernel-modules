@@ -13,7 +13,19 @@ extern const PRB_MSG_DESC prb_messages_gsp[];
 #define GSP_RPCHISTORYGSPTOCPU (&prb_messages_gsp[2])
 #define GSP_RPCDEBUGINFO (&prb_messages_gsp[3])
 #define GSP_XIDREPORT (&prb_messages_gsp[4])
-#define GSP_RPCPERF (&prb_messages_gsp[5])
+#define GSP_PERSISTENTGSPTRACERECORD (&prb_messages_gsp[5])
+#define GSP_HEARTBEATINFO (&prb_messages_gsp[6])
+#define GSP_MAILBOXREGISTER (&prb_messages_gsp[7])
+#define GSP_FALCONCOREDUMP (&prb_messages_gsp[8])
+#define GSP_FALCONICDCSR (&prb_messages_gsp[9])
+#define GSP_FALCONICDDUMP (&prb_messages_gsp[10])
+#define GSP_RMSTATEDUMPDPCQUEUEENTRY (&prb_messages_gsp[11])
+#define GSP_RMSTATEDUMPWORKITEMQUEUEENTRY (&prb_messages_gsp[12])
+#define GSP_RMSTATEDUMP (&prb_messages_gsp[13])
+#define GSP_RMSTATEDUMPREPORT (&prb_messages_gsp[14])
+#define GSP_TIMEOUTREPORT (&prb_messages_gsp[15])
+#define GSP_COREDUMPREPORT (&prb_messages_gsp[16])
+#define GSP_RPCPERF (&prb_messages_gsp[17])
 
 // Message maximum lengths
 // Does not include repeated fields, strings and byte arrays.
@@ -22,6 +34,18 @@ extern const PRB_MSG_DESC prb_messages_gsp[];
 #define GSP_RPCHISTORYGSPTOCPU_LEN 84
 #define GSP_RPCDEBUGINFO_LEN 260
 #define GSP_XIDREPORT_LEN 843
+#define GSP_PERSISTENTGSPTRACERECORD_LEN 52
+#define GSP_HEARTBEATINFO_LEN 37
+#define GSP_MAILBOXREGISTER_LEN 12
+#define GSP_FALCONCOREDUMP_LEN 142
+#define GSP_FALCONICDCSR_LEN 17
+#define GSP_FALCONICDDUMP_LEN 105
+#define GSP_RMSTATEDUMPDPCQUEUEENTRY_LEN 17
+#define GSP_RMSTATEDUMPWORKITEMQUEUEENTRY_LEN 17
+#define GSP_RMSTATEDUMP_LEN 108
+#define GSP_RMSTATEDUMPREPORT_LEN 118
+#define GSP_TIMEOUTREPORT_LEN 153
+#define GSP_COREDUMPREPORT_LEN 261
 #define GSP_RPCPERF_LEN 92
 
 extern const PRB_FIELD_DESC prb_fields_gsp_rpcentry[];
@@ -91,6 +115,242 @@ extern const PRB_FIELD_DESC prb_fields_gsp_xidreport[];
 #define GSP_XIDREPORT_BUILDID_LEN 1
 #define GSP_XIDREPORT_CRASHCATREPORT_LEN 564
 #define GSP_XIDREPORT_RPCDEBUGINFO_LEN 263
+
+extern const PRB_FIELD_DESC prb_fields_gsp_persistentgsptracerecord[];
+
+// 'PersistentGspTraceRecord' field descriptor pointers
+#define GSP_PERSISTENTGSPTRACERECORD_SEQ_NO (&prb_fields_gsp_persistentgsptracerecord[0])
+#define GSP_PERSISTENTGSPTRACERECORD_GSP_SEQ_NO (&prb_fields_gsp_persistentgsptracerecord[1])
+#define GSP_PERSISTENTGSPTRACERECORD_TRACE_TYPE (&prb_fields_gsp_persistentgsptracerecord[2])
+#define GSP_PERSISTENTGSPTRACERECORD_THREAD_ID (&prb_fields_gsp_persistentgsptracerecord[3])
+#define GSP_PERSISTENTGSPTRACERECORD_PARTITION_ID (&prb_fields_gsp_persistentgsptracerecord[4])
+#define GSP_PERSISTENTGSPTRACERECORD_INFO64 (&prb_fields_gsp_persistentgsptracerecord[5])
+#define GSP_PERSISTENTGSPTRACERECORD_TIMESTAMP (&prb_fields_gsp_persistentgsptracerecord[6])
+
+// 'PersistentGspTraceRecord' field lengths
+#define GSP_PERSISTENTGSPTRACERECORD_SEQ_NO_LEN 5
+#define GSP_PERSISTENTGSPTRACERECORD_GSP_SEQ_NO_LEN 5
+#define GSP_PERSISTENTGSPTRACERECORD_TRACE_TYPE_LEN 5
+#define GSP_PERSISTENTGSPTRACERECORD_THREAD_ID_LEN 5
+#define GSP_PERSISTENTGSPTRACERECORD_PARTITION_ID_LEN 5
+#define GSP_PERSISTENTGSPTRACERECORD_INFO64_LEN 10
+#define GSP_PERSISTENTGSPTRACERECORD_TIMESTAMP_LEN 10
+
+extern const PRB_FIELD_DESC prb_fields_gsp_heartbeatinfo[];
+
+// 'HeartbeatInfo' field descriptor pointers
+#define GSP_HEARTBEATINFO_MAILBOX_INDEX (&prb_fields_gsp_heartbeatinfo[0])
+#define GSP_HEARTBEATINFO_HEARTBEAT_TIME_MS (&prb_fields_gsp_heartbeatinfo[1])
+#define GSP_HEARTBEATINFO_CURRENT_TIME_MS (&prb_fields_gsp_heartbeatinfo[2])
+#define GSP_HEARTBEATINFO_DIFF_MS (&prb_fields_gsp_heartbeatinfo[3])
+#define GSP_HEARTBEATINFO_TIMEOUT_MS (&prb_fields_gsp_heartbeatinfo[4])
+#define GSP_HEARTBEATINFO_TIMED_OUT (&prb_fields_gsp_heartbeatinfo[5])
+
+// 'HeartbeatInfo' field lengths
+#define GSP_HEARTBEATINFO_MAILBOX_INDEX_LEN 5
+#define GSP_HEARTBEATINFO_HEARTBEAT_TIME_MS_LEN 5
+#define GSP_HEARTBEATINFO_CURRENT_TIME_MS_LEN 5
+#define GSP_HEARTBEATINFO_DIFF_MS_LEN 5
+#define GSP_HEARTBEATINFO_TIMEOUT_MS_LEN 10
+#define GSP_HEARTBEATINFO_TIMED_OUT_LEN 1
+
+extern const PRB_FIELD_DESC prb_fields_gsp_mailboxregister[];
+
+// 'MailboxRegister' field descriptor pointers
+#define GSP_MAILBOXREGISTER_INDEX (&prb_fields_gsp_mailboxregister[0])
+#define GSP_MAILBOXREGISTER_VALUE (&prb_fields_gsp_mailboxregister[1])
+
+// 'MailboxRegister' field lengths
+#define GSP_MAILBOXREGISTER_INDEX_LEN 5
+#define GSP_MAILBOXREGISTER_VALUE_LEN 5
+
+extern const PRB_FIELD_DESC prb_fields_gsp_falconcoredump[];
+
+// 'FalconCoreDump' field descriptor pointers
+#define GSP_FALCONCOREDUMP_RISCV_PC (&prb_fields_gsp_falconcoredump[0])
+#define GSP_FALCONCOREDUMP_RISCV_CPUCTL (&prb_fields_gsp_falconcoredump[1])
+#define GSP_FALCONCOREDUMP_RISCV_IRQMASK (&prb_fields_gsp_falconcoredump[2])
+#define GSP_FALCONCOREDUMP_RISCV_IRQDEST (&prb_fields_gsp_falconcoredump[3])
+#define GSP_FALCONCOREDUMP_RISCV_IRQDELEG (&prb_fields_gsp_falconcoredump[4])
+#define GSP_FALCONCOREDUMP_FALCON_MAILBOX (&prb_fields_gsp_falconcoredump[5])
+#define GSP_FALCONCOREDUMP_FALCON_IRQSTAT (&prb_fields_gsp_falconcoredump[6])
+#define GSP_FALCONCOREDUMP_FALCON_IRQMODE (&prb_fields_gsp_falconcoredump[7])
+#define GSP_FALCONCOREDUMP_FBIF_INSTBLK (&prb_fields_gsp_falconcoredump[8])
+#define GSP_FALCONCOREDUMP_FBIF_CTL (&prb_fields_gsp_falconcoredump[9])
+#define GSP_FALCONCOREDUMP_FBIF_THROTTLE (&prb_fields_gsp_falconcoredump[10])
+#define GSP_FALCONCOREDUMP_FBIF_ACHK_BLK (&prb_fields_gsp_falconcoredump[11])
+#define GSP_FALCONCOREDUMP_FBIF_ACHK_CTL (&prb_fields_gsp_falconcoredump[12])
+#define GSP_FALCONCOREDUMP_FBIF_CG1 (&prb_fields_gsp_falconcoredump[13])
+#define GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_STAT (&prb_fields_gsp_falconcoredump[14])
+#define GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_INFO (&prb_fields_gsp_falconcoredump[15])
+#define GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_ADDR (&prb_fields_gsp_falconcoredump[16])
+#define GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_ADDR_HI (&prb_fields_gsp_falconcoredump[17])
+#define GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_ADDR_LO (&prb_fields_gsp_falconcoredump[18])
+#define GSP_FALCONCOREDUMP_RISCV_HUB_ERR_STAT (&prb_fields_gsp_falconcoredump[19])
+#define GSP_FALCONCOREDUMP_TRACE_PC_ENTRIES (&prb_fields_gsp_falconcoredump[20])
+#define GSP_FALCONCOREDUMP_TRACE_PC (&prb_fields_gsp_falconcoredump[21])
+
+// 'FalconCoreDump' field lengths
+#define GSP_FALCONCOREDUMP_RISCV_PC_LEN 5
+#define GSP_FALCONCOREDUMP_RISCV_CPUCTL_LEN 5
+#define GSP_FALCONCOREDUMP_RISCV_IRQMASK_LEN 5
+#define GSP_FALCONCOREDUMP_RISCV_IRQDEST_LEN 5
+#define GSP_FALCONCOREDUMP_RISCV_IRQDELEG_LEN 5
+#define GSP_FALCONCOREDUMP_FALCON_MAILBOX_LEN 5
+#define GSP_FALCONCOREDUMP_FALCON_IRQSTAT_LEN 5
+#define GSP_FALCONCOREDUMP_FALCON_IRQMODE_LEN 5
+#define GSP_FALCONCOREDUMP_FBIF_INSTBLK_LEN 5
+#define GSP_FALCONCOREDUMP_FBIF_CTL_LEN 5
+#define GSP_FALCONCOREDUMP_FBIF_THROTTLE_LEN 5
+#define GSP_FALCONCOREDUMP_FBIF_ACHK_BLK_LEN 5
+#define GSP_FALCONCOREDUMP_FBIF_ACHK_CTL_LEN 5
+#define GSP_FALCONCOREDUMP_FBIF_CG1_LEN 5
+#define GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_STAT_LEN 5
+#define GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_INFO_LEN 5
+#define GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_ADDR_LEN 10
+#define GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_ADDR_HI_LEN 5
+#define GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_ADDR_LO_LEN 5
+#define GSP_FALCONCOREDUMP_RISCV_HUB_ERR_STAT_LEN 5
+#define GSP_FALCONCOREDUMP_TRACE_PC_ENTRIES_LEN 5
+#define GSP_FALCONCOREDUMP_TRACE_PC_LEN 10
+
+extern const PRB_FIELD_DESC prb_fields_gsp_falconicdcsr[];
+
+// 'FalconIcdCsr' field descriptor pointers
+#define GSP_FALCONICDCSR_INDEX (&prb_fields_gsp_falconicdcsr[0])
+#define GSP_FALCONICDCSR_VALUE (&prb_fields_gsp_falconicdcsr[1])
+
+// 'FalconIcdCsr' field lengths
+#define GSP_FALCONICDCSR_INDEX_LEN 5
+#define GSP_FALCONICDCSR_VALUE_LEN 10
+
+extern const PRB_FIELD_DESC prb_fields_gsp_falconicddump[];
+
+// 'FalconIcdDump' field descriptor pointers
+#define GSP_FALCONICDDUMP_CORE_BOOTED (&prb_fields_gsp_falconicddump[0])
+#define GSP_FALCONICDDUMP_RSTAT_SUCCESS_COUNT (&prb_fields_gsp_falconicddump[1])
+#define GSP_FALCONICDDUMP_RSTAT_SUCCESS_MASK (&prb_fields_gsp_falconicddump[2])
+#define GSP_FALCONICDDUMP_RSTAT (&prb_fields_gsp_falconicddump[3])
+#define GSP_FALCONICDDUMP_HALT_SUCCEEDED (&prb_fields_gsp_falconicddump[4])
+#define GSP_FALCONICDDUMP_PC_VALID (&prb_fields_gsp_falconicddump[5])
+#define GSP_FALCONICDDUMP_PC_FALLBACK (&prb_fields_gsp_falconicddump[6])
+#define GSP_FALCONICDDUMP_PC (&prb_fields_gsp_falconicddump[7])
+#define GSP_FALCONICDDUMP_GPR_VALID_MASK (&prb_fields_gsp_falconicddump[8])
+#define GSP_FALCONICDDUMP_GPR (&prb_fields_gsp_falconicddump[9])
+#define GSP_FALCONICDDUMP_CSR_READ_COUNT (&prb_fields_gsp_falconicddump[10])
+#define GSP_FALCONICDDUMP_CSR_TRUNCATED (&prb_fields_gsp_falconicddump[11])
+#define GSP_FALCONICDDUMP_CSR (&prb_fields_gsp_falconicddump[12])
+#define GSP_FALCONICDDUMP_UNWIND_DEPTH (&prb_fields_gsp_falconicddump[13])
+#define GSP_FALCONICDDUMP_UNWIND_PC (&prb_fields_gsp_falconicddump[14])
+
+// 'FalconIcdDump' field lengths
+#define GSP_FALCONICDDUMP_CORE_BOOTED_LEN 1
+#define GSP_FALCONICDDUMP_RSTAT_SUCCESS_COUNT_LEN 5
+#define GSP_FALCONICDDUMP_RSTAT_SUCCESS_MASK_LEN 5
+#define GSP_FALCONICDDUMP_RSTAT_LEN 10
+#define GSP_FALCONICDDUMP_HALT_SUCCEEDED_LEN 1
+#define GSP_FALCONICDDUMP_PC_VALID_LEN 1
+#define GSP_FALCONICDDUMP_PC_FALLBACK_LEN 1
+#define GSP_FALCONICDDUMP_PC_LEN 10
+#define GSP_FALCONICDDUMP_GPR_VALID_MASK_LEN 5
+#define GSP_FALCONICDDUMP_GPR_LEN 10
+#define GSP_FALCONICDDUMP_CSR_READ_COUNT_LEN 5
+#define GSP_FALCONICDDUMP_CSR_TRUNCATED_LEN 1
+#define GSP_FALCONICDDUMP_CSR_LEN 20
+#define GSP_FALCONICDDUMP_UNWIND_DEPTH_LEN 5
+#define GSP_FALCONICDDUMP_UNWIND_PC_LEN 10
+
+extern const PRB_FIELD_DESC prb_fields_gsp_rmstatedumpdpcqueueentry[];
+
+// 'RmStateDumpDpcQueueEntry' field descriptor pointers
+#define GSP_RMSTATEDUMPDPCQUEUEENTRY_INDEX (&prb_fields_gsp_rmstatedumpdpcqueueentry[0])
+#define GSP_RMSTATEDUMPDPCQUEUEENTRY_PENDING_ENGINES (&prb_fields_gsp_rmstatedumpdpcqueueentry[1])
+
+// 'RmStateDumpDpcQueueEntry' field lengths
+#define GSP_RMSTATEDUMPDPCQUEUEENTRY_INDEX_LEN 5
+#define GSP_RMSTATEDUMPDPCQUEUEENTRY_PENDING_ENGINES_LEN 10
+
+extern const PRB_FIELD_DESC prb_fields_gsp_rmstatedumpworkitemqueueentry[];
+
+// 'RmStateDumpWorkItemQueueEntry' field descriptor pointers
+#define GSP_RMSTATEDUMPWORKITEMQUEUEENTRY_INDEX (&prb_fields_gsp_rmstatedumpworkitemqueueentry[0])
+#define GSP_RMSTATEDUMPWORKITEMQUEUEENTRY_FUNCTION (&prb_fields_gsp_rmstatedumpworkitemqueueentry[1])
+
+// 'RmStateDumpWorkItemQueueEntry' field lengths
+#define GSP_RMSTATEDUMPWORKITEMQUEUEENTRY_INDEX_LEN 5
+#define GSP_RMSTATEDUMPWORKITEMQUEUEENTRY_FUNCTION_LEN 10
+
+extern const PRB_FIELD_DESC prb_fields_gsp_rmstatedump[];
+
+// 'RmStateDump' field descriptor pointers
+#define GSP_RMSTATEDUMP_REQUEST_SEQUENCE_NUMBER (&prb_fields_gsp_rmstatedump[0])
+#define GSP_RMSTATEDUMP_RESPONSE_SEQUENCE_NUMBER (&prb_fields_gsp_rmstatedump[1])
+#define GSP_RMSTATEDUMP_DPC_QUEUE (&prb_fields_gsp_rmstatedump[2])
+#define GSP_RMSTATEDUMP_WORK_ITEMS_QUEUE (&prb_fields_gsp_rmstatedump[3])
+#define GSP_RMSTATEDUMP_LAST_DPC_EXECUTION_TIME (&prb_fields_gsp_rmstatedump[4])
+#define GSP_RMSTATEDUMP_TOTAL_DPC_EXECUTION_TIME (&prb_fields_gsp_rmstatedump[5])
+#define GSP_RMSTATEDUMP_LAST_WORK_ITEMS_EXECUTION_TIME (&prb_fields_gsp_rmstatedump[6])
+#define GSP_RMSTATEDUMP_TOTAL_WORK_ITEMS_EXECUTION_TIME (&prb_fields_gsp_rmstatedump[7])
+
+// 'RmStateDump' field lengths
+#define GSP_RMSTATEDUMP_REQUEST_SEQUENCE_NUMBER_LEN 10
+#define GSP_RMSTATEDUMP_RESPONSE_SEQUENCE_NUMBER_LEN 10
+#define GSP_RMSTATEDUMP_DPC_QUEUE_LEN 20
+#define GSP_RMSTATEDUMP_WORK_ITEMS_QUEUE_LEN 20
+#define GSP_RMSTATEDUMP_LAST_DPC_EXECUTION_TIME_LEN 10
+#define GSP_RMSTATEDUMP_TOTAL_DPC_EXECUTION_TIME_LEN 10
+#define GSP_RMSTATEDUMP_LAST_WORK_ITEMS_EXECUTION_TIME_LEN 10
+#define GSP_RMSTATEDUMP_TOTAL_WORK_ITEMS_EXECUTION_TIME_LEN 10
+
+extern const PRB_FIELD_DESC prb_fields_gsp_rmstatedumpreport[];
+
+// 'RmStateDumpReport' field descriptor pointers
+#define GSP_RMSTATEDUMPREPORT_GPUINSTANCE (&prb_fields_gsp_rmstatedumpreport[0])
+#define GSP_RMSTATEDUMPREPORT_RM_STATE_DUMP (&prb_fields_gsp_rmstatedumpreport[1])
+
+// 'RmStateDumpReport' field lengths
+#define GSP_RMSTATEDUMPREPORT_GPUINSTANCE_LEN 5
+#define GSP_RMSTATEDUMPREPORT_RM_STATE_DUMP_LEN 111
+
+extern const PRB_FIELD_DESC prb_fields_gsp_timeoutreport[];
+
+// 'TimeoutReport' field descriptor pointers
+#define GSP_TIMEOUTREPORT_ERROR_TYPE (&prb_fields_gsp_timeoutreport[0])
+#define GSP_TIMEOUTREPORT_XID (&prb_fields_gsp_timeoutreport[1])
+#define GSP_TIMEOUTREPORT_FATAL (&prb_fields_gsp_timeoutreport[2])
+#define GSP_TIMEOUTREPORT_ORIGIN (&prb_fields_gsp_timeoutreport[3])
+#define GSP_TIMEOUTREPORT_ERROR_SUBCODE (&prb_fields_gsp_timeoutreport[4])
+#define GSP_TIMEOUTREPORT_RPC_TIMEOUT_RESET_THRESHOLD (&prb_fields_gsp_timeoutreport[5])
+#define GSP_TIMEOUTREPORT_TIMEOUT_CLASSIFICATION_ACTIVE (&prb_fields_gsp_timeoutreport[6])
+#define GSP_TIMEOUTREPORT_GPUINSTANCE (&prb_fields_gsp_timeoutreport[7])
+#define GSP_TIMEOUTREPORT_PERSISTENT_RATS (&prb_fields_gsp_timeoutreport[8])
+#define GSP_TIMEOUTREPORT_HEARTBEAT (&prb_fields_gsp_timeoutreport[9])
+#define GSP_TIMEOUTREPORT_MAILBOX (&prb_fields_gsp_timeoutreport[10])
+
+// 'TimeoutReport' field lengths
+#define GSP_TIMEOUTREPORT_ERROR_TYPE_LEN 5
+#define GSP_TIMEOUTREPORT_XID_LEN 5
+#define GSP_TIMEOUTREPORT_FATAL_LEN 1
+#define GSP_TIMEOUTREPORT_ORIGIN_LEN 5
+#define GSP_TIMEOUTREPORT_ERROR_SUBCODE_LEN 5
+#define GSP_TIMEOUTREPORT_RPC_TIMEOUT_RESET_THRESHOLD_LEN 5
+#define GSP_TIMEOUTREPORT_TIMEOUT_CLASSIFICATION_ACTIVE_LEN 1
+#define GSP_TIMEOUTREPORT_GPUINSTANCE_LEN 5
+#define GSP_TIMEOUTREPORT_PERSISTENT_RATS_LEN 55
+#define GSP_TIMEOUTREPORT_HEARTBEAT_LEN 40
+#define GSP_TIMEOUTREPORT_MAILBOX_LEN 15
+
+extern const PRB_FIELD_DESC prb_fields_gsp_coredumpreport[];
+
+// 'CoreDumpReport' field descriptor pointers
+#define GSP_COREDUMPREPORT_GPUINSTANCE (&prb_fields_gsp_coredumpreport[0])
+#define GSP_COREDUMPREPORT_NONDESTRUCTIVE_CORE_DUMP (&prb_fields_gsp_coredumpreport[1])
+#define GSP_COREDUMPREPORT_DESTRUCTIVE_CORE_DUMP (&prb_fields_gsp_coredumpreport[2])
+
+// 'CoreDumpReport' field lengths
+#define GSP_COREDUMPREPORT_GPUINSTANCE_LEN 5
+#define GSP_COREDUMPREPORT_NONDESTRUCTIVE_CORE_DUMP_LEN 145
+#define GSP_COREDUMPREPORT_DESTRUCTIVE_CORE_DUMP_LEN 108
 
 extern const PRB_FIELD_DESC prb_fields_gsp_rpcperf[];
 

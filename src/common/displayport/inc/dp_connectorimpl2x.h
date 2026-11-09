@@ -39,60 +39,59 @@ namespace DisplayPort
 {
     struct ConnectorImpl2x : public ConnectorImpl
     {
-        virtual void configInit();
-        virtual void populateAllDpConfigs();
-        virtual LinkRates* importDpLinkRates();
-        virtual LinkConfiguration getMaxLinkConfig();
+        void configInit() override;
+        void populateAllDpConfigs() override;
+        LinkRates* importDpLinkRates() override;
+        LinkConfiguration getMaxLinkConfig() override;
 
-        virtual bool train(const LinkConfiguration & lConfig, bool force,
-                           LinkTrainingType trainType = NORMAL_LINK_TRAINING,
-                           bool bAllowFullFallback = false);
+        bool train(const LinkConfiguration & lConfig, bool force,
+                   LinkTrainingType trainType = NORMAL_LINK_TRAINING,
+                   bool bAllowFullFallback = false) override;
 
-        virtual bool allocateTimeslice(GroupImpl * targetGroup);
-        virtual bool checkIsModePossibleMST(GroupImpl * group);
-        virtual void beginCompoundQuery(const bool bForceEnableFEC = false);
-        virtual bool compoundQueryAttachMSTGeneric(Group * target,
-                                                   const DpModesetParams &modesetParams,       // Modeset info
-                                                   CompoundQueryAttachMSTInfo * info,          // local info with updates for DSC
-                                                   DscParams *pDscParams = NULL,               // DSC parameters
-                                                   DP_IMP_ERROR *pErrorCode = NULL);           // Error Status code
+        bool allocateTimeslice(GroupImpl * targetGroup) override;
+        bool checkIsModePossibleMST(GroupImpl * group) override;
+        void beginCompoundQuery(const bool bForceEnableFEC = false) override;
+        bool compoundQueryAttachMSTGeneric(Group * target,
+                                           const DpModesetParams &modesetParams,       // Modeset info
+                                           CompoundQueryAttachMSTInfo * info,          // local info with updates for DSC
+                                           DscParams *pDscParams = NULL,               // DSC parameters
+                                           DP_IMP_ERROR *pErrorCode = NULL) override;  // Error Status code
 
-        virtual bool notifyAttachBegin(Group *target, const DpModesetParams &modesetParams);
+        bool notifyAttachBegin(Group *target, const DpModesetParams &modesetParams) override;
 
-        virtual void notifyAttachEnd(bool modesetCancelled);
-        virtual void notifyDetachBegin(Group *target);
-        virtual void notifyDetachEnd(bool bKeepOdAlive, bool bKeepLinkOn = false);
+        void notifyAttachEnd(bool modesetCancelled) override;
+        void notifyDetachBegin(Group *target) override;
+        void notifyDetachEnd(bool bKeepOdAlive,  bool bKeepLinkOn = false) override;
 
-        virtual bool beforeAddStream(GroupImpl * group, bool test = false, bool forFlushMode = false);
-        virtual void afterAddStream(GroupImpl * group);
-        virtual void beforeDeleteStream(GroupImpl * group, bool forFlushMode);
-        virtual void afterDeleteStream(GroupImpl * group);
-        virtual bool willLinkSupportModeSST(const LinkConfiguration &linkConfig, const ModesetInfo &modesetInfo,
-                                            const DscParams *pDscParams = NULL);
+        bool beforeAddStream(GroupImpl * group, bool test = false, bool forFlushMode = false) override;
+        void afterAddStream(GroupImpl * group) override;
+        void beforeDeleteStream(GroupImpl * group, bool forFlushMode) override;
+        void afterDeleteStream(GroupImpl * group) override;
+        bool willLinkSupportModeSST(const LinkConfiguration &linkConfig, const ModesetInfo &modesetInfo,
+                                    const DscParams *pDscParams = NULL) override;
 
         bool willLinkSupportMode(const LinkConfiguration &linkConfig, const ModesetInfo &modesetInfo,
                                  NvU32 headIndex = 0, Watermark *watermark = NULL, const DscParams *pDscParams = NULL);
-        virtual bool getValidLowestLinkConfig(LinkConfiguration &lConfig, LinkConfiguration &lowestSelected,
-                                              ModesetInfo queryModesetInfo, const DscParams *pDscParams = NULL);
+        bool getValidLowestLinkConfig(LinkConfiguration &lConfig, LinkConfiguration &lowestSelected,
+                                      ModesetInfo queryModesetInfo, const DscParams *pDscParams = NULL) override;
 
-        virtual bool handlePhyPatternRequest();
-        virtual bool handleTestLinkTrainRequest();
+        bool handlePhyPatternRequest() override;
+        bool handleTestLinkTrainRequest() override;
 
         ConnectorImpl2x(MainLink * main, AuxBus * auxBus, Timer * timer, Connector::EventSink * sink);
 
-        bool validateLinkConfiguration(const LinkConfiguration & lConfig);
-        bool enableFlush();
-        void disableFlush(bool test = false);
+        bool validateLinkConfiguration(const LinkConfiguration & lConfig) override;
+        bool enableFlush() override;
+        void disableFlush(bool test = false) override;
         // "data" is an array of NV0073_CTRL_MAX_LANES unsigned ints
-        virtual bool getDp2xLaneConfig(NvU32 *numLanes, NvU32 *data);
-        virtual bool setDp2xLaneConfig(NvU32 numLanes, NvU32 *data);
+        bool getDp2xLaneConfig(NvU32 *numLanes, NvU32 *data) override;
+        bool setDp2xLaneConfig(NvU32 numLanes, NvU32 *data) override;
         void applyDP2xRegkeyOverrides();
-        virtual void applyOuiWARs();
-        virtual void handleEdidWARs(Edid &edid, DiscoveryManager::Device &device);
-        virtual void applyTimeslotWAR(unsigned &slot_count);
+        void applyOuiWARs() override;
+        void handleEdidWARs(Edid &edid, DiscoveryManager::Device &device) override;
+        void applyTimeslotWAR(unsigned &slot_count) override;
 
-        virtual bool avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc,
-                                                    bool bSameTimings);
+        bool avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc) override;
 
         bool    bSupportUHBR2_50;               // Support UHBR2.5 for internal testing.
         bool    bSupportUHBR2_70;               // Support UHBR2.7 for internal testing.
@@ -119,11 +118,11 @@ namespace DisplayPort
         // Do not enable downspread while link training.
         bool    bDisableDownspread;
 
-        virtual void setDisableDownspread(bool _bDisableDownspread)
+        void setDisableDownspread(bool _bDisableDownspread) override
         {
             this->bDisableDownspread = _bDisableDownspread;
         }
-        virtual bool getDownspreadDisabled()
+        bool getDownspreadDisabled() override
         {
             return this->bDisableDownspread;
         }

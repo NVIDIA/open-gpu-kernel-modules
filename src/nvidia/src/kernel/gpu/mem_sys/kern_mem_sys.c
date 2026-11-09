@@ -34,6 +34,19 @@
 #include "nvrm_registry.h"
 #include "gpu/gsp/gsp_static_config.h"
 #include "ctrl/ctrl2080/ctrl2080pmgr.h" // NV2080_CTRL_PMGR_MODULE_INFO_NVSWITCH_SUPPORTED
+#include "gpu/tdisp/tdisp_mgr.h"
+
+static NvBool
+kmemsysIsAtsPeerConfigAllowed
+(
+    OBJGPU *pGpu
+)
+{
+    return IS_SILICON(pGpu) && !hypervisorIsVgxHyper() &&
+           pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED) &&
+           GPU_GET_KERNEL_NVLINK(pGpu) != NULL &&
+           !GPU_IS_NVSWITCH_DETECTED(pGpu);
+}
 
 static void
 kmemsysInitRegistryOverrides
@@ -308,10 +321,7 @@ kmemsysStatePostLoad_IMPL
     // than the guest. So skip for vGPU host.
     //
 
-    if (IS_SILICON(pGpu) && !hypervisorIsVgxHyper() &&
-        pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED) &&
-        GPU_GET_KERNEL_NVLINK(pGpu) != NULL &&
-        !GPU_IS_NVSWITCH_DETECTED(pGpu))
+    if (kmemsysIsAtsPeerConfigAllowed(pGpu))
     {
         NV_STATUS status = kmemsysSetupAllAtsPeers_HAL(pGpu, pKernelMemorySystem);
 
@@ -329,7 +339,7 @@ kmemsysStatePostLoad_IMPL
     // from the clean backing store on first access.
     //
     // gpuRequiresCbcSrScrub_HAL returns NV_TRUE for GB20Y... chips on
-    // coldboot, FLR, hibernate-resume, and driver reload — exactly the
+    // coldboot, FLR, hibernate-resume, and driver reload ??? exactly the
     // scenarios where ACR scrubs the CBC SR region.  It returns NV_FALSE
     // for sleep resume and GC6 exit (state preserved) and for all other
     // chip families (default HAL returns NV_FALSE).
@@ -363,9 +373,7 @@ kmemsysStatePreUnload_IMPL
     NvU32 flags
 )
 {
-    if (IS_SILICON(pGpu) && !hypervisorIsVgxHyper() &&
-        pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED) &&
-        !GPU_IS_NVSWITCH_DETECTED(pGpu))
+    if (kmemsysIsAtsPeerConfigAllowed(pGpu))
     {
         kmemsysRemoveAllAtsPeers_HAL(pGpu, pKernelMemorySystem);
     }
@@ -1006,14 +1014,14 @@ kmemsysSetupCoherentCpuLink_IMPL
     }
 
     //
-    // EnableUserNUMAManagement is the NV_REG_ENABLE_USER_NUMA_MANAGEMENT is a unix-layer regkey
+    // EnableNUMA is the NV_REG_ENABLE_NUMA is a unix-layer regkey
     // If NUMA onlining is explicitly disabled by regkey, then don't check for valid node.
     // The rest of the code for mapping over coherent links will use osNumaOnliningEnabled
     // to check whether we should use the NUMA path, but in this spot, we need to check for
     // the regkey itself because we still need to sanity check we have a valid node when
     // osNumaOnliningEnabled is supposed to work.
     //
-    if (!(osReadRegistryDword(pGpu, "EnableUserNUMAManagement", &data32) == NV_OK && (data32 == 0)))
+    if (!(osReadRegistryDword(pGpu, "EnableNUMA", &data32) == NV_OK && (data32 == 0)))
     {
         if ((IS_SILICON(pGpu) && (numaNodeId == NV0000_CTRL_NO_NUMA_NODE) && !hypervisorIsVgxHyper()))
         {
@@ -1143,7 +1151,6 @@ kmemsysSetupCoherentCpuLink_IMPL
     }
     pGpu->numaNodeId = numaNodeId;
 
-    // Validate C2C mapping for TDISP partition before creating coherent CPU mappings.
     NV_ASSERT_OK_OR_RETURN(kbusCreateCoherentCpuMapping_HAL(pGpu, pKernelBus, rmclientAvailableFbSize, coherentCpuFbSize, bFlush));
 
     // Switch the toggle for coherent link mapping only if migration is successful
@@ -1297,7 +1304,7 @@ kmemsysStateUnload_IMPL(OBJGPU *pGpu, KernelMemorySystem *pKernelMemorySystem, N
 NV_STATUS
 kmemsysPostHeapCreate_KERNEL
 (
-    POBJGPU               pGpu,
+    OBJGPU               *pGpu,
     KernelMemorySystem   *pKernelMemorySystem
 )
 {
@@ -1342,5 +1349,4 @@ kmemsysGetCpuCoherentFbRange_IMPL
 
     return NV_OK;
 }
-
 

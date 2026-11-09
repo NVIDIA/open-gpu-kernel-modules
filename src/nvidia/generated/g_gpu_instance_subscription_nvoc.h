@@ -70,10 +70,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__GPUInstanceSubscription;
 struct NVOC_METADATA__GpuResource;
-struct NVOC_VTABLE__GPUInstanceSubscription;
 
 
 struct GPUInstanceSubscription {
@@ -130,40 +129,10 @@ struct GPUInstanceSubscription_PRIVATE {
 };
 
 
-// Vtable with 25 per-class function pointers
-struct NVOC_VTABLE__GPUInstanceSubscription {
-    NvBool (*__gisubscriptionCanCopy__)(struct GPUInstanceSubscription * /*this*/);  // virtual override (res) base (gpures)
-    NV_STATUS (*__gisubscriptionControl__)(struct GPUInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__gisubscriptionMap__)(struct GPUInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__gisubscriptionUnmap__)(struct GPUInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__gisubscriptionShareCallback__)(struct GPUInstanceSubscription * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__gisubscriptionGetRegBaseOffsetAndSize__)(struct GPUInstanceSubscription * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__gisubscriptionGetMapAddrSpace__)(struct GPUInstanceSubscription * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__gisubscriptionInternalControlForward__)(struct GPUInstanceSubscription * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__gisubscriptionGetInternalObjectHandle__)(struct GPUInstanceSubscription * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__gisubscriptionAccessCallback__)(struct GPUInstanceSubscription * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__gisubscriptionGetMemInterMapParams__)(struct GPUInstanceSubscription * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__gisubscriptionCheckMemInterUnmap__)(struct GPUInstanceSubscription * /*this*/, NvBool);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__gisubscriptionGetMemoryMappingDescriptor__)(struct GPUInstanceSubscription * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__gisubscriptionControlSerialization_Prologue__)(struct GPUInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__gisubscriptionControlSerialization_Epilogue__)(struct GPUInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__gisubscriptionControl_Prologue__)(struct GPUInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__gisubscriptionControl_Epilogue__)(struct GPUInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__gisubscriptionIsDuplicate__)(struct GPUInstanceSubscription * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__gisubscriptionPreDestruct__)(struct GPUInstanceSubscription * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__gisubscriptionControlFilter__)(struct GPUInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (gpures)
-    NvBool (*__gisubscriptionIsPartialUnmapSupported__)(struct GPUInstanceSubscription * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__gisubscriptionMapTo__)(struct GPUInstanceSubscription * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__gisubscriptionUnmapFrom__)(struct GPUInstanceSubscription * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__gisubscriptionGetRefCount__)(struct GPUInstanceSubscription * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__gisubscriptionAddAdditionalDependants__)(struct RsClient *, struct GPUInstanceSubscription * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__GPUInstanceSubscription {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResource metadata__GpuResource;
-    const struct NVOC_VTABLE__GPUInstanceSubscription vtable;
 };
 
 #ifndef __nvoc_class_id_GPUInstanceSubscription
@@ -309,15 +278,15 @@ static inline NV_STATUS gisubscriptionCtrlCmdGetUuid(struct GPUInstanceSubscript
 
 
 // Wrapper macros for halified functions
-#define gisubscriptionCanCopy_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__gisubscriptionCanCopy__
+#define gisubscriptionCanCopy_FNPTR(arg_this) arg_this->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define gisubscriptionCanCopy(arg_this) gisubscriptionCanCopy_DISPATCH(arg_this)
-#define gisubscriptionControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define gisubscriptionControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define gisubscriptionControl(pGpuResource, pCallContext, pParams) gisubscriptionControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define gisubscriptionMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
+#define gisubscriptionMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define gisubscriptionMap(pGpuResource, pCallContext, pParams, pCpuMapping) gisubscriptionMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define gisubscriptionUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
+#define gisubscriptionUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define gisubscriptionUnmap(pGpuResource, pCallContext, pCpuMapping) gisubscriptionUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define gisubscriptionShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define gisubscriptionShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define gisubscriptionShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) gisubscriptionShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define gisubscriptionGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define gisubscriptionGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) gisubscriptionGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -327,7 +296,7 @@ static inline NV_STATUS gisubscriptionCtrlCmdGetUuid(struct GPUInstanceSubscript
 #define gisubscriptionInternalControlForward(pGpuResource, command, pParams, size) gisubscriptionInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define gisubscriptionGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define gisubscriptionGetInternalObjectHandle(pGpuResource) gisubscriptionGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define gisubscriptionAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define gisubscriptionAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define gisubscriptionAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) gisubscriptionAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define gisubscriptionGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define gisubscriptionGetMemInterMapParams(pRmResource, pParams) gisubscriptionGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -335,13 +304,13 @@ static inline NV_STATUS gisubscriptionCtrlCmdGetUuid(struct GPUInstanceSubscript
 #define gisubscriptionCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) gisubscriptionCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define gisubscriptionGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define gisubscriptionGetMemoryMappingDescriptor(pRmResource, ppMemDesc) gisubscriptionGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define gisubscriptionControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define gisubscriptionControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define gisubscriptionControlSerialization_Prologue(pResource, pCallContext, pParams) gisubscriptionControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define gisubscriptionControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define gisubscriptionControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define gisubscriptionControlSerialization_Epilogue(pResource, pCallContext, pParams) gisubscriptionControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define gisubscriptionControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define gisubscriptionControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define gisubscriptionControl_Prologue(pResource, pCallContext, pParams) gisubscriptionControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define gisubscriptionControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define gisubscriptionControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define gisubscriptionControl_Epilogue(pResource, pCallContext, pParams) gisubscriptionControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define gisubscriptionIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define gisubscriptionIsDuplicate(pResource, hMemory, pDuplicate) gisubscriptionIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
@@ -362,103 +331,103 @@ static inline NV_STATUS gisubscriptionCtrlCmdGetUuid(struct GPUInstanceSubscript
 
 // Dispatch functions
 static inline NvBool gisubscriptionCanCopy_DISPATCH(struct GPUInstanceSubscription *arg_this) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__gisubscriptionCanCopy__(arg_this);
+    return arg_this->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(arg_this, RsResource));
 }
 
 static inline NV_STATUS gisubscriptionControl_DISPATCH(struct GPUInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__gisubscriptionControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS gisubscriptionMap_DISPATCH(struct GPUInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__gisubscriptionMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pGpuResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS gisubscriptionUnmap_DISPATCH(struct GPUInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__gisubscriptionUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pGpuResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool gisubscriptionShareCallback_DISPATCH(struct GPUInstanceSubscription *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__gisubscriptionShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS gisubscriptionGetRegBaseOffsetAndSize_DISPATCH(struct GPUInstanceSubscription *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__gisubscriptionGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS gisubscriptionGetMapAddrSpace_DISPATCH(struct GPUInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__gisubscriptionGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pGpuResource, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS gisubscriptionInternalControlForward_DISPATCH(struct GPUInstanceSubscription *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__gisubscriptionInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle gisubscriptionGetInternalObjectHandle_DISPATCH(struct GPUInstanceSubscription *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__gisubscriptionGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool gisubscriptionAccessCallback_DISPATCH(struct GPUInstanceSubscription *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS gisubscriptionGetMemInterMapParams_DISPATCH(struct GPUInstanceSubscription *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__gisubscriptionGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS gisubscriptionCheckMemInterUnmap_DISPATCH(struct GPUInstanceSubscription *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__gisubscriptionCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS gisubscriptionGetMemoryMappingDescriptor_DISPATCH(struct GPUInstanceSubscription *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__gisubscriptionGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS gisubscriptionControlSerialization_Prologue_DISPATCH(struct GPUInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void gisubscriptionControlSerialization_Epilogue_DISPATCH(struct GPUInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS gisubscriptionControl_Prologue_DISPATCH(struct GPUInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void gisubscriptionControl_Epilogue_DISPATCH(struct GPUInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS gisubscriptionIsDuplicate_DISPATCH(struct GPUInstanceSubscription *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void gisubscriptionPreDestruct_DISPATCH(struct GPUInstanceSubscription *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionPreDestruct__(pResource);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS gisubscriptionControlFilter_DISPATCH(struct GPUInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool gisubscriptionIsPartialUnmapSupported_DISPATCH(struct GPUInstanceSubscription *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS gisubscriptionMapTo_DISPATCH(struct GPUInstanceSubscription *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS gisubscriptionUnmapFrom_DISPATCH(struct GPUInstanceSubscription *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 gisubscriptionGetRefCount_DISPATCH(struct GPUInstanceSubscription *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionGetRefCount__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void gisubscriptionAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct GPUInstanceSubscription *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__gisubscriptionAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

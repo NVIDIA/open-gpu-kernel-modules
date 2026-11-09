@@ -209,7 +209,7 @@ static void uvm_va_space_init_pageable_migrations_enabled(uvm_va_space_t *va_spa
     if (!va_space->pageable.access_enabled)
         return;
 
-    if (uvm_disable_sam_migration)
+    if ((!NVCPU_IS_AARCH64 || g_uvm_global.cdmm_enabled) && uvm_disable_sam_migration)
         return;
 
     if (!(va_space->initialization_flags & UVM_INIT_FLAGS_DISABLE_PAGEABLE_MIGRATIONS))

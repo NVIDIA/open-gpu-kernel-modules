@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -94,7 +94,7 @@ confComputeKeyStoreInit_GH100(ConfidentialCompute *pConfCompute)
     }
 
     // SEC2 key slots are a mix of encryption / decryption with channel counter and HMAC.
-    ct_assert(CC_KEYSPACE_SEC2_SIZE == 6);
+    ct_assert(CC_KEYSPACE_SEC2_SIZE == 8);
 
     (*pKeyStore)[index++].type = CRYPT_COUNTER;
     (*pKeyStore)[index++].type = HMAC_COUNTER;
@@ -102,6 +102,10 @@ confComputeKeyStoreInit_GH100(ConfidentialCompute *pConfCompute)
     (*pKeyStore)[index++].type = HMAC_COUNTER;
     (*pKeyStore)[index++].type = CRYPT_COUNTER;
     (*pKeyStore)[index++].type = HMAC_COUNTER;
+
+    // SEC2 owns the runtime heartbeat counter; the partner keeps pair alignment.
+    (*pKeyStore)[index++].type = NO_CHAN_COUNTER;
+    (*pKeyStore)[index++].type = NO_CHAN_COUNTER;
 
     // The remaining LCE key slots are all encryption / decryption with channel counter.
     for (; index < CC_KEYSPACE_TOTAL_SIZE; index++)

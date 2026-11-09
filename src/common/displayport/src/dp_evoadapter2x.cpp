@@ -102,7 +102,7 @@ static NvU32 _getPollingIntervalMsForChannelEqDone(NvU32 pollingInfo)
 
 EvoMainLink2x::EvoMainLink2x(EvoInterface *provider, Timer *timer)
     : EvoMainLink(provider, timer), gpuUhbrCaps(0), dfpUhbrCaps(0),
-      bUseRgFlushSequence(false)
+      bUseRgFlushSequence(false), bConnectorIsUSBTypeC(false)
 {
     NvU32   idx = 0U;
     applyDP2xRegkeyOverrides();
@@ -400,8 +400,7 @@ bool EvoMainLink2x::configureLinkRateTable
                     pLinkRates->import((NvU16)params.linkBwTbl[i]);
                     break;
                 default:
-                    DP_PRINTF(DP_ERROR, "DP2xEVO> %s: Unsupported link rate received",
-                           __FUNCTION__);
+                    DP_PRINTF(DP_ERROR, "DP2xEVO> Unsupported link rate received");
                     DP_ASSERT(0);
                     break;
             }
@@ -1245,6 +1244,7 @@ bool EvoMainLink2x::resetDPRXLink(DP2XResetParam resetParam)
         ltRmParams.cmd |= DRF_DEF(0073_CTRL, _DP2X_CMD, _FAKE_LINK_TRAINING, _DONOT_TOGGLE_TRANSMISSION);
     }
 
+    bFailed = false;
     do
     {
         ret = provider->rmControl0073(NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL,
@@ -1264,13 +1264,14 @@ bool EvoMainLink2x::resetDPRXLink(DP2XResetParam resetParam)
                 timer->sleep(NV_DP2X_LT_CHNL_EQ_INTERLANE_ALIGN_POLLING_INTERVAL);
                 continue;
             }
+            return false;
         }
         // If it's done, leave.
         if (FLD_TEST_DRF(0073_CTRL, _DP2X_POLLING_INFO, _RESULT, _DONE, ltRmParams.pollingInfo))
             break;
     } while (timeout.valid());
 
-    return ((FLD_TEST_DRF(0073_CTRL, _DP2X_ERR, _RESET_LINK, _NOERR, ltRmParams.pollingInfo)) &&
+    return ((FLD_TEST_DRF(0073_CTRL, _DP2X_ERR, _RESET_LINK, _NOERR, ltRmParams.err)) &&
             (FLD_TEST_DRF(0073_CTRL, _DP2X_POLLING_INFO, _RESULT, _DONE, ltRmParams.pollingInfo)));
 }
 

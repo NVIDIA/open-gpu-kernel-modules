@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -103,7 +103,6 @@ typedef struct _NvModeTimings {
     NvBool vSyncPos;
     NvBool vSyncNeg;
     NvBool hdmi3D;
-    enum NvYuv420Mode yuv420Mode;
 } NvModeTimings, *NvModeTimingsPtr;
 
 static inline NvBool NvModeTimingsMatch(const NvModeTimings *pA,
@@ -138,8 +137,7 @@ static inline NvBool NvModeTimingsMatch(const NvModeTimings *pA,
             (pA->hSyncNeg           == pB->hSyncNeg) &&
             (pA->vSyncPos           == pB->vSyncPos) &&
             (pA->vSyncNeg           == pB->vSyncNeg) &&
-            (pA->hdmi3D             == pB->hdmi3D) &&
-            (pA->yuv420Mode         == pB->yuv420Mode));
+            (pA->hdmi3D             == pB->hdmi3D));
 }
 
 /*

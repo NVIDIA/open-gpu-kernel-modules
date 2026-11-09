@@ -758,13 +758,30 @@ static void _eventbusProcessPendingGroups(EventBus *pEventBus)
     }
 }
 
-NV_STATUS eventbusEventPublish_IMPL(EventBus *pEventBus, Event *pEvent)
+//
+// Shared body for eventbusEventPublish / eventbusEventPublishPaused /
+// eventbusEventPublishWithAttributes: wrap pEvent in a fresh single-event
+// group, optionally stamp the group with groupAttributes, run the owner
+// initEventGroup callback, optionally pause the event, queue, and flush /
+// report the event runnable.
+//
+static NV_STATUS
+_eventbusEventPublishNewGroup(EventBus *pEventBus, Event *pEvent,
+                              NvU8 groupAttributes, NvBool bPublishPaused)
 {
     EventGroup *pEventGroup;
     NV_STATUS status;
 
     NV_ASSERT_OR_RETURN(pEventBus != NULL, NV_ERR_INVALID_POINTER);
     NV_ASSERT_OR_RETURN(pEvent != NULL, NV_ERR_INVALID_POINTER);
+
+    //
+    // Paused work cannot be introduced once the bus has entered blocking mode.
+    // Check before taking ownership of pEvent so the failure path preserves the
+    // normal publish contract: caller still owns and must destroy pEvent.
+    //
+    if (bPublishPaused && eventbusIsBlockingMode(pEventBus))
+        return NV_ERR_INVALID_STATE;
 
     //
     // An event must be published at most once. pEvent->pEventGroup is set
@@ -789,16 +806,44 @@ NV_STATUS eventbusEventPublish_IMPL(EventBus *pEventBus, Event *pEvent)
     NV_ASSERT_OK_OR_RETURN(status);
 
     eventgroupAddEvent(pEventGroup, pEvent);
+
+    if (groupAttributes != 0)
+        eventgroupSetAttributes(pEventGroup, groupAttributes);
+
     _eventbusInitEventGroup(pEventBus, pEventGroup, pEvent);
+
+    if (bPublishPaused)
+    {
+        eventPause(pEvent);
+        NV_ASSERT(eventIsPaused(pEvent));
+    }
 
     // Queue the group for later processing by eventbusFlush()
     _eventbusLockQueue(pEventBus);
     listAppendExisting(&pEventBus->pendingGroups, pEventGroup);
     _eventbusUnlockQueue(pEventBus);
 
-    _eventbusFlushOrReportRunnableEvent(pEventBus, pEvent);
+    if (!bPublishPaused)
+        _eventbusFlushOrReportRunnableEvent(pEventBus, pEvent);
 
     return NV_OK;
+}
+
+NV_STATUS eventbusEventPublish_IMPL(EventBus *pEventBus, Event *pEvent)
+{
+    return _eventbusEventPublishNewGroup(pEventBus, pEvent, 0, NV_FALSE);
+}
+
+NV_STATUS eventbusEventPublishPaused_IMPL(EventBus *pEventBus, Event *pEvent)
+{
+    return _eventbusEventPublishNewGroup(pEventBus, pEvent, 0, NV_TRUE);
+}
+
+NV_STATUS eventbusEventPublishWithAttributes_IMPL(EventBus *pEventBus, Event *pEvent,
+                                                  NvU8 groupAttributes)
+{
+    return _eventbusEventPublishNewGroup(pEventBus, pEvent, groupAttributes,
+                                         NV_FALSE);
 }
 
 NV_STATUS eventbusEventPublishAssociated_IMPL(

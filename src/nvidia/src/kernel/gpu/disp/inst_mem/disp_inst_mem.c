@@ -786,10 +786,7 @@ instmemBindContextDma_IMPL
     DispChannel           *pDispChannel
 )
 {
-    NvU32     gpuSubDevInst;
     NV_STATUS status;
-
-    gpuSubDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
 
     // Production SW requires each context is bound only once
     status = _instmemProbeHashEntry(pGpu, pInstMem, pContextDma, pDispChannel);
@@ -801,10 +798,10 @@ instmemBindContextDma_IMPL
         goto exit;
     }
 
-    if (pContextDma->InstRefCount[gpuSubDevInst] == 0)
+    if (pContextDma->InstRefCount == 0)
     {
         // Reserve inst mem space for this ctx dma
-        status = _instmemReserveContextDma(pGpu, pInstMem, &(pContextDma->Instance[gpuSubDevInst]));
+        status = _instmemReserveContextDma(pGpu, pInstMem, &pContextDma->Instance);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
@@ -820,8 +817,8 @@ instmemBindContextDma_IMPL
             NV_PRINTF(LEVEL_ERROR,
                       "Failed to commit ctx dma (0x%x) to inst mem\n",
                       RES_GET_HANDLE(pContextDma));
-            _instmemFreeContextDma(pGpu, pInstMem, pContextDma->Instance[gpuSubDevInst]);
-            pContextDma->Instance[gpuSubDevInst] = 0;
+            _instmemFreeContextDma(pGpu, pInstMem, pContextDma->Instance);
+            pContextDma->Instance = 0;
             goto exit;
         }
     }
@@ -834,19 +831,19 @@ instmemBindContextDma_IMPL
     status = _instmemAddHashEntry(pGpu, pInstMem,
                                   pContextDma,
                                   pDispChannel,
-                                  pContextDma->Instance[gpuSubDevInst]);
+                                  pContextDma->Instance);
     if (status != NV_OK)
     {
-        if (pContextDma->InstRefCount[gpuSubDevInst] == 0)
+        if (pContextDma->InstRefCount == 0)
         {
-            _instmemFreeContextDma(pGpu, pInstMem, pContextDma->Instance[gpuSubDevInst]);
-            pContextDma->Instance[gpuSubDevInst] = 0;
+            _instmemFreeContextDma(pGpu, pInstMem, pContextDma->Instance);
+            pContextDma->Instance = 0;
         }
         goto exit;
     }
 
     // We have one more reference to the context DMA in instance memory now.
-    pContextDma->InstRefCount[gpuSubDevInst]++;
+    pContextDma->InstRefCount++;
 
 exit:
 
@@ -864,18 +861,16 @@ _instmemRemoveReference
     ContextDma            *pContextDma
 )
 {
-    NvU32 gpuSubDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-
-    NV_ASSERT(pContextDma->InstRefCount[gpuSubDevInst]);
-    if (pContextDma->InstRefCount[gpuSubDevInst])
+    NV_ASSERT(pContextDma->InstRefCount);
+    if (pContextDma->InstRefCount)
     {
-        pContextDma->InstRefCount[gpuSubDevInst]--;
+        pContextDma->InstRefCount--;
 
         // Remove DMA object if this is the last binding
-        if (pContextDma->InstRefCount[gpuSubDevInst] == 0)
+        if (pContextDma->InstRefCount == 0)
         {
-            _instmemFreeContextDma(pGpu, pInstMem, pContextDma->Instance[gpuSubDevInst]);
-            pContextDma->Instance[gpuSubDevInst] = 0;
+            _instmemFreeContextDma(pGpu, pInstMem, pContextDma->Instance);
+            pContextDma->Instance = 0;
         }
     }
 }

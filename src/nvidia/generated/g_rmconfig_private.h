@@ -415,8 +415,8 @@
 #define IsT234D(pGpu)                  rmcfg_IsT234D(pGpu)
 #define IsT234DorBetter(pGpu)          rmcfg_IsT234DorBetter(pGpu)
 
-#define IsT239D(pGpu)                  rmcfg_IsT239D(pGpu)
-#define IsT239DorBetter(pGpu)          rmcfg_IsT239DorBetter(pGpu)
+#define IsT238D(pGpu)                  rmcfg_IsT238D(pGpu)
+#define IsT238DorBetter(pGpu)          rmcfg_IsT238DorBetter(pGpu)
 
 // Any T23XD chip?
 #define IsT23XD(pGpu)                  rmcfg_IsT23XD(pGpu)

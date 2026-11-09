@@ -37,6 +37,7 @@
 #include "ctrl/ctrl2080/ctrl2080fifo.h"
 #include "ctrl/ctrl2080/ctrl2080bus.h"
 #include "ctrl/ctrl2080/ctrl2080bios.h"
+#include "ctrl/ctrl2080/ctrl2080fb.h"
 #include "ctrl/ctrl2080/ctrl2080ce.h"
 #include "gpu/gpu.h"
 
@@ -718,6 +719,17 @@ static NvBool _isVbiosGetInfoIndexCacheable(NvU32 index)
     }
 }
 
+static NvBool _isFBGetInfoIndexCacheable(NvU32 index)
+{
+    switch (index)
+    {
+        case NV2080_CTRL_FB_INFO_INDEX_TOTAL_RAM_SIZE:
+            return NV_TRUE;
+        default:
+            return NV_FALSE;
+    }
+}
+
 static NvBool _isGetInfoIndexCacheable(NvU32 cmd, NvU32 index, NvU32 cacheGpuFlags)
 {
     switch (cmd)
@@ -730,6 +742,8 @@ static NvBool _isGetInfoIndexCacheable(NvU32 cmd, NvU32 index, NvU32 cacheGpuFla
             return _isBusGetInfoIndexCacheable(index);
         case NV2080_CTRL_CMD_BIOS_GET_INFO_V2:
             return _isVbiosGetInfoIndexCacheable(index);
+        case NV2080_CTRL_CMD_FB_GET_INFO_V2:
+            return _isFBGetInfoIndexCacheable(index);
     }
 
     return NV_FALSE;
@@ -1334,6 +1348,12 @@ static NV_STATUS _rmapiControlCacheGetByInput
                                         ((NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS*)params)->biosInfoListSize,
                                         NV2080_CTRL_BIOS_INFO_MAX_SIZE,
                                         NV_FALSE);
+        case NV2080_CTRL_CMD_FB_GET_INFO_V2:
+            return _getInfoCacheHandler(hClient, hObject, cmd, 0,
+                                        ((NV2080_CTRL_FB_GET_INFO_V2_PARAMS*)params)->fbInfoList,
+                                        ((NV2080_CTRL_FB_GET_INFO_V2_PARAMS*)params)->fbInfoListSize,
+                                        NV2080_CTRL_FB_INFO_MAX_LIST_SIZE,
+                                        NV_FALSE);
 
         case NV2080_CTRL_CMD_CE_GET_PHYSICAL_CAPS:
             return _getCePhysicalCapsHandler(hClient, hObject, 0,
@@ -1412,6 +1432,13 @@ NV_STATUS _rmapiControlCacheSetByInput
                                         ((NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS*)params)->biosInfoList,
                                         ((NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS*)params)->biosInfoListSize,
                                         NV2080_CTRL_BIOS_INFO_MAX_SIZE,
+                                        NV_TRUE);
+
+        case NV2080_CTRL_CMD_FB_GET_INFO_V2:
+            return _getInfoCacheHandler(hClient, hObject, cmd, rmctrlFlags,
+                                        ((NV2080_CTRL_FB_GET_INFO_V2_PARAMS*)params)->fbInfoList,
+                                        ((NV2080_CTRL_FB_GET_INFO_V2_PARAMS*)params)->fbInfoListSize,
+                                        NV2080_CTRL_FB_INFO_MAX_LIST_SIZE,
                                         NV_TRUE);
 
         case NV2080_CTRL_CMD_CE_GET_PHYSICAL_CAPS:

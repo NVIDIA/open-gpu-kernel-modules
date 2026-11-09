@@ -323,7 +323,6 @@ NV_STATUS  osReadRegistryDwordBase(OBJGPU *, const char *, NvU32 *);
 NV_STATUS  osReadRegistryStringBase(OBJGPU *, const char *, NvU8 *, NvU32 *);
 NV_STATUS  osPackageRegistry(OBJGPU *, PACKED_REGISTRY_TABLE *, NvU32 *);
 NV_STATUS  osUnpackageRegistry(PACKED_REGISTRY_TABLE *);
-NvBool     osQueueDpc(OBJGPU *);
 void       osFlushCpuWriteCombineBuffer(void);
 NV_STATUS  osNumaMemblockSize(NvU64 *);
 NvBool     osNumaOnliningEnabled(OS_GPU_INFO *);
@@ -374,6 +373,7 @@ NV_STATUS  osDelayNs(NvU32);
 void       osSpinLoop(void);
 NvU64      osGetMaxUserVa(void);
 NvU32      osGetCpuVaAddrShift(void);
+NvBool     osTdispIsEnabled(OBJGPU *pGpu);
 NvU32      osGetCurrentProcess(void);
 void       osGetCurrentProcessName(char *, NvU32);
 NvU32      osGetCurrentPasid(void);
@@ -630,6 +630,35 @@ NV_STATUS  osFlushCpuCache(void);
 void       osAddRecordForCrashLog(void *, NvU32);
 void       osDeleteRecordForCrashLog(void *);
 
+//
+// Fetch the realm-cached device attestation certificate for this GPU.
+//
+// On a CCA/TDISP realm guest the host caches per-device attestation objects
+// (certificate, measurements, interface report). This reads back the device
+// certificate object via the RSI/RHI host-call ABI. The hypercall itself and
+// the host-shared memory it needs live in the Unix/Linux OS layer; portable RM
+// only supplies the destination buffer.
+//
+// On entry *pBufferSize is the capacity of pBuffer in bytes; on return it holds
+// the certificate's actual size. Returns NV_ERR_BUFFER_TOO_SMALL (with
+// *pBufferSize set to the required size) when the certificate does not fit.
+//
+NV_STATUS osReadDeviceCertificate(OBJGPU *pGpu, NvU8 *pBuffer, NvU32 *pBufferSize);
+
+//
+// Fetch the TSM's digest of the device certificate and hash pCertChain with the
+// algorithm the TSM reports, so the caller can compare the two. On entry
+// *pDigestSize is the capacity of each digest buffer; on return it holds the
+// digest size actually used (32, 48 or 64). Both buffers must hold
+// *pDigestSize bytes.
+//
+NV_STATUS osReadDeviceCertDigests(OBJGPU     *pGpu,
+                                  const NvU8 *pCertChain,
+                                  NvU32       certChainSize,
+                                  NvU8       *pTsmDigest,
+                                  NvU8       *pLocalDigest,
+                                  NvU32      *pDigestSize);
+
 NV_STATUS osTegraSocPowerManagement(OS_GPU_INFO *pOsGpuInfo,
                                     NvBool bInPMTransition,
                                     NvU32 newPMLevel);
@@ -664,6 +693,13 @@ NV_STATUS osGetSystemTime(NvU32 *pSec,NvU32 *puSec);
 NvU64 osGetMonotonicTimeNs(void);
 NvU64 osGetTimestamp(void);
 NvU64 osGetTimestampFreq(void);
+
+#ifndef NSEC_PER_SEC
+#define NSEC_PER_SEC 1000000000ULL
+#endif
+#ifndef NSEC_PER_MSEC
+#define NSEC_PER_MSEC 1000000ULL
+#endif
 
 NV_STATUS osDeferredIsr(OBJGPU *pGpu);
 
@@ -806,6 +842,14 @@ NV_STATUS osWriteToFile(void *pFile, NvU8  *buffer,
                         NvU64 size, NvU64 offset);
 NV_STATUS osReadFromFile(void *pFile, NvU8 *buffer,
                          NvU64 size, NvU64 offset);
+
+typedef void *OS_FILE_HANDLE;
+
+NV_STATUS osBindataOpenFile(const char *pFilePath, OS_FILE_HANDLE *pFileHandle);
+void osBindataCloseFile(OS_FILE_HANDLE fileHandle);
+NV_STATUS osBindataGetFileSize(OS_FILE_HANDLE fileHandle, NvU32 *pFileSize);
+NV_STATUS osBindataReadFile(OS_FILE_HANDLE fileHandle, NvU8 *pBuffer,
+                            NvU32 bufferSize, NvU32 *pBytesRead);
 
 NV_STATUS osSrPinSysmem(OS_GPU_INFO  *pArg1,
                         NvU64 commitSize,
@@ -1005,6 +1049,8 @@ NV_STATUS osDestroyNanoTimer(OS_GPU_INFO *pArg1,
 NV_STATUS osGetValidWindowHeadMask(OS_GPU_INFO *pArg1,
                                    NvU64 *pWindowHeadMask);
 
+NV_STATUS osGetSorLanePolarityEnableStatus(OS_GPU_INFO *pArg1);
+
 NV_STATUS osSchedule(void);
 
 void osDmaSetAddressSize(OS_GPU_INFO *pArg1,
@@ -1109,14 +1155,16 @@ void osInitOSHwInfo(OBJGPU *pGpu);
 
 void osDestroyOSHwInfo(OBJGPU *pGpu);
 
-NV_STATUS osUserHandleToKernelPtr(NvU32 hClient,
-                                  NvP64 Handle,
-                                  NvP64 *pHandle);
+NV_STATUS osGetAndRefEventFromUserHandle(NvU32 hClient,
+                                         NvP64 Handle,
+                                         NvP64 *pHandle);
 
 NV_STATUS osGetSmbiosTable(void **pBaseVAddr, NvU64 *pLength,
                            NvU64 *pNumSubTypes, NvU32 *pVersion);
 
 void osPutSmbiosTable(void *pBaseVAddr, NvU64 length);
+
+NvBool osIsRunningInsideVM(void);
 
 NvBool osIsNvswitchPresent(void);
 
@@ -1332,6 +1380,7 @@ extern void osInitObjOS(struct OBJOS *);
 #define NV_SIM_MODE_CMODEL              2U
 #define NV_SIM_MODE_MODS_AMODEL         3U
 #define NV_SIM_MODE_TEGRA_FPGA          4U
+#define NV_SIM_MODE_VGPU_SIM            5U
 #define NV_SIM_MODE_INVALID         (~0x0U)
 #endif
 
@@ -1369,6 +1418,12 @@ extern void osInitObjOS(struct OBJOS *);
     #define ADD_PROBE(pGpu, probeId)
 
 #define IS_SIM_MODS(pOS)            (pOS->bIsSimMods)
+
+struct nv_gpu_op_event;
+typedef struct nv_gpu_op_event nv_gpu_op_event_t;
+
+NV_STATUS osEmitTracepointGpuOpEvent(OBJGPU                   *pGpu,
+                                     const nv_gpu_op_event_t  *pEvent);
 
 #endif // _OS_H_
 

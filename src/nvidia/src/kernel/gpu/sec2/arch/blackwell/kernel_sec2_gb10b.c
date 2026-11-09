@@ -551,8 +551,11 @@ ksec2PrepareBootCommands_GB10B
         return status;
     }
 
-    pKernelSec2->pCotPayload = portMemAllocNonPaged(sizeof(NVDM_PAYLOAD_COT));
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, (pKernelSec2->pCotPayload == NULL) ? NV_ERR_NO_MEMORY : NV_OK, failed);
+    if (pKernelSec2->pCotPayload == NULL)
+    {
+        pKernelSec2->pCotPayload = portMemAllocNonPaged(sizeof(NVDM_PAYLOAD_COT));
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, (pKernelSec2->pCotPayload == NULL) ? NV_ERR_NO_MEMORY : NV_OK, failed);
+    }
     portMemSet(pKernelSec2->pCotPayload, 0, sizeof(NVDM_PAYLOAD_COT));
 
     pKernelSec2->pCotPayload->version = pKernelSec2->cotPayloadVersion;

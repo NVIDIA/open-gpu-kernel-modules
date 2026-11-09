@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -90,6 +90,9 @@ enum
     CC_LKEYID_CPU_SEC2_HMAC_KERN,
     CC_LKEYID_CPU_SEC2_DATA_SCRUBBER,
     CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER,
+    CC_LKEYID_CPU_SEC2_DATA_HEARTBEAT,
+    // Keep this keyspace even-sized because keystore entries are paired.
+    CC_LKEYID_CPU_SEC2_HEARTBEAT_RESERVED,
     CC_KEYSPACE_SEC2_SIZE // This is always the last element.
 };
 
@@ -99,6 +102,7 @@ enum
 #define CC_LKEYID_CPU_SEC2_HMAC_KERN_STR     "cpu_sec2_hmac_kernel"
 #define CC_LKEYID_CPU_SEC2_DATA_SCRUBBER_STR "cpu_sec2_data_scrubber"
 #define CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER_STR "cpu_sec2_hmac_scrubber"
+#define CC_LKEYID_CPU_SEC2_DATA_HEARTBEAT_STR "cpu_sec2_data_heartbeat"
 
 enum
 {
@@ -267,7 +271,9 @@ enum
         (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_DATA_SCRUBBER) ? \
             CC_LKEYID_CPU_SEC2_DATA_SCRUBBER_STR : \
         (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER) ? \
-            CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER_STR : NULL : \
+            CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_DATA_HEARTBEAT) ? \
+            CC_LKEYID_CPU_SEC2_DATA_HEARTBEAT_STR : NULL : \
     (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE0) ? \
         (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
             CC_LKEYID_LCE0_H2D_USER_STR : \

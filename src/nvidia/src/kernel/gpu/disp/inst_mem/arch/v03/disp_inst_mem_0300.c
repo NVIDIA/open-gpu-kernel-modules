@@ -162,7 +162,7 @@ instmemCommitContextDma_v03_00
     // This function must be called in unicast.
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
 
-    instoffset = pContextDma->Instance[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] << 4;
+    instoffset = pContextDma->Instance << 4;
     NV_ASSERT_OR_RETURN(instoffset, NV_ERR_INVALID_OBJECT);
 
     FrameAddr = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
@@ -302,7 +302,7 @@ instmemUpdateContextDma_v03_00
     // Must use comprInfo to specify kind
     NV_CHECK_OR_RETURN(LEVEL_SILENT, hMemory == NV01_NULL_OBJECT, NV_ERR_INVALID_ARGUMENT);
 
-    instoffset = pContextDma->Instance[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] << 4;
+    instoffset = pContextDma->Instance << 4;
     NV_ASSERT(instoffset);
 
     dest.pMemDesc = pInstMem->pInstMemDesc;

@@ -117,7 +117,7 @@ knvlinkIsBwModeSupported_GR100
     return NV_FALSE;
 }
 
-static NV_STATUS 
+static NV_STATUS
 _knvlinkAbmRetryTimerCallback
 (
     OBJGPU *pGpu,
@@ -187,7 +187,7 @@ _knvlinkABMLinkMaskUpdate_GR100_WORKITEM
    status = knvlinkResiliencyEntryFunction(pGpu, pKernelNvlink, pResiliencyInfo, NV_FALSE, NV_FALSE);
 
    // If there is an existing resiliency flow running, schedule a timer event to retry
-   if (status == NV_ERR_BUSY_RETRY && 
+   if (status == NV_ERR_BUSY_RETRY &&
         pResiliencyInfo->abmRetryCount < KNVLINK_TRAFFIC_QUIESCE_ACTION_RETRY_COUNT_MAX)
    {
         pResiliencyInfo->abmRetryCount++;
@@ -231,14 +231,13 @@ knvlinkABMLinkMaskUpdate_GR100
 
     //
     //  If traffic quiesce is not enabled OR
-    // There are no P2P objects & no need to RC channels
-    // then use the GB100 implementation
+    // P2P is idle and this is not a switch connected system OR
+    // non disruptive link mask updates are disabled
     //
     if (!pKernelNvlink->bTrafficQuiesceEnable ||
-        (!knvlinkIsP2PActive_IMPL(pGpu, pKernelNvlink)) ||
+        (!knvlinkIsP2PActive_IMPL(pGpu, pKernelNvlink) && !knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink)) ||
         pKernelNvlink->bDisableNonDisruptiveLinkMask)
     {
-
         return knvlinkABMLinkMaskUpdate_GB100(pGpu, pKernelNvlink, bNeedsRCRecovery);
     }
 
@@ -248,7 +247,7 @@ knvlinkABMLinkMaskUpdate_GR100
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (portAtomicCompareAndSwapU32(&pResiliencyInfo->bPendingAbmLinkMaskUpdate, 1, 0) == 0)
+    if (portAtomicCompareAndSwapU32(&pResiliencyInfo->bPendingAbmLinkMaskUpdate, 1U, 0U) == 0)
     {
         NV_PRINTF(LEVEL_INFO, "NVLINK ABM link mask update is already in progress, skipping\n");
         return NV_ERR_INVALID_STATE;
@@ -420,7 +419,7 @@ _knvlinkDumpEngineFunc
     // See if already registered (can be if have multiple)
     if ((nvdFindEngine(pGpu, pNvd, NVDUMP_COMPONENT_ENG_KERNEL_NVLINK, &pEngineCallback) == NV_OK) &&
         (pEngineCallback != NULL))
-        return;
+        goto nvlink_mse_dump_signup;
 
     // Required to sign up for nvlink callback in Kernel RM in order to dump contents in GSP RM
     nvdEngineSignUp(pGpu,
@@ -431,6 +430,20 @@ _knvlinkDumpEngineFunc
                     REF_DEF(NVD_ENGINE_FLAGS_SOURCE,   _CPU),
                     (void *)pKernelNvlink);
 
+nvlink_mse_dump_signup:
+    if (nvdFindEngine(pGpu, pNvd, NVDUMP_COMPONENT_ENG_NVLINK_MSE, &pEngineCallback) == NV_OK &&
+    (pEngineCallback != NULL))
+        goto exit;
+
+    nvdEngineSignUp(pGpu,
+                    pNvd,
+                    NULL,
+                    NVDUMP_COMPONENT_ENG_NVLINK_MSE,
+                    REF_DEF(NVD_ENGINE_FLAGS_PRIORITY, _MED) |
+                    REF_DEF(NVD_ENGINE_FLAGS_SOURCE,   _GSP),
+                    (void *)pKernelNvlink);
+
+exit:
     // Register the dump callback for the GB100 implementation
     knvlinkDumpCallbackRegister_GB100(pGpu, pKernelNvlink);
  }
@@ -501,3 +514,47 @@ _knvlinkDumpEngineFunc
         pResiliencyInfo->pLfmRetryEvent = NULL;
     }
  }
+
+NV_STATUS
+knvlinkSetPmgrLinkMask_GR100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NVLINK_BIT_VECTOR *pActiveLinkMask
+)
+{
+    NV2080_CTRL_INTERNAL_BIF_NVLINK_STATE_GET_PARAMS getParams = {0};
+    NV2080_CTRL_INTERNAL_BIF_NVLINK_STATE_SET_PARAMS setParams = {0};
+    NVLINK_BIT_VECTOR linkMask = {0};
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,(pActiveLinkMask != NULL), NV_ERR_INVALID_ARGUMENT);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                     NV2080_CTRL_CMD_INTERNAL_BIF_NVLINK_STATE_GET,
+                         (void *)&getParams, sizeof(getParams)));
+
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          convertLinkMasksToBitVector(NULL, 0U,
+                                &(getParams.state.trafficEnabledLinks), &linkMask));
+
+    // If the mask is valid and the links are the same skip the set
+    if ((!!getParams.state.bValid) &&
+        (bitVectorTestEqual(&linkMask, pActiveLinkMask)))
+     {
+         return NV_OK;
+     }
+
+
+    setParams.state.bValid = NV_TRUE;
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          convertBitVectorToLinkMasks(pActiveLinkMask, NULL,
+                                        0, &(setParams.state.trafficEnabledLinks)));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                     NV2080_CTRL_CMD_INTERNAL_BIF_NVLINK_STATE_SET,
+                         (void *)&setParams, sizeof(setParams)));
+
+    return NV_OK;
+}
+

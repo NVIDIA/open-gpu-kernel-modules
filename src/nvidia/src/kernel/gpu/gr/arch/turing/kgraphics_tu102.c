@@ -31,6 +31,8 @@
 #include "kernel/gpu/subdevice/subdevice.h"
 #include "kernel/rmapi/rmapi_utils.h"
 #include "kernel/core/locks.h"
+#include "gpu/bus/kern_bus.h"
+#include "turing/tu102/dev_ctxsw_prog.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "kernel/mem_mgr/gpu_vaspace.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
@@ -55,6 +57,83 @@
 #include "class/clc46f.h" // TURING_CHANNEL_GPFIFO_A
 
 #include "alloc/alloc_channel.h" // NV_CHANNEL_ALLOC_PARAMS
+
+static void
+_kgrctxWriteCtxHdr64
+(
+    NvU8  *pCtxHdr,
+    NvU32  offsetLo,
+    NvU32  offsetHi,
+    NvU64  vaddr
+)
+{
+    NV_ASSERT((vaddr & 0xFF) == 0);
+    NV_ASSERT_OR_RETURN_VOID(vaddr < (0x1ULL << 50));
+    NV_ASSERT_OR_RETURN_VOID(pCtxHdr != NULL);
+
+    vaddr >>= 8;
+
+    MEM_WR32(pCtxHdr + offsetLo, NvU64_LO32(vaddr));
+    MEM_WR32(pCtxHdr + offsetHi, NvU64_HI32(vaddr));
+}
+void
+kgrctxWriteZcullPtr_TU102
+(
+    OBJGPU                *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    NvU8                  *pCtxHdr,
+    NvU64                  vaddr
+)
+{
+    _kgrctxWriteCtxHdr64(pCtxHdr, NV_CTXSW_MAIN_IMAGE_ZCULL_PTR,
+                         NV_CTXSW_MAIN_IMAGE_ZCULL_PTR_HI, vaddr);
+}
+
+/**
+ * @brief Initialize the subcontext context header memory
+ *
+ * Subcontext header should be initilized with the main context buffer VA,
+ * and set the per-VEID enable bit.
+ */
+ NV_STATUS
+ kgrctxInitSubctxHeader_TU102
+ (
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    MEMORY_DESCRIPTOR *pSubctxHdrMemDesc,
+    NvU64 ctxBuffVa,
+    NvU64 zcullVa
+)
+ {
+     NvU8   *pCtxMem = kbusMapRmAperture_HAL(pGpu, pSubctxHdrMemDesc);
+     if (pCtxMem == NULL)
+     {
+         return NV_ERR_INSUFFICIENT_RESOURCES;
+     }
+ 
+     portMemSet(pCtxMem, 0, RM_PAGE_SIZE);
+ 
+     // Program the main engine context buffer VA in the subctx header
+     MEM_WR32(pCtxMem + NV_CTXSW_MAIN_IMAGE_CONTEXT_BUFFER_PTR, NvU64_LO32(ctxBuffVa));
+     MEM_WR32(pCtxMem + NV_CTXSW_MAIN_IMAGE_CONTEXT_BUFFER_PTR_HI, NvU64_HI32(ctxBuffVa));
+ 
+     //
+     // ZCULL VA is programmed in the subcontext header.
+     // With SCG, the ZCULL VA (in VEID 0)can be fetched from a non-zero VEID subcontext header.
+     // So update all subcontext header with Zcull VA.
+     // TODO: Move zcull VA programming to main context buffer header.
+     //
+     kgrctxWriteZcullPtr_HAL(pGpu, pKernelGraphicsContext, pCtxMem, zcullVa);
+ 
+     // Enable per-subctx header mode
+     MEM_WR32(pCtxMem + NV_CTXSW_MAIN_IMAGE_CTL,
+              DRF_NUM(_CTXSW, _MAIN_IMAGE, _CTL_TYPE,
+                      NV_CTXSW_MAIN_IMAGE_CTL_TYPE_PER_VEID_HEADER));
+ 
+     kbusUnmapRmAperture_HAL(pGpu, pSubctxHdrMemDesc, &pCtxMem, NV_TRUE);
+ 
+     return NV_OK;
+ }
 
 /*!
  * @brief Allocate common local/global buffers that are required by the graphics context

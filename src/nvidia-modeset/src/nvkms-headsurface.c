@@ -491,18 +491,16 @@ static NvU32 HsGetSemaphoreIndex(
  * Read the payload of the semaphore described in the pSemaSurface.
  */
 static NvU32 HsFlipQueueReadSemaphore(
-    const NVHsChannelEvoRec *pHsChannel,
     const NVFlipNIsoSurfaceEvoHwState *pSemaSurface)
 {
     const NvU32 semaphoreIndex = HsGetSemaphoreIndex(pSemaSurface);
-    const NvU32 sd = pHsChannel->pDispEvo->displayOwner;
     const void *ptr;
     struct nvKmsParsedSemaphore parsedSemaphore = { };
 
     /* We should only get here if we have a valid semaphore surface. */
     nvAssert(pSemaSurface->pSurfaceEvo != NULL);
 
-    ptr = pSemaSurface->pSurfaceEvo->cpuAddress[sd];
+    ptr = pSemaSurface->pSurfaceEvo->cpuAddress[0];
 
     if (ptr == NULL) {
         nvAssert(!"Semaphore surface without CPU mapping!");
@@ -534,7 +532,7 @@ static NvBool HsFlipQueueEntryIsReady(
      */
     if (pSemaSurface->pSurfaceEvo != NULL) {
         const NvU32 semaphoreValue =
-            HsFlipQueueReadSemaphore(pHsChannel, pSemaSurface);
+            HsFlipQueueReadSemaphore(pSemaSurface);
 
         if (pHsChannel->swapGroupFlipping) {
             // With swap group flipping, the client semaphore should be
@@ -1217,7 +1215,6 @@ static void HsFlipHelper(
 
     nvkms_memset(pFlipHead, 0, sizeof(*pFlipHead));
 
-    pFlipHead->sd = sd;
     pFlipHead->head = apiHead;
     pParamsOneHead = &pFlipHead->flip;
 
@@ -2008,7 +2005,7 @@ static void HsUpdateClientNotifier(NVHsChannelEvoPtr pHsChannel)
     nvAssert(parsed.timeStampValid);
 
     nvKmsSetNotifier(pClientNotifier->offsetInWords / 4,
-                     pClientNotifier->pSurfaceEvo->cpuAddress[sd],
+                     pClientNotifier->pSurfaceEvo->cpuAddress[0],
                      parsed.timeStamp);
 }
 

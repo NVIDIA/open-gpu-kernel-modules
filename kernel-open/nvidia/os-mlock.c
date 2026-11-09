@@ -97,6 +97,15 @@ static inline int nv_follow_pfn(struct vm_area_struct *vma,
 #endif
 }
 
+static inline NvBool nv_pfn_has_page_backing(unsigned long pfn)
+{
+#if defined(NV_PFN_IS_MAP_MEMORY_PRESENT)
+    return pfn_is_map_memory(pfn);
+#else
+    return pfn_valid(pfn);
+#endif
+}
+
 /*!
  * @brief Locates the PFNs for a user IO address range, and converts those to
  *        their associated PTEs.
@@ -122,6 +131,12 @@ static NV_STATUS get_io_ptes(struct vm_area_struct *vma,
     for (i = 0; i < page_count; i++)
     {
         if (nv_follow_pfn(vma, (start + (i * PAGE_SIZE)), &pfn) < 0)
+        {
+            return NV_ERR_INVALID_ADDRESS;
+        }
+
+        // Page-backed PFNs cannot be retained safely by the I/O memory path.
+        if (nv_pfn_has_page_backing(pfn))
         {
             return NV_ERR_INVALID_ADDRESS;
         }
@@ -223,7 +238,6 @@ NV_STATUS NV_API_CALL os_lock_user_pages(
     NV_STATUS rmStatus;
     struct mm_struct *mm = current->mm;
     struct page **user_pages;
-    NvU64 i;
     NvU64 npages = page_count;
     NvU64 pinned = 0;
     unsigned int gup_flags = DRF_VAL(_LOCK_USER_PAGES, _FLAGS, _WRITE, flags) ? FOLL_WRITE : 0;
@@ -297,8 +311,7 @@ NV_STATUS NV_API_CALL os_lock_user_pages(
 
     if (pinned < page_count)
     {
-        for (i = 0; i < pinned; i++)
-            NV_UNPIN_USER_PAGE(user_pages[i]);
+        NV_UNPIN_USER_PAGES_DIRTY(user_pages, pinned, false);
         os_free_mem(user_pages);
         return NV_ERR_INVALID_ADDRESS;
     }
@@ -316,14 +329,8 @@ NV_STATUS NV_API_CALL os_unlock_user_pages(
 {
     NvBool write = FLD_TEST_DRF(_LOCK_USER_PAGES, _FLAGS, _WRITE, _YES, flags);
     struct page **user_pages = page_array;
-    NvU32 i;
 
-    for (i = 0; i < page_count; i++)
-    {
-        if (write)
-            set_page_dirty_lock(user_pages[i]);
-        NV_UNPIN_USER_PAGE(user_pages[i]);
-    }
+    NV_UNPIN_USER_PAGES_DIRTY(user_pages, page_count, write);
 
     os_free_mem(user_pages);
 

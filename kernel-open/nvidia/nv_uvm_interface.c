@@ -210,7 +210,14 @@ NV_STATUS nvUvmInterfaceSessionCreate(uvmGpuSessionHandle *session,
     platformInfo->atsSupported = READ_ONCE(nv_ats_supported);
     platformInfo->nonAtsDevicePresent = READ_ONCE(nv_non_ats_device_present);
     platformInfo->confComputingEnabled = os_cc_enabled;
-    platformInfo->cdmmEnabled = !NVreg_EnableUserNUMAManagement;
+    platformInfo->cdmmEnabled = !NVreg_EnableNUMA;
+
+    status = rm_gpu_ops_is_tdisp_enabled(sp, &platformInfo->tdispEnabled);
+    if (status != NV_OK)
+    {
+        nv_kmem_cache_free_stack(sp);
+        return status;
+    }
 
     status = rm_gpu_ops_create_session(sp, (gpuSessionHandle *)session);
 

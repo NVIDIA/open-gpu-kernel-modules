@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 615.71.09.
+version 620.70.06.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-615.71.09 driver release.  This can be achieved by installing
+620.70.06 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -186,7 +186,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/615.71.09/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/620.70.06/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -979,6 +979,10 @@ Subsystem Device ID.
 | NVIDIA RTX 6000D                                        | 2BB9 10DE 2091 |
 | NVIDIA RTX 6000D                                        | 2BB9 10DE 2092 |
 | NVIDIA RTX 6000D                                        | 2BB9 10DE 2279 |
+| NVIDIA RTX PRO 5500 Blackwell Workstation Edition       | 2BBD 1028 23AE |
+| NVIDIA RTX PRO 5500 Blackwell Workstation Edition       | 2BBD 103C 23AE |
+| NVIDIA RTX PRO 5500 Blackwell Workstation Edition       | 2BBD 10DE 23AE |
+| NVIDIA RTX PRO 5500 Blackwell Workstation Edition       | 2BBD 17AA 23AE |
 | NVIDIA GeForce RTX 5080                                 | 2C02           |
 | NVIDIA GeForce RTX 5070 Ti                              | 2C05           |
 | NVIDIA GeForce RTX 5070                                 | 2C09           |
@@ -1021,12 +1025,18 @@ Subsystem Device ID.
 | NVIDIA RTX PRO 500 Blackwell Generation Laptop GPU      | 2DB9           |
 | NVIDIA GeForce RTX 5050 Laptop GPU                      | 2DD8           |
 | NVIDIA RTX PRO 500 Blackwell Embedded GPU               | 2DF9           |
+| NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)      | 2E03           |
+| NVIDIA RTX Spark N1X (5120-core Blackwell RTX GPU)      | 2E06           |
 | NVIDIA GB10                                             | 2E12 10DE 21EC |
+| NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)      | 2E13           |
 | NVIDIA GeForce RTX 5070                                 | 2F04           |
 | NVIDIA GeForce RTX 5060                                 | 2F06           |
 | NVIDIA GeForce RTX 5070 Ti Laptop GPU                   | 2F18           |
 | NVIDIA RTX PRO 3000 Blackwell Generation Laptop GPU     | 2F38           |
 | NVIDIA GeForce RTX 5070 Ti Laptop GPU                   | 2F58           |
+| NVIDIA VR NVL72                                         | 3041 10DE 221A |
 | NVIDIA B300 SXM6 AC                                     | 3182 10DE 20E6 |
+| NVIDIA GB300                                            | 31C2 10DE 20E5 |
 | NVIDIA GB300                                            | 31C2 10DE 21F1 |
 | NVIDIA GB300                                            | 31C3 10DE 22F8 |
+| NVIDIA GB300-252                                        | 31C3 10DE 23AB |

@@ -152,40 +152,10 @@ struct ChannelDescendant {
 };
 
 
-// Vtable with 32 per-class function pointers
+// Vtable with 2 per-class function pointers
 struct NVOC_VTABLE__ChannelDescendant {
     NV_STATUS (*__chandesGetSwMethods__)(struct ChannelDescendant * /*this*/, const METHOD **, NvU32 *);  // virtual
     NvBool (*__chandesIsSwMethodStalling__)(struct ChannelDescendant * /*this*/, NvU32);  // virtual
-    NV_STATUS (*__chandesCheckMemInterUnmap__)(struct ChannelDescendant * /*this*/, NvBool);  // virtual override (rmres) base (gpures)
-    NV_STATUS (*__chandesControl__)(struct ChannelDescendant * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__chandesMap__)(struct ChannelDescendant * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__chandesUnmap__)(struct ChannelDescendant * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__chandesShareCallback__)(struct ChannelDescendant * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__chandesGetRegBaseOffsetAndSize__)(struct ChannelDescendant * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__chandesGetMapAddrSpace__)(struct ChannelDescendant * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__chandesInternalControlForward__)(struct ChannelDescendant * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__chandesGetInternalObjectHandle__)(struct ChannelDescendant * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__chandesAccessCallback__)(struct ChannelDescendant * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__chandesGetMemInterMapParams__)(struct ChannelDescendant * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__chandesGetMemoryMappingDescriptor__)(struct ChannelDescendant * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__chandesControlSerialization_Prologue__)(struct ChannelDescendant * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__chandesControlSerialization_Epilogue__)(struct ChannelDescendant * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__chandesControl_Prologue__)(struct ChannelDescendant * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__chandesControl_Epilogue__)(struct ChannelDescendant * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NvBool (*__chandesCanCopy__)(struct ChannelDescendant * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__chandesIsDuplicate__)(struct ChannelDescendant * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__chandesPreDestruct__)(struct ChannelDescendant * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__chandesControlFilter__)(struct ChannelDescendant * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (gpures)
-    NvBool (*__chandesIsPartialUnmapSupported__)(struct ChannelDescendant * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__chandesMapTo__)(struct ChannelDescendant * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__chandesUnmapFrom__)(struct ChannelDescendant * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__chandesGetRefCount__)(struct ChannelDescendant * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__chandesAddAdditionalDependants__)(struct RsClient *, struct ChannelDescendant * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-    PEVENTNOTIFICATION * (*__chandesGetNotificationListPtr__)(struct ChannelDescendant * /*this*/);  // virtual inherited (notify) base (notify)
-    struct NotifShare * (*__chandesGetNotificationShare__)(struct ChannelDescendant * /*this*/);  // virtual inherited (notify) base (notify)
-    void (*__chandesSetNotificationShare__)(struct ChannelDescendant * /*this*/, struct NotifShare *);  // virtual inherited (notify) base (notify)
-    NV_STATUS (*__chandesUnregisterEvent__)(struct ChannelDescendant * /*this*/, NvHandle, NvHandle, NvHandle, NvHandle);  // virtual inherited (notify) base (notify)
-    NV_STATUS (*__chandesGetOrAllocNotifShare__)(struct ChannelDescendant * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (notify)
 };
 
 // Metadata with per-class RTTI and vtable with ancestor(s)
@@ -252,15 +222,15 @@ static inline void chandesDestroy(struct ChannelDescendant *pChannelDescendant) 
 #define chandesGetSwMethods(pChannelDescendant, ppMethods, pNumMethods) chandesGetSwMethods_DISPATCH(pChannelDescendant, ppMethods, pNumMethods)
 #define chandesIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__
 #define chandesIsSwMethodStalling(pChannelDescendant, hHandle) chandesIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
-#define chandesCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_metadata_ptr->vtable.__chandesCheckMemInterUnmap__
+#define chandesCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define chandesCheckMemInterUnmap(pChannelDescendant, bSubdeviceHandleProvided) chandesCheckMemInterUnmap_DISPATCH(pChannelDescendant, bSubdeviceHandleProvided)
-#define chandesControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define chandesControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define chandesControl(pGpuResource, pCallContext, pParams) chandesControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define chandesMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
+#define chandesMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define chandesMap(pGpuResource, pCallContext, pParams, pCpuMapping) chandesMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define chandesUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
+#define chandesUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define chandesUnmap(pGpuResource, pCallContext, pCpuMapping) chandesUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define chandesShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define chandesShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define chandesShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) chandesShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define chandesGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define chandesGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) chandesGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -270,19 +240,19 @@ static inline void chandesDestroy(struct ChannelDescendant *pChannelDescendant) 
 #define chandesInternalControlForward(pGpuResource, command, pParams, size) chandesInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define chandesGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define chandesGetInternalObjectHandle(pGpuResource) chandesGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define chandesAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define chandesAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define chandesAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) chandesAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define chandesGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define chandesGetMemInterMapParams(pRmResource, pParams) chandesGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define chandesGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define chandesGetMemoryMappingDescriptor(pRmResource, ppMemDesc) chandesGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define chandesControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define chandesControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define chandesControlSerialization_Prologue(pResource, pCallContext, pParams) chandesControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define chandesControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define chandesControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define chandesControlSerialization_Epilogue(pResource, pCallContext, pParams) chandesControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define chandesControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define chandesControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define chandesControl_Prologue(pResource, pCallContext, pParams) chandesControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define chandesControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define chandesControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define chandesControl_Epilogue(pResource, pCallContext, pParams) chandesControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define chandesCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define chandesCanCopy(pResource) chandesCanCopy_DISPATCH(pResource)
@@ -302,15 +272,15 @@ static inline void chandesDestroy(struct ChannelDescendant *pChannelDescendant) 
 #define chandesGetRefCount(pResource) chandesGetRefCount_DISPATCH(pResource)
 #define chandesAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define chandesAddAdditionalDependants(pClient, pResource, pReference) chandesAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define chandesGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
+#define chandesGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationListPtr__
 #define chandesGetNotificationListPtr(pNotifier) chandesGetNotificationListPtr_DISPATCH(pNotifier)
-#define chandesGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
+#define chandesGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationShare__
 #define chandesGetNotificationShare(pNotifier) chandesGetNotificationShare_DISPATCH(pNotifier)
-#define chandesSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
+#define chandesSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifySetNotificationShare__
 #define chandesSetNotificationShare(pNotifier, pNotifShare) chandesSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define chandesUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
+#define chandesUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyUnregisterEvent__
 #define chandesUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) chandesUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define chandesGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
+#define chandesGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetOrAllocNotifShare__
 #define chandesGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) chandesGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
@@ -323,123 +293,123 @@ static inline NvBool chandesIsSwMethodStalling_DISPATCH(struct ChannelDescendant
 }
 
 static inline NV_STATUS chandesCheckMemInterUnmap_DISPATCH(struct ChannelDescendant *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
-    return pChannelDescendant->__nvoc_metadata_ptr->vtable.__chandesCheckMemInterUnmap__(pChannelDescendant, bSubdeviceHandleProvided);
+    return pChannelDescendant->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pChannelDescendant, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS chandesControl_DISPATCH(struct ChannelDescendant *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__chandesControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS chandesMap_DISPATCH(struct ChannelDescendant *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__chandesMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pGpuResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS chandesUnmap_DISPATCH(struct ChannelDescendant *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__chandesUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pGpuResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool chandesShareCallback_DISPATCH(struct ChannelDescendant *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__chandesShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS chandesGetRegBaseOffsetAndSize_DISPATCH(struct ChannelDescendant *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__chandesGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS chandesGetMapAddrSpace_DISPATCH(struct ChannelDescendant *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__chandesGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pGpuResource, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS chandesInternalControlForward_DISPATCH(struct ChannelDescendant *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__chandesInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle chandesGetInternalObjectHandle_DISPATCH(struct ChannelDescendant *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__chandesGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool chandesAccessCallback_DISPATCH(struct ChannelDescendant *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__chandesAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS chandesGetMemInterMapParams_DISPATCH(struct ChannelDescendant *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__chandesGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS chandesGetMemoryMappingDescriptor_DISPATCH(struct ChannelDescendant *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__chandesGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS chandesControlSerialization_Prologue_DISPATCH(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__chandesControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void chandesControlSerialization_Epilogue_DISPATCH(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__chandesControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS chandesControl_Prologue_DISPATCH(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__chandesControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void chandesControl_Epilogue_DISPATCH(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__chandesControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool chandesCanCopy_DISPATCH(struct ChannelDescendant *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__chandesCanCopy__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS chandesIsDuplicate_DISPATCH(struct ChannelDescendant *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__chandesIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void chandesPreDestruct_DISPATCH(struct ChannelDescendant *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__chandesPreDestruct__(pResource);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS chandesControlFilter_DISPATCH(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__chandesControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool chandesIsPartialUnmapSupported_DISPATCH(struct ChannelDescendant *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__chandesIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS chandesMapTo_DISPATCH(struct ChannelDescendant *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__chandesMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS chandesUnmapFrom_DISPATCH(struct ChannelDescendant *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__chandesUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 chandesGetRefCount_DISPATCH(struct ChannelDescendant *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__chandesGetRefCount__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void chandesAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ChannelDescendant *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__chandesAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 static inline PEVENTNOTIFICATION * chandesGetNotificationListPtr_DISPATCH(struct ChannelDescendant *pNotifier) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__chandesGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationListPtr__(staticCast(pNotifier, INotifier));
 }
 
 static inline struct NotifShare * chandesGetNotificationShare_DISPATCH(struct ChannelDescendant *pNotifier) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__chandesGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationShare__(staticCast(pNotifier, INotifier));
 }
 
 static inline void chandesSetNotificationShare_DISPATCH(struct ChannelDescendant *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_metadata_ptr->vtable.__chandesSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifySetNotificationShare__(staticCast(pNotifier, INotifier), pNotifShare);
 }
 
 static inline NV_STATUS chandesUnregisterEvent_DISPATCH(struct ChannelDescendant *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__chandesUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyUnregisterEvent__(staticCast(pNotifier, INotifier), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS chandesGetOrAllocNotifShare_DISPATCH(struct ChannelDescendant *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__chandesGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetOrAllocNotifShare__(staticCast(pNotifier, INotifier), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 // Virtual method declarations and/or inline definitions

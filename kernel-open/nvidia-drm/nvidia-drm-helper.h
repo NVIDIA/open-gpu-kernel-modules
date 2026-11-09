@@ -51,6 +51,29 @@
 #define NV_DRM_USE_EXTENDED_PROPERTIES (DRM_OBJECT_MAX_PROPERTY >= 64)
 
 #include <drm/drm_prime.h>
+#include <drm/drm_gem.h>
+#include <linux/mm.h>
+
+/*
+ * nv_drm_vma_fault_get_page_offset - compute GEM page offset from a vm_fault
+ *
+ * On Linux, vmf->pgoff carries the file-level page index set by the VM.
+ * On FreeBSD, linux_cdev_pager_populate() sets vmf->pgoff = 0 and instead
+ * passes the page index (pidx) via vmf->virtual_address as IDX_TO_OFF(pidx).
+ * Convert back with OFF_TO_IDX and subtract the GEM vma_node start to get
+ * the page offset within the GEM object.
+ */
+static inline unsigned long
+nv_drm_vma_fault_get_page_offset(struct vm_fault *vmf,
+                                 struct drm_gem_object *gem)
+{
+#if defined(NV_LINUX)
+    unsigned long offset = vmf->pgoff;
+#else
+    unsigned long offset = OFF_TO_IDX((uintptr_t)vmf->virtual_address);
+#endif
+    return offset - drm_vma_node_start(&gem->vma_node);
+}
 
 static inline struct sg_table*
 nv_drm_prime_pages_to_sg(struct drm_device *dev,

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,6 +65,7 @@ static NvlStatus _nvswitch_ctrl_inband_flush_data(nvswitch_device *device, NVSWI
         retval = -NVL_ERR_NOT_SUPPORTED;                                         \
         break;                                                                   \
     }                                                                            \
+
 
 const static NvU32 nvswitch_lr10_device_ids[] =
 {
@@ -1476,7 +1477,8 @@ _nvswitch_ctrl_register_events(
     }
 
     if ((!many_events && (p->numEvents > 1)) ||
-        (p->numEvents == 0))
+        (p->numEvents == 0) ||
+        (p->numEvents > NVSWITCH_REGISTER_EVENTS_MAX_EVENT_IDS))
     {
         return -NVL_BAD_ARGS;
     }
@@ -4948,7 +4950,7 @@ nvswitch_reg_read_32
 
         if ((boot_0 & 0xFFFF0000) == 0xBADF0000)
         {
-            NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_IO_FAILURE,
+            NVSWITCH_PRINT_SXID_NO_BBX(device, NVSWITCH_ERR_HW_HOST_IO_FAILURE,
                 "IO failure (0x%08x, 0x%08x, 0x%08x)\n", offset, val, boot_0);
             NVSWITCH_PRINT(device, ERROR,
                 "IO failure reading 0x%x (0x%x)\n", offset, val);

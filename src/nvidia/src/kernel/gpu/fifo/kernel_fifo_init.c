@@ -160,6 +160,8 @@ _kfifoPreConstructRegistryOverrides
         pKernelFifo->bUserdMapDmaSupported = NV_TRUE;
     }
 
+    pKernelFifo->bReplayableFaultsOverride = NV_FALSE;
+    
     return;
 }
 

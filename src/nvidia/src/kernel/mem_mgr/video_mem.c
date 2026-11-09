@@ -36,7 +36,6 @@
 #include "gpu/device/device.h"
 #include "gpu/bus/third_party_p2p.h"
 #include "gpu/bus/kern_bus.h"
-#include "platform/sli/sli.h"
 
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
 
@@ -134,7 +133,6 @@ _vidmemPmaAllocate
     NvU64                        sizeAlign    = 0;
     PMA_ALLOCATION_OPTIONS       allocOptions = {0};
     NvBool                       bContig;
-    NvU32                        subdevInst   = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
     NvU32                        pmaConfig    = PMA_QUERY_NUMA_ENABLED;
 
     status = pmaQueryConfigs(pPma, &pmaConfig);
@@ -298,31 +296,31 @@ retry_alloc:
     }
 
     // Alloc the tracking structure and store the values in it.
-    pAllocRequest->pPmaAllocInfo[subdevInst] = portMemAllocNonPaged(pmaInfoSize);
-    NV_ASSERT_OR_RETURN(NULL != pAllocRequest->pPmaAllocInfo[subdevInst], NV_ERR_NO_MEMORY);
-    portMemSet(pAllocRequest->pPmaAllocInfo[subdevInst], 0, pmaInfoSize);
+    pAllocRequest->pPmaAllocInfo = portMemAllocNonPaged(pmaInfoSize);
+    NV_ASSERT_OR_RETURN(NULL != pAllocRequest->pPmaAllocInfo, NV_ERR_NO_MEMORY);
+    portMemSet(pAllocRequest->pPmaAllocInfo, 0, pmaInfoSize);
 
-    pAllocRequest->pPmaAllocInfo[subdevInst]->pageSize  = pageSize;
-    pAllocRequest->pPmaAllocInfo[subdevInst]->pageCount = pageCount;
-    pAllocRequest->pPmaAllocInfo[subdevInst]->allocSize = ((NvU64) pageCount) * pageSize;
-    pAllocRequest->pPmaAllocInfo[subdevInst]->bContig   = bContig;
-    pAllocRequest->pPmaAllocInfo[subdevInst]->refCount  = 1;
-    pAllocRequest->pPmaAllocInfo[subdevInst]->flags     = allocOptions.flags;
+    pAllocRequest->pPmaAllocInfo->pageSize  = pageSize;
+    pAllocRequest->pPmaAllocInfo->pageCount = pageCount;
+    pAllocRequest->pPmaAllocInfo->allocSize = ((NvU64) pageCount) * pageSize;
+    pAllocRequest->pPmaAllocInfo->bContig   = bContig;
+    pAllocRequest->pPmaAllocInfo->refCount  = 1;
+    pAllocRequest->pPmaAllocInfo->flags     = allocOptions.flags;
 
     NV_PRINTF(LEVEL_INFO, "\nNVRM:  Size requested: 0x%llx bytes\n", size);
     NV_PRINTF(LEVEL_INFO, "       PageSize: 0x%llx bytes\n", pageSize);
     NV_PRINTF(LEVEL_INFO, "      PageCount: 0x%x\n", pageCount);
     NV_PRINTF(LEVEL_INFO, "    Actual Size: 0x%llx\n",
-              pAllocRequest->pPmaAllocInfo[subdevInst]->allocSize);
+              pAllocRequest->pPmaAllocInfo->allocSize);
     NV_PRINTF(LEVEL_INFO, "     Contiguous:  %s\n", bContig ? "YES" : "NO");
 
     // Get the allocation from PMA.
     status = pmaAllocatePages(pPma, pageCount, pageSize, &allocOptions,
-                              pAllocRequest->pPmaAllocInfo[subdevInst]->pageArray);
+                              pAllocRequest->pPmaAllocInfo->pageArray);
     if (NV_OK != status)
     {
-        portMemFree(pAllocRequest->pPmaAllocInfo[subdevInst]);
-        pAllocRequest->pPmaAllocInfo[subdevInst] = NULL;
+        portMemFree(pAllocRequest->pPmaAllocInfo);
+        pAllocRequest->pPmaAllocInfo = NULL;
 
         if (bContig)
         {
@@ -501,12 +499,12 @@ vidmemCopyConstruct
                         GPU_GET_MEMORY_MANAGER(pGpu), pMemDesc);
             break;
         case MEMDESC_CUSTOM_HEAP_NONE:
-            SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-                MEMORY_DESCRIPTOR *pSrcMemDesc = memdescGetMemDescFromGpu(pMemorySrc->pMemDesc, pGpu);
+            {
+                MEMORY_DESCRIPTOR *pSrcMemDesc = pMemorySrc->pMemDesc;
                 status = heapReference(pGpu, pSrcMemDesc->pHeap, pMemorySrc->HeapOwner,
                                        pSrcMemDesc);
                 NV_ASSERT_OK_OR_RETURN(status);
-            SLI_LOOP_END
+            }
             break;
         default:
             NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
@@ -584,7 +582,6 @@ vidmemConstruct_IMPL
     NvBool                       bIsPmaAlloc           = NV_FALSE;
     NvU64                        sizeOut;
     NvU64                        offsetOut;
-    NvU64                        offsetOutTemp;
     NvBool                       bLockAcquired         = NV_FALSE;
     NvU32                        attr                  = 0;
     NvU32                        attr2                 = 0;
@@ -592,6 +589,9 @@ vidmemConstruct_IMPL
     FB_ALLOC_PAGE_FORMAT        *pFbAllocPageFormat    = NULL;
     NV_STATUS                    rmStatus              = NV_OK;
     KernelBus                   *pKernelBus            = GPU_GET_KERNEL_BUS(pGpu);
+    NvBool                       bCprMemEnabled         = gpuIsCCFeatureEnabled(pGpu);
+
+    bCprMemEnabled = bCprMemEnabled || gpuIsTdispFeatureEnabled(pGpu);
 
     NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
 
@@ -644,13 +644,14 @@ vidmemConstruct_IMPL
     attr  = pAllocData->attr;
     attr2 = pAllocData->attr2;
 
-    if (gpuIsCCFeatureEnabled(pGpu) &&
+    if (bCprMemEnabled &&
         !FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, pAllocData->attr2))
     {
         pAllocData->flags |= NVOS32_ALLOC_FLAGS_PROTECTED;
     }
-    else if (gpuIsCCFeatureEnabled(pGpu) &&
-             FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, pAllocData->attr2))
+    else if (bCprMemEnabled &&
+             FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, pAllocData->attr2) &&
+             (pMemoryManager->unprotectedVidmemSize == 0))
     {
         // CC-TODO: Remove this once non-CPR regions are created
         NV_PRINTF(LEVEL_ERROR, "Non-CPR region not yet created\n");
@@ -658,7 +659,7 @@ vidmemConstruct_IMPL
             rmStatus = NV_ERR_INVALID_ARGUMENT;
             goto done);
     }
-    else if (!gpuIsCCFeatureEnabled(pGpu) &&
+    else if (!bCprMemEnabled &&
              FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _PROTECTED, pAllocData->attr2))
     {
         NV_PRINTF(LEVEL_ERROR, "Protected memory not enabled but PROTECTED flag is set by client");
@@ -707,12 +708,10 @@ vidmemConstruct_IMPL
     // Get the allocation from PMA if enabled.
     if (bIsPmaAlloc)
     {
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
         pAllocRequest->pGpu = pGpu;
         rmStatus = _vidmemPmaAllocate(vidmemGetHeap(pGpu, pDevice, NV_FALSE, NV_FALSE), pAllocRequest);
         if (NV_OK != rmStatus)
-            SLI_LOOP_GOTO(done);
-        SLI_LOOP_END;
+            goto done;
     }
 
     if (RMCFG_FEATURE_RM_BASIC_LOCK_MODEL)
@@ -740,10 +739,10 @@ vidmemConstruct_IMPL
         // If using thwap to generate an allocation failure here, fail the
         // alloc right away.
         //
-        KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
-        if (pKernelRc != NULL &&
-            !krcTestAllowAlloc(pGpu, pKernelRc,
-                               NV_ROBUST_CHANNEL_ALLOCFAIL_HEAP))
+        KernelWatchdog *pKernelWatchdog = gpuGetKernelWatchdogFromDevice(pGpu, pDevice);
+        if (pKernelWatchdog != NULL &&
+            !kwdtTestAllowAlloc(pGpu, pKernelWatchdog,
+                                NV_ROBUST_CHANNEL_ALLOCFAIL_HEAP))
         {
             rmStatus = NV_ERR_INSUFFICIENT_RESOURCES;
             goto done;
@@ -774,90 +773,6 @@ vidmemConstruct_IMPL
     NV_ASSERT_TRUE_OR_GOTO(rmStatus, pFbAllocPageFormat != NULL, NV_ERR_NO_MEMORY, done);
 
     // Call heapAlloc to get memory.
-    if (gpumgrGetBcEnabledStatus(pGpu))
-    {
-        MEMORY_DESCRIPTOR *pPrev = NULL;
-
-        // VGPU won't run in SLI. So no need to set subheap and bRsvdHeap flags in memdesc.
-        NV_ASSERT(!bSubheap);
-        NV_ASSERT(!bRsvdHeap);
-
-        // Create dummy top level memdesc
-        rmStatus = memdescCreate(&pTopLevelMemDesc, pGpu, RM_PAGE_SIZE, 0,
-            NV_TRUE,
-            ADDR_FBMEM,
-            NV_MEMORY_UNCACHED,
-            MEMDESC_FLAGS_DUMMY_TOPLEVEL);
-        if (rmStatus != NV_OK)
-            goto done;
-        pPrev = pTopLevelMemDesc;
-        pTopLevelMemDesc->_subDeviceAllocCount = gpumgrGetSubDeviceCountFromGpu(pGpu); // very important to have this here
-        pTopLevelMemDesc->_flags |=  MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE;
-
-        offsetOutTemp = ~((NvU64)0);
-        offsetOut = 0;
-        sizeOut = 0;
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-        {
-            // Call heapAlloc to get memory.
-            pAllocRequest->pMemDesc = NULL; // heapAlloc_IMPL needs a NULL pMemdesc in order for it to be allocated,
-
-            portMemSet(pFbAllocInfo, 0, sizeof(FB_ALLOC_INFO));
-            portMemSet(pFbAllocPageFormat, 0, sizeof(FB_ALLOC_PAGE_FORMAT));
-            pFbAllocInfo->pageFormat = pFbAllocPageFormat;
-
-            memUtilsInitFBAllocInfo(pAllocRequest->pUserParams, pFbAllocInfo, hClient, pDeviceRef->hResource);
-
-            rmStatus = memmgrAllocResources(pGpu, pMemoryManager, pAllocRequest, pFbAllocInfo);
-            if (rmStatus != NV_OK)
-                SLI_LOOP_GOTO(done);
-
-            rmStatus = vidmemAllocResources(pGpu, pMemoryManager, pAllocRequest, pFbAllocInfo,
-                                            vidmemGetHeap(pGpu, pDevice, NV_FALSE, NV_FALSE));
-            if (rmStatus != NV_OK)
-                SLI_LOOP_GOTO(done);
-
-            NV_ASSERT(pAllocRequest->pMemDesc);
-
-            //
-            // Spoof the flags contiguity, size and alignment of heapAlloc'ed subdev memdesc
-            // to dummy top level memdesc we created
-            //
-            pTopLevelMemDesc->Alignment  = pAllocRequest->pMemDesc->Alignment;
-            pTopLevelMemDesc->_flags     = pAllocRequest->pMemDesc->_flags | MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE | MEMDESC_FLAGS_DUMMY_TOPLEVEL;
-            pTopLevelMemDesc->Size       = pAllocRequest->pMemDesc->Size;
-            pTopLevelMemDesc->ActualSize = pAllocRequest->pMemDesc->ActualSize;
-            pTopLevelMemDesc->_pageSize  = pAllocRequest->pMemDesc->_pageSize;
-            pTopLevelMemDesc->pHeap      = pAllocRequest->pMemDesc->pHeap;
-
-            // add pAllocData->pMemDesc for subdev to linked list
-            pPrev->_pNext         = pAllocRequest->pMemDesc;
-            pPrev                 = pAllocRequest->pMemDesc;
-
-            //
-            // After Bugs 1967134, 1511574, 1448340, 1761278, 1993033 are implemented, remove the code below and
-            // always set offsetOut = ~0 for the broadcast case.
-            // Then remove the interface to remove the physical offset.
-            //
-            if (offsetOutTemp == ~((NvU64)0)) // 1st
-                offsetOut = offsetOutTemp = memdescGetPhysAddr(pAllocRequest->pMemDesc, AT_GPU, 0);
-            else if (offsetOut != ~((NvU64)0))
-            {
-                offsetOutTemp = memdescGetPhysAddr(pAllocRequest->pMemDesc, AT_GPU, 0);
-                if (offsetOut != offsetOutTemp)
-                {
-                    offsetOut = ~((NvU64)0);
-                }
-            }
-
-            NV_ASSERT(!sizeOut || pAllocRequest->pMemDesc->Size == sizeOut);
-            sizeOut = pAllocRequest->pMemDesc->Size;
-        }
-        SLI_LOOP_END;
-
-        pTempMemDesc = memdescGetMemDescFromGpu(pTopLevelMemDesc, pGpu);
-    }
-    else
     {
 
         portMemSet(pFbAllocInfo, 0, sizeof(FB_ALLOC_INFO));
@@ -889,9 +804,7 @@ vidmemConstruct_IMPL
     if (bIsPmaAlloc)
     {
         // Cache the PMA_ALLOC_INFO structure.
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-        memdescGetMemDescFromGpu(pTopLevelMemDesc, pGpu)->pPmaAllocInfo = pAllocRequest->pPmaAllocInfo[gpumgrGetSubDeviceInstanceFromGpu(pGpu)];
-        SLI_LOOP_END;
+        pTopLevelMemDesc->pPmaAllocInfo = pAllocRequest->pPmaAllocInfo;
     }
 
     //
@@ -900,13 +813,11 @@ vidmemConstruct_IMPL
     // unprotected region and use that to gather statistics like total
     // protected and unprotected memory usage by different clients, etc
     //
-    if (gpuIsCCFeatureEnabled(pGpu) &&
+    if (bCprMemEnabled &&
         FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, pAllocData->attr2))
     {
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-        memdescSetFlag(memdescGetMemDescFromGpu(pTopLevelMemDesc, pGpu),
-                       MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY, NV_TRUE);
-        SLI_LOOP_END;
+        memdescSetFlag(pTopLevelMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY,
+                       NV_TRUE);
     }
 
     if (!memdescGetFlag(pTempMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT))
@@ -937,10 +848,7 @@ vidmemConstruct_IMPL
         //
         if (pTempMemDesc->RefCount == 1)
         {
-            SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY);
-            memdescSetGpuCacheAttrib(memdescGetMemDescFromGpu(pTopLevelMemDesc, pGpu), gpuCacheAttrib);
-            SLI_LOOP_END;
-
+            memdescSetGpuCacheAttrib(pTopLevelMemDesc, gpuCacheAttrib);
 
             // An SMMU mapping will be added to FB allocations in the following cases:
             // 1. RM clients forcing SMMU mapping via flags
@@ -989,7 +897,7 @@ vidmemConstruct_IMPL
     attr = (pAllocData->attr &  DRF_SHIFTMASK(NVOS32_ATTR_PHYSICALITY)) |
            (attr             & ~DRF_SHIFTMASK(NVOS32_ATTR_PHYSICALITY));
 
-    if (!IS_GSP_CLIENT(pGpu))
+    if (memNeedRpcAlloc(pMemory))
     {
         NV_RM_RPC_ALLOC_VIDMEM(pGpu,
                                hClient,
@@ -1013,10 +921,6 @@ vidmemConstruct_IMPL
 
         if (rmStatus != NV_OK)
         {
-            memDestructCommon(pMemory);
-            memdescFree(pTopLevelMemDesc);
-            memdescDestroy(pTopLevelMemDesc);
-            pTopLevelMemDesc = NULL;
             goto done;
         }
 
@@ -1029,49 +933,26 @@ vidmemConstruct_IMPL
         OBJSYS *pSys = SYS_GET_INSTANCE();
         GpuAccounting *pGpuAcct = SYS_GET_GPUACCT(pSys);
         RmClient *pClient = dynamicCast(pRsClient, RmClient);
-        NvU64 fbUsage;
-        NV2080_CTRL_GPU_PID_INFO_DATA pidInfoData;
-        NV2080_CTRL_SMC_SUBSCRIPTION_INFO smcInfo;
 
         if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ACCOUNTING_ON) &&
             (pMemory->pSubDevice == NULL) &&  // Skipping for subdevice memory allocations. Was this intentional?
             (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL))
         {
-            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-            NvBool bSmcGpuPartitioningEnabled = IS_MIG_IN_USE(pGpu);
-            MIG_INSTANCE_REF partitionRef = kmigmgrMakeNoMIGReference();
-            NvBool bGlobalInfo = NV_TRUE;
-            smcInfo.computeInstanceId = PARTITIONID_INVALID;
-            smcInfo.gpuInstanceId = PARTITIONID_INVALID;
             //
-            // With SMC GPU partitioning enabled, get associated partition ref and
-            // only account for partitionLocal usages
+            // Update the process's running FB usage incrementally by this
+            // allocation's size instead of re-walking every resource of
+            // every client to recompute total usage from scratch.
             //
-            if (bSmcGpuPartitioningEnabled)
             {
-                NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR,
-                                    kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
-                                                                    pDevice, &partitionRef),
-                                    done);
-                bGlobalInfo = NV_FALSE;
+                NvU64 sessionId = 0U;
+                if (gpuacctIncrementProcFbUsage(pGpuAcct, pGpu->gpuInstance,
+                        pClient->ProcID, pClient->SubProcessID,
+                        pMemory->Length, &sessionId) == NV_OK)
+                {
+                    pMemory->gpuAcctSessionId = sessionId;
             }
-            portMemSet(&pidInfoData, 0, sizeof(NV2080_CTRL_GPU_PID_INFO_DATA));
-
-            gpuFindClientInfoWithPidIterator(pGpu, pClient->ProcID,
-                                             pClient->SubProcessID,
-                                             classId(Memory),
-                                             &pidInfoData,
-                                             &smcInfo,
-                                             &partitionRef,
-                                             bGlobalInfo);
-
-            // Only account for memory owned by the process.
-            fbUsage = pidInfoData.vidMemUsage.memPrivate +
-                pidInfoData.vidMemUsage.memSharedOwned;
-
-            gpuacctUpdateProcPeakFbUsage(pGpuAcct, pGpu->gpuInstance,
-                pClient->ProcID, pClient->SubProcessID,fbUsage);
         }
+    }
     }
 
     if (kbusShouldRefcountConstruct_HAL(pGpu, pKernelBus, pMemory->pMemDesc))
@@ -1090,17 +971,6 @@ vidmemConstruct_IMPL
         }
         else
         {
-            if (pMemory->bRpcAlloc)
-            {
-                NV_STATUS status = NV_OK;
-                NV_RM_RPC_FREE(pGpu, hClient, hParent,
-                               pAllocRequest->hMemory, status);
-                NV_ASSERT(status == NV_OK);
-            }
-            memDestructCommon(pMemory);
-            memdescFree(pTopLevelMemDesc);
-            memdescDestroy(pTopLevelMemDesc);
-            pTopLevelMemDesc = NULL;
             goto done;
         }
     }
@@ -1113,6 +983,23 @@ vidmemConstruct_IMPL
 done:
     if (pMemory->pCharge != NULL && rmStatus != NV_OK)
         memacctReleaseCharge(pMemory->pCharge);
+
+    //
+    // If the allocation failed after curFbUsage was already incremented,
+    // roll it back so the counter stays consistent. gpuAcctSessionId is
+    // non-zero only if gpuacctIncrementProcFbUsage succeeded above.
+    //
+    if (RMCFG_MODULE_GPUACCT && rmStatus != NV_OK &&
+        pMemory->gpuAcctSessionId != 0U)
+    {
+        OBJSYS        *pSys     = SYS_GET_INSTANCE();
+        GpuAccounting *pGpuAcct = SYS_GET_GPUACCT(pSys);
+
+        gpuacctDecrementProcFbUsage(pGpuAcct, pGpu->gpuInstance,
+            pRmClient->ProcID, pRmClient->SubProcessID,
+            pMemory->Length, pMemory->gpuAcctSessionId);
+        pMemory->gpuAcctSessionId = 0U;
+    }
 
     if (bSubheap && pTempMemDesc != NULL && rmStatus != NV_OK)
         heapRemoveRef(pHeap);
@@ -1128,12 +1015,9 @@ done:
 
     if (bIsPmaAlloc && NV_OK != rmStatus)
     {
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-
-        if (pAllocRequest->pPmaAllocInfo[gpumgrGetSubDeviceInstanceFromGpu(pGpu)])
+        if (pAllocRequest->pPmaAllocInfo)
             vidmemPmaFree(pGpu, vidmemGetHeap(pGpu, pDevice, NV_FALSE, NV_FALSE),
-                          pAllocRequest->pPmaAllocInfo[gpumgrGetSubDeviceInstanceFromGpu(pGpu)], 0);
-        SLI_LOOP_END;
+                          pAllocRequest->pPmaAllocInfo, 0);
     }
 
     return rmStatus;
@@ -1153,6 +1037,61 @@ vidmemDestruct_IMPL
 
     // Free any association of the memory with existing third-party p2p object
     CliUnregisterMemoryFromThirdPartyP2P(pMemory);
+
+    if (RMCFG_MODULE_GPUACCT && pMemory->gpuAcctSessionId != 0U)
+    {
+        OBJSYS *pSys = SYS_GET_INSTANCE();
+        GpuAccounting *pGpuAcct = SYS_GET_GPUACCT(pSys);
+        RmClient *pClient = dynamicCast(RES_GET_CLIENT(pVideoMemory), RmClient);
+
+        if (pMemDesc->DupCount > 1U)
+        {
+            //
+            // Surviving dups share the same physical pages; transfer accounting
+            // responsibility to the next dup (which memDestructCommon will
+            // promote to isMemDescOwner) so curFbUsage only decrements when
+            // the last counted object is freed.
+            //
+            Memory   *pNextDup    = pMemory->dupListItem.pNext;
+            RmClient *pNextClient = dynamicCast(RES_GET_CLIENT(
+                                        dynamicCast(pNextDup, VideoMemory)), RmClient);
+
+            if (pNextClient != NULL &&
+                (pNextClient->ProcID != pClient->ProcID ||
+                 pNextClient->SubProcessID != pClient->SubProcessID))
+            {
+                //
+                // Cross-process dup: decrement from the current process (it is
+                // being freed) using the existing session ID, then try to
+                // increment for the new owner.  Only stamp the dup with the
+                // new session ID if the increment succeeded; otherwise leave
+                // gpuAcctSessionId == 0 so the next seed walk picks it up.
+                //
+                NvU64 newSessionId = 0U;
+                gpuacctDecrementProcFbUsage(pGpuAcct, pGpu->gpuInstance,
+                    pClient->ProcID, pClient->SubProcessID,
+                    pMemory->Length, pMemory->gpuAcctSessionId);
+                if (gpuacctIncrementProcFbUsage(pGpuAcct, pGpu->gpuInstance,
+                        pNextClient->ProcID, pNextClient->SubProcessID,
+                        pMemory->Length, &newSessionId) == NV_OK)
+                {
+                    pNextDup->gpuAcctSessionId = newSessionId;
+                }
+            }
+            else
+            {
+                // Same-process dup: no net change to curFbUsage; pass session ID.
+                pNextDup->gpuAcctSessionId = pMemory->gpuAcctSessionId;
+            }
+        }
+        else
+        {
+            // Last holder of these physical pages: decrement using the session ID.
+            gpuacctDecrementProcFbUsage(pGpuAcct, pGpu->gpuInstance,
+                pClient->ProcID, pClient->SubProcessID,
+                pMemory->Length, pMemory->gpuAcctSessionId);
+        }
+    }
 
     memacctReleaseCharge(pMemory->pCharge);
     memDestructCommon(pMemory);
@@ -1189,56 +1128,15 @@ vidmemDestruct_IMPL
         // needed ... the caller already has the correct handle to pass
         // to memDestructCommon
         //
-        if (gpumgrGetBcEnabledStatus(pGpu) &&
-            (memdescGetAddressSpace(memdescGetMemDescFromGpu(pMemDesc, pGpu)) == ADDR_FBMEM))
-        {
-            MEMORY_DESCRIPTOR *pNextMemDesc = NULL, *pSubdevMemDesc = NULL;
-            pSubdevMemDesc = pMemDesc->_pNext;
-
-            NV_ASSERT(pMemDesc->_subDeviceAllocCount > 1);
-            NV_ASSERT(!IS_MIG_IN_USE(pGpu));
-
-            SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY);
-            if (pSubdevMemDesc == NULL)
-            {
-                NV_ASSERT(0);
-                SLI_LOOP_BREAK;
-            }
-            // Unlink per-gpu memdesc for SLI client allocations before freeing heap
-            pNextMemDesc = pSubdevMemDesc->_pNext;
-
-            status = memmgrFree(pGpu,
-                                pMemoryManager,
-                                pSubdevMemDesc->pHeap,
-                                hClient,
-                                hParent, // device or subdevice
-                                0,
-                                heapOwner,
-                                pSubdevMemDesc);
-            NV_ASSERT(status == NV_OK);
-
-            pSubdevMemDesc = pNextMemDesc;
-            SLI_LOOP_END;
-
-            memdescFree(pMemDesc);
-            memdescDestroy(pMemDesc);
-        }
-        else
-        {
-            Heap *pHeap = pMemDesc->pHeap;
-
-            NV_ASSERT(pMemDesc->_subDeviceAllocCount == 1);
-            status = memmgrFree(pGpu,
-                                pMemoryManager,
-                                pHeap,
-                                hClient,
-                                hParent, // device or subdevice
-                                0,
-                                heapOwner,
-                                pMemDesc);
-            NV_ASSERT(status == NV_OK);
-
-        }
+        status = memmgrFree(pGpu,
+                            pMemoryManager,
+                            pMemDesc->pHeap,
+                            hClient,
+                            hParent, // device or subdevice
+                            0,
+                            heapOwner,
+                            pMemDesc);
+        NV_ASSERT(status == NV_OK);
     }
     else if (customHeap == MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT)
     {
@@ -1269,14 +1167,13 @@ vidmemAllocResources
     NvBool                       bNoncontigAllocation = NV_FALSE;
     NvHandle                     hVASpace             = pVidHeapAlloc->hVASpace;
     NvBool                       bIsPmaOwned          = NV_FALSE;
-    NvU32                        subdeviceInst        = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
     NvBool                       bContig              = NV_TRUE;
 
     const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
         kmemsysGetStaticConfig(pGpu, pKernelMemorySystem);
 
     // Most vidmem allocations external to RM get routed to PMA.
-    bIsPmaOwned = (pAllocRequest->pPmaAllocInfo[subdeviceInst] != NULL);
+    bIsPmaOwned = (pAllocRequest->pPmaAllocInfo != NULL);
 
     // check if pMemorySystemConfig is not yet initialized on Offload client.
     if (pMemorySystemConfig == NULL)
@@ -1338,8 +1235,6 @@ vidmemAllocResources
             if (status == NV_OK)
             {
                 pMemDesc = pAllocRequest->pMemDesc;
-                pMemDesc->pHeap = (Heap *)pMemoryManager->pScanoutHeap;
-                memdescSetCustomHeap(pMemDesc, MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT);
                 // Force the format to whatever is required by client.
                 memdescSetPteKind(pMemDesc, pFbAllocInfo->format);
                 NV_PRINTF(LEVEL_INFO, "Allocated surface in scanout region\n");
@@ -1384,7 +1279,7 @@ vidmemAllocResources
             // set pagearray granularity if dynamic memdesc pagesize is enabled
             // this ensures consistency in calculation of page count
             //
-            pMemDesc->pageArrayGranularity = pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageSize;
+            pMemDesc->pageArrayGranularity = pAllocRequest->pPmaAllocInfo->pageSize;
         }
 
         if (bContig)
@@ -1395,7 +1290,7 @@ vidmemAllocResources
                                                   pVidHeapAlloc->attr);
 
                 memdescDescribe(pAllocRequest->pMemDesc, ADDR_FBMEM,
-                                pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageArray[0],
+                                pAllocRequest->pPmaAllocInfo->pageArray[0],
                                 pFbAllocInfo->adjustedSize);
         }
         else
@@ -1406,9 +1301,9 @@ vidmemAllocResources
                                           _NONCONTIGUOUS,
                                           pVidHeapAlloc->attr);
             memdescFillPages(pAllocRequest->pMemDesc, 0,
-                         pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageArray,
-                         pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageCount,
-                         pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageSize);
+                         pAllocRequest->pPmaAllocInfo->pageArray,
+                         pAllocRequest->pPmaAllocInfo->pageCount,
+                         pAllocRequest->pPmaAllocInfo->pageSize);
         }
         if (!FLD_TEST_DRF(OS32, _ATTR2, _ENABLE_LOCALIZED_MEMORY, _DEFAULT, pVidHeapAlloc->attr2))
         {

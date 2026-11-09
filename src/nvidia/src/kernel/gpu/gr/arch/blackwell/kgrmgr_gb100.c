@@ -66,7 +66,14 @@ kgrmgrGetVeidsFromGpcCount_GB100
     *pVeidCount = 0;
     for (syspipes = maxSyspipes; syspipes > 0; syspipes /= 2)
     {
-        bucketBoundary = maxPartitionableGpcs / syspipes;
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_MAXIMIZE_GPC_USAGE_ON_UNEVEN_CHIPS))
+        {
+            bucketBoundary = NV_CEIL(maxPartitionableGpcs, syspipes);
+        }
+        else
+        {
+            bucketBoundary = maxPartitionableGpcs / syspipes;
+        }
         if (gpcCount <= bucketBoundary)
         {
             *pVeidCount = maxVeids / syspipes;

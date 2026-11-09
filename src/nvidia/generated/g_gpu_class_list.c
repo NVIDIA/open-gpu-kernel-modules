@@ -2293,6 +2293,7 @@ gpuGetNoEngClassList_GB100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -2301,7 +2302,7 @@ gpuGetNoEngClassList_GB100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 49;
+    *pNumClassDescriptors = 50;
     return halGB100ClassDescriptorList;
 }
 
@@ -2456,6 +2457,7 @@ gpuGetNoEngClassList_GB102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -2464,7 +2466,7 @@ gpuGetNoEngClassList_GB102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 49;
+    *pNumClassDescriptors = 50;
     return halGB102ClassDescriptorList;
 }
 
@@ -2601,6 +2603,7 @@ gpuGetNoEngClassList_GB10B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -2609,7 +2612,7 @@ gpuGetNoEngClassList_GB10B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 50;
+    *pNumClassDescriptors = 51;
     return halGB10BClassDescriptorList;
 }
 
@@ -2742,6 +2745,7 @@ gpuGetNoEngClassList_GB10C(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -2750,7 +2754,7 @@ gpuGetNoEngClassList_GB10C(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 50;
+    *pNumClassDescriptors = 51;
     return halGB10CClassDescriptorList;
 }
 
@@ -2882,6 +2886,7 @@ gpuGetNoEngClassList_GB110(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -2890,7 +2895,7 @@ gpuGetNoEngClassList_GB110(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 49;
+    *pNumClassDescriptors = 50;
     return halGB110ClassDescriptorList;
 }
 
@@ -3045,6 +3050,7 @@ gpuGetNoEngClassList_GB112(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -3053,7 +3059,7 @@ gpuGetNoEngClassList_GB112(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 49;
+    *pNumClassDescriptors = 50;
     return halGB112ClassDescriptorList;
 }
 
@@ -3189,6 +3195,7 @@ gpuGetNoEngClassList_GB202(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -3197,7 +3204,7 @@ gpuGetNoEngClassList_GB202(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 49;
+    *pNumClassDescriptors = 50;
     return halGB202ClassDescriptorList;
 }
 
@@ -3364,6 +3371,7 @@ gpuGetNoEngClassList_GB203(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -3372,7 +3380,7 @@ gpuGetNoEngClassList_GB203(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 49;
+    *pNumClassDescriptors = 50;
     return halGB203ClassDescriptorList;
 }
 
@@ -3534,6 +3542,7 @@ gpuGetNoEngClassList_GB205(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -3542,7 +3551,7 @@ gpuGetNoEngClassList_GB205(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 49;
+    *pNumClassDescriptors = 50;
     return halGB205ClassDescriptorList;
 }
 
@@ -3700,6 +3709,7 @@ gpuGetNoEngClassList_GB206(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -3708,7 +3718,7 @@ gpuGetNoEngClassList_GB206(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 49;
+    *pNumClassDescriptors = 50;
     return halGB206ClassDescriptorList;
 }
 
@@ -3866,6 +3876,7 @@ gpuGetNoEngClassList_GB207(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -3874,7 +3885,7 @@ gpuGetNoEngClassList_GB207(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 49;
+    *pNumClassDescriptors = 50;
     return halGB207ClassDescriptorList;
 }
 
@@ -4032,6 +4043,7 @@ gpuGetNoEngClassList_GB20B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -4040,7 +4052,7 @@ gpuGetNoEngClassList_GB20B(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 50;
+    *pNumClassDescriptors = 51;
     return halGB20BClassDescriptorList;
 }
 
@@ -4210,6 +4222,7 @@ gpuGetNoEngClassList_GB20C(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -4218,7 +4231,7 @@ gpuGetNoEngClassList_GB20C(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 50;
+    *pNumClassDescriptors = 51;
     return halGB20CClassDescriptorList;
 }
 
@@ -4387,6 +4400,7 @@ gpuGetNoEngClassList_GR100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -4395,7 +4409,7 @@ gpuGetNoEngClassList_GR100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 49;
+    *pNumClassDescriptors = 50;
     return halGR100ClassDescriptorList;
 }
 
@@ -4443,7 +4457,6 @@ gpuGetEngClassDescriptorList_GR100(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { GF100_SUBDEVICE_INFOROM, ENG_GPU },
         { GF100_SUBDEVICE_MASTER, ENG_GPU },
         { GF100_TIMED_SEMAPHORE_SW, ENG_SW },
-        { GF100_ZBC_CLEAR, ENG_KERNEL_MEMORY_SYSTEM },
         { GP100_UVM_SW, ENG_SW },
         { HOPPER_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
         { HOPPER_SEC2_WORK_LAUNCH_A, ENG_SEC2 },
@@ -4558,6 +4571,7 @@ gpuGetNoEngClassList_GR102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         NV_MEMORY_FABRIC_IMPORT_V2,
         NV_MEMORY_MAPPER,
         NV_MEMORY_MULTICAST_FABRIC,
+        NV_MNCC_SESSION,
         NV_OPERATIONAL_EVENT_BUFFER_BIND,
         NV_SEMAPHORE_SURFACE,
         PROFILER_CONTEXT_EVENT,
@@ -4566,7 +4580,7 @@ gpuGetNoEngClassList_GR102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         UVM_CHANNEL_RETAINER,
         WPPS_CONFIG_SESSION,
     };
-    *pNumClassDescriptors = 49;
+    *pNumClassDescriptors = 50;
     return halGR102ClassDescriptorList;
 }
 
@@ -4604,7 +4618,6 @@ gpuGetEngClassDescriptorList_GR102(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { GF100_SUBDEVICE_INFOROM, ENG_GPU },
         { GF100_SUBDEVICE_MASTER, ENG_GPU },
         { GF100_TIMED_SEMAPHORE_SW, ENG_SW },
-        { GF100_ZBC_CLEAR, ENG_KERNEL_MEMORY_SYSTEM },
         { GP100_UVM_SW, ENG_SW },
         { HOPPER_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
         { HOPPER_SEC2_WORK_LAUNCH_A, ENG_SEC2 },
@@ -4693,19 +4706,19 @@ gpuGetEngClassDescriptorList_T234D(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
 }
 
 const NvU32 *
-gpuGetNoEngClassList_T239D(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
+gpuGetNoEngClassList_T238D(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
 {
-    static const NvU32 halT239DClassDescriptorList[] = {
+    static const NvU32 halT238DClassDescriptorList[] = {
         NV01_MEMORY_SYNCPOINT,
     };
     *pNumClassDescriptors = 1;
-    return halT239DClassDescriptorList;
+    return halT238DClassDescriptorList;
 }
 
 const CLASSDESCRIPTOR *
-gpuGetEngClassDescriptorList_T239D(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
+gpuGetEngClassDescriptorList_T238D(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
 {
-    static const CLASSDESCRIPTOR halT239DClassDescriptorList[] = {
+    static const CLASSDESCRIPTOR halT238DClassDescriptorList[] = {
         { GF100_HDACODEC, ENG_HDACODEC },
         { IO_VASPACE_A, ENG_INVALID },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
@@ -4728,8 +4741,8 @@ gpuGetEngClassDescriptorList_T239D(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
         { NVC87D_CORE_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
         { NVC87E_WINDOW_CHANNEL_DMA, ENG_KERNEL_DISPLAY },
     };
-    *pNumClassDescriptors = NV_ARRAY_ELEMENTS(halT239DClassDescriptorList);
-    return halT239DClassDescriptorList;
+    *pNumClassDescriptors = NV_ARRAY_ELEMENTS(halT238DClassDescriptorList);
+    return halT238DClassDescriptorList;
 }
 
 const NvU32 *
@@ -4764,4 +4777,4 @@ gpuGetEngClassDescriptorList_T264D(OBJGPU *pGpu, NvU32 *pNumClassDescriptors)
     return halT264DClassDescriptorList;
 }
 
-ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= (16 /* generic */ + 120 /* GB20B */));
+ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= (16 /* generic */ + 121 /* GB20B */));

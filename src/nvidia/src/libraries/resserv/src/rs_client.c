@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -92,6 +92,7 @@ clientConstruct_IMPL
 
     pClient->type = type;
     pClient->hClient = pParams->hClient;
+    pClient->pAllocator = pAllocator;
 
     mapInit(&pClient->resourceMap, pAllocator);
     listInitIntrusive(&pClient->pendingFreeList);
@@ -214,7 +215,7 @@ clientShareResource_IMPL
     if (status != NV_OK)
         return status;
 
-    if (!pResourceRef->bSharePolicyListModified)
+    if (!(pResourceRef->flags & RS_RESOURCE_REF_SHARE_POLICY_LIST_MODIFIED))
     {
         if (pSharePolicy->action & RS_SHARE_ACTION_FLAG_COMPOSE)
         {
@@ -227,7 +228,7 @@ clientShareResource_IMPL
                 return status;
         }
 
-        pResourceRef->bSharePolicyListModified = NV_TRUE;
+        pResourceRef->flags |= RS_RESOURCE_REF_SHARE_POLICY_LIST_MODIFIED;
     }
 
     if (!(pSharePolicy->action & RS_SHARE_ACTION_FLAG_COMPOSE))
@@ -596,13 +597,15 @@ static
 void
 _refCleanupDependencies
 (
-    RsResourceRef *pResourceRef
+    RsResourceRef *pResourceRef,
+    RsServer *pServer
 )
 {
-    RsResourceRef **ppIndepRef;
-    while (NULL != (ppIndepRef = multimapFirstItem(&pResourceRef->depBackRefMap)))
+    RsDependencyEdge *pDependencyEdge;
+
+    while ((pDependencyEdge = listHead(&pResourceRef->depBackRefList)) != NULL)
     {
-        refRemoveDependant(*ppIndepRef, pResourceRef);
+        refRemoveDependencyEdge(pDependencyEdge, pServer->pAllocator);
     }
 }
 
@@ -610,13 +613,15 @@ static
 void
 _refCleanupDependants
 (
-    RsResourceRef *pResourceRef
+    RsResourceRef *pResourceRef,
+    RsServer *pServer
 )
 {
-    RsResourceRef **ppDepRef;
-    while (NULL != (ppDepRef = multimapFirstItem(&pResourceRef->depRefMap)))
+    RsDependencyEdge *pDependencyEdge;
+
+    while ((pDependencyEdge = listHead(&pResourceRef->depRefList)) != NULL)
     {
-        refRemoveDependant(pResourceRef, *ppDepRef);
+        refRemoveDependencyEdge(pDependencyEdge, pServer->pAllocator);
     }
 }
 
@@ -624,10 +629,11 @@ static
 void
 _refRemoveAllDependencies
 (
-    RsResourceRef *pResourceRef
+    RsResourceRef *pResourceRef,
+    RsServer *pServer
 )
 {
-    _refCleanupDependencies(pResourceRef);
+    _refCleanupDependencies(pResourceRef, pServer);
 
     if (pResourceRef->pDependantSession != NULL)
         sessionRemoveDependency(pResourceRef->pDependantSession, pResourceRef);
@@ -648,40 +654,43 @@ _clientAllocResourceHelper
 {
     NV_STATUS       status;
     NvHandle        hResource = *phResource;
-    NvU32           depth = 0;
+    NvU8            depth = 0;
     RsResource     *pResource = NULL;
     RsResourceRef  *pParentRef = NULL;
     RsResourceRef  *pResourceRef = NULL;
-    CALL_CONTEXT    callContext;
+    PORT_ALLOC_LARGE_STRUCTURE(CALL_CONTEXT, pCallContext, return NV_ERR_NO_MEMORY);
     CALL_CONTEXT   *pOldContext = NULL;
     NvHandle        hParent = pParams->hParent;
 
     status = clientGetResourceRef(pClient, hParent, &pParentRef);
     if (status != NV_OK && hParent != pClient->hClient && hParent != 0)
+    {
+        PORT_FREE_LARGE_STRUCTURE(pCallContext);
         return status;
+    }
 
     status = _clientConstructResourceRef(pClient, pServer, pParentRef, hResource, pParams->externalClassId, &pResourceRef);
     if (status != NV_OK)
         goto fail;
 
-    portMemSet(&callContext, 0, sizeof(callContext));
-    callContext.pServer = pServer;
-    callContext.pClient = pClient;
-    callContext.pResourceRef = pResourceRef;
-    callContext.pContextRef = pParams->pSrcRef;
-    callContext.pLockInfo = pParams->pLockInfo;
+    portMemSet(pCallContext, 0, sizeof(*pCallContext));
+    pCallContext->pServer = pServer;
+    pCallContext->pClient = pClient;
+    pCallContext->pResourceRef = pResourceRef;
+    pCallContext->pContextRef = pParams->pSrcRef;
+    pCallContext->pLockInfo = pParams->pLockInfo;
 
     if (pParams->pSecInfo == NULL)
     {
         status = NV_ERR_INVALID_ARGUMENT;
         goto fail;
     }
-    callContext.secInfo = *pParams->pSecInfo;
+    pCallContext->secInfo = *pParams->pSecInfo;
 
     NV_ASSERT_OK_OR_GOTO(status,
-        resservSwapTlsCallContext(&pOldContext, &callContext), fail);
+        resservSwapTlsCallContext(&pOldContext, pCallContext), fail);
 
-    status = resservResourceFactory(pServer->pAllocator, &callContext, pParams, &pResource);
+    status = resservResourceFactory(pServer->pAllocator, pCallContext, pParams, &pResource);
     NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
     if (status != NV_OK)
@@ -712,7 +721,7 @@ _clientAllocResourceHelper
         }
 
         // Add this ref to the parent's child map
-        if (NV_OK != indexAdd(&pParentRef->childRefMap, pResourceRef->internalClassId, pResourceRef))
+        if (!mapInsertExisting(RES_CHILD_MAP(pParentRef), RES_CHILD_KEY(pResourceRef), pResourceRef))
         {
             status = NV_ERR_INSUFFICIENT_RESOURCES;
             goto fail;
@@ -721,7 +730,7 @@ _clientAllocResourceHelper
 
     if (pServer->bRsAccessEnabled)
     {
-        status = rsAccessGrantRights(pResourceRef, &callContext, pClient,
+        status = rsAccessGrantRights(pResourceRef, pCallContext, pClient,
                                      pParams->pRightsRequested,
                                      pParams->pRightsRequired,
                                      pParams->pAllocParams);
@@ -731,6 +740,7 @@ _clientAllocResourceHelper
 
     *phResource = hResource;
 
+    PORT_FREE_LARGE_STRUCTURE(pCallContext);
     return NV_OK;
 
 fail:
@@ -742,20 +752,20 @@ fail:
         pOldContext = NULL;
 
         // First undo dependency tracking since it might access the resource
-        _refRemoveAllDependencies(pResourceRef);
+        _refRemoveAllDependencies(pResourceRef, pServer);
 
         portMemSet(&params, 0, sizeof(params));
-        portMemSet(&callContext, 0, sizeof(callContext));
-        callContext.pServer = pServer;
-        callContext.pClient = pClient;
-        callContext.secInfo = *pParams->pSecInfo;
-        callContext.pResourceRef = pResourceRef;
-        callContext.pLockInfo = pParams->pLockInfo;
+        portMemSet(pCallContext, 0, sizeof(*pCallContext));
+        pCallContext->pServer = pServer;
+        pCallContext->pClient = pClient;
+        pCallContext->secInfo = *pParams->pSecInfo;
+        pCallContext->pResourceRef = pResourceRef;
+        pCallContext->pLockInfo = pParams->pLockInfo;
 
-        callContextStatus = resservSwapTlsCallContext(&pOldContext, &callContext);
+        callContextStatus = resservSwapTlsCallContext(&pOldContext, pCallContext);
         if (callContextStatus == NV_OK)
         {
-            resSetFreeParams(pResource, &callContext, &params);
+            resSetFreeParams(pResource, pCallContext, &params);
 
             objDelete(pResource);
             NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
@@ -772,12 +782,13 @@ fail:
     {
         if (pParentRef != NULL)
         {
-            indexRemove(&pParentRef->childRefMap, pResourceRef->internalClassId, pResourceRef);
+            mapRemoveByKey(RES_CHILD_MAP(pParentRef), RES_CHILD_KEY(pResourceRef));
         }
 
         clientDestructResourceRef(pClient, pServer, pResourceRef, pParams->pLockInfo, pParams->pSecInfo);
     }
 
+    PORT_FREE_LARGE_STRUCTURE(pCallContext);
     return status;
 }
 
@@ -793,7 +804,6 @@ clientFreeResource_IMPL
     NV_STATUS       tmpStatus;
     CALL_CONTEXT    callContext;
     CALL_CONTEXT   *pOldContext = NULL;
-    RsResourceRef  *pClientRef = NULL;
     RsResourceRef  *pParentRef = NULL;
     RsResourceRef  *pResourceRef;
     RsResource     *pResource;
@@ -808,7 +818,7 @@ clientFreeResource_IMPL
     pResource = pResourceRef->pResource;
     pParentRef = pResourceRef->pParentRef;
 
-    if (pResourceRef->bInvalidated)
+    if (pResourceRef->flags & RS_RESOURCE_REF_INVALIDATED)
         goto done;
 
     portMemSet(&callContext, 0, sizeof(callContext));
@@ -837,8 +847,16 @@ clientFreeResource_IMPL
     _clientUnmapInterBackRefMappings(pClient, &callContext, pParams->pLockInfo);
 
     // Remove this resource as a dependency from other resources
+    pResourceRef->flags |= RS_RESOURCE_REF_INVALIDATED;
+
+    //
+    // Mirror the flag into bInvalidated for out-of-tree readers that cannot be
+    // updated from chips_a (drivers/nvpcf reads this field directly). Keep the
+    // two in sync until those readers move to the flags member, at which point
+    // bInvalidated can be deleted.
+    //
     pResourceRef->bInvalidated = NV_TRUE;
-    _refRemoveAllDependencies(pResourceRef);
+    _refRemoveAllDependencies(pResourceRef, pServer);
 
     status = serverFreeResourceRpcUnderLock(pServer, pParams);
     NV_ASSERT((status == NV_OK) || (status == NV_ERR_GPU_IN_FULLCHIP_RESET));
@@ -858,13 +876,8 @@ done:
         // Remove this ref from its parent's child ref list
         if (pParentRef != NULL)
         {
-            multimapRemoveItemByKey(&pParentRef->childRefMap,
-                pResourceRef->internalClassId, pResourceRef->hResource);
+            mapRemoveByKey(RES_CHILD_MAP(pParentRef), RES_CHILD_KEY(pResourceRef));
         }
-
-        pClientRef = mapFind(&pClient->resourceMap, pClient->hClient);
-        if (pClientRef != NULL)
-            refUncacheRef(pClientRef, pResourceRef);
 
         tmpStatus = clientDestructResourceRef(pClient, pServer, pResourceRef, pParams->pLockInfo, pParams->pSecInfo);
         NV_ASSERT(tmpStatus == NV_OK);
@@ -1040,12 +1053,10 @@ _clientConstructResourceRef
     pResourceRef->pParentRef = pParentRef;
     pResourceRef->hResource = hResource;
     pResourceRef->depth = 0;
-    pResourceRef->pAllocator = pAllocator;
 
-    multimapInit(&pResourceRef->childRefMap, pAllocator);
-    multimapInit(&pResourceRef->cachedRefMap, pAllocator);
-    multimapInit(&pResourceRef->depRefMap, pAllocator);
-    multimapInit(&pResourceRef->depBackRefMap, pAllocator);
+    mapInitIntrusive(RES_CHILD_MAP(pResourceRef));
+    listInitIntrusive(&pResourceRef->depRefList);
+    listInitIntrusive(&pResourceRef->depBackRefList);
     listInit(&pResourceRef->cpuMappings, pAllocator);
     listInitIntrusive(&pResourceRef->backRefs);
     mapInit(&pResourceRef->interMappingContextMap, pAllocator);
@@ -1084,55 +1095,49 @@ clientDestructResourceRef_IMPL
     listDestroy(&pResourceRef->sharePolicyList);
 
     // All children should be free
-    if (0 != multimapCountItems(&pResourceRef->childRefMap))
+    if (0 != mapCount(RES_CHILD_MAP(pResourceRef)))
     {
         RS_RES_FREE_PARAMS_INTERNAL params;
         NV_STATUS      tmpStatus;
+        RsResourceRef *pChildRef;
 
 #if !(RS_STANDALONE_TEST)
-        NV_ASSERT(0 == multimapCountItems(&pResourceRef->childRefMap));
+        NV_ASSERT(0 == mapCount(RES_CHILD_MAP(pResourceRef)));
 #endif
 
         NV_PRINTF(LEVEL_ERROR, "Resource %x (Class %x) has unfreed children!\n",
                   pResourceRef->hResource, pResourceRef->externalClassId);
 
-        RsIndexSupermapIter it = multimapSubmapIterAll(&pResourceRef->childRefMap);
-        while (multimapSubmapIterNext(&it))
+        while (NULL != (pChildRef = mapFindGEQ(RES_CHILD_MAP(pResourceRef), 0)))
         {
-            RsIndexSubmap *pSubmap = it.pValue;
-            RsIndexIter subIt = multimapSubmapIterItems(&pResourceRef->childRefMap, pSubmap);
-            while (multimapItemIterNext(&subIt))
-            {
-                RsResourceRef *pChildRef = *subIt.pValue;
-                NV_PRINTF(LEVEL_ERROR, "Child %x (Class %x) is still alive!\n",
-                          pChildRef->hResource, pChildRef->externalClassId);
+            NvU32 count = mapCount(RES_CHILD_MAP(pResourceRef));
 
-                //
-                // Attempt to kill any leaked children. If they are not deleted here,
-                // they are likely to use-after-free when interacting with this parent object later.
-                //
-                portMemSet(&params, 0, sizeof(params));
-                params.hClient = pChildRef->pClient->hClient;
-                params.hResource = pChildRef->hResource;
-                params.pResourceRef = pChildRef;
-                params.pSecInfo = pSecInfo;
-                params.pLockInfo = pLockInfo;
-                tmpStatus = clientFreeResource(pChildRef->pClient, pServer, &params);
-                NV_ASSERT(tmpStatus == NV_OK);
-            }
+            NV_PRINTF(LEVEL_ERROR, "Child %x (Class %x) is still alive!\n",
+                      pChildRef->hResource, pChildRef->externalClassId);
+
+            //
+            // Attempt to kill any leaked children. If they are not deleted here,
+            // they are likely to use-after-free when interacting with this parent object later.
+            //
+            portMemSet(&params, 0, sizeof(params));
+            params.hClient = pChildRef->pClient->hClient;
+            params.hResource = pChildRef->hResource;
+            params.pResourceRef = pChildRef;
+            params.pSecInfo = pSecInfo;
+            params.pLockInfo = pLockInfo;
+            tmpStatus = clientFreeResource(pChildRef->pClient, pServer, &params);
+
+            // Break in the loop when free fails to avoid an infinite loop
+            NV_ASSERT_OR_ELSE((tmpStatus == NV_OK) || (count != mapCount(RES_CHILD_MAP(pResourceRef))), break);
         }
     }
-    multimapDestroy(&pResourceRef->childRefMap);
+    mapDestroy(RES_CHILD_MAP(pResourceRef));
 
-    // Nothing should be cached
-    NV_ASSERT(0 == multimapCountItems(&pResourceRef->cachedRefMap));
-    multimapDestroy(&pResourceRef->cachedRefMap);
+    _refCleanupDependencies(pResourceRef, pServer);
+    listDestroy(&pResourceRef->depBackRefList);
 
-    _refCleanupDependencies(pResourceRef);
-    multimapDestroy(&pResourceRef->depBackRefMap);
-
-    _refCleanupDependants(pResourceRef);
-    multimapDestroy(&pResourceRef->depRefMap);
+    _refCleanupDependants(pResourceRef, pServer);
+    listDestroy(&pResourceRef->depRefList);
 
     mapRemove(&pClient->resourceMap, pResourceRef);
 
@@ -1399,50 +1404,6 @@ _clientUnmapInterBackRefMappings
 }
 
 NV_STATUS
-indexAdd
-(
-    RsIndex *pIndex,
-    NvU32 index,
-    RsResourceRef *pResourceRef
-)
-{
-    NV_ASSERT(pResourceRef != NULL && pResourceRef->hResource != 0);
-
-    if (NULL == multimapFindSubmap(pIndex, index))
-    {
-        if (NULL == multimapInsertSubmap(pIndex, index))
-            return NV_ERR_INSUFFICIENT_RESOURCES;
-    }
-
-    if (NULL == multimapInsertItemValue(pIndex, index, pResourceRef->hResource,
-                                        &pResourceRef))
-        return NV_ERR_INSUFFICIENT_RESOURCES;
-
-    return NV_OK;
-}
-
-NV_STATUS
-indexRemove
-(
-    RsIndex *pIndex,
-    NvU32 index,
-    RsResourceRef *pResourceRef
-)
-{
-    RsResourceRef **ppResourceRef;
-
-    NV_ASSERT(pResourceRef != NULL && pResourceRef->hResource != 0);
-
-    ppResourceRef = multimapFindItem(pIndex, index, pResourceRef->hResource);
-    if (ppResourceRef == NULL)
-        return NV_ERR_OBJECT_NOT_FOUND;
-
-    multimapRemoveItem(pIndex, ppResourceRef);
-
-    return NV_OK;
-}
-
-NV_STATUS
 clientValidateNewResourceHandle_IMPL
 (
     RsClient *pClient,
@@ -1497,43 +1458,98 @@ clientresDestruct_IMPL
 {
 }
 
-RsIndexIter
-indexRefIter
+RsRefChildMapIter
+childRefIter
 (
-    RsIndex *pIndex,
-    NvU32 index
+    RsResourceRef *pParentRef,
+    NvU32 internalClassId
 )
 {
-    RsIndexIter it;
-    RsIndexSubmap *pSubmap;
+    RsRefChildMapIter it;
+    RsResourceRef *pFirst;
+    RsResourceRef *pLast;
+    NvU64 keyFirst = RES_CHILD_KEY_FIRST(internalClassId);
+    NvU64 keyLast = RES_CHILD_KEY_LAST(internalClassId);
 
     portMemSet(&it, 0, sizeof(it));
-    NV_ASSERT(pIndex);
+    NV_ASSERT_OR_RETURN(pParentRef != NULL, it);
 
-    pSubmap = multimapFindSubmap(pIndex, index);
-    if (pSubmap != NULL)
-        it = multimapSubmapIterItems(pIndex, pSubmap);
+    pFirst = mapFindGEQ(RES_CHILD_MAP(pParentRef), keyFirst);
+    if (pFirst == NULL)
+        return it;
 
-    return it;
+    pLast = mapFindLEQ(RES_CHILD_MAP(pParentRef), keyLast);
+    if (pLast == NULL)
+        return it;
+
+    //
+    // Both ends can fall outside the class when it has no children here:
+    // mapFindGEQ() overshoots into a higher class and mapFindLEQ() undershoots
+    // into a lower one, producing an inverted range. mapIterRange() asserts on
+    // that but does not return, so reject it before constructing the iterator.
+    //
+    if (mapKey(RES_CHILD_MAP(pParentRef), pFirst) > keyLast)
+        return it;
+
+    if (mapKey(RES_CHILD_MAP(pParentRef), pLast) < keyFirst)
+        return it;
+
+    return mapIterRange(RES_CHILD_MAP(pParentRef), pFirst, pLast);
 }
 
-RsIndexIter
-indexRefIterAll
+RsRefChildMapIter
+childRefIterAll
 (
-    RsIndex *pIndex
+    RsResourceRef *pParentRef
 )
 {
-    NV_ASSERT(pIndex);
-    return multimapItemIterAll(pIndex);
+    RsRefChildMapIter it;
+
+    portMemSet(&it, 0, sizeof(it));
+    NV_ASSERT_OR_RETURN(pParentRef != NULL, it);
+
+    //
+    // Safe without the bounds checks in childRefIter: mapIterRange() short-circuits on
+    // an empty map, and on a non-empty one both ends are non-NULL and ordered.
+    //
+    return mapIterAll(RES_CHILD_MAP(pParentRef));
 }
 
 NvBool
-indexRefIterNext
+childRefIterNext
 (
-    RsIndexIter *pIt
+    RsRefChildMapIter *pIt
 )
 {
-    return multimapItemIterNext(pIt);
+    return mapIterNext(pIt);
+}
+
+RsResourceRef *
+childRefFindClass
+(
+    RsResourceRef *pParentRef,
+    NvU32 internalClassId
+)
+{
+    RsResourceRef *pResourceRef;
+
+    NV_ASSERT_OR_RETURN(pParentRef != NULL, NULL);
+
+    pResourceRef = mapFindGEQ(RES_CHILD_MAP(pParentRef),
+                              RES_CHILD_KEY_FIRST(internalClassId));
+
+    //
+    // mapFindGEQ() seeks to the first key at or after the class, so when this
+    // class has no children it lands on a later one. Reject that rather than
+    // returning a child of the wrong class.
+    //
+    if ((pResourceRef != NULL) &&
+        (pResourceRef->internalClassId == internalClassId))
+    {
+        return pResourceRef;
+    }
+
+    return NULL;
 }
 
 RS_ITERATOR
@@ -1547,10 +1563,7 @@ clientRefIter
 )
 {
     RS_ITERATOR it;
-    RsIndex *pIndex = NULL;
     NvBool bChildrenOnly = (type == RS_ITERATE_CHILDREN);
-    NvBool bCachedOnly = (type == RS_ITERATE_CACHED);
-    NvBool bDependantsOnly = (type == RS_ITERATE_DEPENDANTS);
     portMemSet(&it, 0, sizeof(it));
 
     if (pClient == NULL)
@@ -1565,29 +1578,13 @@ clientRefIter
             return it;
     }
 
-    if (bChildrenOnly || bCachedOnly || bDependantsOnly)
+    if (bChildrenOnly)
     {
         NvBool bIterAll = (internalClassId == 0) || !bExactMatch;
 
-        if (bChildrenOnly)
-        {
-            pIndex = &pScopeRef->childRefMap;
-        }
-        else if (bCachedOnly)
-        {
-            pIndex = &pScopeRef->cachedRefMap;
-        }
-        else if (bDependantsOnly)
-        {
-            pIndex = &pScopeRef->depRefMap;
-        }
-
-        if (!bIterAll && multimapFindSubmap(pIndex, internalClassId) == NULL)
-            goto done;
-
-        it.idxIt = (bIterAll)
-            ? indexRefIterAll(pIndex)
-            : indexRefIter(pIndex, internalClassId);
+        it.childIt = (bIterAll)
+            ? childRefIterAll(pScopeRef)
+            : childRefIter(pScopeRef, internalClassId);
     }
     else
     {
@@ -1601,7 +1598,6 @@ clientRefIter
     it.type = type;
     it.bExactMatch = bExactMatch;
 
-done:
     return it;
 }
 
@@ -1615,7 +1611,6 @@ clientRefOrderedIter
 )
 {
     RS_ORDERED_ITERATOR it;
-    RsIndex *pIndex = NULL;
     portMemSet(&it, 0, sizeof(it));
 
     if (pClient == NULL)
@@ -1631,8 +1626,7 @@ clientRefOrderedIter
     }
 
     it.depth = -1;
-    pIndex = &pScopeRef->childRefMap;
-    it.idxIt[0] = indexRefIterAll(pIndex);
+    it.childIt[0] = childRefIterAll(pScopeRef);
 
     it.pClient = pClient;
     it.pScopeRef = pScopeRef;
@@ -1682,19 +1676,19 @@ clientRefOrderedIterNext
         {
             if (!bNext)
                 --pIt->depth;
-            bNext = indexRefIterNext(&pIt->idxIt[pIt->depth]);
+            bNext = childRefIterNext(&pIt->childIt[pIt->depth]);
         } while (!bNext && pIt->depth != 0);
 
         if (!bNext)
             break;
 
-        pResourceRef = *pIt->idxIt[pIt->depth].pValue;
+        pResourceRef = pIt->childIt[pIt->depth].pValue;
 
         // Iterate over this resource's children next (up to max depth)
         if (pIt->depth < RS_MAX_RESOURCE_DEPTH)
         {
             ++pIt->depth;
-            pIt->idxIt[pIt->depth] = indexRefIterAll(&pResourceRef->childRefMap);
+            pIt->childIt[pIt->depth] = childRefIterAll(pResourceRef);
         }
 
         if (refHasAncestor(pResourceRef, pIt->pScopeRef))
@@ -1729,7 +1723,7 @@ clientRefIterNext
 {
     RsResourceRef *pResourceRef;
     NvBool bLoop;
-    NvBool bUseIdx;
+    NvBool bUseChildMap;
 
     if ((pIt == NULL) || (pIt->pClient != pClient) || pIt->pScopeRef == NULL)
     {
@@ -1738,18 +1732,16 @@ clientRefIterNext
         return NV_FALSE;
     }
 
-    bUseIdx = (pIt->type == RS_ITERATE_CACHED) ||
-              (pIt->type == RS_ITERATE_CHILDREN) ||
-              (pIt->type == RS_ITERATE_DEPENDANTS);
+    bUseChildMap = (pIt->type == RS_ITERATE_CHILDREN);
 
     pIt->pResourceRef = NULL;
 
-    bLoop = bUseIdx ? indexRefIterNext(&pIt->idxIt) : mapIterNext(&pIt->mapIt);
+    bLoop = bUseChildMap ? childRefIterNext(&pIt->childIt) : mapIterNext(&pIt->mapIt);
     while (bLoop)
     {
-        pResourceRef = bUseIdx ? *pIt->idxIt.pValue : pIt->mapIt.pValue;
+        pResourceRef = bUseChildMap ? pIt->childIt.pValue : pIt->mapIt.pValue;
 
-        if (bUseIdx ||
+        if (bUseChildMap ||
             ((pResourceRef == pIt->pScopeRef) ||
              (refHasAncestor(pResourceRef, pIt->pScopeRef))))
         {
@@ -1770,7 +1762,7 @@ clientRefIterNext
             }
         }
 
-        bLoop = bUseIdx ? indexRefIterNext(&pIt->idxIt) : mapIterNext(&pIt->mapIt);
+        bLoop = bUseChildMap ? childRefIterNext(&pIt->childIt) : mapIterNext(&pIt->mapIt);
     }
 
     return NV_FALSE;

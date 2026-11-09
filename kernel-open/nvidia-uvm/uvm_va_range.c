@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2025 NVIDIA Corporation
+    Copyright (c) 2015-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -194,10 +194,16 @@ NV_STATUS uvm_va_range_initialize_reclaim(uvm_va_range_t *va_range,
                                           NvU64 start,
                                           NvU64 end)
 {
+    NvU64 reclaim_start, reclaim_end;
     NV_STATUS status;
 
-    // Check for no overlap with HMM blocks.
-    status = uvm_hmm_va_block_reclaim(va_space, mm, start, end);
+    // Ensure there's no HMM blocks overlapping with the new range. We need to
+    // page align the bounds of the new range since we permit external ranges
+    // to be 4K aligned even if this is smaller than the system page size.
+    reclaim_start = ALIGN_DOWN(start, PAGE_SIZE);
+    reclaim_end = ALIGN(end, PAGE_SIZE) - 1;
+
+    status = uvm_hmm_va_block_reclaim(va_space, mm, reclaim_start, reclaim_end);
     if (status != NV_OK)
         return status;
 

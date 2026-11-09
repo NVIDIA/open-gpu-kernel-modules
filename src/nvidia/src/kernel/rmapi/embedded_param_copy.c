@@ -160,43 +160,13 @@ static NvBool _i2cTransactionCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams 
 static NV_STATUS i2cTransactionCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCtrlParams)
 {
     NV_STATUS status = NV_OK;
-    NV402C_CTRL_I2C_TRANSACTION_PARAMS *pParams = (NV402C_CTRL_I2C_TRANSACTION_PARAMS*)pRmCtrlParams->pParams;
 
-    switch (pParams->transType)
+    (void)pRmCtrlParams;
+
+    status = rmapiParamsRelease(&paramCopies[0]);
+    if (paramCopies[0].ppKernelParams != NULL)
     {
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BLOCK_RW:
-        {
-            status = rmapiParamsRelease(&paramCopies[0]);
-            pParams->transData.i2cBlockData.pMessage = paramCopies[0].pUserParams;
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BUFFER_RW:
-        {
-            status = rmapiParamsRelease(&paramCopies[0]);
-            pParams->transData.i2cBufferData.pMessage = paramCopies[0].pUserParams;
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_RW:
-        {
-            status = rmapiParamsRelease(&paramCopies[0]);
-            pParams->transData.smbusBlockData.pMessage = paramCopies[0].pUserParams;
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW:
-        {
-            status = rmapiParamsRelease(&paramCopies[0]);
-            pParams->transData.smbusMultibyteRegisterData.pMessage = paramCopies[0].pUserParams;
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_READ_EDID_DDC:
-        {
-            status = rmapiParamsRelease(&paramCopies[0]);
-            pParams->transData.edidData.pMessage = paramCopies[0].pUserParams;
-            break;
-        }
-
-        default:
-            break;
+        *(NvP64 *)paramCopies[0].ppKernelParams = paramCopies[0].pUserParams;
     }
 
     return status;
@@ -526,6 +496,8 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
                             ((NV2080_CTRL_NVD_GET_DUMP_PARAMS*)pParams)->size, 1);
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER;
+            // PRIVILEGED ctrl; the journal dump legitimately exceeds the 2 MB default
+            paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_PRIVILEGED_SIZE_LIMIT;
 
             break;
         }
@@ -539,6 +511,8 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
                             ((NV0000_CTRL_NVD_GET_DUMP_PARAMS*)pParams)->size, 1);
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER;
+            // PRIVILEGED ctrl; the journal dump legitimately exceeds the 2 MB default
+            paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_PRIVILEGED_SIZE_LIMIT;
 
             break;
         }

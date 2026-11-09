@@ -131,12 +131,12 @@ kfspWaitForSecureBoot_GB100
 
     //
     // Polling for FSP boot complete
-    // FBFalcon training during devinit alone takes 2 seconds, up to 3 on HBM3,
-    // but the default threadstate timeout on windows is 1800 ms. Increase to 4 seconds
-    // for this wait to match MODS GetGFWBootTimeoutMs.
+    // FBFalcon training during devinit can take up to 16 seconds on Blackwell
+    // compute GPUs.
     // For flags, we must not use the GPU TMR since it is inaccessible.
     //
-    timeoutUs = NV_MAX(gpuScaleTimeout(pGpu, 4000000), pGpu->timeoutData.defaultus);
+    timeoutUs = NV_MAX(gpuScaleTimeout(pGpu, 16000000), pGpu->timeoutData.defaultus);
+
     gpuSetTimeout(pGpu, timeoutUs, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER);
 
     NvU64 timeoutNs = (NvU64)timeoutUs * 1000ULL;

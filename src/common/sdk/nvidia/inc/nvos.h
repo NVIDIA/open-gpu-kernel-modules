@@ -268,6 +268,13 @@ typedef struct
 #define NVOS02_FLAGS_REGISTER_MEMDESC_TO_PHYS_RM_TRUE              (0x00000001)
 
 //
+// Specifies whether the NUMA node in NV_MEMORY_LIST_ALLOCATION_PARAMS is valid.
+//
+#define NVOS02_FLAGS_NUMA_NODE_VALID                               28:28
+#define NVOS02_FLAGS_NUMA_NODE_VALID_FALSE                         (0x00000000)
+#define NVOS02_FLAGS_NUMA_NODE_VALID_TRUE                          (0x00000001)
+
+//
 // If _NO_MAP is requested, the RM in supported platforms will not map the
 // allocated system or IO memory into user space. The client can later map
 // memory through the RmMapMemory() interface.
@@ -550,7 +557,6 @@ typedef struct
 #define NVOS30_FLAGS_IDLE_NVDEC0                                   NVOS30_FLAGS_IDLE_MSVLD
 #define NVOS30_FLAGS_IDLE_CIPHER_DMA                               (0x00000080)
 #define NVOS30_FLAGS_IDLE_SEC                                      (0x00000080)
-#define NVOS30_FLAGS_IDLE_CALLBACKS                                (0x00000100)
 #define NVOS30_FLAGS_IDLE_MSPPP                                    (0x00000200)
 #define NVOS30_FLAGS_IDLE_CE0                                      (0x00000400)
 #define NVOS30_FLAGS_IDLE_CE1                                      (0x00000800)
@@ -1146,7 +1152,15 @@ typedef struct
 // Whether or not a NUMA Node ID has been specified.
 // If yes, the NUMA node ID specified in numaNode will be used.
 // If no, memory can be allocated from any socket (numaNode will be ignored).
-// Specified numaNode must be of a CPU's memory
+// Specified numaNode must be of a CPU's memory.
+//
+// Cross-node allocation (numaNode != GPU's local CPU NUMA node) is allowed
+// only when EGM (Extended GPU Memory) is disabled. When EGM is enabled,
+// allocations are restricted to the GPU's local CPU node to prevent conflicts
+// with EGM peer-aperture mappings.
+//
+// Specifying a GPU FB NUMA node (when GPU memory is onlined as a NUMA node)
+// is never permitted for SYSMEM allocations regardless of EGM state.
 //
 
 #define NVOS32_ATTR2_FIXED_NUMA_NODE_ID                        7:7
@@ -1298,6 +1312,17 @@ typedef struct
 #define NVOS32_ATTR2_ALLOCATE_FROM_SUBHEAP                   27:27
 #define NVOS32_ATTR2_ALLOCATE_FROM_SUBHEAP_NO           0x00000000
 #define NVOS32_ATTR2_ALLOCATE_FROM_SUBHEAP_YES          0x00000001
+
+//
+// Skip IOMMU mapping creation on alloc.
+// A mapping might be requested later with custom parameters.
+// Honored when NV_VERIF_FEATURES is enabled (MODS builds) or when
+// RM test-only code is enabled via registry key (rmtest).
+// Used by MODS and rmtest for system memory allocations.
+//
+#define NVOS32_ATTR2_SKIP_IOMMU_MAPPING                      28:28
+#define NVOS32_ATTR2_SKIP_IOMMU_MAPPING_NO              0x00000000
+#define NVOS32_ATTR2_SKIP_IOMMU_MAPPING_YES             0x00000001
 
 //
 // Force the video memory allocation to localized allocation.
@@ -1815,19 +1840,6 @@ typedef struct
 #define NVOS33_FLAGS_OS_DESCRIPTOR                                 22:22
 #define NVOS33_FLAGS_OS_DESCRIPTOR_DISABLE                         (0x00000000)
 #define NVOS33_FLAGS_OS_DESCRIPTOR_ENABLE                          (0x00000001)
-
-//
-// For use in the linux mapping path. This flag sets the
-// caching mode for pcie BAR mappings (from nv_memory_type.h).
-// Internal use only.
-//
-#define NVOS33_FLAGS_CACHING_TYPE                                  25:23
-#define NVOS33_FLAGS_CACHING_TYPE_CACHED                           0
-#define NVOS33_FLAGS_CACHING_TYPE_UNCACHED                         1
-#define NVOS33_FLAGS_CACHING_TYPE_WRITECOMBINED                    2
-#define NVOS33_FLAGS_CACHING_TYPE_WRITEBACK                        5
-#define NVOS33_FLAGS_CACHING_TYPE_DEFAULT                          6
-#define NVOS33_FLAGS_CACHING_TYPE_UNCACHED_WEAK                    7
 
 //
 // For use when Hopper Confidential Compute is operating in devtools mode
@@ -2906,6 +2918,7 @@ typedef struct
     NvU32    engineType;                 // Engine to which all channels in this TSG are associated with
     NvBool   bIsCallingContextVgpuPlugin;
     NvU32    reserved;
+    NvHandle reserved2;
     NvU32    internalFlags;              // Internal flags for the channel group
 } NV_CHANNEL_GROUP_ALLOCATION_PARAMETERS;
 
@@ -3167,7 +3180,6 @@ typedef struct
 #define NV_VASPACE_ALLOCATION_FLAGS_ENABLE_PAGE_FAULTING                  BIT(6)
 #define NV_VASPACE_ALLOCATION_FLAGS_VA_INTERNAL_LIMIT                     BIT(7)
 #define NV_VASPACE_ALLOCATION_FLAGS_ALLOW_ZERO_ADDRESS                    BIT(8)
-#define NV_VASPACE_ALLOCATION_FLAGS_IS_FLA                                BIT(9)
 #define NV_VASPACE_ALLOCATION_FLAGS_SKIP_SCRUB_MEMPOOL                    BIT(10)
 #define NV_VASPACE_ALLOCATION_FLAGS_OPTIMIZE_PTETABLE_MEMPOOL_USAGE       BIT(11)
 #define NV_VASPACE_ALLOCATION_FLAGS_REQUIRE_FIXED_OFFSET                  BIT(12)
@@ -3179,7 +3191,6 @@ typedef struct
 #define NV_VASPACE_ALLOCATION_INDEX_GPU_HOST                                0x01 //<! Acquire reference to BAR1 VAS.
 #define NV_VASPACE_ALLOCATION_INDEX_GPU_GLOBAL                              0x02 //<! Acquire reference to global VAS.
 #define NV_VASPACE_ALLOCATION_INDEX_GPU_DEVICE                              0x03 //<! Acquire reference to device vaspace
-#define NV_VASPACE_ALLOCATION_INDEX_GPU_FLA                                 0x04 //<! Acquire reference to FLA VAS.
 #define NV_VASPACE_ALLOCATION_INDEX_GPU_MAX                                 0x05 //<! Increment this on adding index entries
 
 
@@ -3228,6 +3239,7 @@ typedef struct
     NvHandle hVASpace;
     NvU32    flags;
     NvU32    subctxId;
+    NvHandle reserved;
 } NV_CTXSHARE_ALLOCATION_PARAMETERS;
 
 #define NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT                      1:0

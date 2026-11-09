@@ -32,7 +32,36 @@
 #include "kernel/gpu/intr/engine_idx.h"
 #include "kernel/gpu/mem_mgr/virt_mem_allocator_common.h"
 
+#include "class/clc365.h"
 #include <ctrl/ctrl2080/ctrl2080internal.h>
+
+/*!
+ * @brief Get the access counter buffer enabled status
+ *
+ * @param [in]  pUvm                                    Pointer to the UVM object
+ * @param [out] pbFbhubAccessCntrRegisterAccessEnabled  Pointer to the access counter buffer enabled status
+ * @return Success or failure of the control call
+ */
+static NV_STATUS
+_uvmGetAccessCntrBufferEnabled
+(
+    OBJUVM  *pUvm,
+    NvBool  *pbFbhubAccessCntrRegisterAccessEnabled
+)
+{
+    NV2080_CTRL_INTERNAL_UVM_GET_ACCESS_CNTR_BUFFER_ENABLED_PARAMS params = {0};
+
+    NV_ASSERT_OR_RETURN(pbFbhubAccessCntrRegisterAccessEnabled != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OK_OR_RETURN(pUvm->pRmApi->Control(pUvm->pRmApi,
+                                                 pUvm->hClient,
+                                                 pUvm->hSubdevice,
+                                                 NV2080_CTRL_CMD_INTERNAL_UVM_GET_ACCESS_CNTR_BUFFER_ENABLED,
+                                                 &params, sizeof(params)));
+
+    *pbFbhubAccessCntrRegisterAccessEnabled = params.bFbhubAccessCntrRegisterAccessEnabled;
+
+    return NV_OK;
+}
 
 /**
  * @brief Send the request to set up the buffer to physical RM.
@@ -121,13 +150,25 @@ _uvmUnloadAccessCntrBuffer
  * @param pUvm
  */
 NV_STATUS
-uvmStateInitUnlocked_IMPL(OBJGPU *pGpu, OBJUVM *pUvm)
+uvmStateInitLocked_IMPL(OBJGPU *pGpu, OBJUVM *pUvm)
 {
-    NV_STATUS status = NV_OK;
-
     pUvm->pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    status = rmapiutilAllocClientAndDeviceHandles(pUvm->pRmApi, pGpu, &pUvm->hClient,
-                                                  NULL, &pUvm->hSubdevice);
+    NV_ASSERT_OK_OR_RETURN(rmapiutilAllocClientAndDeviceHandles(pUvm->pRmApi, pGpu, &pUvm->hClient,
+                                                                NULL, &pUvm->hSubdevice));
+
+    {
+        NvBool bFbhubAccessCntrRegisterAccessEnabled = NV_FALSE;
+
+        NV_ASSERT_OK_OR_RETURN(_uvmGetAccessCntrBufferEnabled(pUvm, &bFbhubAccessCntrRegisterAccessEnabled));
+
+        if (!bFbhubAccessCntrRegisterAccessEnabled)
+        {
+            NV_ASSERT_OK_OR_RETURN(gpuDeleteClassFromClassDBByClassId(pGpu, ACCESS_COUNTER_NOTIFY_BUFFER));
+            pUvm->pAccessCounterBuffers = NULL;
+            pUvm->accessCounterBufferCount = 0;
+            return NV_OK;
+        }
+    }
 
     if (pUvm->accessCounterBufferCount > 0)
     {
@@ -140,7 +181,7 @@ uvmStateInitUnlocked_IMPL(OBJGPU *pGpu, OBJUVM *pUvm)
         pUvm->pAccessCounterBuffers = NULL;
     }
 
-    return status;
+    return NV_OK;
 }
 
 /**
@@ -152,7 +193,10 @@ uvmStateInitUnlocked_IMPL(OBJGPU *pGpu, OBJUVM *pUvm)
 void
 uvmStateDestroy_IMPL(OBJGPU *pGpu, OBJUVM *pUvm)
 {
-    portMemFree(pUvm->pAccessCounterBuffers);
+    if (pUvm->pAccessCounterBuffers != NULL)
+    {
+        portMemFree(pUvm->pAccessCounterBuffers);
+    }
     rmapiutilFreeClientAndDeviceHandles(pUvm->pRmApi, &pUvm->hClient, NULL, &pUvm->hSubdevice);
 }
 
@@ -243,6 +287,11 @@ uvmAccessCntrBufferRegister_IMPL
     MEMORY_DESCRIPTOR *pMemDesc;
     NvU32 addrSpace = ADDR_SYSMEM;
     NvU32 attr      = NV_MEMORY_CACHED;
+
+    if (!uvmIsFbhubAccessCntrAccessEnabled_HAL(pGpu, pUvm))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 
     if (pUvm->pAccessCounterBuffers == NULL)
     {

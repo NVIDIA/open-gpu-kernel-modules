@@ -31,6 +31,10 @@
 ******************************************************************************/
 
 
+#include <cpuopsys.h>
+
+#if NVCPU_IS_X86_64
+
 #include <core/core.h>
 #include <nv.h>
 #include <nv-priv.h>
@@ -455,3 +459,5 @@ nv_vbios_call(
 
     return NV_OK;
 }
+
+#endif /* NVCPU_IS_X86_64 */

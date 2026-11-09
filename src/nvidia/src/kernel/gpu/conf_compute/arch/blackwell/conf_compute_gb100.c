@@ -32,8 +32,6 @@
 #include "gpu/conf_compute/conf_compute.h"
 #include "rmapi/rmapi.h"
 #include "conf_compute/cc_keystore.h"
-#include "nvdevid.h"
-#include "detect-self-hosted.h"
 
 /*!
  * Returns RM engine Id corresponding to a key space
@@ -257,7 +255,7 @@ confComputeTestPlatformSupport_GB100
     ConfidentialCompute *pConfCompute
 )
 {
-    if (pci_devid_is_self_hosted(DRF_VAL(_PCI, _SUBID, _DEVICE, pGpu->idInfo.PCIDeviceID)))
+    if (gpuIsSelfHosted(pGpu))
     {
         if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
         {
@@ -265,5 +263,14 @@ confComputeTestPlatformSupport_GB100
             return NV_ERR_NOT_SUPPORTED;
         }
     }
+    else
+    {
+        if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_BM_SECURE_AI_ENABLED))
+        {
+            NV_PRINTF(LEVEL_ERROR, "Baremetal Secure AI is only supported on self-hosted platforms\n");
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+
     return NV_OK;
 }

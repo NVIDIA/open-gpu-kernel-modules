@@ -30,7 +30,6 @@
 
 #define NVOC_FABRIC_VASPACE_H_PRIVATE_ACCESS_ALLOWED
 
-#include "gpu/mmu/kern_gmmu.h"
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/fabric_vaspace.h"
 #include "gpu/mem_mgr/mem_mgr.h"
@@ -69,148 +68,6 @@
      ((addr) >= fabricvaspaceGetUCEmulatedHandleFlaStart(pFabricVAS)) &&       \
      ((addr) <= fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS)))
 
-//
-// TODO: To be removed when legacy FLA VAS (pKernelBus->flaInfo.pFlaVAS) is removed"
-// The instance block is setup during kbusAllocateFlaVaspace_HAL(). However, we
-// lazily bind it to the new fabric VAS when the very first NV_FABRIC_MEMORY
-// allocations happens.
-//
-static NV_STATUS
-_fabricvaspaceBindInstBlk
-(
-    FABRIC_VASPACE *pFabricVAS
-)
-{
-    OBJGPU     *pGpu = pFabricVAS->pGpu;
-    KernelBus  *pKernelBus  = GPU_GET_KERNEL_BUS(pGpu);
-    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-    NV_STATUS   status = NV_OK;
-
-    INST_BLK_INIT_PARAMS instblkParams;
-
-    if (!pKernelBus->flaInfo.bToggleBindPoint)
-    {
-        return NV_OK;
-    }
-
-    if (gvaspaceIsInUse(dynamicCast(pKernelBus->flaInfo.pFlaVAS, OBJGVASPACE)))
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "FabricVAS and FlaVAS cannot be used simultaneously! "
-                  "Instance block setup for fabricVAS failed\n");
-        return NV_ERR_INVALID_OPERATION;
-    }
-
-    //
-    // Check if this is the first fabric vaspace allocation. If this is not the
-    // first allocation, instance block is already setup. Return NV_OK.
-    //
-    if (gvaspaceIsInUse(dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE)))
-    {
-        return NV_OK;
-    }
-
-    // Unbind the instance block for FLA vaspace.
-    status = kbusSetupUnbindFla_HAL(pGpu, pKernelBus);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failed to unbind instance block for FlaVAS, status=0x%x\n",
-                  status);
-        return status;
-    }
-
-    // Instantiate the instance block for fabric vaspace.
-    portMemSet(&instblkParams, 0, sizeof(instblkParams));
-    status = kgmmuInstBlkInit(pKernelGmmu, pKernelBus->flaInfo.pInstblkMemDesc,
-                             pFabricVAS->pGVAS, NULL,
-                             FIFO_PDB_IDX_BASE,
-                             &instblkParams);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failed to setup instance block for fabricVAS, status=0x%x\n",
-                  status);
-        goto failed;
-    }
-
-    // Bind the instance block for fabric vaspace.
-    status = kbusSetupBindFla_HAL(pGpu, pKernelBus,  pFabricVAS->gfid);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failed to bind instance block for fabricVAS, status=0x%x\n",
-                  status);
-        goto failed;
-    }
-
-    return NV_OK;
-
-failed:
-    // Instantiate the instance block for FLA vaspace.
-    portMemSet(&instblkParams, 0, sizeof(instblkParams));
-    NV_ASSERT(kgmmuInstBlkInit(pKernelGmmu, pKernelBus->flaInfo.pInstblkMemDesc,
-                              pKernelBus->flaInfo.pFlaVAS, NULL,
-                              FIFO_PDB_IDX_BASE,
-                              &instblkParams) == NV_OK);
-
-    // Bind the instance block for FLA vaspace.
-    NV_ASSERT(kbusSetupBindFla_HAL(pGpu, pKernelBus,  pFabricVAS->gfid) == NV_OK);
-
-    return status;
-}
-
-//
-// TODO: To be removed when legacy FLA VAS (pKernelBus->flaInfo.pFlaVAS)is removed"
-// The instance block is unbind during kbusDestroyFla_HAL(). However, we unbind
-// it here and bind back the instance block for the legacy FLA VAS after the
-// last NV_FABRIC_MEMORY allocation is freed.
-//
-static void
-_fabricvaspaceUnbindInstBlk
-(
-    FABRIC_VASPACE *pFabricVAS
-)
-{
-    OBJVASPACE *pVAS  = staticCast(pFabricVAS, OBJVASPACE);
-    OBJGPU     *pGpu  = gpumgrGetGpu(gpumgrGetDefaultPrimaryGpu(pVAS->gpuMask));
-    KernelBus  *pKernelBus  = GPU_GET_KERNEL_BUS(pGpu);
-    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-    INST_BLK_INIT_PARAMS instblkParams = {0};
-
-    if (!pKernelBus->flaInfo.bToggleBindPoint)
-    {
-        return;
-    }
-
-    //
-    // Check if there are any pending allocations for the fabric vaspace.
-    // If there are pending allocations, skip restore and return NV_OK.
-    //
-    if (gvaspaceIsInUse(dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE)))
-    {
-        return;
-    }
-
-    // Unbind the instance block for fabric vaspace.
-    NV_ASSERT(kbusSetupUnbindFla_HAL(pGpu, pKernelBus) == NV_OK);
-
-    if (pKernelBus->flaInfo.pFlaVAS != NULL)
-    {
-        // Instantiate the instance block for FLA vaspace.
-        NV_ASSERT(kgmmuInstBlkInit(pKernelGmmu,
-                                   pKernelBus->flaInfo.pInstblkMemDesc,
-                                   pKernelBus->flaInfo.pFlaVAS, NULL,
-                                   FIFO_PDB_IDX_BASE,
-                                   &instblkParams) == NV_OK);
-
-        // Bind the instance block for FLA vaspace.
-        NV_ASSERT(kbusSetupBindFla_HAL(pGpu, pKernelBus,
-                                       pFabricVAS->gfid) == NV_OK);
-    }
-}
-
-
 static NV_INLINE void
 _fabricvaspaceEncodeFabricAddresses
 (
@@ -248,7 +105,7 @@ fabricvaspaceConstruct__IMPL
     OBJSYS        *pSys   = SYS_GET_INSTANCE();
     OBJVMM        *pVmm   = SYS_GET_VMM(pSys);
     OBJVASPACE    *pVAS   = staticCast(pFabricVAS, OBJVASPACE);
-    OBJGPU        *pGpu   = gpumgrGetGpu(gpumgrGetDefaultPrimaryGpu(pVAS->gpuMask));
+    OBJGPU        *pGpu   = pVAS->pGpu;
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NV_STATUS      status = NV_OK;
     NvHandle       hClient = 0;
@@ -259,7 +116,7 @@ fabricvaspaceConstruct__IMPL
     // Sanity check input parameters.
     NV_ASSERT_OR_RETURN(FABRIC_VASPACE_A == classId, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(vaStart <= vaLimit,          NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(ONEBITSET(pVAS->gpuMask),    NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pGpu != NULL,                NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(vaspaceId == pGpu->gpuId,    NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
 
@@ -313,9 +170,10 @@ fabricvaspaceConstruct__IMPL
                                 gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
 
     // Create the GVASPACE object associated with this fabric vaspace.
-    status = vmmCreateVaspace(pVmm, FERMI_VASPACE_A, 0, pVAS->gpuMask,
+    status = vmmCreateVaspace(pVmm, FERMI_VASPACE_A, 0, pGpu,
                               vaStart, vaLimit, 0, 0, NULL, pFabricVAS->flags,
                               &pFabricVAS->pGVAS);
+
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -326,11 +184,10 @@ fabricvaspaceConstruct__IMPL
 
     pFabricVAS->hClient = hClient;
     pFabricVAS->hDevice = hDevice;
-    pFabricVAS->pGpu = pGpu;
 
     // Capture the vasStart and vasLimit for the fabric vaspace.
-    pVAS->vasStart = pFabricVAS->pGVAS->vasStart;
-    pVAS->vasLimit = pFabricVAS->pGVAS->vasLimit;
+    pVAS->vasStart = vaspaceGetVaStart(pFabricVAS->pGVAS);
+    pVAS->vasLimit = vaspaceGetVaLimit(pFabricVAS->pGVAS);
 
     return NV_OK;
 
@@ -358,9 +215,9 @@ fabricvaspaceDestruct_IMPL
                            pFabricVAS->hClient) == NV_OK);
 
     // There should be no vaspace allocations pending at this point.
-    NV_ASSERT(!gvaspaceIsInUse(dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE)));
+    NV_ASSERT(!vaspaceIsInUse(pFabricVAS->pGVAS));
 
-    // Destroy the GVASPACE object associated with this fabric vaspace.
+    // Destroy the VASPACE object associated with this fabric vaspace.
     vmmDestroyVaspace(pVmm, pFabricVAS->pGVAS);
 
     pFabricVAS->pGVAS = NULL;
@@ -387,14 +244,14 @@ fabricvaspaceAlloc_IMPL
         return NV_ERR_INVALID_STATE;
 
     //
-    // TODO: If needed, can call into fabricvaspaceAllocNonContiguous_IMPL()
+    // TODO: If needed, can call into _fabricvaspaceAllocNonContiguous()
     // by forcing contig flag.
     //
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS
-fabricvaspaceAllocNonContiguous_IMPL
+static NV_STATUS
+_fabricvaspaceAllocNonContiguous
 (
     FABRIC_VASPACE   *pFabricVAS,
     NvU64             size,
@@ -402,6 +259,7 @@ fabricvaspaceAllocNonContiguous_IMPL
     NvU64             rangeLo,
     NvU64             rangeHi,
     NvU64             pageSize,
+    NvU64             fixedOffset,
     VAS_ALLOC_FLAGS   flags,
     NvU64           **ppAddr,
     NvU32            *pNumAddr
@@ -488,14 +346,6 @@ fabricvaspaceAllocNonContiguous_IMPL
     }
     portMemSet(*ppAddr, 0, sizeof(NvU64) * pageCount);
 
-    status = _fabricvaspaceBindInstBlk(pFabricVAS);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed to bind instance block for fabric vaspace."
-                  " Alloc failed\n");
-        goto failed;
-    }
-
     // Initialize number of addresses to 0
     *pNumAddr = 0;
 
@@ -507,6 +357,12 @@ fabricvaspaceAllocNonContiguous_IMPL
     //
     if (flags.bForceContig || bDefaultAllocMode)
     {
+        // vaspaceAlloc reads the offset via *pAddr when bFixedAddressAllocate is set.
+        if (flags.bFixedAddressAllocate)
+        {
+            addr = fixedOffset;
+        }
+
         status = vaspaceAlloc(pFabricVAS->pGVAS, size, align, rangeLo, rangeHi,
                               RM_PAGE_SIZE_HUGE, flags, &addr);
         if (status == NV_OK)
@@ -710,7 +566,7 @@ fabricvaspaceBatchFree_IMPL
     NvU32           stride
 )
 {
-    OBJGPU     *pGpu = pFabricVAS->pGpu;
+    OBJGPU     *pGpu = staticCast(pFabricVAS, OBJVASPACE)->pGpu;
     KernelBus  *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU64       totalFreeSize = 0;
     NvU64       totalEmulatedHandleFreeSize = 0;
@@ -743,8 +599,6 @@ fabricvaspaceBatchFree_IMPL
 
     fabricvaspaceInvalidateTlb(pFabricVAS, NULL, PTE_DOWNGRADE);
 
-    _fabricvaspaceUnbindInstBlk(pFabricVAS);
-
     pFabricVAS->ucFabricFreeSize  += totalFreeSize;
     pFabricVAS->ucFabricInUseSize -= totalFreeSize;
 
@@ -760,7 +614,8 @@ fabricvaspaceInvalidateTlb_IMPL
     VAS_PTE_UPDATE_TYPE  type
 )
 {
-    return vaspaceInvalidateTlb(pFabricVAS->pGVAS, pFabricVAS->pGpu, type);
+    return vaspaceInvalidateTlb(pFabricVAS->pGVAS,
+                                staticCast(pFabricVAS, OBJVASPACE)->pGpu, type);
 }
 
 NV_STATUS
@@ -1089,6 +944,7 @@ fabricvaspaceUnmapPhysMemdesc_IMPL
     NvU64              physMapLength
 )
 {
+    OBJGPU *pGpu = staticCast(pFabricVAS, OBJVASPACE)->pGpu;
     NvU32 fabricPageCount;
     NvU64 fabricAddr;
     NvU64 fabricPageSize;
@@ -1120,7 +976,7 @@ fabricvaspaceUnmapPhysMemdesc_IMPL
             fabricAddr = memdescGetPhysAddr(pFabricMemDesc, AT_GPU, fabricOffset);
 
             _fabricvaspaceDecodeFabricAddresses(pFabricVAS, &fabricAddr, 1);
-            vaspaceUnmap(pFabricVAS->pGVAS, pFabricVAS->pGpu, fabricAddr, fabricAddr + mapLength - 1);
+            vaspaceUnmap(pFabricVAS->pGVAS, pGpu, fabricAddr, fabricAddr + mapLength - 1);
 
             fabricOffset = fabricOffset + mapLength;
         }
@@ -1141,7 +997,7 @@ fabricvaspaceMapPhysMemdesc_IMPL
     NvU32              flags
 )
 {
-    OBJGPU *pFabricGpu = pFabricVAS->pGpu;
+    OBJGPU *pFabricGpu = staticCast(pFabricVAS, OBJVASPACE)->pGpu;
     VirtMemAllocator *pFabricDma = GPU_GET_DMA(pFabricGpu);
     NV_STATUS status;
     DMA_PAGE_ARRAY pageArray;
@@ -1463,10 +1319,7 @@ fabricvaspaceGetPageLevelInfo_IMPL
     NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams
 )
 {
-    OBJGVASPACE *pGVAS = dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE);
-    NV_ASSERT_OR_RETURN(pGVAS != NULL, NV_ERR_OBJECT_NOT_FOUND);
-
-    return gvaspaceGetPageLevelInfo(pGVAS, pGpu, pParams);
+    return vaspaceGetPageLevelInfo(pFabricVAS->pGVAS, pGpu, pParams);
 }
 
 NvBool
@@ -1475,22 +1328,18 @@ fabricvaspaceIsInUse_IMPL
     FABRIC_VASPACE *pFabricVAS
 )
 {
-    OBJGVASPACE *pGVAS;
     NvU64 freeSize  = 0;
     NvU64 totalSize = 0;
     NvU64 sysmemFlaBase = 0;
     NvU64 sysmemFlaLimit = 0;
     NvU64 sysmemFlaSize = 0;
 
-    pGVAS = dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE);
-    NV_ASSERT(pGVAS != NULL);
-
     // Get the free heap size.
-    NV_ASSERT(gvaspaceGetFreeHeap(pGVAS, &freeSize) == NV_OK);
+    NV_ASSERT(vaspaceGetFreeHeap(pFabricVAS->pGVAS, &freeSize) == NV_OK);
 
     // Get the total heap size for FLA vaspace.
-    totalSize = vaspaceGetVaLimit(staticCast(pGVAS, OBJVASPACE)) -
-                vaspaceGetVaStart(staticCast(pGVAS, OBJVASPACE)) + 1;
+    totalSize = vaspaceGetVaLimit(pFabricVAS->pGVAS) -
+                vaspaceGetVaStart(pFabricVAS->pGVAS) + 1;
 
     //
     // The FLA range used for sysmem by UVM needs to be discounted by
@@ -1508,5 +1357,68 @@ fabricvaspaceIsInUse_IMPL
     }
 
     return ((totalSize - sysmemFlaSize) != freeSize);
+}
+
+NV_STATUS
+fabricvaspaceAllocPtrResources_IMPL
+(
+    FABRIC_VASPACE      *pFabricVAS,
+    OBJGPU              *pGpu,
+    NvU64                allocSize,
+    NvU64                alignment,
+    NvU64                pageSize,
+    NvU64                fabricBaseOverride,
+    FABRIC_ALLOC_FLAGS   fabricFlags,
+    VAS_ALLOC_FLAGS      flags,
+    NvU64              **ppAddr,
+    NvU32               *pNumAddr
+)
+{
+    NV_STATUS status;
+    NvBool    bEmulatedHandle = fabricFlags.bHandleTranslation;
+    NvU64     rangeLo;
+    NvU64     rangeHi;
+
+    //
+    // On pre-FN platforms HANDLE_TRANSLATION is emulated by carving a
+    // sub-range out of the UC FLA VAS rather than using GATT. Pick the
+    // sub-heap based on the flag.
+    //
+    if (bEmulatedHandle)
+    {
+        if (fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS) == 0)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "UC emulated-handle heap not configured on this platform\n");
+            return NV_ERR_NOT_SUPPORTED;
+        }
+        rangeLo = fabricvaspaceGetUCEmulatedHandleFlaStart(pFabricVAS);
+        rangeHi = fabricvaspaceGetUCEmulatedHandleFlaLimit(pFabricVAS);
+    }
+    else
+    {
+        rangeLo = fabricvaspaceGetUCFlaStart(pFabricVAS);
+        rangeHi = fabricvaspaceGetUCFlaLimit(pFabricVAS);
+    }
+
+    status = _fabricvaspaceAllocNonContiguous(pFabricVAS,
+                                              allocSize,
+                                              alignment,
+                                              rangeLo, rangeHi,
+                                              pageSize, fabricBaseOverride,
+                                              flags, ppAddr, pNumAddr);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "VA Space alloc failed! Status Code: 0x%x Size: 0x%llx "
+                  "RangeLo: 0x%llx, RangeHi: 0x%llx, page size: 0x%llx, "
+                  "heap: %s\n",
+                  status, allocSize,
+                  rangeLo, rangeHi,
+                  pageSize,
+                  bEmulatedHandle ? "uc-emulated-handle" : "uc-pointer");
+    }
+
+    return status;
 }
 

@@ -209,8 +209,20 @@ NV_STATUS uvm_rm_mem_alloc(uvm_gpu_t *gpu,
     if (rm_mem == NULL)
         return NV_ERR_NO_MEMORY;
 
-    if (!g_uvm_global.conf_computing_enabled || type == UVM_RM_MEM_TYPE_SYS)
-        alloc_info.bUnprotected = NV_TRUE;
+    // CC uses unprotected sysmem staging buffers. TDISP channels access
+    // sysmem directly, so their allocations must remain protected.
+    //
+    // Memory protection policy:
+    // Configuration           | Sysmem         | Vidmem
+    // ------------------------------------------------------
+    // TDISP                   | Protected      | Protected
+    // BBCC(Bounce Buffer CC)  | Unprotected    | Protected
+    // Non-TDISP, non-BBCC     | Unprotected    | Unprotected
+
+    if (g_uvm_global.conf_computing_enabled)
+        alloc_info.bUnprotected = (type == UVM_RM_MEM_TYPE_SYS);
+    else
+        alloc_info.bUnprotected = !g_uvm_global.tdisp_enabled;
 
     alloc_info.alignment = gpu_alignment;
 

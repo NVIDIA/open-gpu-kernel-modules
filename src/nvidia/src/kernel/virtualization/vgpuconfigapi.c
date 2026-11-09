@@ -413,6 +413,15 @@ vgpuconfigapiCtrlCmdVgpuConfigEnumerateVgpuPerPgpu_IMPL
         pVgpuGuest->guestVmInfo.licenseExpiryStatus         = pVgpuGuestGsp->guestVmInfo.licenseExpiryStatus;
         pVgpuGuest->guestVmInfo.frameRateLimit              = pVgpuGuestGsp->guestVmInfo.frameRateLimit;
 
+        if (pVgpuGuestGsp->guestVmInfo.licenseExpiryStr[0] != '\0'
+            && portStringLength(pVgpuGuestGsp->guestVmInfo.licenseExpiryStr) > 0)
+        {
+            portStringCopy((char *)pVgpuGuest->guestVmInfo.licenseExpiryStr,
+                           sizeof(pVgpuGuest->guestVmInfo.licenseExpiryStr),
+                           (char *)pVgpuGuestGsp->guestVmInfo.licenseExpiryStr,
+                           sizeof(pVgpuGuestGsp->guestVmInfo.licenseExpiryStr));
+        }
+
         portStringCopy((char *) pVgpuGuest->guestVmInfo.guestDriverVersion,
                        sizeof(pVgpuGuest->guestVmInfo.guestDriverVersion),
                        (char *) pVgpuGuestGsp->guestVmInfo.guestDriverVersion,
@@ -1108,6 +1117,18 @@ vgpuconfigapiCtrlCmdVgpuConfigGetCapability_IMPL
             if (pPhysGpuInfo->numVgpuTypes != 0)
             {
                 pGetCapabilityParams->state = kvgpumgrIsMigTimeslicingModeEnabled(pGpu);
+            }
+            else
+            {
+                pGetCapabilityParams->state = NV_FALSE;
+            }
+            break;
+        }
+        case NVA081_CTRL_VGPU_CAPABILITY_UVM_STUN:
+        {
+            if (pPhysGpuInfo->numVgpuTypes != 0)
+            {
+                pGetCapabilityParams->state = IsADAorBetter(pGpu);
             }
             else
             {

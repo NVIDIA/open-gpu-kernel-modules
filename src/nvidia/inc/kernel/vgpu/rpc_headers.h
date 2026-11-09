@@ -60,6 +60,17 @@
 /* signature must equal valid value */
 #define NV_VGPU_MSG_SIGNATURE_VALID                             0x43505256 /* RW--V */
 
+#define NV_VGPU_MSG_SIGNATURE_VALID_MCTP                        0x4D435450 /* RW--V */
+
+#define NV_VGPU_MSG_MCTP_INDEX_MCTP_MAGIC                        0
+#define NV_VGPU_MSG_MCTP_INDEX_MCTP_PAYLOAD_SIZE                 1
+#define NV_VGPU_MSG_MCTP_INDEX_MCTP_HEADER                       2
+#define NV_VGPU_MSG_MCTP_INDEX_NVDM_HEADER                       3
+#define NV_VGPU_MSG_MCTP_INDEX_NVDM_PAYLOAD_SIZE                 4
+#define NV_VGPU_MSG_MCTP_INDEX_NVDM_RESERVED                     5
+
+#define NV_VGPU_MSG_MCTP_INDEX_COUNT                             6
+
 #include "rpc_global_enums.h"
 
 /* result code */

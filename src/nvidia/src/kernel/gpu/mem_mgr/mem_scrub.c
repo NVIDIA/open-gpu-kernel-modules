@@ -754,7 +754,7 @@ _scrubCheckAndSubmit
                   newId, pList[iter].base, pList[iter].size);
 
         {
-            status =_scrubMemory(pScrubber, pList[iter].base, pList[iter].size, NV_MEMORY_DEFAULT,
+            status =_scrubMemory(pScrubber, pList[iter].base, pList[iter].size, NV_MEMORY_WRITECOMBINED,
                                  (NvU32)newId, flags);
         }
 

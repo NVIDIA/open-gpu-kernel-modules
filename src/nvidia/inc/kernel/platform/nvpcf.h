@@ -31,6 +31,277 @@
  * Definitions for the static  params table.
  */
 
+#define NVPCF_SYSDEV_STATIC_TABLE_VERSION_1X                                 0x10
+#define NVPCF_SYSDEV_STATIC_TABLE_HEADER_1X_SIZE_04                          0x04
+#define NVPCF_SYSDEV_STATIC_TABLE_HEADER_1X_FMT_SIZE_04                      "4b"
+
+/*!
+ * Static system dev header table
+ */
+typedef struct
+{
+    /*
+     * System device Table Version.
+     */
+    NvU32  version;
+
+    /*
+     * Size of device Table Header in bytes .
+     */
+    NvU32  headerSize;
+
+    /*
+     * Size of device Table Entry in bytes.
+     */
+    NvU32  entrySize;
+
+    /*
+     * Number of dev Entries
+     */
+    NvU32  entryCount;
+} SYSDEV_STATIC_TABLE_HEADER_1X;
+
+#define NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_SIZE_09                           0x09
+#define NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_FMT_SIZE_09                     "1b2d"
+
+/*!
+ * Static system dev entry table
+ */
+typedef struct
+{
+    /*
+     * System device entry type specific flag  (Flags0).
+     */
+    NvU32  flags0;
+
+    /*
+     * System device entry Usage-Specific Parameter (Param0).
+     */
+    NvU32  param0;
+
+    /*
+     * System device entry Usage-Specific Parameter (Param1).
+     */
+    NvU32  param1;
+} SYSDEV_STATIC_TABLE_ENTRY_1X;
+
+#define NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS                       3:0
+#define NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_DISABLED       0x00000000
+#define NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_CPU_INTEL      0x00000001
+#define NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_GPU_NV         0x00000002
+#define NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_CPU_AMD        0x00000003
+
+#define NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_PARAM0_CPU_INTEL_PACKAGE_ID        7:0
+#define NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_PARAM0_GPU_NV_GPU_ID               7:0
+
+#define NVPCF_SYSDEV_STATIC_TABLE_ENTRY_1X_PARAM1_GPU_NV_SEMANTIC_IDX         7:0
+
+#define NVPCF_CONTROLLER_STATIC_TABLE_VERSION_1X                                 0x10
+#define NVPCF_CONTROLLER_STATIC_TABLE_HEADER_1X_SIZE_06                          0x06
+#define NVPCF_CONTROLLER_STATIC_TABLE_HEADER_1X_FMT_SIZE_06                    "4b1w"
+
+/*!
+ * Static system controller header table
+ */
+typedef struct
+{
+    /*
+     * System controller Table Version.
+     */
+    NvU32  version;
+
+    /*
+     * Size of controller Table Header in bytes .
+     */
+    NvU32  headerSize;
+
+    /*
+     * Size of controller Table Entry in bytes.
+     */
+    NvU32  entrySize;
+
+    /*
+     * Number of controller Entries
+     */
+    NvU32  entryCount;
+
+    /*
+     * Base sampling period in ms
+     */
+    NvU32  samplingPeriodms;
+} CONTROLLER_STATIC_TABLE_HEADER_1X;
+
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_SIZE_23                           0x23
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FMT_SIZE_23                   "1b1w8d"
+
+/*!
+ * Static system controller entry table
+ */
+typedef struct
+{
+    /*
+     * System controller entry type specific flag  (Flags0).
+     */
+    NvU32  flags0;
+
+    /*
+     * Sampling Multiplier.
+     */
+    NvU32  samplingMulti;
+
+    /*
+     * System controller entry filter parameters.
+     */
+    NvU32  filterParams;
+
+    /*
+     * System controller entry Usage-Specific Parameter (Param0).
+     */
+    NvU32  param0;
+
+    /*
+     * System controller entry Usage-Specific Parameter (Param1).
+     */
+    NvU32  param1;
+
+    /*
+     * System controller entry Usage-Specific Parameter (Param2).
+     */
+    NvU32  param2;
+
+    /*
+     * System controller entry Usage-Specific Parameter (Param3).
+     */
+    NvU32  param3;
+
+    /*
+     * System controller entry Usage-Specific Parameter (Param4).
+     */
+    NvU32  param4;
+
+    /*
+     * System controller entry Usage-Specific Parameter (Param5).
+     */
+    NvU32  param5;
+
+    /*
+     * System controller entry Usage-Specific Parameter (Param6).
+     */
+    NvU32  param6;
+} CONTROLLER_STATIC_TABLE_ENTRY_1X;
+
+// FLAG0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS                         3:0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_DISABLED         0x00000000
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_PPAB             0x00000001
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_TPP              0x00000002
+
+// Filter
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FILTER_TYPE                                    7:0
+
+// filterType = EWMA
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FILTERPARAM_EWMA_WEIGHT                       15:8
+// filterType = MAX, others
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FILTERPARAM_WINDOW_SIZE                       15:8
+
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_FILTER_RESERVED                              31:16
+
+// Param0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM0_QBOOST_GPU_MIN_TGP_TOPOLOGY_IDX         7:0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM0_QBOOST_GPU_MAX_TGP_TOPOLOGY_IDX        15:8
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM0_QBOOST_GPU_RATED_TGP_TOPOLOGY_IDX     23:16
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM0_QBOOST_GPU_LIMIT_TGP_TOPOLOGY_IDX     31:24
+
+// Param1
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM1_QBOOST_CPU_PKG_PWR_TOPOLOGY_IDX         7:0
+
+// Param2
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM2_QBOOST_CPU_LIMIT                       15:0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM2_QBOOST_CPU_LIMIT_ACOUSTIC             31:16
+
+// Param3
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM3_QBOOST_MAP_TO_DYNAMIC_0                    7:0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM3_QBOOST_MAP_TO_DYNAMIC_1                   15:8
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM3_QBOOST_MAP_TO_DYNAMIC_2                  23:16
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM3_QBOOST_MAP_TO_DYNAMIC_3                  31:24
+
+// Param4
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM4_QBOOST_MAP_TO_DYNAMIC_4                    7:0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM4_QBOOST_MAP_TO_DYNAMIC_5                   15:8
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM4_QBOOST_MAP_TO_DYNAMIC_6                  23:16
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM4_QBOOST_MAP_TO_DYNAMIC_7                  31:24
+
+// Param5
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM5_QBOOST_INCREASE_GAIN                   15:0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM5_QBOOST_DECREASE_GAIN                  31:16
+
+// Param6
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM6_QBOOST_RESERVED                         30:0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_1X_PARAM6_QBOOST_ALLOW_MIN_BELOW_GPU_RATED       31:31
+
+
+
+#define NVPCF_TOPOLOGY_STATIC_TABLE_VERSION_1X                                 0x10
+#define NVPCF_TOPOLOGY_STATIC_TABLE_HEADER_1X_SIZE_04                          0x04
+#define NVPCF_TOPOLOGY_STATIC_TABLE_HEADER_1X_FMT_SIZE_04                      "4b"
+
+/*!
+ * Static system topology header table
+ */
+typedef struct
+{
+    /*
+     * System topology Table Version.
+     */
+    NvU32  version;
+
+    /*
+     * Size of topology Table Header in bytes .
+     */
+    NvU32  headerSize;
+
+    /*
+     * Size of topology Table Entry in bytes.
+     */
+    NvU32  entrySize;
+
+    /*
+     * Number of topology Entries
+     */
+    NvU32  entryCount;
+} TOPOLOGY_STATIC_TABLE_HEADER_1X;
+
+#define NVPCF_TOPOLOGY_STATIC_TABLE_ENTRY_1X_SIZE_05                           0x05
+#define NVPCF_TOPOLOGY_STATIC_TABLE_ENTRY_1X_FMT_SIZE_05                     "1b1d"
+
+/*!
+ * Static system topology entry table
+ */
+typedef struct
+{
+    /*
+     * System topology entry type specific flag  (Flags0).
+     */
+    NvU32  flags0;
+
+    /*
+     * System topology entry Usage-Specific Parameter (Param0).
+     */
+    NvU32  param0;
+} TOPOLOGY_STATIC_TABLE_ENTRY_1X;
+
+// Flag0
+#define NVPCF_TOPOLOGY_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS                                    3:0
+#define NVPCF_TOPOLOGY_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_DISABLED                    0x00000000
+#define NVPCF_TOPOLOGY_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_COUNTER_AND_SAMPLE_ALIGNED  0x00000001
+#define NVPCF_TOPOLOGY_STATIC_TABLE_ENTRY_1X_FLAGS0_CLASS_POINT_SAMPLED               0x00000002
+
+// Param0 
+#define NVPCF_TOPOLOGY_STATIC_TABLE_ENTRY_1X_PARAM0_DEVICE_INDEX                             7:0
+#define NVPCF_TOPOLOGY_STATIC_TABLE_ENTRY_1X_PARAM0_PROVIDER_INDEX                          23:8
+
+
+
 /*!
  *  Layout of SysDev 2x data used for static config
  */
@@ -604,4 +875,3 @@ typedef struct
     NvU32 param0;
 } CPU_TDP_LIMIT_CONTROL_BODY_1X_PACKED;
 #endif // NVPCF_H
-

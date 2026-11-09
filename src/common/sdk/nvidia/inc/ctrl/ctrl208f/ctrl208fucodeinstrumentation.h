@@ -32,7 +32,13 @@
 
 #include "ctrl/ctrl208f/ctrl208fbase.h"
 
-/* Numerical ID for each ucode */
+/*
+ * Numerical ID for each ucode.
+ *
+ * NV208F_UCODE_INSTRUMENTATION_PMU is deprecated. PMU SanitizerCoverage
+ * support and the backing PMU RPCs have been removed; the value is retained
+ * for API compatibility only.
+ */
 #define NV208F_UCODE_INSTRUMENTATION_SEC2          1
 #define NV208F_UCODE_INSTRUMENTATION_PMU           2
 #define NV208F_UCODE_INSTRUMENTATION_GSP_TASK_RM   3
@@ -104,13 +110,11 @@ typedef NV208F_CTRL_UCODE_INSTRUMENTATION_STATE_PARAMS NV208F_CTRL_UCODE_INSTRUM
 typedef NV208F_CTRL_UCODE_INSTRUMENTATION_STATE_PARAMS NV208F_CTRL_UCODE_INSTRUMENTATION_SET_STATE_PARAMS;
 
 /*
- * NV208F_UCODE_INSTRUMENTATION_RPC_MAX_BYTES_*
+ * NV208F_UCODE_INSTRUMENTATION_RPC_MAX_BYTES_GSPRM
  *
- * Maximum number of bytes that can be retrieved by one RPC call
- * (potentially differs per-ucode). These are used to size the buffer in the
- * respective ucode RPC parameters.
+ * Maximum number of bytes that can be retrieved by one GSP-RM instrumentation
+ * data RPC call. This is used to size the buffer in the GSP-RM RPC parameters.
  */
-#define NV208F_UCODE_INSTRUMENTATION_RPC_MAX_BYTES_PMU   128
 #define NV208F_UCODE_INSTRUMENTATION_RPC_MAX_BYTES_GSPRM 65536
 
 /*

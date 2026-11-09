@@ -30,9 +30,6 @@
 #define NV_MEMORY_CACHED             0
 #define NV_MEMORY_UNCACHED           1
 #define NV_MEMORY_WRITECOMBINED      2
-#define NV_MEMORY_WRITEBACK          5
-#define NV_MEMORY_DEFAULT            6
-#define NV_MEMORY_UNCACHED_WEAK      7
 
 #define NV_PROTECT_READABLE          1
 #define NV_PROTECT_WRITEABLE         2

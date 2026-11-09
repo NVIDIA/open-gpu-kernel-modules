@@ -73,8 +73,11 @@ _mnocBufferPoolDestruct
     KoobMnocBufferPool  *pPool
 )
 {
-    portSyncSpinlockDestroy(pPool->pBufSpinLock);
-    pPool->pBufSpinLock = NULL;
+    if (pPool->pBufSpinLock != NULL)
+    {
+        portSyncSpinlockDestroy(pPool->pBufSpinLock);
+        pPool->pBufSpinLock = NULL;
+    }
 }
 
 NV_STATUS
@@ -87,6 +90,8 @@ koobStateLoad_GB100
 {
     NV_ASSERT_OK_OR_RETURN(_mnocBufferPoolConstruct(&pKernelOob->mnocBufferPool));
     koobDriverStartupNotify(pGpu, pKernelOob);
+    pKernelOob->bLoaded = NV_TRUE;
+
     return NV_OK;
 }
 
@@ -98,8 +103,13 @@ koobStateUnload_GB100
     NvU32      flags
 )
 {
-    koobDriverShutdownNotify(pGpu, pKernelOob);
-    _mnocBufferPoolDestruct(&pKernelOob->mnocBufferPool);
+    if (pKernelOob->bLoaded)
+    {
+        koobDriverShutdownNotify(pGpu, pKernelOob);
+        _mnocBufferPoolDestruct(&pKernelOob->mnocBufferPool);
+        pKernelOob->bLoaded = NV_FALSE;
+    }
+
     return NV_OK;
 }
 
@@ -140,9 +150,18 @@ koobCheckSupported_GB100
     }
 
     // Not supported in CC mode for first release.
-    if (gpuIsCCFeatureEnabled(pGpu))
+    if (gpuIsCCFeatureEnabled(pGpu)
+        || gpuIsBaremetalSecureAiEnabled(pGpu)
+    )
     {
         NV_PRINTF(LEVEL_NOTICE, "Kernel OOB logging is disabled because it is incompatible with CC.\n");
+        return NV_FALSE;
+    }
+
+    // Not supported in TDISP mode
+    if (gpuIsTdispFeatureEnabled(pGpu))
+    {
+        NV_PRINTF(LEVEL_NOTICE, "Kernel OOB logging is disabled because it is incompatible with TDISP.\n");
         return NV_FALSE;
     }
 

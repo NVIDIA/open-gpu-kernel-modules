@@ -630,6 +630,8 @@ intervaltreeDestroy
     while (pNode != NULL)
     {
         IntervalTreeNode *pNext = mapNext(&pTree->offsetMap, pNode);
+        _intervaltreeNodeSizeRemove(pTree, pNode);
+        mapRemove(&pTree->offsetMap, pNode);
         PORT_FREE(pTree->pAllocator, pNode);
         pNode = pNext;
     }

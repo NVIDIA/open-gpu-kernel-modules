@@ -38,6 +38,10 @@
 #include "mem_mgr/gpu_vaspace.h"
 #include "mem_mgr/ctx_buf_pool.h"
 #include "rmapi/rmapi.h"
+#include "diagnostics/journal.h"
+#include "lib/protobuf/prb_util.h"
+
+#include "g_all_dcl_pb.h"
 
 void kflcnConfigureEngine_IMPL(OBJGPU *pGpu, KernelFalcon *pKernelFalcon, KernelFalconEngineConfig *pFalconConfig)
 {
@@ -443,10 +447,132 @@ NV_STATUS gkflcnServiceNotificationInterrupt_IMPL(OBJGPU *pGpu, GenericKernelFal
     return NV_OK;
 }
 
+static NV_STATUS
+_kflcnEncodeCoreDumpNondestructiveToPrb
+(
+    OBJGPU *pGpu,
+    RMERRORHEADER *pErrorHeader,
+    const CoreDumpRegs *pCoreDump
+)
+{
+    PRB_ENCODER prbEnc = { 0 };
+    RMCD_ERROR_BLOCK *pErrorBlock = NULL;
+    NvU32 i;
+    NvU32 tracePcEntries;
+    NV_STATUS status;
+
+    if (pErrorHeader == NULL)
+        return NV_OK;
+
+    status = prbSetupDclMsg(&prbEnc,
+                            NV2080_NOCAT_JOURNAL_MAX_DIAG_BUFFER,
+                            DCL_DCLMSG_GSP_COREDUMPREPORT);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    prbEncAddUInt32(&prbEnc, GSP_COREDUMPREPORT_GPUINSTANCE,
+                    gpuGetInstance(pGpu));
+
+    status = prbEncNestedStart(&prbEnc,
+                               GSP_COREDUMPREPORT_NONDESTRUCTIVE_CORE_DUMP);
+    if (status != NV_OK)
+    {
+        goto fail;
+    }
+
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_RISCV_PC,
+                    pCoreDump->riscvPc);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_RISCV_CPUCTL,
+                    pCoreDump->riscvCpuctl);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_RISCV_IRQMASK,
+                    pCoreDump->riscvIrqmask);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_RISCV_IRQDEST,
+                    pCoreDump->riscvIrqdest);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_RISCV_IRQDELEG,
+                    pCoreDump->riscvIrqdeleg);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pCoreDump->falconMailbox); i++)
+    {
+        prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_FALCON_MAILBOX,
+                        pCoreDump->falconMailbox[i]);
+    }
+
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_FALCON_IRQSTAT,
+                    pCoreDump->falconIrqstat);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_FALCON_IRQMODE,
+                    pCoreDump->falconIrqmode);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_FBIF_INSTBLK,
+                    pCoreDump->fbifInstblk);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_FBIF_CTL,
+                    pCoreDump->fbifCtl);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_FBIF_THROTTLE,
+                    pCoreDump->fbifThrottle);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pCoreDump->fbifAchkBlk); i++)
+    {
+        prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_FBIF_ACHK_BLK,
+                        pCoreDump->fbifAchkBlk[i]);
+    }
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pCoreDump->fbifAchkCtl); i++)
+    {
+        prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_FBIF_ACHK_CTL,
+                        pCoreDump->fbifAchkCtl[i]);
+    }
+
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_FBIF_CG1, pCoreDump->fbifCg1);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_STAT,
+                    pCoreDump->riscvPrivErrStat);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_INFO,
+                    pCoreDump->riscvPrivErrInfo);
+    prbEncAddUInt64(&prbEnc, GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_ADDR,
+                    (((NvU64)pCoreDump->riscvPrivErrAddrH << 32ull) |
+                     pCoreDump->riscvPrivErrAddrL));
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_ADDR_HI,
+                    pCoreDump->riscvPrivErrAddrH);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_RISCV_PRIV_ERR_ADDR_LO,
+                    pCoreDump->riscvPrivErrAddrL);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_RISCV_HUB_ERR_STAT,
+                    pCoreDump->riscvHubErrStat);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONCOREDUMP_TRACE_PC_ENTRIES,
+                    pCoreDump->tracePCEntries);
+
+    tracePcEntries = pCoreDump->tracePCEntries;
+    if (tracePcEntries > __RISCV_MAX_TRACE_ENTRIES)
+    {
+        tracePcEntries = __RISCV_MAX_TRACE_ENTRIES;
+    }
+
+    for (i = 0; i < tracePcEntries; i++)
+    {
+        prbEncAddUInt64(&prbEnc, GSP_FALCONCOREDUMP_TRACE_PC,
+                        pCoreDump->tracePC[i]);
+    }
+
+    status = prbEncNestedEnd(&prbEnc);
+    if (status != NV_OK)
+    {
+        goto fail;
+    }
+
+    prbWrapAndQueue(&prbEnc, pErrorHeader, &pErrorBlock);
+    if (pErrorBlock == NULL)
+        return NV_ERR_NO_MEMORY;
+
+    return NV_OK;
+
+fail:
+    prbFreeAllocatedBuffer(&prbEnc);
+    return status;
+}
+
 NV_STATUS kflcnCoreDumpNondestructive(
     OBJGPU *pGpu,
     KernelFalcon *pKernelFlcn,
-    NvU32 verbosity
+    NvU32 verbosity,
+    RMERRORHEADER *pErrorHeader
 )
 {
     CoreDumpRegs PeregrineCoreRegisters = { 0 };
@@ -489,12 +615,128 @@ NV_STATUS kflcnCoreDumpNondestructive(
         }
     }
 
+    return _kflcnEncodeCoreDumpNondestructiveToPrb(pGpu,
+                                                   pErrorHeader,
+                                                   &PeregrineCoreRegisters);
+}
+
+static NV_STATUS
+_kflcnEncodeCoreDumpDestructiveToPrb
+(
+    OBJGPU *pGpu,
+    RMERRORHEADER *pErrorHeader,
+    const DestructiveCoreDumpRegs *pCoreDump
+)
+{
+    PRB_ENCODER prbEnc = { 0 };
+    RMCD_ERROR_BLOCK *pErrorBlock = NULL;
+    NvU32 i;
+    NvU32 unwindDepth;
+    NV_STATUS status;
+
+    if (pErrorHeader == NULL)
+        return NV_OK;
+
+    status = prbSetupDclMsg(&prbEnc,
+                            NV2080_NOCAT_JOURNAL_MAX_DIAG_BUFFER,
+                            DCL_DCLMSG_GSP_COREDUMPREPORT);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    prbEncAddUInt32(&prbEnc, GSP_COREDUMPREPORT_GPUINSTANCE,
+                    gpuGetInstance(pGpu));
+
+    status = prbEncNestedStart(&prbEnc,
+                               GSP_COREDUMPREPORT_DESTRUCTIVE_CORE_DUMP);
+    if (status != NV_OK)
+    {
+        goto fail;
+    }
+
+    prbEncAddBool(&prbEnc, GSP_FALCONICDDUMP_CORE_BOOTED,
+                  pCoreDump->bCoreBooted);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONICDDUMP_RSTAT_SUCCESS_COUNT,
+                    pCoreDump->rstatSuccessCount);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONICDDUMP_RSTAT_SUCCESS_MASK,
+                    pCoreDump->rstatSuccessMask);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pCoreDump->rstat); i++)
+    {
+        prbEncAddUInt64(&prbEnc, GSP_FALCONICDDUMP_RSTAT,
+                        pCoreDump->rstat[i]);
+    }
+
+    prbEncAddBool(&prbEnc, GSP_FALCONICDDUMP_HALT_SUCCEEDED,
+                  pCoreDump->bHaltSucceeded);
+    prbEncAddBool(&prbEnc, GSP_FALCONICDDUMP_PC_VALID, pCoreDump->bPcValid);
+    prbEncAddBool(&prbEnc, GSP_FALCONICDDUMP_PC_FALLBACK,
+                  pCoreDump->bPcFallback);
+    prbEncAddUInt64(&prbEnc, GSP_FALCONICDDUMP_PC, pCoreDump->pc);
+    prbEncAddUInt32(&prbEnc, GSP_FALCONICDDUMP_GPR_VALID_MASK,
+                    pCoreDump->gprValidMask);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pCoreDump->gpr); i++)
+    {
+        prbEncAddUInt64(&prbEnc, GSP_FALCONICDDUMP_GPR, pCoreDump->gpr[i]);
+    }
+
+    prbEncAddUInt32(&prbEnc, GSP_FALCONICDDUMP_CSR_READ_COUNT,
+                    pCoreDump->csrReadCount);
+    prbEncAddBool(&prbEnc, GSP_FALCONICDDUMP_CSR_TRUNCATED,
+                  pCoreDump->bCsrTruncated);
+
+    for (i = 0; i < pCoreDump->csrCount; i++)
+    {
+        status = prbEncNestedStart(&prbEnc, GSP_FALCONICDDUMP_CSR);
+        if (status != NV_OK)
+        {
+            goto fail;
+        }
+        prbEncAddUInt32(&prbEnc, GSP_FALCONICDCSR_INDEX,
+                        pCoreDump->csr[i].index);
+        prbEncAddUInt64(&prbEnc, GSP_FALCONICDCSR_VALUE,
+                        pCoreDump->csr[i].value);
+        status = prbEncNestedEnd(&prbEnc);
+        if (status != NV_OK)
+        {
+            goto fail;
+        }
+    }
+
+    unwindDepth = NV_MIN(pCoreDump->unwindDepth,
+                         __RISCV_MAX_UNWIND_DEPTH);
+
+    prbEncAddUInt32(&prbEnc, GSP_FALCONICDDUMP_UNWIND_DEPTH,
+                    pCoreDump->unwindDepth);
+    for (i = 0; i < unwindDepth; i++)
+    {
+        prbEncAddUInt64(&prbEnc, GSP_FALCONICDDUMP_UNWIND_PC,
+                        pCoreDump->unwindPC[i]);
+    }
+
+    status = prbEncNestedEnd(&prbEnc);
+    if (status != NV_OK)
+    {
+        goto fail;
+    }
+
+    prbWrapAndQueue(&prbEnc, pErrorHeader, &pErrorBlock);
+    if (pErrorBlock == NULL)
+        return NV_ERR_NO_MEMORY;
+
     return NV_OK;
+
+fail:
+    prbFreeAllocatedBuffer(&prbEnc);
+    return status;
 }
 
 NV_STATUS kflcnCoreDumpDestructive(
     OBJGPU *pGpu,
-    KernelFalcon *pKernelFlcn
+    KernelFalcon *pKernelFlcn,
+    RMERRORHEADER *pErrorHeader
 )
 {
     // Initialise state - nothing succeeded yet.
@@ -503,28 +745,35 @@ NV_STATUS kflcnCoreDumpDestructive(
     NvU64 traceS0 = 0;
     NvU32 unwindDepth = 0;
     NvU64 regValue64;
-    NvU64 riscvCoreRegisters[32];
+    NvU64 riscvCoreRegisters[KERNEL_FALCON_RISCV_NUM_CORE_REGS];
     NvU32 anySuccess = 0;
+    DestructiveCoreDumpRegs coreDump = { 0 };
+
+    portMemSet(riscvCoreRegisters, 0, sizeof(riscvCoreRegisters));
 
     // Check if PRI is alive / core is booted.
     {
         if (kflcnIsRiscvActive_HAL(pGpu, pKernelFlcn)) // If core is not booted, abort - nothing to do.
         {
+            coreDump.bCoreBooted = NV_TRUE;
             NV_PRINTF(LEVEL_ERROR, "ICD: Core is booted.\n");
         }
         else
         {
             NV_PRINTF(LEVEL_ERROR, "ICD: [ERROR] Core is not booted.\n");
-            return NV_OK;
+            goto done;
         }
     }
 
     // Check if ICD RSTAT works.
     {
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < KERNEL_FALCON_RISCV_NUM_RSTAT_REGS; i++)
         {
             if (kflcnRiscvIcdRstat_HAL(pGpu, pKernelFlcn, i, &regValue64) == NV_OK)
             {
+                coreDump.rstat[i] = regValue64;
+                coreDump.rstatSuccessMask |= (1U << i);
+                coreDump.rstatSuccessCount++;
                 NV_PRINTF(LEVEL_ERROR, "ICD: RSTAT%d 0x%016" NvU64_fmtx "\n", i, regValue64);
                 anySuccess++;
             }
@@ -532,7 +781,7 @@ NV_STATUS kflcnCoreDumpDestructive(
         if (!anySuccess)
         {
             NV_PRINTF(LEVEL_ERROR, "ICD: [ERROR] Unable to retrieve any RSTAT register.\n");
-            return NV_OK; // Failed to read ANY RSTAT value. This means ICD is dead.
+            goto done; // Failed to read ANY RSTAT value. This means ICD is dead.
         }
     }
 
@@ -541,8 +790,9 @@ NV_STATUS kflcnCoreDumpDestructive(
         if (kflcnRiscvIcdHalt_HAL(pGpu, pKernelFlcn) != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "ICD: [ERROR] ICD Halt command failed.\n");
-            return NV_OK; // Failed to halt core. Typical end point for "core is hung" scenario.
+            goto done; // Failed to halt core. Typical end point for "core is hung" scenario.
         }
+        coreDump.bHaltSucceeded = NV_TRUE;
     }
 
     // Dump PC, as much as we can get.
@@ -554,20 +804,27 @@ NV_STATUS kflcnCoreDumpDestructive(
         }
         else
         {
+            coreDump.bPcValid = NV_TRUE;
+            coreDump.bPcFallback = NV_TRUE;
+            coreDump.pc = pc;
             NV_PRINTF(LEVEL_ERROR, "ICD: PC = 0x--------%08llx\n", pc & 0xffffffff);
         }
     }
     else
     {
+        coreDump.bPcValid = NV_TRUE;
+        coreDump.pc = pc;
         NV_PRINTF(LEVEL_ERROR, "ICD: PC = 0x%016" NvU64_fmtx "\n", pc);
     }
 
     // Dump registers
-    for (int a = 0; a < 32; a++)
+    for (int a = 0; a < KERNEL_FALCON_RISCV_NUM_CORE_REGS; a++)
     {
         if (kflcnRiscvIcdReadReg_HAL(pGpu, pKernelFlcn, a, &regValue64) == NV_OK)
         {
             riscvCoreRegisters[a] = regValue64;
+            coreDump.gpr[a] = regValue64;
+            coreDump.gprValidMask |= (1U << a);
 
             // Save off registers needed for unwinding.
             if (a == 1)
@@ -579,6 +836,7 @@ NV_STATUS kflcnCoreDumpDestructive(
         {
             NV_PRINTF(LEVEL_ERROR, "ICD: register read failed for x%02d\n", a);
             riscvCoreRegisters[a] = 0xbaadbaadbaadbaad;
+            coreDump.gpr[a] = riscvCoreRegisters[a];
         }
     }
     NV_PRINTF(LEVEL_ERROR,
@@ -611,6 +869,17 @@ NV_STATUS kflcnCoreDumpDestructive(
     {
         if (kflcnRiscvIcdRcsr_HAL(pGpu, pKernelFlcn, a, &regValue64) == NV_OK)
         {
+            coreDump.csrReadCount++;
+            if (coreDump.csrCount < KERNEL_FALCON_RISCV_MAX_CSR_DUMP_ENTRIES)
+            {
+                coreDump.csr[coreDump.csrCount].index = a;
+                coreDump.csr[coreDump.csrCount].value = regValue64;
+                coreDump.csrCount++;
+            }
+            else
+            {
+                coreDump.bCsrTruncated = NV_TRUE;
+            }
             NV_PRINTF(LEVEL_ERROR, "ICD: csr[%03x] = 0x%016" NvU64_fmtx "\n", a, regValue64);
         }
     }
@@ -624,7 +893,7 @@ NV_STATUS kflcnCoreDumpDestructive(
     //
     {
         if ((!traceRa) || (!traceS0))
-            return NV_OK; // Fail to unwind - the ra/s0 registers are not valid.
+            goto done; // Fail to unwind - the ra/s0 registers are not valid.
 
         do
         {
@@ -639,8 +908,10 @@ NV_STATUS kflcnCoreDumpDestructive(
             if (kflcnRiscvIcdReadMem_HAL(pGpu, pKernelFlcn, traceS0 + 0, 8, &traceS0) != NV_OK)
                 goto abortUnwind;
 
+            coreDump.unwindPC[unwindDepth] = traceRa;
             NV_PRINTF(LEVEL_ERROR, "ICD: unwind%02u: 0x%016" NvU64_fmtx "\n", unwindDepth, traceRa);
             unwindDepth++;
+            coreDump.unwindDepth = unwindDepth;
         } while (unwindDepth < __RISCV_MAX_UNWIND_DEPTH);
 
         // Core unwind attempt finished. The call stack was too deep.
@@ -652,11 +923,14 @@ abortUnwind:
     if (unwindDepth == 0)
     {
         NV_PRINTF(LEVEL_ERROR, "ICD: [WARN] unwind retrieved zero values :(\n");
-        return NV_OK;
+        goto done;
     }
 
     // Core unwind attempt finished. Unwind successfully got 1 or more entries.
 unwindFull:
     NV_PRINTF(LEVEL_ERROR, "ICD: unwind complete.\n");
-    return NV_OK;
+
+done:
+    return _kflcnEncodeCoreDumpDestructiveToPrb(pGpu, pErrorHeader,
+                                                &coreDump);
 }

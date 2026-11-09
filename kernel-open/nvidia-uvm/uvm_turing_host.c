@@ -23,6 +23,7 @@
 
 #include "uvm_hal.h"
 #include "uvm_push.h"
+#include "uvm_channel.h"
 #include "uvm_user_channel.h"
 #include "clc076.h"
 #include "clc46f.h"
@@ -231,8 +232,10 @@ void uvm_hal_turing_host_write_gpu_put(uvm_channel_t *channel, NvU32 gpu_put)
     UVM_GPU_WRITE_ONCE(*channel->channel_info.gpPut, gpu_put);
 
     wmb();
-
-    UVM_GPU_WRITE_ONCE(*channel->channel_info.workSubmissionOffset, channel->channel_info.workSubmissionToken);
+    {
+        NvU32 token = uvm_channel_read_work_submit_token(&channel->channel_info);
+        UVM_GPU_WRITE_ONCE(*channel->channel_info.workSubmissionOffset, token);
+    }
 }
 
 void uvm_hal_turing_host_tlb_invalidate_all(uvm_push_t *push,

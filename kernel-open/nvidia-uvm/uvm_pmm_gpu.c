@@ -348,6 +348,11 @@ static bool gpu_supports_pma_eviction(uvm_gpu_t *gpu)
     return uvm_global_oversubscription;
 }
 
+static bool pma_uses_protected_memory(void)
+{
+    return g_uvm_global.conf_computing_enabled || g_uvm_global.tdisp_enabled;
+}
+
 uvm_gpu_t *uvm_pmm_to_gpu(uvm_pmm_gpu_t *pmm)
 {
     return container_of(pmm, uvm_gpu_t, pmm);
@@ -1967,10 +1972,10 @@ NV_STATUS alloc_root_chunk(uvm_pmm_gpu_t *pmm,
     if (gpu->mem_info.numa.enabled)
         flags |= UVM_PMM_ALLOC_FLAGS_DONT_BATCH;
 
-    // In Confidential Computing, the PMA allocator exposes not only regular
-    // ("protected") vidmem, but also another type called ""unprotected" vidmem.
+    // In Confidential Computing and TDISP, the PMA allocator exposes not only
+    // regular ("protected") vidmem, but also another type called "unprotected" vidmem.
     // UVM has no use for the latter type.
-    if (g_uvm_global.conf_computing_enabled)
+    if (pma_uses_protected_memory())
         options.flags |= UVM_PMA_ALLOCATE_PROTECTED_REGION;
 
     if (!gpu->parent->rm_info.isSimulated &&
@@ -2542,13 +2547,13 @@ static NV_STATUS uvm_pmm_gpu_pma_evict_pages(void *void_pmm,
     UVM_ASSERT(IS_ALIGNED(UVM_CHUNK_SIZE_MAX, page_size));
     UVM_ASSERT(UVM_CHUNK_SIZE_MAX >= page_size);
 
-    // In Confidential Computing, RM should only request eviction of protected
-    // vidmem.
+    // In Confidential Computing and TDISP, RM should only request eviction of
+    // protected vidmem.
     //
     // TODO: Bug 4287430: there shouldn't be any memory type argument, because
     // the callback can only relate to protected vidmem. This check can be
     // removed alongside the parameter.
-    if (g_uvm_global.conf_computing_enabled && (mem_type != UVM_PMA_GPU_MEMORY_TYPE_PROTECTED))
+    if (pma_uses_protected_memory() && (mem_type != UVM_PMA_GPU_MEMORY_TYPE_PROTECTED))
         return NV_ERR_INVALID_ARGUMENT;
 
     while (num_pages_left_to_evict > 0) {
@@ -2685,13 +2690,13 @@ static NV_STATUS uvm_pmm_gpu_pma_evict_range(void *void_pmm,
                    phys_begin,
                    phys_end);
 
-    // In Confidential Computing, RM should only request eviction of protected
-    // vidmem.
+    // In Confidential Computing and TDISP, RM should only request eviction of
+    // protected vidmem.
     //
     // TODO: Bug 4287430: there shouldn't be any memory type argument, because
     // the callback can only relate to protected vidmem. This check can be
     // removed alongside the parameter.
-    if (g_uvm_global.conf_computing_enabled && (mem_type != UVM_PMA_GPU_MEMORY_TYPE_PROTECTED))
+    if (pma_uses_protected_memory() && (mem_type != UVM_PMA_GPU_MEMORY_TYPE_PROTECTED))
         return NV_ERR_INVALID_ARGUMENT;
 
     // Make sure that all pending allocations, that could have started before

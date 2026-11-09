@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -516,7 +516,7 @@ typedef struct NV2080_CTRL_FIFO_CONFIG_CTXSW_TIMEOUT_PARAMS {
 
 #define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_MAX_DEVICES         256
 #define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_MAX_ENTRIES         32
-#define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_ENGINE_DATA_TYPES   17
+#define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_ENGINE_DATA_TYPES   18
 #define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_ENGINE_MAX_PBDMA    2
 #define NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_ENGINE_MAX_NAME_LEN 16
 
@@ -1165,4 +1165,33 @@ typedef struct NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS {
     NvU32 channelLevel;
     NvU32 operation;
 } NV2080_CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE_PARAMS;
+
+/*
+ * Internal vGPU-plugin control for preserving HWS channel priority across
+ * migration.  vChId is translated independently on the source and destination;
+ * no host physical channel ID or ownership metadata crosses the migration.
+ * GET returns bValid only for source entries that are still runlist-ready.
+ * Before RESTORE, the plugin clears only the destination GFID's desired state
+ * while preserving last-submitted ownership tombstones.  RESTORE takes
+ * bValid=true and returns true only when the destination channel is ready and
+ * it seeds an empty slot or a submitted tombstone already owned by the
+ * destination GFID.  A false return lets the plugin retain flat scheduling.
+ * ABORT removes partially restored desired state for the destination GFID,
+ * preserves submitted ownership tombstones and the active runlist, and
+ * cancels a pending empty-table purge.
+ */
+#define NV2080_CTRL_CMD_FIFO_VGPU_HWS_CHANNEL_PRIORITY_MIGRATION_STATE        (0x20801127) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FIFO_INTERFACE_ID << 8) | NV2080_CTRL_FIFO_VGPU_HWS_CHANNEL_PRIORITY_MIGRATION_STATE_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_FIFO_VGPU_HWS_CHANNEL_PRIORITY_MIGRATION_STATE_OP_GET     0
+#define NV2080_CTRL_FIFO_VGPU_HWS_CHANNEL_PRIORITY_MIGRATION_STATE_OP_RESTORE 1
+#define NV2080_CTRL_FIFO_VGPU_HWS_CHANNEL_PRIORITY_MIGRATION_STATE_OP_ABORT   3
+
+#define NV2080_CTRL_FIFO_VGPU_HWS_CHANNEL_PRIORITY_MIGRATION_STATE_PARAMS_MESSAGE_ID (0x27U)
+
+typedef struct NV2080_CTRL_FIFO_VGPU_HWS_CHANNEL_PRIORITY_MIGRATION_STATE_PARAMS {
+    NvU32  engineType;
+    NvU32  vChId;
+    NvU32  channelLevel;
+    NvU32  operation;
+    NvBool bValid;
+} NV2080_CTRL_FIFO_VGPU_HWS_CHANNEL_PRIORITY_MIGRATION_STATE_PARAMS;
 /* _ctrl2080fifo_h_ */

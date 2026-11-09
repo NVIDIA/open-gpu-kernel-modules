@@ -27,6 +27,24 @@
 #include "events/gpu/gpu_event_ctx_defs.h"
 #include "nvtypes.h"
 
+/*
+ * NOTE: All context definitions are versioned to allow for future extensions.
+ * The version is a 16-bit value with the major version in the high 8 bits
+ * and the minor version in the low 8 bits.
+ * The version is used to determine the compatibility of the context with the
+ * event.
+ * The major version is incremented when the context structure changes in a
+ * backward incompatible way.
+ * The minor version is incremented when the context structure changes in a
+ * backward compatible way.
+ *
+ * The legacy context definitions are used to maintain backward compatibility
+ * with the legacy XID emission. These event contexts also have versioning defines,
+ * but the version is not used for compatibility and included for completeness.
+ * For now the version is always 1.0 and does not need to change unless the legacy context
+ * is serialized to CPER or EventBuffer.
+ */
+
 #define NVLINK_ALI_TRAINING_FAILURE_DATA_VERSION_MAJOR 1
 #define NVLINK_ALI_TRAINING_FAILURE_DATA_VERSION_MINOR 0
 #define NVLINK_ALI_TRAINING_FAILURE_DATA_VERSION       \
@@ -42,6 +60,15 @@ enum
     NVLINK_EVENT_CTX_TYPE_ALI_TRAINING_FAILURE_DATA, // 0xA301
     NVLINK_EVENT_CTX_TYPE_MSE_ERROR_DATA,            // 0xA302
     NVLINK_EVENT_CTX_TYPE_SW_LINK_DOWN_ERROR_DATA,   // 0xA303
+    NVLINK_EVENT_CTX_TYPE_FATAL_ERROR_NVL3_DATA,     // 0xA304
+    NVLINK_EVENT_CTX_TYPE_PRIV_ERROR_DATA,           // 0xA305
+    NVLINK_EVENT_CTX_TYPE_BLACKWELL_ERROR_DATA,      // 0xA306
+    NVLINK_EVENT_CTX_TYPE_SAW_ERROR_DATA,            // 0xA307
+    NVLINK_EVENT_CTX_TYPE_RLW_ERROR_DATA,            // 0xA308
+    NVLINK_EVENT_CTX_TYPE_TLW_ERROR_DATA,            // 0xA309
+    NVLINK_EVENT_CTX_TYPE_TREX_ERROR_DATA,           // 0xA30A
+    NVLINK_EVENT_CTX_TYPE_NVLPW_CTRL_ERROR_DATA,     // 0xA30B
+    NVLINK_EVENT_CTX_TYPE_NETIR_ERROR_DATA,          // 0xA30C
 };
 
 typedef struct NVLINK_ALI_TRAINING_FAILURE_ENTRY
@@ -143,5 +170,129 @@ typedef struct NVLINK_SW_LINK_DOWN_ERROR_LEGACY_DATA
     NvU8  linkId;
     NvU8  reserved[3];
 } NVLINK_SW_LINK_DOWN_ERROR_LEGACY_DATA;
+
+#define NVLINK_FATAL_ERROR_DATA_NVL3_VERSION_MAJOR 1
+#define NVLINK_FATAL_ERROR_DATA_NVL3_VERSION_MINOR 0
+#define NVLINK_FATAL_ERROR_DATA_NVL3_VERSION       \
+    ((NVLINK_FATAL_ERROR_DATA_NVL3_VERSION_MINOR) | \
+     (NVLINK_FATAL_ERROR_DATA_NVL3_VERSION_MAJOR << 8))
+#define NVLINK_FATAL_ERROR_DATA_NVL3_DEBUG_WORDS   7U
+typedef struct NVLINK_FATAL_ERROR_DATA_NVL3
+{
+    NvU8  linkId;
+    NvU8  reserved[3];
+    NvU32 debugData[NVLINK_FATAL_ERROR_DATA_NVL3_DEBUG_WORDS];
+} NVLINK_FATAL_ERROR_DATA_NVL3;
+
+#define NVLINK_FATAL_ERROR_LEGACY_DATA_NVL3_VERSION_MAJOR 1
+#define NVLINK_FATAL_ERROR_LEGACY_DATA_NVL3_VERSION_MINOR 0
+#define NVLINK_FATAL_ERROR_LEGACY_DATA_NVL3_VERSION       \
+    ((NVLINK_FATAL_ERROR_LEGACY_DATA_NVL3_VERSION_MINOR) | \
+     (NVLINK_FATAL_ERROR_LEGACY_DATA_NVL3_VERSION_MAJOR << 8))
+typedef struct NVLINK_FATAL_ERROR_LEGACY_DATA_NVL3
+{
+    NvU32 dword0;
+    NvU32 dword1;
+    NvU32 dword2;
+    NvU32 dword3;
+    NvU32 dword4;
+    NvU32 dword5;
+    NvU32 dword6;
+    NvU8  linkId;
+    NvU8  reserved[3];
+} NVLINK_FATAL_ERROR_LEGACY_DATA_NVL3;
+
+#define NVLINK_PRIV_ERROR_DATA_VERSION_MAJOR 1
+#define NVLINK_PRIV_ERROR_DATA_VERSION_MINOR 0
+#define NVLINK_PRIV_ERROR_DATA_VERSION       \
+    ((NVLINK_PRIV_ERROR_DATA_VERSION_MINOR) | \
+     (NVLINK_PRIV_ERROR_DATA_VERSION_MAJOR << 8))
+typedef struct NVLINK_PRIV_ERROR_DATA
+{
+    NvU8  linkId;
+    NvU8  reserved[3];
+} NVLINK_PRIV_ERROR_DATA;
+
+#define NVLINK_BLACKWELL_ERROR_DATA_VERSION_MAJOR   1
+#define NVLINK_BLACKWELL_ERROR_DATA_VERSION_MINOR   0
+#define NVLINK_BLACKWELL_ERROR_DATA_VERSION       \
+    ((NVLINK_BLACKWELL_ERROR_DATA_VERSION_MINOR) | \
+     (NVLINK_BLACKWELL_ERROR_DATA_VERSION_MAJOR << 8))
+
+#define NVLINK_ERROR_DATA_BLACKWELL_DEBUG_DWORDS 8U
+typedef struct NVLINK_BLACKWELL_ERROR_DATA
+{
+    NvS32 linkId;       // -1 if not link-specific
+    NvU32 errorStatus;
+    NvU32 intrInfo;
+    NvU32 debugData[NVLINK_ERROR_DATA_BLACKWELL_DEBUG_DWORDS];
+} NVLINK_BLACKWELL_ERROR_DATA;
+
+#define NVLINK_BLACKWELL_LEGACY_ERROR_DATA_VERSION_MAJOR 1
+#define NVLINK_BLACKWELL_LEGACY_ERROR_DATA_VERSION_MINOR 0
+#define NVLINK_BLACKWELL_LEGACY_ERROR_DATA_VERSION       \
+    ((NVLINK_BLACKWELL_LEGACY_ERROR_DATA_VERSION_MINOR) | \
+     (NVLINK_BLACKWELL_LEGACY_ERROR_DATA_VERSION_MAJOR << 8))
+
+typedef struct NVLINK_BLACKWELL_LEGACY_ERROR_DATA
+{
+    NvBool bLegacyFatal;
+    NvBool bLegacyXContain;
+    NvBool bLegacyInjected;
+    NvS32  legacyLinkId;
+    NvU32  legacyIntrInfo;      // BLOCK_ERROR_CODE subcode + severity + link fields
+    NvU32  legacyErrorStatus;   // RAS catalog lookup key
+    NvU32  legacyXidCode;       // NVLINK_SAW_ERROR (144), etc.
+    const char * pLegacyXidErrorName;
+    const char * pSeverityString;
+    NvU32  debugData[NVLINK_ERROR_DATA_BLACKWELL_DEBUG_DWORDS];
+} NVLINK_BLACKWELL_LEGACY_ERROR_DATA;
+
+typedef struct NVLINK_RESERVED_DATA
+{
+    NvU8 reserved[64];
+} NVLINK_RESERVED_DATA;
+
+#define NVLINK_SAW_ERROR_DATA_VERSION_MAJOR 1
+#define NVLINK_SAW_ERROR_DATA_VERSION_MINOR 0
+#define NVLINK_SAW_ERROR_DATA_VERSION       \
+    ((NVLINK_SAW_ERROR_DATA_VERSION_MINOR) | \
+     (NVLINK_SAW_ERROR_DATA_VERSION_MAJOR << 8))
+typedef NVLINK_RESERVED_DATA NVLINK_SAW_ERROR_DATA;
+
+#define NVLINK_RLW_ERROR_DATA_VERSION_MAJOR 1
+#define NVLINK_RLW_ERROR_DATA_VERSION_MINOR 0
+#define NVLINK_RLW_ERROR_DATA_VERSION       \
+    ((NVLINK_RLW_ERROR_DATA_VERSION_MINOR) | \
+     (NVLINK_RLW_ERROR_DATA_VERSION_MAJOR << 8))
+typedef NVLINK_RESERVED_DATA NVLINK_RLW_ERROR_DATA;
+
+#define NVLINK_TLW_ERROR_DATA_VERSION_MAJOR 1
+#define NVLINK_TLW_ERROR_DATA_VERSION_MINOR 0
+#define NVLINK_TLW_ERROR_DATA_VERSION       \
+    ((NVLINK_TLW_ERROR_DATA_VERSION_MINOR) | \
+     (NVLINK_TLW_ERROR_DATA_VERSION_MAJOR << 8))
+typedef NVLINK_RESERVED_DATA NVLINK_TLW_ERROR_DATA;
+
+#define NVLINK_TREX_ERROR_DATA_VERSION_MAJOR 1
+#define NVLINK_TREX_ERROR_DATA_VERSION_MINOR 0
+#define NVLINK_TREX_ERROR_DATA_VERSION       \
+    ((NVLINK_TREX_ERROR_DATA_VERSION_MINOR) | \
+     (NVLINK_TREX_ERROR_DATA_VERSION_MAJOR << 8))
+typedef NVLINK_RESERVED_DATA NVLINK_TREX_ERROR_DATA;
+
+#define NVLINK_NVLPW_CTRL_ERROR_DATA_VERSION_MAJOR 1
+#define NVLINK_NVLPW_CTRL_ERROR_DATA_VERSION_MINOR 0
+#define NVLINK_NVLPW_CTRL_ERROR_DATA_VERSION       \
+    ((NVLINK_NVLPW_CTRL_ERROR_DATA_VERSION_MINOR) | \
+     (NVLINK_NVLPW_CTRL_ERROR_DATA_VERSION_MAJOR << 8))
+typedef NVLINK_RESERVED_DATA NVLINK_NVLPW_CTRL_ERROR_DATA;
+
+#define NVLINK_NETIR_ERROR_DATA_VERSION_MAJOR 1
+#define NVLINK_NETIR_ERROR_DATA_VERSION_MINOR 0
+#define NVLINK_NETIR_ERROR_DATA_VERSION       \
+    ((NVLINK_NETIR_ERROR_DATA_VERSION_MINOR) | \
+     (NVLINK_NETIR_ERROR_DATA_VERSION_MAJOR << 8))
+typedef NVLINK_RESERVED_DATA NVLINK_NETIR_ERROR_DATA;
 
 #endif // _NVLINK_EVENT_CTX_DEFS_H_

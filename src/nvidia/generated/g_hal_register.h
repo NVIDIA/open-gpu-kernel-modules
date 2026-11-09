@@ -233,7 +233,7 @@ static NV_STATUS NV_INLINE REGISTER_GR10X_HALS(void)
 }
 
 NV_STATUS registerHalModule_T234D(void);    
-NV_STATUS registerHalModule_T239D(void);    
+NV_STATUS registerHalModule_T238D(void);    
 
 static NV_STATUS NV_INLINE REGISTER_T23XD_HALS(void)
 {
@@ -243,7 +243,7 @@ static NV_STATUS NV_INLINE REGISTER_T23XD_HALS(void)
     if (rmStatus != NV_OK)
         return rmStatus;
 
-    rmStatus = registerHalModule_T239D();
+    rmStatus = registerHalModule_T238D();
     if (rmStatus != NV_OK)
         return rmStatus;
 

@@ -117,7 +117,7 @@ _gpuEventBusExportEventGroup
     if (opEventLog == NULL)
         return;
 
-    status = opevtlogAppendEventGroup(opEventLog, pEventGroup);
+    status = opevtlogAppendEventGroup(opEventLog, pGpu, pEventGroup);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_WARNING,

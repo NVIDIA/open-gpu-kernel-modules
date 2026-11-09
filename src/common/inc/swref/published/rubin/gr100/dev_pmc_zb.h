@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,11 @@
 
 #ifndef __gr100_dev_pmc_zb_h__
 #define __gr100_dev_pmc_zb_h__
+
+#define NV_PMC_ZB_SCRATCH_RESET_2(i)                 (0x00000580+(i)*4) /* RW-4A */
+#define NV_PMC_ZB_SCRATCH_RESET_2__SIZE_1                            16 /*       */
+#define NV_PMC_ZB_SCRATCH_RESET_2_VALUE                            31:0 /* RWBVF */
+#define NV_PMC_ZB_SCRATCH_RESET_2_VALUE_INIT                          0 /* RWB-V */
 
 #define NV_SYSCTRL_SEC_FAULT                                                                                                                                                  0x3:0x0 /* R---M */
 #define NV_SYSCTRL_SEC_FAULT_BIT_POSITION_FUSE_POD                                                                                                                                0:0 /* R-XUF */

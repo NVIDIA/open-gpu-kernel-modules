@@ -28,7 +28,6 @@
  *
  * @param[in] pGpu                OBJGPU pointer
  * @param[in] pKernelGmmu         KernelGmmu pointer
- * @param[in] pMemDesc            Pointer to the memdesc that is being mapped
  *
  * @returns NV_STATUS - Status of the cache operation
  */
@@ -37,8 +36,7 @@ NV_STATUS
 kgmmuTlbInvalidatePostIommuMap_GR100
 (
     OBJGPU *pGpu,
-    KernelGmmu *pKernelGmmu,
-    MEMORY_DESCRIPTOR *pMemDesc
+    KernelGmmu *pKernelGmmu
 )
 {
     // WAR 4971020
@@ -46,7 +44,7 @@ kgmmuTlbInvalidatePostIommuMap_GR100
         (osGetPageSize() == 4096))
     {
         // VASPACE_FLAGS_BAR here means HUBTLB_ONLY gets set
-        return kgmmuInvalidateTlb_HAL(pGpu, pKernelGmmu, pMemDesc,
+        return kgmmuInvalidateTlb_HAL(pGpu, pKernelGmmu, NULL,
                                       VASPACE_FLAGS_BAR, PTE_UPGRADE,
                                       0, NV_GMMU_INVAL_SCOPE_ALL_TLBS, NV_FALSE);
     }

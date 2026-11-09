@@ -217,5 +217,4 @@ typedef struct
 #define GSP_FW_FLAGS_CLOCK_BOOST                           NVBIT(0)
 #define GSP_FW_FLAGS_PPCIE_ENABLED                         NVBIT(2)
 #define GSP_FW_FLAGS_MULTI_GPU_NVLE_ENABLED                NVBIT(3)
-
 #endif // GSP_FW_WPR_META_H_

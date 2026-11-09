@@ -32,4 +32,13 @@ enum
     MEM_SYS_OP_EVENT_CODE_MAINT_OP_ERROR = 0x0001U,
 };
 
+typedef NvU32 MEM_SYS_MAINT_OP_ERROR;
+// Values are tied to MEM_SUBSYS_ERROR_TYPE by ct_asserts in kern_gmmu.c.
+enum
+{
+    MEM_SYS_MAINT_OP_ERROR_TLBI_WITHOUT_MEMBAR_FAILED = 1U,
+    MEM_SYS_MAINT_OP_ERROR_UFLUSH_FAILED              = 2U,
+    MEM_SYS_MAINT_OP_ERROR_TLBI_WITH_MEMBAR_FAILED    = 3U,
+};
+
 #endif // _MEM_SYS_EVENT_DEFS_H_

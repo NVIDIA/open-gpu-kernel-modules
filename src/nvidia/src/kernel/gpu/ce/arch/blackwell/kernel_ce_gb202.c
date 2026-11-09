@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,7 @@
 #include "gpu/bif/kernel_bif.h"
 
 #include "published/blackwell/gb202/dev_top_zb.h"
-#include "published/blackwell/gb202/dev_ce_base.h"
+#include "published/blackwell/gb202/dev_ce_zb.h"
 
 // Defines for PCE-LCE mapping algorithm
 #define NV_CE_MAX_HSHUBS                  2
@@ -51,7 +51,7 @@
  * @param[in] pGpu  OBJGPU pointer
  * @param[in] pKCe   KernelCE pointer
  *
- * @return  NV_CE_BASE_GRCE_CONFIG__SIZE_1
+ * @return  NV_CE_ZB_GRCE_CONFIG__SIZE_1
  */
 NvU32
 kceGetGrceConfigSize1_GB202
@@ -59,7 +59,7 @@ kceGetGrceConfigSize1_GB202
     KernelCE *pKCe
 )
 {
-    return (pKCe->shimInstance == 0) ? NV_CE_BASE_GRCE_CONFIG__SIZE_1 : 0;
+    return (pKCe->shimInstance == 0) ? NV_CE_ZB_GRCE_CONFIG__SIZE_1 : 0;
 }
 
 /**
@@ -266,8 +266,8 @@ kceMapPceLceForGRCE_GB202
         }
     }
 
-    pLocalGrceMap[grceIdx] = DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED, 1) |
-                             DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED_LCE, lceIndex);
+    pLocalGrceMap[grceIdx] = DRF_NUM(_CE_ZB, _GRCE_CONFIG, _SHARED, 1) |
+                             DRF_NUM(_CE_ZB, _GRCE_CONFIG, _SHARED_LCE, lceIndex);
 
     NV_PRINTF(LEVEL_INFO,
               "GRCE is shared and mapped to LCE Index: %d.\n", lceIndex);
@@ -288,7 +288,7 @@ kceGetPce2lceConfigSize1_GB202
     KernelCE* pKCe
 )
 {
-    return NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1;
+    return NV_CE_ZB_PCE2LCE_CONFIG__SIZE_1;
 }
 
 /**
@@ -316,8 +316,8 @@ kceGetGrceMaskReg_GB202
                                             &pEntry));
     NV_ASSERT_OR_RETURN((pGrceMask != NULL), NV_ERR_INVALID_ARGUMENT);
 
-    *pGrceMask = DRF_VAL(_CE_BASE, _GRCE_MASK, _VALUE,
-                         GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_CE_BASE_GRCE_MASK));
+    *pGrceMask = DRF_VAL(_CE_ZB, _GRCE_MASK, _VALUE,
+                         GPU_REG_RD32(pGpu, pEntry->devicePriBase + NV_CE_ZB_GRCE_MASK));
 
     return NV_OK;
 }

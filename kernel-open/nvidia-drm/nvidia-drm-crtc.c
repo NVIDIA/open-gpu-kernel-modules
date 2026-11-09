@@ -1609,6 +1609,8 @@ plane_req_config_update(struct drm_plane *plane,
             }
         }
     }
+    req_config->config.tmo.satCorrEnable =
+        nv_drm_plane_state->tmo_sat_corr_enable;
 
     /*
      * Send TMO configuration to NVKMS if:
@@ -1998,6 +2000,12 @@ static int nv_drm_plane_set_vendor_color_property(
             nv_drm_plane_state->tmo_changed = true;
         }
         return ret;
+    } else if (property == nv_dev->nv_plane_tmo_sat_corr_enable_property) {
+        if (!!val != nv_drm_plane_state->tmo_sat_corr_enable) {
+            nv_drm_plane_state->tmo_sat_corr_enable = !!val;
+            nv_drm_plane_state->tmo_changed = true;
+        }
+        return 0;
     } else if (property == nv_dev->nv_plane_color_passthrough_property) {
         if (!!val != nv_drm_plane_state->precomp_color_passthrough) {
             nv_drm_plane_state->precomp_color_passthrough = !!val;
@@ -2092,6 +2100,9 @@ static int nv_drm_plane_get_vendor_color_property(
         } else if (property == nv_dev->nv_plane_degamma_multiplier_property) {
             *val = 1ULL << 32;  /* Default multiplier (1.0) */
             return 0;
+        } else if (property == nv_dev->nv_plane_tmo_sat_corr_enable_property) {
+            *val = NV_DRM_TMO_SAT_CORR_ENABLE_DEFAULT;
+            return 0;
         }
     }
 #endif
@@ -2125,6 +2136,9 @@ static int nv_drm_plane_get_vendor_color_property(
     } else if (property == nv_dev->nv_plane_tmo_lut_property) {
         *val = nv_drm_plane_state->tmo_lut ?
             nv_drm_plane_state->tmo_lut->base.id : 0;
+        return 0;
+    } else if (property == nv_dev->nv_plane_tmo_sat_corr_enable_property) {
+        *val = nv_drm_plane_state->tmo_sat_corr_enable;
         return 0;
     } else if ((property == nv_dev->nv_plane_degamma_lut_size_property) ||
                (property == nv_dev->nv_plane_tmo_lut_size_property)) {
@@ -2189,10 +2203,36 @@ static inline struct nv_drm_plane_state *nv_drm_plane_state_alloc(void)
 
     /* Default to 1 in S31.32 Sign-Magnitude Format */
     nv_plane_state->degamma_multiplier = NV_DRM_S31_32_ONE;
+    nv_plane_state->tmo_sat_corr_enable = NV_DRM_TMO_SAT_CORR_ENABLE_DEFAULT;
 
     return nv_plane_state;
 }
 
+#if defined(NV_DRM_PLANE_FUNCS_HAS_ATOMIC_CREATE_STATE)
+/**
+ * nv_drm_plane_atomic_create_state - plane state creation hook
+ * @plane: DRM plane
+ *
+ * Allocate an empty DRM plane state.
+ */
+static struct drm_plane_state *nv_drm_plane_atomic_create_state(struct drm_plane *plane)
+{
+    struct nv_drm_plane_state *nv_plane_state =
+        nv_drm_plane_state_alloc();
+
+    if (!nv_plane_state) {
+        return ERR_PTR(-ENOMEM);
+    }
+
+#if defined(NV_DRM_ATOMIC_HELPER_PLANE_STATE_INIT)
+    __drm_atomic_helper_plane_state_init(&nv_plane_state->base, plane);
+#else
+    __drm_atomic_helper_plane_state_reset(&nv_plane_state->base, plane);
+#endif
+
+    return &nv_plane_state->base;
+}
+#else
 /**
  * nv_drm_plane_atomic_reset - plane state reset hook
  * @plane: DRM plane
@@ -2223,6 +2263,7 @@ static void nv_drm_plane_atomic_reset(struct drm_plane *plane)
         kfree(nv_plane_state);
     }
 }
+#endif
 
 
 static struct drm_plane_state *
@@ -2286,6 +2327,8 @@ nv_drm_plane_atomic_duplicate_state(struct drm_plane *plane)
     if (nv_plane_state->tmo_lut) {
         drm_property_blob_get(nv_plane_state->tmo_lut);
     }
+    nv_plane_state->tmo_sat_corr_enable =
+        nv_old_plane_state->tmo_sat_corr_enable;
     nv_plane_state->tmo_changed = false;
     nv_plane_state->tmo_drm_lut_surface =
         nv_old_plane_state->tmo_drm_lut_surface;
@@ -2344,7 +2387,11 @@ static const struct drm_plane_funcs nv_plane_funcs = {
     .update_plane           = drm_atomic_helper_update_plane,
     .disable_plane          = drm_atomic_helper_disable_plane,
     .destroy                = nv_drm_plane_destroy,
+#if defined(NV_DRM_PLANE_FUNCS_HAS_ATOMIC_CREATE_STATE)
+    .atomic_create_state    = nv_drm_plane_atomic_create_state,
+#else
     .reset                  = nv_drm_plane_atomic_reset,
+#endif
     .atomic_get_property    = nv_drm_plane_atomic_get_property,
     .atomic_set_property    = nv_drm_plane_atomic_set_property,
     .atomic_duplicate_state = nv_drm_plane_atomic_duplicate_state,
@@ -2408,7 +2455,30 @@ static inline struct nv_drm_crtc_state *nv_drm_crtc_state_alloc(void)
     return nv_state;
 }
 
+#if defined(NV_DRM_CRTC_FUNCS_HAS_ATOMIC_CREATE_STATE)
+/**
+ * nv_drm_atomic_crtc_atomic_create_state - crtc state creation hook
+ * @crtc: DRM crtc
+ *
+ * Allocate an empty DRM crtc state.
+ */
+static struct drm_crtc_state *nv_drm_atomic_crtc_atomic_create_state(struct drm_crtc *crtc)
+{
+    struct nv_drm_crtc_state *nv_state = nv_drm_crtc_state_alloc();
 
+    if (!nv_state) {
+        return ERR_PTR(-ENOMEM);
+    }
+
+#if defined(NV_DRM_ATOMIC_HELPER_CRTC_STATE_INIT)
+    __drm_atomic_helper_crtc_state_init(&nv_state->base, crtc);
+#else
+    __drm_atomic_helper_crtc_state_reset(&nv_state->base, crtc);
+#endif
+
+    return &nv_state->base;
+}
+#else
 /**
  * nv_drm_atomic_crtc_reset - crtc state reset hook
  * @crtc: DRM crtc
@@ -2438,6 +2508,7 @@ static void nv_drm_atomic_crtc_reset(struct drm_crtc *crtc)
         kfree(nv_state);
     }
 }
+#endif
 
 /**
  * nv_drm_atomic_crtc_duplicate_state - crtc state duplicate hook
@@ -2585,7 +2656,11 @@ static bool nv_drm_crtc_get_vblank_timestamp(
 static struct drm_crtc_funcs nv_crtc_funcs = {
     .set_config             = drm_atomic_helper_set_config,
     .page_flip              = drm_atomic_helper_page_flip,
+#if defined(NV_DRM_CRTC_FUNCS_HAS_ATOMIC_CREATE_STATE)
+    .atomic_create_state    = nv_drm_atomic_crtc_atomic_create_state,
+#else
     .reset                  = nv_drm_atomic_crtc_reset,
+#endif
     .destroy                = nv_drm_crtc_destroy,
     .atomic_get_property    = nv_drm_atomic_crtc_get_property,
     .atomic_set_property    = nv_drm_atomic_crtc_set_property,
@@ -2633,6 +2708,12 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
 #if defined(NV_DRM_CRTC_ATOMIC_CHECK_HAS_FULL_STATE_ARG)
     struct drm_crtc_state *crtc_state =
         drm_atomic_get_new_crtc_state(state, crtc);
+#if defined(NV_DRM_CRTC_STATE_HAS_VRR_ENABLED)
+    struct drm_crtc_state *old_crtc_state =
+        drm_atomic_get_old_crtc_state(state, crtc);
+#endif
+#elif defined(NV_DRM_CRTC_STATE_HAS_VRR_ENABLED)
+    struct drm_crtc_state *old_crtc_state = crtc->state;
 #endif
     struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
     struct nv_drm_device *nv_dev = to_nv_device(crtc->dev);
@@ -2680,6 +2761,8 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
 
 #if defined(NV_DRM_CRTC_STATE_HAS_VRR_ENABLED)
     req_config->modeSetConfig.vrrEnabled = crtc_state->vrr_enabled;
+    req_config->flags.vrrEnabledChanged =
+        old_crtc_state->vrr_enabled != crtc_state->vrr_enabled;
 #endif
 
     if (nv_crtc_state->regamma_changed || crtc_state->color_mgmt_changed) {
@@ -2860,6 +2943,12 @@ static void nv_drm_plane_install_properties(
                 drm_object_attach_property(
                     &plane->base, nv_dev->nv_plane_tmo_lut_size_property,
                     NVKMS_LUT_ARRAY_SIZE);
+            }
+            if (nv_dev->nv_plane_tmo_sat_corr_enable_property) {
+                drm_object_attach_property(
+                    &plane->base,
+                    nv_dev->nv_plane_tmo_sat_corr_enable_property,
+                    NV_DRM_TMO_SAT_CORR_ENABLE_DEFAULT);
             }
         }
 

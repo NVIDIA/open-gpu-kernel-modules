@@ -73,10 +73,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelHwpm;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__KernelHwpm;
 
 
 struct KernelHwpm {
@@ -119,29 +118,10 @@ struct KernelHwpm {
 };
 
 
-// Vtable with 14 per-class function pointers
-struct NVOC_VTABLE__KernelHwpm {
-    NV_STATUS (*__khwpmStateInitUnlocked__)(OBJGPU *, struct KernelHwpm * /*this*/);  // virtual override (engstate) base (engstate)
-    void (*__khwpmStateDestroy__)(OBJGPU *, struct KernelHwpm * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__khwpmConstructEngine__)(struct OBJGPU *, struct KernelHwpm * /*this*/, ENGDESCRIPTOR);  // virtual inherited (engstate) base (engstate)
-    void (*__khwpmInitMissing__)(struct OBJGPU *, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePreInitLocked__)(struct OBJGPU *, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePreInitUnlocked__)(struct OBJGPU *, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStateInitLocked__)(struct OBJGPU *, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePreLoad__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStateLoad__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePostLoad__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePreUnload__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStateUnload__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePostUnload__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__khwpmIsPresent__)(struct OBJGPU *, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelHwpm {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__KernelHwpm vtable;
 };
 
 #ifndef __nvoc_class_id_KernelHwpm
@@ -236,9 +216,9 @@ static inline NV_STATUS khwpmPmaStreamSriovSetGfid(OBJGPU *pGpu, struct KernelHw
 
 
 // Wrapper macros for halified functions
-#define khwpmStateInitUnlocked_FNPTR(pKernelHwpm) pKernelHwpm->__nvoc_metadata_ptr->vtable.__khwpmStateInitUnlocked__
+#define khwpmStateInitUnlocked_FNPTR(pKernelHwpm) pKernelHwpm->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__
 #define khwpmStateInitUnlocked(pGpu, pKernelHwpm) khwpmStateInitUnlocked_DISPATCH(pGpu, pKernelHwpm)
-#define khwpmStateDestroy_FNPTR(pKernelHwpm) pKernelHwpm->__nvoc_metadata_ptr->vtable.__khwpmStateDestroy__
+#define khwpmStateDestroy_FNPTR(pKernelHwpm) pKernelHwpm->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__
 #define khwpmStateDestroy(pGpu, pKernelHwpm) khwpmStateDestroy_DISPATCH(pGpu, pKernelHwpm)
 #define khwpmGetCblockInfo_FNPTR(pKernelHwpm) pKernelHwpm->__khwpmGetCblockInfo__
 #define khwpmGetCblockInfo(pGpu, pKernelHwpm, arg3, arg4) khwpmGetCblockInfo_DISPATCH(pGpu, pKernelHwpm, arg3, arg4)
@@ -246,6 +226,10 @@ static inline NV_STATUS khwpmPmaStreamSriovSetGfid(OBJGPU *pGpu, struct KernelHw
 #define khwpmPmaStreamSriovSetGfid_HAL(pGpu, pKernelHwpm, arg3, arg4) khwpmPmaStreamSriovSetGfid(pGpu, pKernelHwpm, arg3, arg4)
 #define khwpmConstructEngine_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define khwpmConstructEngine(pGpu, pEngstate, arg3) khwpmConstructEngine_DISPATCH(pGpu, pEngstate, arg3)
+#define khwpmConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define khwpmConstructApertures(pGpu, pEngstate) khwpmConstructApertures_DISPATCH(pGpu, pEngstate)
+#define khwpmDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define khwpmDestructApertures(pGpu, pEngstate) khwpmDestructApertures_DISPATCH(pGpu, pEngstate)
 #define khwpmInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define khwpmInitMissing(pGpu, pEngstate) khwpmInitMissing_DISPATCH(pGpu, pEngstate)
 #define khwpmStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -271,11 +255,11 @@ static inline NV_STATUS khwpmPmaStreamSriovSetGfid(OBJGPU *pGpu, struct KernelHw
 
 // Dispatch functions
 static inline NV_STATUS khwpmStateInitUnlocked_DISPATCH(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm) {
-    return pKernelHwpm->__nvoc_metadata_ptr->vtable.__khwpmStateInitUnlocked__(pGpu, pKernelHwpm);
+    return pKernelHwpm->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pKernelHwpm, OBJENGSTATE));
 }
 
 static inline void khwpmStateDestroy_DISPATCH(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm) {
-    pKernelHwpm->__nvoc_metadata_ptr->vtable.__khwpmStateDestroy__(pGpu, pKernelHwpm);
+    pKernelHwpm->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(pGpu, staticCast(pKernelHwpm, OBJENGSTATE));
 }
 
 static inline void khwpmGetCblockInfo_DISPATCH(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4) {
@@ -283,51 +267,59 @@ static inline void khwpmGetCblockInfo_DISPATCH(OBJGPU *pGpu, struct KernelHwpm *
 }
 
 static inline NV_STATUS khwpmConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, ENGDESCRIPTOR arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmConstructEngine__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
+}
+
+static inline NV_STATUS khwpmConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
+static inline void khwpmDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline void khwpmInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__khwpmInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS khwpmStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS khwpmStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS khwpmStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS khwpmStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS khwpmStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS khwpmStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS khwpmStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS khwpmStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS khwpmStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NvBool khwpmIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khwpmIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions

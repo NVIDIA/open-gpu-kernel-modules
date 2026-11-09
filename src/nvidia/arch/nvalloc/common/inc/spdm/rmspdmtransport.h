@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,6 +49,31 @@
 #define NV_TDISP_DSM_VALIDATION_ACK             (0xA7010107U)
 #define NV_TDISP_DSM_RUN_STATE_FAILURE          (0xA7010108U)
 #define NV_TDISP_DSM_INIT_FAILURE               (0xA7010109U)
+#define NV_TDISP_TSM_PROCEED_TO_GSPRM           (0xA701010BU)
+#define NV_TDISP_DSM_UNLOAD_START               (0xA701010CU)
+#define NV_TDISP_DSM_UNLOAD_SUCCESS             (0xA701010DU)
+#define NV_TDISP_DSM_UNLOAD_FAILURE             (0xA701010EU)
+#define NV_TDISP_DSM_UNLOAD_PROCEED             (0xA701010FU)
+
+// Keep local: this shared transport header cannot include RM-private register headers.
+#define NV_TDISP_GSP_SCRATCH_PF_RW_REG(i)       (0xD80100U + ((i) * 4U))
+
+//
+// Lower alias of the PF read/write GSP scratch range. Decoder-trap slot 31 in
+// INIT and slot 16 in RUN redirect the permitted entries to
+// NV_TDISP_GSP_SCRATCH_PF_RW_REG().
+//
+#define NV_TDISP_GSP_SCRATCH_PF_RW_ALIAS_REG(i) (0xEF0100U + ((i) * 4U))
+
+#define NV_TDISP_DVSEC0_HEADER_2_AND_GENERAL    (0x00000AF8U)
+#define NV_TDISP_DVSEC0_TDI_STATE_SHIFT         (30U)
+#define NV_TDISP_DVSEC0_TDI_STATE_MASK          (0x3U)
+#define NV_TDISP_DVSEC0_TDI_STATE_UNLOCKED      (0x0U)
+#define NV_TDISP_DVSEC0_TDI_STATE_LOCKED        (0x1U)
+#define NV_TDISP_DVSEC0_TDI_STATE_RUN           (0x2U)
+#define NV_TDISP_DVSEC0_TDI_STATE_ERROR         (0x3U)
+#define NV_TDISP_DVSEC0_TDI_STATE(reg)          (((reg) >> NV_TDISP_DVSEC0_TDI_STATE_SHIFT) & \
+                                                 NV_TDISP_DVSEC0_TDI_STATE_MASK)
 
 //
 // The SPDM communication between Kernel-RM and GSP utilizes a buffer in sysmem accessible
@@ -56,13 +81,16 @@
 // describing the message type and size, and the SPDM payload itself.
 //
 
-//
-// Size of the full transportation buffer (header + SPDM payload) allocated in sysmem.
-// We need to align sysmem allocations with page size, but need less space. So we
-// over-allocate and tell GSP we only have the size we actually need.
-//
 #define NV_SPDM_SYSMEM_SURFACE_SIZE_PAGE_ALIGNED  (0x2000)
-#define NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES      (0x1200)
+#define NV_SPDM_SYSMEM_SURFACE_SIZE_DEFAULT       (0x1200)
+#define NV_SPDM_SYSMEM_SURFACE_SIZE_CORIM         (0x2000)
+
+#if defined(NVRM) || (defined(GENERATE_CORIM) && GENERATE_CORIM)
+#define NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES      NV_SPDM_SYSMEM_SURFACE_SIZE_CORIM
+#else
+#define NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES      NV_SPDM_SYSMEM_SURFACE_SIZE_DEFAULT
+#endif
+
 #define NV_SPDM_SYSMEM_SURFACE_ALIGNMENT_IN_BYTES (256)
 
 // Struct and defines for the header which prepends the SPDM payload.

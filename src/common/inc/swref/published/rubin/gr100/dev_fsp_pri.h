@@ -24,6 +24,12 @@
 #ifndef __gr100_dev_fsp_pri_h__
 #define __gr100_dev_fsp_pri_h__
 
+#define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(i)                                                         (0x008f0320+(i)*4) /* RW-4A */
+#define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2__SIZE_1                                                    4              /*       */
+#define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2__DEVICE_MAP                                                0x00000016 /*       */
+#define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2_VAL                                                        31:0           /* RWIVF */
+#define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2_VAL_INIT                                                   0x00000000     /* RWI-V */
+
 #define NV_PFSP_MNOC_RX_FIFO_DATA(i)                                                                     (0x008f1e00+(i)*8) /* -W-4A */
 
 #endif // __gr100_dev_fsp_pri_h__

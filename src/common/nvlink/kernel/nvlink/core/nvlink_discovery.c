@@ -28,7 +28,7 @@
 #include "../nvlink_helper.h"
 
 static NvBool _nvlink_core_all_links_initialized(void);
-static void   _nvlink_core_discover_topology(void);
+static void   _nvlink_core_discover_topology(NvBool bForceDiscovery);
 
 /**
  * Get the remote end of the link
@@ -69,6 +69,11 @@ nvlink_core_discover_and_get_remote_end
         return;
     }
 
+    // Force discovery for NVL6 if notConnectedEndpoints > 0
+    if (!bForceDiscovery && end->version >= NVLINK_DEVICE_VERSION_60)
+    {
+        bForceDiscovery = (nvlinkLibCtx.notConnectedEndpoints > 0);
+    }
     if (nvlinkLibCtx.bNewEndpoints || bForceDiscovery)
     {
         if (!_nvlink_core_all_links_initialized())
@@ -107,7 +112,7 @@ nvlink_core_discover_and_get_remote_end
         }
 
         // Re-discover the nvlink topology
-        _nvlink_core_discover_topology();
+        _nvlink_core_discover_topology(bForceDiscovery);
     }
 
     // Get the connection for the endpoint
@@ -130,7 +135,10 @@ nvlink_core_discover_and_get_remote_end
  *    Involves sending and reading back AN0 packets/SID values
  */
 static void
-_nvlink_core_discover_topology(void)
+_nvlink_core_discover_topology
+(
+    NvBool bForceDiscovery
+)
 {
     nvlink_device         *dev0         = NULL;
     nvlink_device         *dev1         = NULL;
@@ -159,6 +167,11 @@ _nvlink_core_discover_topology(void)
             if (conn != NULL)
             {
                 continue;
+            }
+
+            if (end0->version >= NVLINK_DEVICE_VERSION_60 && bForceDiscovery)
+            {
+                end0->packet_injection_retries = 0;
             }
 
             if (end0->packet_injection_retries > NVLINK_MAX_NUM_PACKET_INJECTION_RETRIES)

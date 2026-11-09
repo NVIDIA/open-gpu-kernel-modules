@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1776,6 +1776,12 @@ subdeviceCtrlCmdBifGetData_IMPL
         case NV2080_CTRL_BIF_FEATURE_ID_CONFIG_REG:
            status = kbifGetConfigRegData(pGpu, pKernelBif, pParams);
            break;
+        case NV2080_CTRL_BIF_FEATURE_ID_ASPM:
+           status = kbifGetAspmData(pGpu, pKernelBif, pParams);
+           break;
+        case NV2080_CTRL_BIF_FEATURE_ID_LTR:
+           status = kbifGetLtrData(pGpu, pKernelBif, pParams);
+           break;
         default:
            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                     pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
@@ -1791,6 +1797,138 @@ subdeviceCtrlCmdBifGetData_IMPL
     }
 
 subdeviceCtrlCmdBifGetData_IMPL_exit:
+    return status;
+}
+
+/*!
+ * @brief Get ASPM data for the API *GetAspmData
+ *
+ * @param[in]    pGpu        GPU object pointer
+ * @param[in]    pKernelBif  KernelBif object pointer
+ * @param[inout] pParams     Params passed to RM control call
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+kbifGetAspmData_IMPL
+(
+    OBJGPU                           *pGpu,
+    KernelBif                        *pKernelBif,
+    NV2080_CTRL_BIF_GET_DATA_PARAMS  *pParams
+)
+{
+    NV_STATUS  status                = NV_OK;
+    NvU32      paramSize             = pParams->paramSize;
+    NvU32      id                    = 0;
+    RM_API    *pRmApi                = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NvU32      data                  = 0;
+    NvBool     bL0s                  = NV_FALSE;
+    NvBool     bL1                   = NV_FALSE;
+    NvBool     bInternalCallRequired = NV_FALSE;
+
+    for (id = 0; id < paramSize; id++)
+    {
+        switch (pParams->paramId[id])
+        {
+            case NV2080_CTRL_BIF_PARAM_ID_ASPM_GET_L0S_GPU_SUPPORT:
+                 data = kbifGetGpuLinkCapabilities(pGpu, pKernelBif);
+                 pParams->paramVal[id] = (NvU32) ((data & CL_PCIE_LINK_CAP_ASPM_L0S_BIT) != 0);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_ASPM_GET_L0S_GPU_CONFIG_ENABLE:
+                 data = kbifGetGpuLinkControlStatus(pGpu, pKernelBif);
+                 if ((data & CL_PCIE_LINK_CTRL_STATUS_ASPM_L0S_BIT))
+                 {
+                     bL0s = NV_TRUE;
+                 }
+                 else
+                 {
+                     bL0s = NV_FALSE;
+                 }
+                 pParams->paramVal[id] = (NvU32) bL0s;
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_ASPM_GET_L1_GPU_SUPPORT:
+                 data = kbifGetGpuLinkCapabilities(pGpu, pKernelBif);
+                 pParams->paramVal[id] = (NvU32) ((data & CL_PCIE_LINK_CAP_ASPM_L1_BIT) != 0);
+                 break;
+            case NV2080_CTRL_BIF_PARAM_ID_ASPM_GET_L1_CONFIG_ENABLE:
+                 data = kbifGetGpuLinkControlStatus(pGpu, pKernelBif);
+                 if ((data & CL_PCIE_LINK_CTRL_STATUS_ASPM_L1_BIT))
+                 {
+                     bL1 = NV_TRUE;
+                 }
+                 else
+                 {
+                     bL1 = NV_FALSE;
+                 }
+                 pParams->paramVal[id] = (NvU32) bL1;
+                 break;
+            default:
+                 bInternalCallRequired = NV_TRUE;
+                 break;
+        }
+    }
+
+    if (!bInternalCallRequired)
+    {
+        return NV_OK;
+    }
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                        NV2080_CTRL_CMD_INTERNAL_BIF_GET_DATA,
+                        pParams, sizeof(*pParams)));
+
+    return status;
+}
+
+/*!
+ * @brief Get LTR config space data for the API *GetLtrData
+ *
+ * @param[in]    pGpu        GPU object pointer
+ * @param[in]    pKernelBif  KernelBif object pointer
+ * @param[inout] pParams     Params passed to RM control call
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+kbifGetLtrData_IMPL
+(
+    OBJGPU                          *pGpu,
+    KernelBif                       *pKernelBif,
+    NV2080_CTRL_BIF_GET_DATA_PARAMS *pParams
+)
+{
+    NvU32      paramSize             = pParams->paramSize;
+    NvU32      id                    = 0;
+    NvBool     bEnable               = NV_FALSE;
+    NV_STATUS  status                = NV_OK;
+    RM_API    *pRmApi                = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NvBool     bInternalCallRequired = NV_FALSE;
+
+    for (id = 0; id < paramSize; id++)
+    {
+        switch (pParams->paramId[id])
+        {
+            case NV2080_CTRL_BIF_PARAM_ID_LTR_GET_ENABLE:
+                 status = kbifGetLtrEnable_HAL(pGpu, pKernelBif, &bEnable);
+                 pParams->paramVal[id] = (NvU32) bEnable;
+                 break;
+            default:
+                 bInternalCallRequired = NV_TRUE;
+                 break;
+        }
+    }
+
+    if (!bInternalCallRequired)
+    {
+        return status;
+    }
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                        NV2080_CTRL_CMD_INTERNAL_BIF_GET_DATA,
+                        pParams, sizeof(*pParams)));
+
     return status;
 }
 

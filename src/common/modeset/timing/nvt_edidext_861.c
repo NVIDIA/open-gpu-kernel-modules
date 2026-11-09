@@ -1242,9 +1242,9 @@ void parseCta861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861,
     {
         pHdrInfo->supported_eotf.smpte_st_2084_eotf = 1;
     }
-    if (pExt861->hdr_static_metadata.byte1 & NVT_CEA861_EOTF_FUTURE)
+    if (pExt861->hdr_static_metadata.byte1 & NVT_CEA861_EOTF_HLG)
     {
-        pHdrInfo->supported_eotf.future_eotf = 1;
+        pHdrInfo->supported_eotf.hybrid_log_gamma_eotf = 1;
     }
 
     // Parse the static metadata descriptor

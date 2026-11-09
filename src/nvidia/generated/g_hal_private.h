@@ -94,7 +94,7 @@
 
 #if defined(RMCFG_HAL_SETUP_T23XD)
 #  define RMCFG_HAL_SETUP_T234D          1
-#  define RMCFG_HAL_SETUP_T239D          1
+#  define RMCFG_HAL_SETUP_T238D          1
 #endif // T23XD
 
 #if defined(RMCFG_HAL_SETUP_T26XD)
@@ -643,21 +643,21 @@ NV_STATUS registerHalModule_T234D(void)
 
 #endif  // T23XD or T234D
 
-#if defined(RMCFG_HAL_SETUP_T239D)
+#if defined(RMCFG_HAL_SETUP_T238D)
 
-static const HAL_IFACE_SETUP halIface_T239D = {
+static const HAL_IFACE_SETUP halIface_T238D = {
 
-    rpcHalIfacesSetup_T239D,
-    rpcstructurecopyHalIfacesSetup_T239D,
+    rpcHalIfacesSetup_T238D,
+    rpcstructurecopyHalIfacesSetup_T238D,
 
 };
 
-NV_STATUS registerHalModule_T239D(void)
+NV_STATUS registerHalModule_T238D(void)
 {
-    return registerHalModule(HAL_IMPL_T239D, &halIface_T239D);
+    return registerHalModule(HAL_IMPL_T238D, &halIface_T238D);
 }
 
-#endif  // T23XD or T239D
+#endif  // T23XD or T238D
 
 #if defined(RMCFG_HAL_SETUP_T264D)
 

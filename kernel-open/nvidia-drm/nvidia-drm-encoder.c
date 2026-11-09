@@ -306,17 +306,21 @@ void nv_drm_handle_display_cp_change(struct nv_drm_device *nv_dev,
     struct drm_device *dev = nv_dev->dev;
     struct nv_drm_encoder *nv_encoder = NULL;
 
+    mutex_lock(&dev->mode_config.mutex);
     nv_encoder = get_nv_encoder_from_nvkms_display(dev, hDisplay);
     if (nv_encoder == NULL) {
+        mutex_unlock(&dev->mode_config.mutex);
         return;
     }
 
-    mutex_lock(&dev->mode_config.mutex);
-
+    /*
+     * Defer the DRM content protection update to a workqueue so that it
+     * doesn't block flip events while waiting for dev->mode_config.connection_mutex.
+     */
     nv_encoder->nv_connector->cp = cp;
-    nv_drm_connector_update_content_protection(nv_encoder->nv_connector);
-
+    nv_encoder->nv_connector->cp_event_pending = true;
     mutex_unlock(&dev->mode_config.mutex);
+    schedule_delayed_work(&nv_dev->content_protection_event_work, 0);
 }
 
 void nv_drm_handle_display_cp_topology_change(struct nv_drm_device *nv_dev,

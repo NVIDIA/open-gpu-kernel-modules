@@ -98,6 +98,7 @@ void __nvoc_dtor_OBJHYPERVISOR(Dynamic* pThis) {
 }
 void __nvoc_init_dataField_OBJHYPERVISOR(OBJHYPERVISOR *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
+    pThis->setProperty(pThis, PDB_PROP_HYPERVISOR_HYPERV_L1VH_ENABLED, NV_FALSE);
 }
 
 

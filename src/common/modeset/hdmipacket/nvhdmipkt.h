@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -291,7 +291,7 @@ typedef struct _tagNVHDMIPKT_CALLBACK
  * flipId   - client to provide if FID mode of operation, 0 otherwise *
  * lineNum  - if infoframe is sent at line border specify lineNum. 0 is default *
  *                                                                                              *
- * T239 chip more infoframe support *
+ * More infoframe support on C8 display class *
   ************************************************************************************************/
 typedef struct tagADVANCED_INFOFRAME
 {

@@ -68,10 +68,9 @@ typedef struct Device Device;
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__VideoMemory;
 struct NVOC_METADATA__StandardMemory;
-struct NVOC_VTABLE__VideoMemory;
 
 
 struct VideoMemory {
@@ -96,41 +95,10 @@ struct VideoMemory {
 };
 
 
-// Vtable with 26 per-class function pointers
-struct NVOC_VTABLE__VideoMemory {
-    NV_STATUS (*__vidmemCheckCopyPermissions__)(struct VideoMemory * /*this*/, struct OBJGPU *, struct Device *);  // virtual override (mem) base (stdmem)
-    NvBool (*__vidmemCanCopy__)(struct VideoMemory * /*this*/);  // virtual inherited (stdmem) base (stdmem)
-    NV_STATUS (*__vidmemIsDuplicate__)(struct VideoMemory * /*this*/, NvHandle, NvBool *);  // virtual inherited (mem) base (stdmem)
-    NV_STATUS (*__vidmemGetMapAddrSpace__)(struct VideoMemory * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (mem) base (stdmem)
-    NV_STATUS (*__vidmemControl__)(struct VideoMemory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (mem) base (stdmem)
-    NV_STATUS (*__vidmemMap__)(struct VideoMemory * /*this*/, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (mem) base (stdmem)
-    NV_STATUS (*__vidmemUnmap__)(struct VideoMemory * /*this*/, CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (mem) base (stdmem)
-    NV_STATUS (*__vidmemGetMemInterMapParams__)(struct VideoMemory * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (mem) base (stdmem)
-    NV_STATUS (*__vidmemCheckMemInterUnmap__)(struct VideoMemory * /*this*/, NvBool);  // inline virtual inherited (mem) base (stdmem) body
-    NV_STATUS (*__vidmemGetMemoryMappingDescriptor__)(struct VideoMemory * /*this*/, MEMORY_DESCRIPTOR **);  // virtual inherited (mem) base (stdmem)
-    NV_STATUS (*__vidmemIsReady__)(struct VideoMemory * /*this*/, NvBool);  // virtual inherited (mem) base (stdmem)
-    NvBool (*__vidmemIsGpuMapAllowed__)(struct VideoMemory * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (stdmem) body
-    NvBool (*__vidmemIsExportAllowed__)(struct VideoMemory * /*this*/);  // inline virtual inherited (mem) base (stdmem) body
-    NvBool (*__vidmemAccessCallback__)(struct VideoMemory * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (stdmem)
-    NvBool (*__vidmemShareCallback__)(struct VideoMemory * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (stdmem)
-    NV_STATUS (*__vidmemControlSerialization_Prologue__)(struct VideoMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
-    void (*__vidmemControlSerialization_Epilogue__)(struct VideoMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
-    NV_STATUS (*__vidmemControl_Prologue__)(struct VideoMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
-    void (*__vidmemControl_Epilogue__)(struct VideoMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (stdmem)
-    void (*__vidmemPreDestruct__)(struct VideoMemory * /*this*/);  // virtual inherited (res) base (stdmem)
-    NV_STATUS (*__vidmemControlFilter__)(struct VideoMemory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (stdmem)
-    NvBool (*__vidmemIsPartialUnmapSupported__)(struct VideoMemory * /*this*/);  // inline virtual inherited (res) base (stdmem) body
-    NV_STATUS (*__vidmemMapTo__)(struct VideoMemory * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (stdmem)
-    NV_STATUS (*__vidmemUnmapFrom__)(struct VideoMemory * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (stdmem)
-    NvU32 (*__vidmemGetRefCount__)(struct VideoMemory * /*this*/);  // virtual inherited (res) base (stdmem)
-    void (*__vidmemAddAdditionalDependants__)(struct RsClient *, struct VideoMemory * /*this*/, RsResourceRef *);  // virtual inherited (res) base (stdmem)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__VideoMemory {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__StandardMemory metadata__StandardMemory;
-    const struct NVOC_VTABLE__VideoMemory vtable;
 };
 
 #ifndef __nvoc_class_id_VideoMemory
@@ -170,25 +138,25 @@ struct Heap * vidmemGetHeap_IMPL(struct OBJGPU *pGpu, struct Device *pDevice, Nv
 
 
 // Wrapper macros for halified functions
-#define vidmemCheckCopyPermissions_FNPTR(pVideoMemory) pVideoMemory->__nvoc_metadata_ptr->vtable.__vidmemCheckCopyPermissions__
+#define vidmemCheckCopyPermissions_FNPTR(pVideoMemory) pVideoMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memCheckCopyPermissions__
 #define vidmemCheckCopyPermissions(pVideoMemory, pDstGpu, pDstDevice) vidmemCheckCopyPermissions_DISPATCH(pVideoMemory, pDstGpu, pDstDevice)
-#define vidmemCanCopy_FNPTR(pStandardMemory) pStandardMemory->__nvoc_base_StandardMemory.__nvoc_metadata_ptr->vtable.__stdmemCanCopy__
+#define vidmemCanCopy_FNPTR(pStandardMemory) pStandardMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define vidmemCanCopy(pStandardMemory) vidmemCanCopy_DISPATCH(pStandardMemory)
-#define vidmemIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
+#define vidmemIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define vidmemIsDuplicate(pMemory, hMemory, pDuplicate) vidmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define vidmemGetMapAddrSpace_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMapAddrSpace__
 #define vidmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) vidmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
-#define vidmemControl_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memControl__
+#define vidmemControl_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define vidmemControl(pMemory, pCallContext, pParams) vidmemControl_DISPATCH(pMemory, pCallContext, pParams)
-#define vidmemMap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memMap__
+#define vidmemMap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define vidmemMap(pMemory, pCallContext, pParams, pCpuMapping) vidmemMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
-#define vidmemUnmap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memUnmap__
+#define vidmemUnmap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define vidmemUnmap(pMemory, pCallContext, pCpuMapping) vidmemUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
-#define vidmemGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMemInterMapParams__
+#define vidmemGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define vidmemGetMemInterMapParams(pMemory, pParams) vidmemGetMemInterMapParams_DISPATCH(pMemory, pParams)
-#define vidmemCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memCheckMemInterUnmap__
+#define vidmemCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define vidmemCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) vidmemCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
-#define vidmemGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMemoryMappingDescriptor__
+#define vidmemGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define vidmemGetMemoryMappingDescriptor(pMemory, ppMemDesc) vidmemGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
 #define vidmemIsReady_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsReady__
 #define vidmemIsReady(pMemory, bCopyConstructorContext) vidmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
@@ -196,17 +164,17 @@ struct Heap * vidmemGetHeap_IMPL(struct OBJGPU *pGpu, struct Device *pDevice, Nv
 #define vidmemIsGpuMapAllowed(pMemory, pGpu) vidmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
 #define vidmemIsExportAllowed_FNPTR(pMemory) pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsExportAllowed__
 #define vidmemIsExportAllowed(pMemory) vidmemIsExportAllowed_DISPATCH(pMemory)
-#define vidmemAccessCallback_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define vidmemAccessCallback_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define vidmemAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) vidmemAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define vidmemShareCallback_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
+#define vidmemShareCallback_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define vidmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) vidmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define vidmemControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define vidmemControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define vidmemControlSerialization_Prologue(pResource, pCallContext, pParams) vidmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define vidmemControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define vidmemControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define vidmemControlSerialization_Epilogue(pResource, pCallContext, pParams) vidmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define vidmemControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define vidmemControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define vidmemControl_Prologue(pResource, pCallContext, pParams) vidmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define vidmemControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define vidmemControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define vidmemControl_Epilogue(pResource, pCallContext, pParams) vidmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define vidmemPreDestruct_FNPTR(pResource) pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define vidmemPreDestruct(pResource) vidmemPreDestruct_DISPATCH(pResource)
@@ -225,107 +193,107 @@ struct Heap * vidmemGetHeap_IMPL(struct OBJGPU *pGpu, struct Device *pDevice, Nv
 
 // Dispatch functions
 static inline NV_STATUS vidmemCheckCopyPermissions_DISPATCH(struct VideoMemory *pVideoMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return pVideoMemory->__nvoc_metadata_ptr->vtable.__vidmemCheckCopyPermissions__(pVideoMemory, pDstGpu, pDstDevice);
+    return pVideoMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memCheckCopyPermissions__(staticCast(pVideoMemory, Memory), pDstGpu, pDstDevice);
 }
 
 static inline NvBool vidmemCanCopy_DISPATCH(struct VideoMemory *pStandardMemory) {
-    return pStandardMemory->__nvoc_metadata_ptr->vtable.__vidmemCanCopy__(pStandardMemory);
+    return pStandardMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pStandardMemory, RsResource));
 }
 
 static inline NV_STATUS vidmemIsDuplicate_DISPATCH(struct VideoMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__vidmemIsDuplicate__(pMemory, hMemory, pDuplicate);
+    return pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pMemory, RsResource), hMemory, pDuplicate);
 }
 
 static inline NV_STATUS vidmemGetMapAddrSpace_DISPATCH(struct VideoMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__vidmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+    return pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMapAddrSpace__(staticCast(pMemory, Memory), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS vidmemControl_DISPATCH(struct VideoMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__vidmemControl__(pMemory, pCallContext, pParams);
+    return pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pMemory, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS vidmemMap_DISPATCH(struct VideoMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__vidmemMap__(pMemory, pCallContext, pParams, pCpuMapping);
+    return pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pMemory, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS vidmemUnmap_DISPATCH(struct VideoMemory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__vidmemUnmap__(pMemory, pCallContext, pCpuMapping);
+    return pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pMemory, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS vidmemGetMemInterMapParams_DISPATCH(struct VideoMemory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__vidmemGetMemInterMapParams__(pMemory, pParams);
+    return pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pMemory, RmResource), pParams);
 }
 
 static inline NV_STATUS vidmemCheckMemInterUnmap_DISPATCH(struct VideoMemory *pMemory, NvBool bSubdeviceHandleProvided) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__vidmemCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
+    return pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pMemory, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS vidmemGetMemoryMappingDescriptor_DISPATCH(struct VideoMemory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__vidmemGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
+    return pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pMemory, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS vidmemIsReady_DISPATCH(struct VideoMemory *pMemory, NvBool bCopyConstructorContext) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__vidmemIsReady__(pMemory, bCopyConstructorContext);
+    return pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsReady__(staticCast(pMemory, Memory), bCopyConstructorContext);
 }
 
 static inline NvBool vidmemIsGpuMapAllowed_DISPATCH(struct VideoMemory *pMemory, struct OBJGPU *pGpu) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__vidmemIsGpuMapAllowed__(pMemory, pGpu);
+    return pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsGpuMapAllowed__(staticCast(pMemory, Memory), pGpu);
 }
 
 static inline NvBool vidmemIsExportAllowed_DISPATCH(struct VideoMemory *pMemory) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__vidmemIsExportAllowed__(pMemory);
+    return pMemory->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsExportAllowed__(staticCast(pMemory, Memory));
 }
 
 static inline NvBool vidmemAccessCallback_DISPATCH(struct VideoMemory *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vidmemAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool vidmemShareCallback_DISPATCH(struct VideoMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vidmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS vidmemControlSerialization_Prologue_DISPATCH(struct VideoMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vidmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void vidmemControlSerialization_Epilogue_DISPATCH(struct VideoMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__vidmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS vidmemControl_Prologue_DISPATCH(struct VideoMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vidmemControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void vidmemControl_Epilogue_DISPATCH(struct VideoMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__vidmemControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void vidmemPreDestruct_DISPATCH(struct VideoMemory *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__vidmemPreDestruct__(pResource);
+    pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS vidmemControlFilter_DISPATCH(struct VideoMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vidmemControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool vidmemIsPartialUnmapSupported_DISPATCH(struct VideoMemory *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vidmemIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS vidmemMapTo_DISPATCH(struct VideoMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vidmemMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS vidmemUnmapFrom_DISPATCH(struct VideoMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vidmemUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 vidmemGetRefCount_DISPATCH(struct VideoMemory *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__vidmemGetRefCount__(pResource);
+    return pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void vidmemAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct VideoMemory *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__vidmemAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

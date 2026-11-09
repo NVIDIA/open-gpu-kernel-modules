@@ -1110,7 +1110,7 @@ static void on_replay_complete(void *ptr)
 
 }
 
-static UvmEventMigrationCause g_make_resident_to_tools_migration_cause[UVM_MAKE_RESIDENT_CAUSE_MAX] = {
+static UvmEventMigrationCause g_make_resident_to_tools_migration_cause[] = {
     [UVM_MAKE_RESIDENT_CAUSE_REPLAYABLE_FAULT]     = UvmEventMigrationCauseCoherence,
     [UVM_MAKE_RESIDENT_CAUSE_NON_REPLAYABLE_FAULT] = UvmEventMigrationCauseCoherence,
     [UVM_MAKE_RESIDENT_CAUSE_ACCESS_COUNTER]       = UvmEventMigrationCauseAccessCounters,
@@ -1138,7 +1138,8 @@ static void uvm_tools_record_migration_cpu_to_cpu(uvm_va_space_t *va_space, uvm_
         info->migratedBytes = event_data->migration.bytes;
         info->beginTimeStamp = event_data->migration.cpu_start_timestamp;
         info->endTimeStamp = NV_GETTIME();
-        info->migrationCause = event_data->migration.cause;
+        BUILD_BUG_ON(ARRAY_SIZE(g_make_resident_to_tools_migration_cause) != UVM_MAKE_RESIDENT_CAUSE_MAX);
+        info->migrationCause = g_make_resident_to_tools_migration_cause[event_data->migration.cause];
         info->rangeGroupId = UVM_RANGE_GROUP_ID_NONE;
 
         uvm_tools_record_event(va_space, &entry);
@@ -1158,7 +1159,8 @@ static void uvm_tools_record_migration_cpu_to_cpu(uvm_va_space_t *va_space, uvm_
         info->migratedBytes = event_data->migration.bytes;
         info->beginTimeStamp = event_data->migration.cpu_start_timestamp;
         info->endTimeStamp = NV_GETTIME();
-        info->migrationCause = event_data->migration.cause;
+        BUILD_BUG_ON(ARRAY_SIZE(g_make_resident_to_tools_migration_cause) != UVM_MAKE_RESIDENT_CAUSE_MAX);
+        info->migrationCause = g_make_resident_to_tools_migration_cause[event_data->migration.cause];
         info->rangeGroupId = UVM_RANGE_GROUP_ID_NONE;
 
         uvm_tools_record_event_v2(va_space, &entry);
@@ -1202,6 +1204,7 @@ static void uvm_tools_record_migration(uvm_va_space_t *va_space,
                 mig->address = event_data->migration.address;
                 mig->bytes = event_data->migration.bytes;
                 mig->end_timestamp_gpu_addr = uvm_push_timestamp(event_data->migration.push);
+                BUILD_BUG_ON(ARRAY_SIZE(g_make_resident_to_tools_migration_cause) != UVM_MAKE_RESIDENT_CAUSE_MAX);
                 mig->cause = g_make_resident_to_tools_migration_cause[event_data->migration.cause];
 
                 list_add_tail(&mig->events_node, &block_mig->events);

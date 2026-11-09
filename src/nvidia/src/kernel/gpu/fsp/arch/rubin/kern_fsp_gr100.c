@@ -28,13 +28,87 @@
  *          interfaces.
  */
 #include "kernel/gpu/gpu.h"
+#include "gpu/gpu_access.h"
 #include "gpu/fsp/kern_fsp.h"
 
 #include "published/rubin/gr100/dev_fsp_pri.h"
 #include "published/rubin/gr100/dev_mnoc_pri_zb.h"
 
+// Shared boot-completion and debug register definitions.
+#include "published/rubin/gr100/dev_therm.h"
+#include "published/rubin/gr100/dev_therm_addendum.h"
+
+#include "cper/gpu_cper.h"
+#include "events/gpu/fsp/fsp_events.h"
+#include "nvoc/event_bus.h"
+#include "nvport/time.h"
+#include "nverror.h"
+
+// Keep NV_ERROR_LOG and CPER legacy-Xid text identical.
+#define KFSP_GR100_GPU_INIT_ERROR_FMT \
+    "Error status 0x%x while polling for FSP boot complete, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x"
+
 #define KERNEL_FSP_MBOX_PORT                (2)
 #define KERNEL_FSP_MBOX_MAX_PACKET_BYTES    (1024)
+
+static NvBool
+_kfspWaitBootCond_GR100
+(
+    OBJGPU *pGpu,
+    void   *pArg
+)
+{
+    //
+    // In GR100, Bootfsm triggers FSP execution out of chip reset.
+    // FSP writes 0xFF value in NV_THERM_I2CS_SCRATCH register after completion of boot
+    //
+    return GPU_FLD_TEST_DRF_DEF(pGpu, _THERM_I2CS_SCRATCH, _FSP_BOOT_COMPLETE, _STATUS, _SUCCESS);
+}
+
+NV_STATUS
+kfspWaitForSecureBoot_GR100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    NV_STATUS status  = NV_OK;
+    RMTIMEOUT timeout;
+    NvU32 timeoutUs;
+
+    //
+    // Polling for FSP boot complete
+    // FBFalcon training during devinit can take up to 30 seconds on Rubin
+    // compute GPUs.
+    // For flags, we must not use the GPU TMR since it is inaccessible.
+    //
+    timeoutUs = NV_MAX(gpuScaleTimeout(pGpu, 30000000), pGpu->timeoutData.defaultus);
+
+    gpuSetTimeout(pGpu, timeoutUs, &timeout,
+                  GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
+
+    NvU64 timeoutNs = (NvU64)timeoutUs * 1000ULL;
+    NvU64 waitStartNs = portTimeGetUptimeNanosecondsHighPrecision();
+    status = gpuTimeoutCondWait(pGpu, _kfspWaitBootCond_GR100, NULL, &timeout);
+
+    if (status != NV_OK)
+    {
+        NvU64 waitEndNs = portTimeGetUptimeNanosecondsHighPrecision();
+        NvU32 fspBootComplete = GPU_REG_RD32(pGpu, NV_THERM_I2CS_SCRATCH_FSP_BOOT_COMPLETE);
+        NvU32 s0 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0));
+        NvU32 s1 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1));
+        NvU32 s2 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2));
+        NvU32 s3 = GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3));
+
+        NV_ASSERT_OK(gpuMarkDeviceForReset(pGpu));
+        eventEmit(FspBootTimeout, pKernelFsp, timeoutNs, waitEndNs - waitStartNs,
+                  status, fspBootComplete, s0, s1, s2, s3);
+
+        kfspDumpDebugState_HAL(pGpu, pKernelFsp);
+    }
+
+    return status;
+}
 
 NV_STATUS
 kfspConstructHal_GR100

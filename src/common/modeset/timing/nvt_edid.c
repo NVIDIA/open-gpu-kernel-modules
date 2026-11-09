@@ -1224,14 +1224,17 @@ void updateColorFormatAndBpcTiming(NVT_EDID_INFO *pInfo)
         {
         case NVT_TYPE_HDMI_STEREO:
         case NVT_TYPE_HDMI_EXT:
-            // VTB timing use the base EDID (block 0) to determine the color format support
+            // pInfo->u.feature_ver_1_3.color_type provides mono, rgb, rgy, undefined
+            // assume RGB 8-bpc support only
+            pInfo->timing[i].etc.rgb444.bpc.bpc8 = 1;
+            break;
         case NVT_TYPE_EDID_VTB_EXT:
         case NVT_TYPE_EDID_VTB_EXT_STD:
         case NVT_TYPE_EDID_VTB_EXT_DTD:
         case NVT_TYPE_EDID_VTB_EXT_CVT:
-            // pInfo->u.feature_ver_1_3.color_type provides mono, rgb, rgy, undefined
-            // assume RGB 8-bpc support only (VTB is pretty old edid standard)
-            pInfo->timing[i].etc.rgb444.bpc.bpc8 = 1;
+            // VTB only defines timings, so use the base EDID block to determine
+            // the color format and bit-depth support for those timings.
+            updateBpcForTiming(pInfo, i);
             break;
             // These are from the CTA block, and relies on
             // Since there could be multiple CEA blocks, these are adjusted when the blocks are parsed
@@ -2799,7 +2802,7 @@ static void ReplaceNonPrintableCharactersWithSpace(NvU8 *str)
     int i;
 
     // Check that all characters are printable.
-    // If not, replace them with ' '
+    // If not, replace them with a space
     for (i = 0; str[i] != '\0'; i++)
     {
         if (!IsPrintable(str[i]))
@@ -3126,7 +3129,7 @@ NVT_STATUS NvTiming_CalculateEDIDLimits(NVT_EDID_INFO *pEdidInfo, NVT_EDID_RANGE
 // * prepend the vendor name and the product name, unless the product
 //   name already contains the vendor name
 // * if any characters in the string are outside the printable ASCII
-//   range, replace them with ' '
+//   range, replace them with '?'
 
 #define tolower(c)      (((c) >= 'A' && (c) <= 'Z') ? (c) + ('a'-'A') : (c))
 

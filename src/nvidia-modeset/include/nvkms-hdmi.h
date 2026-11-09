@@ -40,6 +40,7 @@ void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
 
 void nvDpyUpdateHdmiPreModesetEvo(NVDpyEvoPtr pDpyEvo);
 void nvDpyUpdateHdmiVRRCaps(NVDpyEvoPtr pDpyEvo);
+void nvDpyUpdateHdmiAllmCaps(NVDpyEvoPtr pDpyEvo);
 void nvSendHdmiCapsToRm(NVDpyEvoPtr pDpyEvo);
 void nvHdmiReportExtconVideoState(NVConnectorEvoPtr pConnectorEvo, NvBool connected);
 void nvHdmiReportExtconAudioState(NVConnectorEvoPtr pConnectorEvo, NvBool enable);
@@ -62,15 +63,19 @@ void nvRemoveUnusedHdmiDpAudioDevice(const NVDispEvoRec *pDispEvo);
 void nvHdmiSetVRR(const NVDispEvoPtr pDispEvo,
                   NvU32 head,
                   NvBool enable,
-                  NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *empCtrl);
+                  NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL *empCtrl,
+                  NVEvoUpdateState *updateState);
 
 NvBool nvInitHdmiLibrary(NVDevEvoRec *pDevEvo);
 void nvTeardownHdmiLibrary(NVDevEvoRec *pDevEvo);
 
 NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo);
 NvBool nvHdmiDpySupportsFrl(const NVDpyEvoRec *pDpyEvo);
+NvBool nvHdmiScdcWantsForceFrl(const NVDpyEvoRec *pDpyEvo);
+void nvHdmiRefreshScdcSrcTestConfig(NVDpyEvoPtr pDpyEvo);
 NvBool nvHdmiFrlQueryConfigOneColorFormatAndBpc(const NVDpyEvoRec *pDpyEvo,
                                                const NvModeTimings *pModeTimings,
+                                               const enum NvYuv420Mode yuv420Mode,
                                                const NVHwModeTimingsEvo *pHwTimings,
                                                const NVDpyAttributeColor *pDpyColor,
                                                const NvBool b2Heads1Or,

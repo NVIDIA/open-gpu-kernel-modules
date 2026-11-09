@@ -72,6 +72,9 @@ namespace DisplayPort
         {
             return 0;
         }
+
+        virtual NvU32 getDpTunnelingDownstreamDpcdRev() { return 0; }
+
         virtual void setDevicePlugged(bool) {}
         virtual bool isDevicePlugged()
         {

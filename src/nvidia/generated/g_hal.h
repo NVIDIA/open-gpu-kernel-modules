@@ -149,7 +149,7 @@ typedef enum
     HAL_IMPL_T003_ADA_NOT_EXIST,
     HAL_IMPL_T004_HOPPER_NOT_EXIST,
     HAL_IMPL_T234D,
-    HAL_IMPL_T239D,
+    HAL_IMPL_T238D,
     HAL_IMPL_T264D,
     HAL_IMPL_AMODEL,
 
@@ -194,7 +194,7 @@ typedef enum
     { HAL_IMPL_GR100, "GR100" }, \
     { HAL_IMPL_GR102, "GR102" }, \
     { HAL_IMPL_T234D, "T234D" }, \
-    { HAL_IMPL_T239D, "T239D" }, \
+    { HAL_IMPL_T238D, "T238D" }, \
     { HAL_IMPL_T264D, "T264D" }
 
 

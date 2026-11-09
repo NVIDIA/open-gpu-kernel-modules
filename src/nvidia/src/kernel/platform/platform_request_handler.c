@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,7 @@
 #include "gpu_mgr/gpu_mgr.h"
 #include "core/locks.h"
 #include "diagnostics/tracer.h"
-#include "gps.h"
+#include "pfmReqHndlr.h"
 #include "platform/platform.h"
 #include "rmapi/client_resource.h"
 
@@ -93,14 +93,14 @@ pfmreqhndlrInitGpu
         while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex)) != NULL)
         {
             // get pfmreqhndlr support option.
-            if(testIfDsmSubFunctionEnabled(pGpu, ACPI_DSM_FUNCTION_GPS_2X, GPS_FUNC_SUPPORT) == NV_OK)
+            if(testIfDsmSubFunctionEnabled(pGpu, ACPI_DSM_FUNCTION_PRH_2X, PFM_REQ_HNDLR_FUNC_SUPPORT) == NV_OK)
             {
-                pPlatformRequestHandler->dsmVersion = ACPI_DSM_FUNCTION_GPS_2X;
+                pPlatformRequestHandler->dsmVersion = ACPI_DSM_FUNCTION_PRH_2X;
                 status = NV_OK;
             }
-            else if(testIfDsmSubFunctionEnabled(pGpu, ACPI_DSM_FUNCTION_GPS, GPS_FUNC_SUPPORT) == NV_OK)
+            else if(testIfDsmSubFunctionEnabled(pGpu, ACPI_DSM_FUNCTION_PRH, PFM_REQ_HNDLR_FUNC_SUPPORT) == NV_OK)
             {
-                pPlatformRequestHandler->dsmVersion = ACPI_DSM_FUNCTION_GPS;
+                pPlatformRequestHandler->dsmVersion = ACPI_DSM_FUNCTION_PRH;
                 status = NV_OK;
             }
 
@@ -142,7 +142,7 @@ pfmreqhndlrInitGpu
  * @return     pGpu   if at least one GPU supports ACPI_DSM_FUNCTION_PFM_REQ_HNDLR
  * @return     NULL   if no GPU supports ACPI_DSM_FUNCTION_PFM_REQ_HNDLR
  */
-POBJGPU
+OBJGPU *
 pfmreqhndlrGetGpu
 (
     PlatformRequestHandler *pPlatformRequestHandler
@@ -712,13 +712,13 @@ _pfmreqhndlrSupportExists
 
     if (osCallACPI_DSM(pGpu,
                        pPlatformRequestHandler->dsmVersion,
-                       GPS_FUNC_SUPPORT,
+                       PFM_REQ_HNDLR_FUNC_SUPPORT,
                        (NvU32 *)&supportFuncs,
                        &outDataSize) != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "GPS FUNC_SUPPORT is not supported on this Platform, Failing ACPI-GPS subfunction 0x%x.\n",
-                  GPS_FUNC_SUPPORT);
+                  "PRH FUNC_SUPPORT is not supported on this Platform, Failing ACPI-PRH subfunction 0x%x.\n",
+                  PFM_REQ_HNDLR_FUNC_SUPPORT);
         status = NV_ERR_NOT_SUPPORTED;
         goto _pfmreqhndlrSupportExists_exit;
     }
@@ -736,7 +736,7 @@ _pfmreqhndlrSupportExists
 
         // None of the subfunctions are enabled for PRH, no platform support exists for PRH
         NV_PRINTF(LEVEL_INFO,
-                  "PRH : This system doesn't support any ACPI-GPS-subfunctions.\n");
+                  "PRH : This system doesn't support any ACPI-PRH subfunctions.\n");
         status = NV_ERR_NOT_SUPPORTED;
         goto _pfmreqhndlrSupportExists_exit;
     }
@@ -786,10 +786,10 @@ _pfmreqhndlrCheckAndGetPM1ForcedOffState
 
 /*!
  * @copydoc _pfmreqhndlrUpdateSystemParamLimitWorkItem
- * 
+ *
  *          Perform the work of _pfmreqhndlrThermPmuPostInitPrereqCallback
  *          in a workitem to avoid a circular dependency to GSP.
- * 
+ *
  *          gpuInstance, pParams unused
  */
 static void
@@ -919,7 +919,7 @@ _pfmreqhndlrThermPmuPostInitPrereqCallback
 
 /*!
  * @copydoc _pfmreqhndlrThermPmuPostInitWorkItem
- * 
+ *
  */
 static void
 _pfmreqhndlrPmgrPmuPostLoadWorkItem

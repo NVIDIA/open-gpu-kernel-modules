@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,7 +31,7 @@
 #include "acpidsmguids.h"
 #include "nvhybridacpi.h"
 #include "nbci.h"
-#include "gps.h"
+#include "pfmReqHndlr.h"
 #include "nvop.h"
 #include "nvhybridacpi.h"
 #include "nvmisc.h"
@@ -51,7 +51,7 @@
 // These map directly to the ACPI_DSM_FUNCTION enum in \interface\nvacpitypes.h.
 //
 #if NV_PRINTF_ENABLED
-const char * const DSMCalls[] = {"NBSI","NVHG","MXM","NBCI","NVOP","PFCG","GPS_2X","JT","PEX","NVPCF_2X","GPS","NVPCF","UNKNOWN","CURRENT"};
+const char * const DSMCalls[] = {"NBSI","NVHG","MXM","NBCI","NVOP","PFCG","PRH_2X","JT","PEX","NVPCF_2X","PRH","NVPCF","NVPCF_3X","UNKNOWN","CURRENT"};
 #endif
 
 /*
@@ -313,15 +313,15 @@ testIfDsmFuncSupported
 static const NvU32 genDsmSubFuncRemapTable[] =
 {
     // generic function
-    // ACPI_DSM_FUNCTION_CURRENT        , ACPI_DSM_FUNCTION_NBSI  , ACPI_DSM_FUNCTION_NVHG    , ACPI_DSM_FUNCTION_MXM             , ACPI_DSM_FUNCTION_NBCI    , ACPI_DSM_FUNCTION_NVOP , ACPI_DSM_FUNCTION_PCFG , ACPI_DSM_FUNCTION_GPS_2X  , ACPI_DSM_FUNCTION_JT   , ACPI_DSM_FUNCTION_PEX     , ACPI_DSM_FUNCTION_NVPCF_2X, ACPI_DSM_FUNCTION_GPS , ACPI_DSM_FUNCTION_NVPCF,
-    NV_ACPI_GENERIC_FUNC_DISPLAYSTATUS  , NBSI_FUNC_DISPLAYSTATUS , NVHG_FUNC_DISPLAYSTATUS   , NV_ACPI_DSM_MXM_FUNC_MXDP         , NV_NBCI_FUNC_DISPLAYSTATUS, NVOP_FUNC_DISPLAYSTATUS, 0                      , 0                         , JT_FUNC_DISPLAYSTATUS  , 0                         , 0                         , 0                     , 0                      ,
-    NV_ACPI_GENERIC_FUNC_MDTL           , NBSI_FUNC_MDTL          , NVHG_FUNC_MDTL            , NV_ACPI_DSM_MXM_FUNC_MDTL         , NV_NBCI_FUNC_MDTL         , NVOP_FUNC_MDTL         , 0                      , 0                         , JT_FUNC_MDTL           , 0                         , 0                         , 0                     , 0                      ,
-    NV_ACPI_GENERIC_FUNC_GETOBJBYTYPE   , NBSI_FUNC_GETOBJBYTYPE  , NVHG_FUNC_GETOBJBYTYPE    , 0                                 , NV_NBCI_FUNC_GETOBJBYTYPE , NVOP_FUNC_GETOBJBYTYPE , 0                      , GPS_FUNC_GETOBJBYTYPE     , 0                      , 0                         , 0                         , GPS_FUNC_GETOBJBYTYPE , 0                      ,
-    NV_ACPI_GENERIC_FUNC_GETALLOBJS     , NBSI_FUNC_GETALLOBJS    , NVHG_FUNC_GETALLOBJS      , 0                                 , NV_NBCI_FUNC_GETALLOBJS   , NVOP_FUNC_GETALLOBJS   , 0                      , GPS_FUNC_GETALLOBJS       , 0                      , 0                         , 0                         , GPS_FUNC_GETALLOBJS   , 0                      ,
-    NV_ACPI_GENERIC_FUNC_GETEVENTLIST   , 0                       , NVHG_FUNC_GETEVENTLIST    , NV_ACPI_DSM_MXM_FUNC_GETEVENTLIST , NV_NBCI_FUNC_GETEVENTLIST , 0                      , 0                      , 0                         , 0                      , 0                         , 0                         , 0                     , 0                      ,
-    NV_ACPI_GENERIC_FUNC_CALLBACKS      , NBSI_FUNC_CALLBACKS     , NVHG_FUNC_CALLBACKS       , NV_ACPI_DSM_MXM_FUNC_MXCB         , NV_NBCI_FUNC_CALLBACKS    , 0                      , 0                      , GPS_FUNC_GETCALLBACKS     , 0                      , 0                         , 0                         , GPS_FUNC_GETCALLBACKS , 0                      ,
-    NV_ACPI_GENERIC_FUNC_GETBACKLIGHT   , 0                       , NVHG_FUNC_GETBACKLIGHT    , 0                                 , NV_NBCI_FUNC_GETBACKLIGHT , 0                      , 0                      , 0                         , 0                      , 0                         , 0                         , 0                     , 0                      ,
-    NV_ACPI_GENERIC_FUNC_MSTL           , 0                       , 0                         , 0                                 , NV_NBCI_FUNC_MSTL         , 0                      , 0                      , 0                         , 0                      , 0                         , 0                         , 0                     , 0                      ,
+    // ACPI_DSM_FUNCTION_CURRENT        , ACPI_DSM_FUNCTION_NBSI  , ACPI_DSM_FUNCTION_NVHG    , ACPI_DSM_FUNCTION_MXM             , ACPI_DSM_FUNCTION_NBCI    , ACPI_DSM_FUNCTION_NVOP , ACPI_DSM_FUNCTION_PCFG , ACPI_DSM_FUNCTION_PRH_2X        , ACPI_DSM_FUNCTION_JT   , ACPI_DSM_FUNCTION_PEX     , ACPI_DSM_FUNCTION_NVPCF_2X, ACPI_DSM_FUNCTION_PRH           , ACPI_DSM_FUNCTION_NVPCF, ACPI_DSM_FUNCTION_NVPCF_3X,
+    NV_ACPI_GENERIC_FUNC_DISPLAYSTATUS  , NBSI_FUNC_DISPLAYSTATUS , NVHG_FUNC_DISPLAYSTATUS   , NV_ACPI_DSM_MXM_FUNC_MXDP         , NV_NBCI_FUNC_DISPLAYSTATUS, NVOP_FUNC_DISPLAYSTATUS, 0                      , 0                               , JT_FUNC_DISPLAYSTATUS  , 0                         , 0                         , 0                               , 0                      , 0                      ,
+    NV_ACPI_GENERIC_FUNC_MDTL           , NBSI_FUNC_MDTL          , NVHG_FUNC_MDTL            , NV_ACPI_DSM_MXM_FUNC_MDTL         , NV_NBCI_FUNC_MDTL         , NVOP_FUNC_MDTL         , 0                      , 0                               , JT_FUNC_MDTL           , 0                         , 0                         , 0                               , 0                      , 0                      ,
+    NV_ACPI_GENERIC_FUNC_GETOBJBYTYPE   , NBSI_FUNC_GETOBJBYTYPE  , NVHG_FUNC_GETOBJBYTYPE    , 0                                 , NV_NBCI_FUNC_GETOBJBYTYPE , NVOP_FUNC_GETOBJBYTYPE , 0                      , PFM_REQ_HNDLR_FUNC_GETOBJBYTYPE , 0                      , 0                         , 0                         , PFM_REQ_HNDLR_FUNC_GETOBJBYTYPE , 0                      , 0                      ,
+    NV_ACPI_GENERIC_FUNC_GETALLOBJS     , NBSI_FUNC_GETALLOBJS    , NVHG_FUNC_GETALLOBJS      , 0                                 , NV_NBCI_FUNC_GETALLOBJS   , NVOP_FUNC_GETALLOBJS   , 0                      , PFM_REQ_HNDLR_FUNC_GETALLOBJS   , 0                      , 0                         , 0                         , PFM_REQ_HNDLR_FUNC_GETALLOBJS   , 0                      , 0                      ,
+    NV_ACPI_GENERIC_FUNC_GETEVENTLIST   , 0                       , NVHG_FUNC_GETEVENTLIST    , NV_ACPI_DSM_MXM_FUNC_GETEVENTLIST , NV_NBCI_FUNC_GETEVENTLIST , 0                      , 0                      , 0                               , 0                      , 0                         , 0                         , 0                               , 0                      , 0                      ,
+    NV_ACPI_GENERIC_FUNC_CALLBACKS      , NBSI_FUNC_CALLBACKS     , NVHG_FUNC_CALLBACKS       , NV_ACPI_DSM_MXM_FUNC_MXCB         , NV_NBCI_FUNC_CALLBACKS    , 0                      , 0                      , PFM_REQ_HNDLR_FUNC_GETCALLBACKS , 0                      , 0                         , 0                         , PFM_REQ_HNDLR_FUNC_GETCALLBACKS , 0                      , 0                      ,
+    NV_ACPI_GENERIC_FUNC_GETBACKLIGHT   , 0                       , NVHG_FUNC_GETBACKLIGHT    , 0                                 , NV_NBCI_FUNC_GETBACKLIGHT , 0                      , 0                      , 0                               , 0                      , 0                         , 0                         , 0                               , 0                      , 0                      ,
+    NV_ACPI_GENERIC_FUNC_MSTL           , 0                       , 0                         , 0                                 , NV_NBCI_FUNC_MSTL         , 0                      , 0                      , 0                               , 0                      , 0                         , 0                         , 0                               , 0                      , 0                      ,
 };
 
 /*
@@ -406,11 +406,12 @@ static const ACPI_DSM_FUNCTION dsmOrderOfPrecedenceList[] =
                                    ACPI_DSM_FUNCTION_NVHG,
                                    ACPI_DSM_FUNCTION_NBSI,
                                    ACPI_DSM_FUNCTION_PCFG,
-                                   ACPI_DSM_FUNCTION_GPS_2X,
-                                   ACPI_DSM_FUNCTION_GPS,
+                                   ACPI_DSM_FUNCTION_PRH_2X,
+                                   ACPI_DSM_FUNCTION_PRH,
                                    ACPI_DSM_FUNCTION_JT,
                                    ACPI_DSM_FUNCTION_PEX,
                                    ACPI_DSM_FUNCTION_NVPCF_2X,
+                                   ACPI_DSM_FUNCTION_NVPCF_3X,
                                    ACPI_DSM_FUNCTION_NVPCF};
 
 /*
@@ -614,10 +615,10 @@ getDsmGetObjectSubfunction
             rmStatus = NV_OK;
             break;
 
-        case ACPI_DSM_FUNCTION_GPS_2X:    /* fallthrough */
-        case ACPI_DSM_FUNCTION_GPS:
-            *pGetObjByTypeSubFunction = GPS_FUNC_GETOBJBYTYPE;
-            *pGetAllObjsSubFunction = GPS_FUNC_GETALLOBJS;
+        case ACPI_DSM_FUNCTION_PRH_2X:    /* fallthrough */
+        case ACPI_DSM_FUNCTION_PRH:
+            *pGetObjByTypeSubFunction = PFM_REQ_HNDLR_FUNC_GETOBJBYTYPE;
+            *pGetAllObjsSubFunction = PFM_REQ_HNDLR_FUNC_GETALLOBJS;
             rmStatus = NV_OK;
             break;
 
@@ -717,7 +718,7 @@ checkDsmCall
         if (*pAcpiDsmFunction == ACPI_DSM_FUNCTION_NBCI)
         {
             return NV_ERR_NOT_SUPPORTED;
-        } 
+        }
     }
 
     // Do any remapping of subfunction if function is current
@@ -803,11 +804,11 @@ _acpiDsmSupportedFuncCacheInit
     //
     for(func = ACPI_DSM_FUNCTION_NBSI; func < ACPI_DSM_FUNCTION_COUNT; func++)
     {
-        if ((func == ACPI_DSM_FUNCTION_GPS) &&
-            (pGpu->acpi.dsm[ACPI_DSM_FUNCTION_GPS_2X].suppFuncStatus == DSM_FUNC_STATUS_SUCCESS))
+        if ((func == ACPI_DSM_FUNCTION_PRH) &&
+            (pGpu->acpi.dsm[ACPI_DSM_FUNCTION_PRH_2X].suppFuncStatus == DSM_FUNC_STATUS_SUCCESS))
         {
             //
-            // If GPS_2X is supported, skip checking leagacy GPS 1X.
+            // If PRH_2X is supported, skip checking leagacy PRH 1X.
             //
             pGpu->acpi.dsm[func].suppFuncStatus = DSM_FUNC_STATUS_FAILED;
             continue;
@@ -892,8 +893,8 @@ _acpiDsmCallbackInit
                           ACPI_DSM_FUNCTION_NBCI,
                           ACPI_DSM_FUNCTION_NVHG,
                           ACPI_DSM_FUNCTION_MXM,
-                          ACPI_DSM_FUNCTION_GPS_2X,
-                          ACPI_DSM_FUNCTION_GPS,
+                          ACPI_DSM_FUNCTION_PRH_2X,
+                          ACPI_DSM_FUNCTION_PRH,
                       };
 
     // Initialize these now.
@@ -913,11 +914,11 @@ _acpiDsmCallbackInit
         rtnSize = sizeof(callbacks);
         callbacks = 0;
 
-        if ((func == ACPI_DSM_FUNCTION_GPS) &&
-            (pGpu->acpi.dsm[ACPI_DSM_FUNCTION_GPS_2X].callbackStatus == DSM_FUNC_STATUS_SUCCESS))
+        if ((func == ACPI_DSM_FUNCTION_PRH) &&
+            (pGpu->acpi.dsm[ACPI_DSM_FUNCTION_PRH_2X].callbackStatus == DSM_FUNC_STATUS_SUCCESS))
         {
             //
-            // If GPS_2X has enabled callback, skip leagacy GPS 1X.
+            // If PRH_2X has enabled callback, skip leagacy PRH 1X.
             //
             continue;
         }
@@ -1149,7 +1150,7 @@ _acpiCacheMethodData
     // Fill in the MUX Method Data.
     portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable));
     portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable));
-    portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable));    
+    portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable));
     if (pGpu->acpiMethodData.dodMethodData.status == NV_OK)
     {
         tableLen = pGpu->acpiMethodData.dodMethodData.acpiIdListLen / sizeof(NvU32);

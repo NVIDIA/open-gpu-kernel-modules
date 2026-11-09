@@ -47,9 +47,9 @@ void DID2ReadMultistream::startReadingDid2()
     NvU8 nWriteTransactions = 0;
 
     I2cWriteTransaction i2cWriteTransactions[2];
-    Address::StringBuffer buffer;
-    DP_USED(buffer);
-    DP_PRINTF(DP_NOTICE, "%s(): start for %s", __FUNCTION__, topologyAddress.toString(buffer));
+    NvU64 packedAddr = (topologyAddress).pack();
+    DP_PRINTF(DP_NOTICE, "start for " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+    DP_USED(packedAddr);
 
     // Initialize the variables
     remainingBytes = 0;
@@ -57,6 +57,7 @@ void DID2ReadMultistream::startReadingDid2()
     sectionLength = 0;
     extensionCount = 0;
     displayId2xSize = 0;
+    retried = false;
 
     // Reset the offset only.
     i2cWriteTransactions[0] = I2cWriteTransaction(NV_DISPLAYID2_DDC_ADDRESS >> 1,
@@ -86,45 +87,75 @@ void DID2ReadMultistream::messageCompleted(MessageManager::Message * from)
     RemoteI2cReadMessage* I2CReadMessage = (RemoteI2cReadMessage*)from;
     unsigned char * data = 0;
     unsigned numBytesRead;
-    Address::StringBuffer buffer;
-    DP_USED(buffer);
 
-    DP_PRINTF(DP_NOTICE, "- for %s", topologyAddress.toString(buffer));
+    //
+    // Hard ceiling on the total assembled DisplayID2x. Bounded by spec
+    // maxima: per-section size * (max extensions + base) = 0x100 * 0x100.
+    //
+    const NvU32 DID2_MAX_TOTAL_SIZE = NV_DISPLAYID2_SECTION_SIZE_MAX *
+                                      (NV_DISPLAYID2_EXTENSION_COUNT_MAX + 1);
+
+    NvU64 packedAddr = (topologyAddress).pack();
+    DP_PRINTF(DP_NOTICE, "- for " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+    DP_USED(packedAddr);
 
     data = I2CReadMessage->replyGetI2CData(&numBytesRead);
     DP_ASSERT(data);
+
+    if (numBytesRead > REMOTE_READ_BUFFER_SIZE)
+    {
+        sink->mstDid2ReadFailed(this);
+        return;
+    }
+
+    if ((displayId2xSize + remainingBytes + numBytesRead) > DID2_MAX_TOTAL_SIZE)
+    {
+        sink->mstDid2ReadFailed(this);
+        return;
+    }
+    if (loop >= (NV_DISPLAYID2_MAX_BLOCK_COUNT * 2))
+    {
+        sink->mstDid2ReadFailed(this);
+        return;
+    }
 
     remainingBytes += numBytesRead;
 
     stream.write(data, numBytesRead);
 
-    bool bNotFinished = readNextRequest();
+    Did2ParseResult parseResult = readNextRequest();
 
-    if (bNotFinished)
+    switch (parseResult)
     {
-        loop++;
-        readNextBlock();
-    }
-    else
-    {
-        // Did20 read is finished or failed.
-        sink->mstDid2Completed(this);
+        case Did2ParseResult::NeedMore:
+            loop++;
+            readNextBlock();
+            break;
+
+        case Did2ParseResult::Complete:
+            sink->mstDid2Completed(this);
+            break;
+
+        case Did2ParseResult::Failed:
+        default:
+            sink->mstDid2ReadFailed(this);
+            break;
     }
 }
 
 void DID2ReadMultistream::expired(const void * tag)
 {
-    Address::StringBuffer buffer;
-    DP_USED(buffer);
-    DP_PRINTF(DP_NOTICE, "%s on %s", __FUNCTION__, topologyAddress.toString(buffer));
+    NvU64 packedAddr = (topologyAddress).pack();
+    DP_PRINTF(DP_NOTICE, "expired on " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+    DP_USED(packedAddr);
     startReadingDid2();
 }
 
 void DID2ReadMultistream::messageFailed(MessageManager::Message * from, NakData * nakData)
 {
-    Address::StringBuffer buffer;
-    DP_USED(buffer);
-    DP_PRINTF(DP_NOTICE, "%s on %s", __FUNCTION__, topologyAddress.toString(buffer));
+    NvU64 packedAddr = (topologyAddress).pack();
+    DP_PRINTF(DP_NOTICE, "messageFailed on " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+    DP_USED(packedAddr);
 
     if (nakData->reason == NakDefer || nakData->reason == NakTimeout)
     {
@@ -143,15 +174,16 @@ void DID2ReadMultistream::messageFailed(MessageManager::Message * from, NakData 
 }
 
 /*!
- * @brief Check if there is more blocks to read.
+ * @brief Check if there are more blocks to read.
  *
- * @param[in/out]   seg         The segment of the display sink.
- * @param[in/out]   offset      The offset of the display sink.
- *
- * @return          true if there is more blocks to read, false otherwise.
+ * @return          NeedMore  - more REMOTE_I2C_READ rounds required.
+ *                  Complete  - DisplayID2 fully assembled.
+ *                  Failed    - parse error; caller must signal read failure
+ *                              instead of completion so tainted bytes are
+ *                              not propagated to downstream consumers.
  *
  */
-bool DID2ReadMultistream::readNextRequest()
+Did2ParseResult DID2ReadMultistream::readNextRequest()
 {
     Buffer * buffer = displayId2x.getBuffer();
 
@@ -160,14 +192,42 @@ bool DID2ReadMultistream::readNextRequest()
     if (!IS_VALID_DISPLAYID2_VERSION(pSection))
     {
         DP_PRINTF(DP_ERROR, "Invalid DisplayID2 version");
-        return false;
+        return Did2ParseResult::Failed;
     }
 
-    sectionLength = GET_DISPLAYID2_SECTION_LENGTH(pSection);
+    //
+    // Clamp the raw bytes-in-section field to the spec maximum before
+    // computing sectionLength. Reject zero-length sections, which would
+    // otherwise let an attacker spin readNextBlock() indefinitely.
+    //
+    {
+        NvU32 sectionBytes =
+            pSection[NV_DISPLAYID2_IDX_BYTES_IN_SECTION];
+        if (sectionBytes > NV_DISPLAYID2_BYTES_IN_SECTION_MAX)
+        {
+            DP_PRINTF(DP_ERROR, "DID2 section length out of range");
+            return Did2ParseResult::Failed;
+        }
+        sectionLength = NV_DISPLAYID2_SECTION_SIZE_MIN + sectionBytes;
+    }
+
+    if (sectionLength == 0)
+    {
+        DP_PRINTF(DP_ERROR, "DID2 zero-length section");
+        return Did2ParseResult::Failed;
+    }
+
     if (loop == 0)
     {
         // Only read the total extension count from Base section.
         extensionCount = GET_DISPLAYID2_EXTENSION_COUNT(pSection);
+
+        // Clamp extensions so the worst-case allocation stays bounded.
+        if (extensionCount > NV_DISPLAYID2_MAX_BLOCK_COUNT)
+        {
+            extensionCount = NV_DISPLAYID2_MAX_BLOCK_COUNT;
+        }
+
         if (extensionCount > 0)
         {
             NvU32 maxSize = sectionLength + extensionCount * NV_DISPLAYID2_BLOCK_SIZE;
@@ -175,7 +235,7 @@ bool DID2ReadMultistream::readNextRequest()
             if (!buffer->resize(maxSize))
             {
                 DP_PRINTF(DP_ERROR, "Failed to resize buffer");
-                return false;
+                return Did2ParseResult::Failed;
             }
             // Reassign pSection as resize() may have reallocated buffer->data
             pSection = buffer->getData() + displayId2xSize;
@@ -185,7 +245,7 @@ bool DID2ReadMultistream::readNextRequest()
     if (sectionLength > remainingBytes)
     {
         // the current section is not complete, and we don't have enough bytes already.
-        return true;
+        return Did2ParseResult::NeedMore;
     }
 
     // Check if we need to read more bytes.
@@ -197,11 +257,11 @@ bool DID2ReadMultistream::readNextRequest()
             if (retried)
             {
                 DP_PRINTF(DP_ERROR, "Checksum validation still failed after retries");
-                return false;
+                return Did2ParseResult::Failed;
             }
             DP_PRINTF(DP_ERROR, "Checksum validation failed, retrying...");
             retried = true;
-            return true;
+            return Did2ParseResult::NeedMore;
         }
 
         //
@@ -222,7 +282,8 @@ bool DID2ReadMultistream::readNextRequest()
         sectionLength = 0;
     }
     displayId2x.setDisplayId2xSize(displayId2xSize);
-    return (extensionCount != 0);
+    return (extensionCount != 0) ? Did2ParseResult::NeedMore
+                                 : Did2ParseResult::Complete;
 }
 
 void DID2ReadMultistream::readNextBlock()
@@ -231,16 +292,16 @@ void DID2ReadMultistream::readNextBlock()
     NvU8 offset = (loop & 0x1) * NV_DISPLAYID2_BLOCK_SIZE;
 
     I2cWriteTransaction i2cWriteTransactions[2];
-    Address::StringBuffer buffer;
-    DP_USED(buffer);
 
     // ensure that init function for i2cWriteTranscation for segment and offset won't break
     DP_ASSERT(sizeof(seg) == 1);
     DP_ASSERT(sizeof(offset) == 1);
 
-    DP_PRINTF(DP_NOTICE, "DID2ReadMultistream::readNextBlock(): for %s (seg/offset) = %d/%d",
-                          topologyAddress.toString(buffer),
+    NvU64 packedAddr = (topologyAddress).pack();
+    DP_PRINTF(DP_NOTICE, "for " DP_ADDR_FMT " (seg/offset) = %d/%d",
+                          DP_ADDR_ARGS(packedAddr),
                           seg, offset);
+    DP_USED(packedAddr);
 
     unsigned nWriteTransactions = 2;
     // select segment

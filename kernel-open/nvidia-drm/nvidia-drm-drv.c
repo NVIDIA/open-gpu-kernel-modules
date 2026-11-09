@@ -522,6 +522,30 @@ static int nv_drm_create_properties(struct nv_drm_device *nv_dev)
           .name = "HDCP_FAILED" },
     };
 
+    const struct drm_prop_enum_list color_format_enum_list[] = {
+        { .type = NV_DRM_CONNECTOR_COLOR_FORMAT_AUTO,
+          .name = "auto" },
+        { .type = NV_DRM_CONNECTOR_COLOR_FORMAT_RGB,
+          .name = "RGB" },
+        { .type = NV_DRM_CONNECTOR_COLOR_FORMAT_YCbCr422,
+          .name = "YCbCr422" },
+        { .type = NV_DRM_CONNECTOR_COLOR_FORMAT_YCbCr444,
+          .name = "YCbCr444" },
+    };
+
+    const struct drm_prop_enum_list output_bpc_enum_list[] = {
+        { .type = NV_DRM_CONNECTOR_OUTPUT_BPC_AUTO,
+          .name = "auto" },
+        { .type = NV_DRM_CONNECTOR_OUTPUT_BPC_6,
+          .name = "6" },
+        { .type = NV_DRM_CONNECTOR_OUTPUT_BPC_8,
+          .name = "8" },
+        { .type = NV_DRM_CONNECTOR_OUTPUT_BPC_10,
+          .name = "10" },
+        { .type = NV_DRM_CONNECTOR_OUTPUT_BPC_12,
+          .name = "12" },
+    };
+
     if (nv_dev->supportsSyncpts) {
         nv_dev->nv_out_fence_property =
             drm_property_create_range(nv_dev->dev, DRM_MODE_PROP_ATOMIC,
@@ -615,7 +639,7 @@ static int nv_drm_create_properties(struct nv_drm_device *nv_dev)
         return -ENOMEM;
     }
 
-    // TMO LUT + LUT Size
+    // TMO LUT + LUT Size + SAT-CORR enable
 
     nv_dev->nv_plane_tmo_lut_property =
         drm_property_create(nv_dev->dev, DRM_MODE_PROP_BLOB,
@@ -627,6 +651,15 @@ static int nv_drm_create_properties(struct nv_drm_device *nv_dev)
         drm_property_create_range(nv_dev->dev, DRM_MODE_PROP_IMMUTABLE,
             "NV_PLANE_TMO_LUT_SIZE", 0, UINT_MAX);
     if (nv_dev->nv_plane_tmo_lut_size_property == NULL) {
+        return -ENOMEM;
+    }
+    /*
+     * Experimental property: userspace ABI and behavior are subject to change.
+     */
+    nv_dev->nv_plane_tmo_sat_corr_enable_property =
+        drm_property_create_bool(nv_dev->dev, 0,
+            "NV_PLANE_TMO_SAT_CORR_ENABLE");
+    if (nv_dev->nv_plane_tmo_sat_corr_enable_property == NULL) {
         return -ENOMEM;
     }
 
@@ -672,6 +705,26 @@ static int nv_drm_create_properties(struct nv_drm_device *nv_dev)
         return -ENOMEM;
     }
 
+    nv_dev->nv_connector_color_format_property =
+        drm_property_create_enum(nv_dev->dev, 0,
+                                 "NV_CONNECTOR_COLOR_FORMAT",
+                                 color_format_enum_list,
+                                 ARRAY_SIZE(color_format_enum_list));
+    if (nv_dev->nv_connector_color_format_property == NULL) {
+        NV_DRM_LOG_ERR("Failed to create color format property");
+        return -ENOMEM;
+    }
+
+    nv_dev->nv_connector_output_bpc_property =
+        drm_property_create_enum(nv_dev->dev, 0,
+                                 "NV_CONNECTOR_OUTPUT_BPC",
+                                 output_bpc_enum_list,
+                                 ARRAY_SIZE(output_bpc_enum_list));
+    if (nv_dev->nv_connector_output_bpc_property == NULL) {
+        NV_DRM_LOG_ERR("Failed to create output bpc property");
+        return -ENOMEM;
+    }
+
     // Color Pipeline Passthrough Properties
     nv_dev->nv_plane_color_passthrough_property =
         drm_property_create_bool(nv_dev->dev, 0,
@@ -702,6 +755,29 @@ static int nv_drm_create_properties(struct nv_drm_device *nv_dev)
         return -ENOMEM;
     }
 
+    /* ALLM capable (read-only, populated from EDID) */
+    nv_dev->nv_connector_allm_capable_property =
+        drm_property_create_bool(nv_dev->dev,
+            DRM_MODE_PROP_IMMUTABLE, "NV_ALLM_CAPABLE");
+    if (nv_dev->nv_connector_allm_capable_property == NULL) {
+        return -ENOMEM;
+    }
+
+    {
+        static const struct drm_prop_enum_list allmModeEnumList[] = {
+            { NV_DRM_ALLM_MODE_DISABLED,        "Disabled"  },
+            { NV_DRM_ALLM_MODE_ENABLED_DYNAMIC, "Dynamic"   },
+            { NV_DRM_ALLM_MODE_ENABLED_FORCED,  "Always On" },
+        };
+        nv_dev->nv_connector_allm_mode_property =
+            drm_property_create_enum(nv_dev->dev, 0, "NV_ALLM_MODE",
+                allmModeEnumList,
+                ARRAY_SIZE(allmModeEnumList));
+        if (nv_dev->nv_connector_allm_mode_property == NULL) {
+            return -ENOMEM;
+        }
+    }
+
     return 0;
 }
 
@@ -722,6 +798,35 @@ static void nv_drm_handle_hotplug_event(struct work_struct *work)
         container_of(dwork, struct nv_drm_device, hotplug_event_work);
 
     drm_kms_helper_hotplug_event(nv_dev->dev);
+}
+
+static void nv_drm_handle_content_protection_event_work(struct work_struct *work)
+{
+    struct delayed_work *dwork = to_delayed_work(work);
+    struct nv_drm_device *nv_dev =
+        container_of(dwork, struct nv_drm_device,
+                     content_protection_event_work);
+    struct drm_device *dev = nv_dev->dev;
+    struct drm_connector *connector;
+    struct drm_connector_list_iter conn_iter;
+
+    mutex_lock(&dev->mode_config.mutex);
+    drm_modeset_lock(&dev->mode_config.connection_mutex, NULL);
+
+    drm_connector_list_iter_begin(dev, &conn_iter);
+
+    drm_for_each_connector_iter(connector, &conn_iter) {
+        struct nv_drm_connector *nv_connector = to_nv_connector(connector);
+        if (nv_connector->cp_event_pending) {
+            nv_connector->cp_event_pending = false;
+            nv_drm_connector_update_content_protection(nv_connector);
+        }
+    }
+
+    drm_connector_list_iter_end(&conn_iter);
+
+    drm_modeset_unlock(&dev->mode_config.connection_mutex);
+    mutex_unlock(&dev->mode_config.mutex);
 }
 
 static int nv_drm_dev_load(struct drm_device *dev)
@@ -914,6 +1019,8 @@ static int nv_drm_dev_load(struct drm_device *dev)
     /* Enable event handling */
 
     INIT_DELAYED_WORK(&nv_dev->hotplug_event_work, nv_drm_handle_hotplug_event);
+    INIT_DELAYED_WORK(&nv_dev->content_protection_event_work,
+                      nv_drm_handle_content_protection_event_work);
     atomic_set(&nv_dev->enable_event_handling, true);
 
     init_waitqueue_head(&nv_dev->flip_event_wq);
@@ -944,14 +1051,22 @@ static void nv_drm_dev_unload(struct drm_device *dev)
     }
 #endif
 
-    cancel_delayed_work_sync(&nv_dev->hotplug_event_work);
     mutex_lock(&nv_dev->lock);
 
     WARN_ON(nv_dev->subOwnershipGranted);
 
-    /* Disable event handling */
+    /* Disable event handling.
+     *
+     * Set the flag under nv_dev->lock so that any event callback already
+     * holding the lock has finished before we clear it, ensuring no callback
+     * can see enable_event_handling=true and call schedule_delayed_work() after
+     * the cancel calls below return.  Neither worker takes nv_dev->lock, so
+     * cancel_delayed_work_sync() cannot deadlock here.
+     */
 
     atomic_set(&nv_dev->enable_event_handling, false);
+    cancel_delayed_work_sync(&nv_dev->hotplug_event_work);
+    cancel_delayed_work_sync(&nv_dev->content_protection_event_work);
 
     /* Clean up output polling */
 
@@ -1009,7 +1124,9 @@ static void nv_drm_master_set(struct drm_device *dev,
                               struct drm_file *file_priv, bool from_open)
 {
     if (__nv_drm_master_set(dev, file_priv, from_open) != 0) {
-        NV_DRM_DEV_LOG_ERR(to_nv_device(dev), "Failed to grab modeset ownership");
+        NV_DRM_DEV_LOG_WARN(
+            to_nv_device(dev),
+            "Failed to grab modeset ownership - another instance currently has modeset ownership");
     }
 }
 #endif

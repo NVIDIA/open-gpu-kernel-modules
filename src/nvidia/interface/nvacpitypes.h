@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,12 +31,13 @@ typedef enum _ACPI_DSM_FUNCTION
     ACPI_DSM_FUNCTION_NBCI,
     ACPI_DSM_FUNCTION_NVOP,
     ACPI_DSM_FUNCTION_PCFG,
-    ACPI_DSM_FUNCTION_GPS_2X,
+    ACPI_DSM_FUNCTION_PRH_2X,
     ACPI_DSM_FUNCTION_JT,
     ACPI_DSM_FUNCTION_PEX,
     ACPI_DSM_FUNCTION_NVPCF_2X,
-    ACPI_DSM_FUNCTION_GPS,
+    ACPI_DSM_FUNCTION_PRH,
     ACPI_DSM_FUNCTION_NVPCF,
+    ACPI_DSM_FUNCTION_NVPCF_3X,
     // insert new DSM Functions here
     ACPI_DSM_FUNCTION_COUNT,
     ACPI_DSM_FUNCTION_CURRENT,  // pseudo option to select currently available GUID which supports the subfunction.

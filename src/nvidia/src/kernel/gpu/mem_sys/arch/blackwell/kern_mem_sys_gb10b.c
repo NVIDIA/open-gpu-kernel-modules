@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,11 +25,12 @@
 #include "gpu/gpu.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 
-#include "published/blackwell/gb10b/dev_fbhub.h"
-
+#include "published/blackwell/gb10b/dev_fbhub_zb.h"
+#include "published/blackwell/gb10b/dev_top_zb.h"
+#include "published/blackwell/gb10b/hwproject.h"
 
 /*!
- * @brief Write the sysmemFlushBuffer val into the NV_PFB_FBHUB0_PCIE_FLUSH_SYSMEM_ADDR register
+ * @brief Write the sysmemFlushBuffer val into the NV_FBHUB_ZB_PCIE_FLUSH_SYSMEM_ADDR register
  *
  * @param[in] pGpu                OBJGPU pointer
  * @param[in[ pKernelMemorySystem KernelMemorySystem pointer
@@ -45,6 +46,7 @@ kmemsysProgramSysmemFlushBuffer_GB10B
 {
     NvU32                  alignedSysmemFlushBufferAddr   = 0x0;
     NvU32                  alignedSysmemFlushBufferAddrHi = 0x0;
+    NvU32                  addr;
 
     NV_ASSERT(pKernelMemorySystem->sysmemFlushBuffer != 0);
 
@@ -55,12 +57,20 @@ kmemsysProgramSysmemFlushBuffer_GB10B
     alignedSysmemFlushBufferAddrHi = NvU64_HI32(pKernelMemorySystem->sysmemFlushBuffer);
 
     // Assert when Sysmem Flush buffer has more than 52-bit address
-    NV_ASSERT((alignedSysmemFlushBufferAddrHi & (~NV_PFB_FBHUB0_PCIE_FLUSH_SYSMEM_ADDR_HI_ADR_MASK)) == 0);
+    NV_ASSERT((alignedSysmemFlushBufferAddrHi & (~NV_FBHUB_ZB_PCIE_FLUSH_SYSMEM_ADDR_HI_ADR_MASK)) == 0);
 
-    alignedSysmemFlushBufferAddrHi &= NV_PFB_FBHUB0_PCIE_FLUSH_SYSMEM_ADDR_HI_ADR_MASK;
-
-    GPU_FLD_WR_DRF_NUM(pGpu, _PFB, _FBHUB0_PCIE_FLUSH_SYSMEM_ADDR_HI, _ADR, alignedSysmemFlushBufferAddrHi);
-    GPU_FLD_WR_DRF_NUM(pGpu, _PFB, _FBHUB0_PCIE_FLUSH_SYSMEM_ADDR_LO, _ADR, alignedSysmemFlushBufferAddr);
+    alignedSysmemFlushBufferAddrHi &= NV_FBHUB_ZB_PCIE_FLUSH_SYSMEM_ADDR_HI_ADR_MASK;
+    addr = NV_FBHUB0_PRI_BASE + NV_FBHUB_ZB_PCIE_FLUSH_SYSMEM_ADDR_HI;
+    GPU_REG_WR32(pGpu, addr,
+                 FLD_SET_DRF_NUM(_FBHUB_ZB, _PCIE_FLUSH_SYSMEM_ADDR_HI, _ADR,
+                                 alignedSysmemFlushBufferAddrHi,
+                                 GPU_REG_RD32(pGpu, addr)));
+    
+    addr = NV_FBHUB0_PRI_BASE + NV_FBHUB_ZB_PCIE_FLUSH_SYSMEM_ADDR_LO;
+    GPU_REG_WR32(pGpu, addr,
+                 FLD_SET_DRF_NUM(_FBHUB_ZB, _PCIE_FLUSH_SYSMEM_ADDR_LO, _ADR,
+                                 alignedSysmemFlushBufferAddr,
+                                 GPU_REG_RD32(pGpu, addr)));
 }
 
 /*!
@@ -78,8 +88,21 @@ kmemsysAssertSysmemFlushBufferValid_GB10B
     KernelMemorySystem *pKernelMemorySystem
 )
 {
-    NvU32 regPfbFbhub0PcieFlushSysmemAddrValLo = GPU_REG_RD_DRF(pGpu, _PFB, _FBHUB0_PCIE_FLUSH_SYSMEM_ADDR_LO, _ADR);
-    NvU32 regPfbFbhub0PcieFlushSysmemAddrValHi = GPU_REG_RD_DRF(pGpu, _PFB, _FBHUB0_PCIE_FLUSH_SYSMEM_ADDR_HI, _ADR);
+    NV_STATUS status;
+    const DEVICE_INFO_ENTRY *pFbhubEntry;
+    status = gpuGetOneDeviceEntry(pGpu,
+                                  NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_FBHUB,
+                                  DEVICE_INFO_DIELET_INSTANCE_ANY,
+                                  0,
+                                  DEVICE_INFO_DIE_LOCAL_INSTANCE_ID_ANY,
+                                  &pFbhubEntry);
+    NV_ASSERT_OK_OR_RETURN(status);
+    NvU32 regPfbFbhub0PcieFlushSysmemAddrValLo = DRF_VAL(_FBHUB_ZB, _PCIE_FLUSH_SYSMEM_ADDR_LO, _ADR,
+                                                 GPU_REG_RD32(pGpu,
+                                                    pFbhubEntry->devicePriBase + NV_FBHUB_ZB_PCIE_FLUSH_SYSMEM_ADDR_LO));
+    NvU32 regPfbFbhub0PcieFlushSysmemAddrValHi = DRF_VAL(_FBHUB_ZB, _PCIE_FLUSH_SYSMEM_ADDR_HI, _ADR,
+                                                 GPU_REG_RD32(pGpu,
+                                                    pFbhubEntry->devicePriBase + NV_FBHUB_ZB_PCIE_FLUSH_SYSMEM_ADDR_HI));
 
     if (regPfbFbhub0PcieFlushSysmemAddrValLo == 0 && regPfbFbhub0PcieFlushSysmemAddrValHi == 0)
     {
@@ -104,5 +127,5 @@ kmemsysGetFlushSysmemBufferAddrShift_GB10B
     KernelMemorySystem *pKernelMemorySystem
 )
 {
-    return portUtilCountTrailingZeros32(NV_PFB_FBHUB0_PCIE_FLUSH_SYSMEM_ADDR_LO_ADR_MASK);
+    return portUtilCountTrailingZeros32(NV_FBHUB_ZB_PCIE_FLUSH_SYSMEM_ADDR_LO_ADR_MASK);
 }

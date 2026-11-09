@@ -29,6 +29,12 @@
 #include "library/cryptlib.h"
 #include "nvspdm_cryptlib_extensions.h"
 
+#ifdef USE_LKCA
+#include <linux/module.h>
+MODULE_SOFTDEP("pre: ecdh_generic ecdsa_generic hmac x509_key_parser "
+               "drbg jitterentropy_rng ghash_ce aesni_intel aes gcm ctr ghash");
+#endif
+
 bool libspdm_check_crypto_backend(void)
 {
 #ifdef USE_LKCA

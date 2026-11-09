@@ -446,7 +446,7 @@ typedef struct
  * clientMask     - Bit map of all clients currently using this region
  * shadowMemStartAddress- FB location from where contents need to be copied to startAddress
  */
-typedef struct _def_acr_dmem_region_prop
+typedef struct def_acr_dmem_region_prop
 {
     NvU32   startAddress;
     NvU32   endAddress;
@@ -462,7 +462,7 @@ typedef struct _def_acr_dmem_region_prop
  * noOfRegions   - Number of regions used by RM.
  * regionProps   - Region properties
  */
-typedef struct _def_acr_regions
+typedef struct def_acr_regions
 {
     NvU32                     noOfRegions;
     RM_FLCN_ACR_REGION_PROP   regionProps[RM_FLCN_ACR_MAX_REGIONS];
@@ -475,7 +475,7 @@ typedef struct _def_acr_regions
  * vprEndAddress    : End address of VPR region. SEC2 binary updates this value
  * hdcpPolicies     : VPR display policies. SEC2 binary updates this value
  */
-typedef  struct _def_acr_vpr_dmem_desc
+typedef  struct def_acr_vpr_dmem_desc
 {
     NvU32 bVprEnabled;
     NvU32 vprStartAddress;
@@ -497,7 +497,7 @@ typedef  struct _def_acr_vpr_dmem_desc
  * ucodeBlobBase- Used for Tegra, stores non-WPR start address where kernel stores ucode blob
  * ucodeBlobSize- Used for Tegra, stores the size of the ucode blob
  */
-typedef struct _def_acr_dmem_desc
+typedef struct def_acr_dmem_desc
 {
     NvU32                signatures[4];
     NvU32                wprRegionID;
@@ -521,24 +521,24 @@ typedef struct _def_acr_dmem_desc
 */
 #define MAX_SFBHUB_ENCRYPTION_REGION_KEY_SIZE 4
 
-typedef struct _def_acr_hub_scratch_data
+typedef struct def_acr_hub_scratch_data
 {
     NvU32    key[MAX_SFBHUB_ENCRYPTION_REGION_KEY_SIZE];
     NvU32    nonce[MAX_SFBHUB_ENCRYPTION_REGION_KEY_SIZE];
 } ACR_BSI_HUB_DESC, *PACR_BSI_HUB_DESC;
 
 #define MAX_HUB_ENCRYPTION_REGION_COUNT 3
-typedef struct _def_acr_hub_scratch_array
+typedef struct def_acr_hub_scratch_array
 {
     ACR_BSI_HUB_DESC entries[MAX_HUB_ENCRYPTION_REGION_COUNT];
 } ACR_BSI_HUB_DESC_ARRAY, *PACR_BSI_HUB_DESC_ARRAY;
 
-typedef struct _def_acr_reserved_dmem
+typedef struct def_acr_reserved_dmem
 {
     NvU32            reservedDmem[(LSF_BOOTSTRAP_OWNER_RESERVED_DMEM_SIZE/4)];  // Always first..
 } ACR_RESERVED_DMEM, *PACR_RESERVED_DMEM;
 
-typedef struct _def_booter_reserved_dmem
+typedef struct def_booter_reserved_dmem
 {
     NvU32            reservedDmem[(LSF_BOOTSTRAP_OWNER_RESERVED_DMEM_SIZE/4)];  // Always first..
 } BOOTER_RESERVED_DMEM;

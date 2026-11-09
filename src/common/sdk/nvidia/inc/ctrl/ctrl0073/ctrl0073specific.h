@@ -2410,13 +2410,53 @@ typedef struct NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_LINK_CONFIG_PARAMS {
 } NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_LINK_CONFIG_PARAMS;
 
 #define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE                                           2:0
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_NONE       (0x00000000U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_3LANES_3G  (0x00000001U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_3LANES_6G  (0x00000002U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_6G  (0x00000003U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_8G  (0x00000004U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_10G (0x00000005U)
-#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_12G (0x00000006U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_NONE        (0x00000000U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_3LANES_3G   (0x00000001U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_3LANES_6G   (0x00000002U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_6G   (0x00000003U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_8G   (0x00000004U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_10G  (0x00000005U)
+#define NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_4LANES_12G  (0x00000006U)
+
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_ASSESS_HDMI_FRL_LINK_RATE
+ *
+ * This command is used to assess the maximum HDMI FRL link rate that the
+ * given display's link can sustain. RM runs the HDMI 2.1 link training
+ * state machine, including sink-requested rate descent, without committing
+ * FRL transmission, then restores an active link or clears an inactive one.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed.
+ *   displayID
+ *     This parameter specifies the displayID for the display output resource to
+ *     configure.
+ *   rate
+ *     This parameter is an input and output to this command.
+ *     As input, it specifies the maximum FRL rate to assess, as an
+ *     NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE value defined above.
+ *     On return, it contains the assessed maximum sustainable rate;
+ *     NV0073_CTRL_HDMI_FRL_DATA_SET_FRL_RATE_NONE means the link cannot
+ *     sustain FRL and legacy TMDS should be used.
+ *
+ * Possible status values returned include:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_I2C_ERROR
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV0073_CTRL_CMD_SPECIFIC_ASSESS_HDMI_FRL_LINK_RATE (0x730299U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_ASSESS_HDMI_FRL_LINK_RATE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_ASSESS_HDMI_FRL_LINK_RATE_PARAMS_MESSAGE_ID (0x99U)
+
+typedef struct NV0073_CTRL_SPECIFIC_ASSESS_HDMI_FRL_LINK_RATE_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU32 rate;
+} NV0073_CTRL_SPECIFIC_ASSESS_HDMI_FRL_LINK_RATE_PARAMS;
 
 /*
 * NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE
@@ -2442,7 +2482,7 @@ typedef struct NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_LINK_CONFIG_PARAMS {
 *   If any argument is invalid for this control call, NV_ERR_INVALID_ARGUMENT
 *   status will be returned.
 */
-#define NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE  (0x73029bU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE_PARAMS_MESSAGE_ID" */
+#define NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE (0x73029bU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE_PARAMS_MESSAGE_ID" */
 
 #define NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_FLUSH_MODE_PARAMS_MESSAGE_ID (0x9BU)
 
@@ -3121,10 +3161,13 @@ typedef struct NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS {
  * maximum output luminance considering the protocol limit (SDR/HDR) and maximum display luminance.
  *
  * luminanceSscalingFactor
- * HDR tone mapping luminance scaling factor
+ * HDR tone mapping max luminance scaling factor
+ *
+ * inputScalingFactor
+ * HDR tone mapping input luminance scaling factor
  *
  * hlcAdjust
- * highlight contrast adjustment for LTM LUT.
+ * highlight contrast adjustment for LTM LUT
  *
  * blMaxDropPerFrame
  * max backlight drop per frame
@@ -3164,6 +3207,7 @@ typedef struct NV0073_CTRL_SPECIFIC_DISPLAY_BRIGHTNESS_LTM_PARAMS {
     NvU32  maxDisplayLuminance;
     NvU32  maxOutputLuminance;
     NvU32  luminanceScalingFactor;
+    NvU32  inputScalingFactor;
     NvU32  hlcAdjust;
     NvU32  blMaxDropPerFrame;
     NvU32  blMaxBoostPerFrame;

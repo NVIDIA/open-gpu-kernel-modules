@@ -41,9 +41,7 @@ using namespace DisplayPort;
 
 void GroupImpl::update(Device * dev, bool allocationState)
 {
-    Address::StringBuffer sb;
     Address devAddress = dev->getTopologyAddress();
-    DP_USED(sb);
 
     // Do not map a stream that is not yet turned on in the gpu. An update shall be sent later during NAE.
     if (allocationState && !this->isHeadAttached())
@@ -111,33 +109,34 @@ void GroupImpl::update(Device * dev, bool allocationState)
 
         if (parent->messageManager->send(&allocate, nakData))
         {
+            NvU64 packedAddr = (devAddress).pack();
             if (allocationState)
             {
-                DP_PRINTF(DP_NOTICE, "DP-TM> Attached stream:%d to %s", streamIndex, dev->getTopologyAddress().toString(sb));
+                DP_PRINTF(DP_NOTICE, "DP-TM> Attached stream:%d to " DP_ADDR_FMT, streamIndex, DP_ADDR_ARGS(packedAddr));
             }
             else
             {
-                DP_PRINTF(DP_NOTICE, "DP-TM> Detached stream:%d from %s", streamIndex, dev->getTopologyAddress().toString(sb));
+                DP_PRINTF(DP_NOTICE, "DP-TM> Detached stream:%d from " DP_ADDR_FMT, streamIndex, DP_ADDR_ARGS(packedAddr));
             }
 
             ((DeviceImpl *)dev)->payloadAllocated = allocationState;
-
+            DP_USED(packedAddr);
             return;
         }
     }
 
     // we should not have ideally reached here unless allocate payload failed.
+    NvU64 packedAddr = (devAddress).pack();
     if (allocationState)
     {
-        DP_PRINTF(DP_ERROR, "DP-TM> Allocate_payload: Failed to ATTACH stream:%d to %s", streamIndex, dev->getTopologyAddress().toString(sb));
-        DP_ASSERT(0);
+        DP_PRINTF(DP_ERROR, "DP-TM> Allocate_payload: Failed to ATTACH stream:%d to " DP_ADDR_FMT, streamIndex, DP_ADDR_ARGS(packedAddr));
     }
     else
     {
-        DP_PRINTF(DP_ERROR, "DP-TM> Allocate_payload: Failed to DETACH stream:%d from %s", streamIndex, dev->getTopologyAddress().toString(sb));
-        DP_ASSERT(0);
+        DP_PRINTF(DP_ERROR, "DP-TM> Allocate_payload: Failed to DETACH stream:%d from " DP_ADDR_FMT, streamIndex, DP_ADDR_ARGS(packedAddr));
     }
-
+    DP_ASSERT(0);
+    DP_USED(packedAddr);
 }
 
 void GroupImpl::insert(Device * dev)
@@ -234,6 +233,14 @@ void GroupImpl::remove(Device * dev)
 void GroupImpl::destroy()
 {
     ConnectorImpl* parent = NULL;
+
+    //
+    // Mark teardown in progress so any re-entrant callback walking
+    // activeGroups/inactiveGroups skips this group rather than dispatching
+    // notifications through it.
+    //
+    isDestroying = true;
+
     for (Device * i = enumDevices(0); i; i = enumDevices(i))
         remove(i);
 
@@ -330,7 +337,8 @@ void GroupImpl::expired(const void * tag)
                 parent->main->configureHDCPRenegotiate();
                 parent->isHDCPAuthOn = false;
                 parent->timer->queueCallback(this, &tagHDCPReauthentication,
-                                             authDelay);
+                                             authDelay,
+                                             false /* not allowed in sleep */);
             }
         }
         else
@@ -365,7 +373,8 @@ void GroupImpl::expired(const void * tag)
             {
                 QSESetECFRetries++;
                 parent->timer->queueCallback(this, &tagMSTQSEandSetECF,
-                                             HDCP_QSEANDSETECF_COOLDOWN);
+                                             HDCP_QSEANDSETECF_COOLDOWN,
+                                             false /* not allowed in sleep */);
             }
         }
         else
@@ -426,8 +435,67 @@ bool GroupImpl::hdcpSetEncrypted(bool encrypted, NvU8 streamType, NvBool  bForce
 
         if(!parent->isHDCPAuthOn || bNeedReNegotiate)
         {
+            //
+            // Bug 6472337: Renegotiate for MST needs to disable ECF ( uproc would disable HW encryption ).
+            // Here need to forceClear and addStreamBack or cannot clear under encrypted state.
+            //
+            // Bug 6755367: It would see transient blank with forceClear, wait add streams back.
+            // Repro is on the same legacy 8b/10b MST config as bug 6472337, so narrow this to
+            // N1X (GLOBAL_FEATURE_DP_TUNNELING_T25X) only, which is what bug 6472337's stuck
+            // state actually depends on. 128b132b is additionally excluded (on chips that also
+            // have GR1686_DISPLAYPORT_BLACKWELL) since the issue this force-clear protects
+            // against is 8b/10b-only regardless of tunneling. 2Head1OR (DSC_DUAL/DSC_DROP) is
+            // also excluded, since it doesn't reproduce bug 6472337's stuck state without this
+            // force-clear, so excluding it avoids the unneeded transient blank. The build-time
+            // config check above only reflects chip capability; also require both source
+            // (main->isInternalDpTunnelingSupported) and sink (parent->isDpInTunnelingSupported)
+            // to confirm the active link is actually a DP tunneling connection at runtime.
+            //
+            if (bNeedReNegotiate
+                && !linkConfig.bIs128b132bChannelCoding
+                && (this->lastModesetInfo.mode != DSC_DUAL)
+                && (this->lastModesetInfo.mode != DSC_DROP)
+                && parent->linkUseMultistream()
+                && parent->main->isInternalDpTunnelingSupported()
+                && parent->isDpInTunnelingSupported())
+            {
+                //
+                // Compute ECF with only this group's timeslot bits cleared, leaving every
+                // other currently-encrypted group's bits untouched - same mask math the
+                // disable branch below uses. Passing plain 0x0 here would force-clear
+                // every encrypted head on this SOR, not just this group (uproc iterates
+                // headOwnerMask and force-clears any head whose requested bits differ
+                // from current, see hdcp22wired_hdcp22wired0401.c).
+                //
+                NvU64 ecf = 0x0;
+                NvU64 countOnes, mask;
+                for (ListElement * i = parent->activeGroups.begin(); i != parent->activeGroups.end(); i = i->next)
+                {
+                    GroupImpl * group = (GroupImpl *)i;
+                    if (group->hdcpEnabled)
+                    {
+                        // Note: no 128b/132b 64-timeslot special-case here (unlike the disable
+                        // branch below) - this block only runs when !bIs128b132bChannelCoding.
+                        countOnes = (((NvU64)1) << group->timeslot.count) - 1;
+                        mask = countOnes << group->timeslot.begin;
+                        ecf |= mask;
+                    }
+                }
+                countOnes = (((NvU64)1) << this->timeslot.count) - 1;
+                mask = countOnes << this->timeslot.begin;
+                ecf &= ~mask;
+
+                parent->main->configureAndTriggerECF(ecf, NV_TRUE, NV_TRUE);
+
+                // Force clear just zeroed HW encryption for this group; don't let
+                // hdcpGetEncrypted() report it as protected until renegotiate below
+                // resolves the real state.
+                this->hdcpEnabled = false;
+            }
+
             cancelHdcpCallbacks();
 
+            parent->isHDCPAuthTriggered = true;
             parent->main->configureHDCPRenegotiate();
             parent->main->configureHDCPGetHDCPState(hdcpState);
             if (hdcpState.HDCP_State_Encryption)
@@ -437,7 +505,8 @@ bool GroupImpl::hdcpSetEncrypted(bool encrypted, NvU8 streamType, NvBool  bForce
             else
             {
                 parent->isHDCPAuthOn = this->hdcpEnabled = false;
-                parent->timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN);
+                parent->timer->queueCallback(this, &tagHDCPReauthentication, HDCP_AUTHENTICATION_COOLDOWN,
+                                             false /* not allowed in sleep */);
             }
         }
         else
@@ -456,7 +525,8 @@ bool GroupImpl::hdcpSetEncrypted(bool encrypted, NvU8 streamType, NvBool  bForce
             // Check if authenticated else wait it's authenticated then assigning ECF.
             if(!parent->isHDCPAuthOn || bNeedReNegotiate)
             {
-                parent->timer->queueCallback(this, &tagMSTQSEandSetECF, HDCP_QSEANDSETECF_COOLDOWN);
+                parent->timer->queueCallback(this, &tagMSTQSEandSetECF, HDCP_QSEANDSETECF_COOLDOWN,
+                                             false /* not allowed in sleep */);
                 return true;
             }
             else
@@ -522,9 +592,36 @@ bool GroupImpl::hdcpSetEncrypted(bool encrypted, NvU8 streamType, NvBool  bForce
 
                 parent->main->configureAndTriggerECF(ecf, bForceClear, bAddStreamBack);
 
-                for (ListElement * i = parent->activeGroups.begin(); i != parent->activeGroups.end(); i = i->next)
+                //
+                // Snapshot active groups into a bounded stack array before
+                // dispatching notifyHDCPEnabled. The callback may remove or
+                // free a group from activeGroups (e.g. cloned-mode teardown),
+                // which would zero next/prev on the current iterator and
+                // crash a bare for-loop walk.
+                //
+                // A snapshot array (rather than a counter-only loop bounded
+                // by NV_MAX_HEADS) is required because the live activeGroups
+                // list itself can be mutated by re-entrant callbacks during
+                // iteration: a counter-only walk would still traverse the
+                // mutated list and re-encounter or miss entries. Copying all
+                // group pointers into a stack-local snapshot BEFORE invoking
+                // any callback ensures iteration is over a frozen set.
+                //
+                GroupImpl * snapshot[NV_MAX_HEADS];
+                unsigned snapshotCount = 0;
+                for (ListElement * i = parent->activeGroups.begin();
+                     i != parent->activeGroups.end(); i = i->next)
                 {
-                    GroupImpl * group = (GroupImpl *)i;
+                    if (snapshotCount >= NV_MAX_HEADS)
+                        break;
+                    snapshot[snapshotCount++] = (GroupImpl *)i;
+                }
+
+                for (unsigned s = 0; s < snapshotCount; s++)
+                {
+                    GroupImpl * group = snapshot[s];
+                    if (group->isDestroying)
+                        continue;
                     if (this->headIndex == group->headIndex)
                     {
                         group->hdcpEnabled = false;
@@ -630,7 +727,7 @@ void GroupImpl::hdcpMSTQSEandSetECF()
 
             if (this->headIndex == group->headIndex)
             {
-                HDCPValidateData hdcpValidateData = {0};
+                HDCPValidateData hdcpValidateData = {};
                 parent->main->configureHDCPValidateLink(hdcpValidateData);
                 parent->qseNonceGenerator->clientIdBuilder(hdcpValidateData.aN);
             }
@@ -730,16 +827,34 @@ void GroupImpl::hdcpMSTQSEandSetECF()
                    group->streamEncryptionStatusDetection->sendQSEMessage(group);
                    parent->timer->queueCallback(group,
                                                 &(group->tagStreamValidation),
-                                                HDCP_STREAM_VALIDATION_REQUEST_COOLDOWN);
+                                                HDCP_STREAM_VALIDATION_REQUEST_COOLDOWN,
+                                                false /* not allowed in sleep */);
                 }
             }
         }
     }
 
+    //
+    // Snapshot active groups into a bounded stack array before dispatching
+    // notifyHDCPEnabled. The callback may remove or free a group from
+    // activeGroups, which would zero next/prev on the current iterator and
+    // crash a bare for-loop walk.
+    //
+    GroupImpl * snapshot[NV_MAX_HEADS];
+    unsigned snapshotCount = 0;
     for (ListElement * i = parent->activeGroups.begin();
          i != parent->activeGroups.end(); i = i->next)
     {
-        GroupImpl * group = (GroupImpl *)i;
+        if (snapshotCount >= NV_MAX_HEADS)
+            break;
+        snapshot[snapshotCount++] = (GroupImpl *)i;
+    }
+
+    for (unsigned s = 0; s < snapshotCount; s++)
+    {
+        GroupImpl * group = snapshot[s];
+        if (group->isDestroying)
+            continue;
 
         if (this->headIndex == group->headIndex)
         {

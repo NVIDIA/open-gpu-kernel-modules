@@ -180,7 +180,7 @@ physmemConstruct_IMPL
                                 bCompressedKind ? &hwResource : NULL),
                         cleanup_mem);
 
-    if (!IS_GSP_CLIENT(pGpu))
+    if (memNeedRpcAlloc(pMemory))
     {
         //
         // vGPU:
@@ -203,10 +203,10 @@ physmemConstruct_IMPL
     return NV_OK;
 
 cleanup_common:
-    memDestructCommon(pMemory);
 
 cleanup_mem:
-    memdescDestroy(pMemDesc);
+    if (!pMemory->bConstructed)
+        memdescDestroy(pMemDesc);
 
     return status;
 }

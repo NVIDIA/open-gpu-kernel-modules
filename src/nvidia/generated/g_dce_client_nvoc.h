@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -74,10 +74,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__OBJDCECLIENTRM;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__OBJDCECLIENTRM;
 
 
 struct OBJDCECLIENTRM {
@@ -106,29 +105,10 @@ struct OBJDCECLIENTRM {
 };
 
 
-// Vtable with 14 per-class function pointers
-struct NVOC_VTABLE__OBJDCECLIENTRM {
-    NV_STATUS (*__dceclientConstructEngine__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    void (*__dceclientStateDestroy__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__dceclientStateLoad__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__dceclientStateUnload__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    void (*__dceclientInitMissing__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePreInitLocked__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePreInitUnlocked__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStateInitLocked__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStateInitUnlocked__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePreLoad__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePostLoad__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePreUnload__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePostUnload__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__dceclientIsPresent__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__OBJDCECLIENTRM {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__OBJDCECLIENTRM vtable;
 };
 
 #ifndef __nvoc_class_id_OBJDCECLIENTRM
@@ -184,6 +164,16 @@ static inline void dceclientDeinitRpcInfra(struct OBJDCECLIENTRM *arg_this) {
 #define dceclientDeinitRpcInfra(arg_this) dceclientDeinitRpcInfra_IMPL(arg_this)
 #endif // __nvoc_dce_client_h_disabled
 
+NV_STATUS dceclientSendRmInitRpc_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, NvBool arg3, NvBool arg4);
+#ifdef __nvoc_dce_client_h_disabled
+static inline NV_STATUS dceclientSendRmInitRpc(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, NvBool arg3, NvBool arg4) {
+    NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_dce_client_h_disabled
+#define dceclientSendRmInitRpc(arg1, arg_this, arg3, arg4) dceclientSendRmInitRpc_IMPL(arg1, arg_this, arg3, arg4)
+#endif // __nvoc_dce_client_h_disabled
+
 NV_STATUS dceclientDceRmInit_IMPL(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, NvBool arg3);
 #ifdef __nvoc_dce_client_h_disabled
 static inline NV_STATUS dceclientDceRmInit(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, NvBool arg3) {
@@ -206,14 +196,18 @@ static inline NV_STATUS dceclientSendRpc(struct OBJDCECLIENTRM *arg_this, void *
 
 
 // Wrapper macros for halified functions
-#define dceclientConstructEngine_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__dceclientConstructEngine__
+#define dceclientConstructEngine_FNPTR(arg_this) arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define dceclientConstructEngine(arg1, arg_this, arg3) dceclientConstructEngine_DISPATCH(arg1, arg_this, arg3)
-#define dceclientStateDestroy_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__dceclientStateDestroy__
+#define dceclientStateDestroy_FNPTR(arg_this) arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__
 #define dceclientStateDestroy(arg1, arg_this) dceclientStateDestroy_DISPATCH(arg1, arg_this)
-#define dceclientStateLoad_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__dceclientStateLoad__
+#define dceclientStateLoad_FNPTR(arg_this) arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__
 #define dceclientStateLoad(arg1, arg_this, arg3) dceclientStateLoad_DISPATCH(arg1, arg_this, arg3)
-#define dceclientStateUnload_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__dceclientStateUnload__
+#define dceclientStateUnload_FNPTR(arg_this) arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__
 #define dceclientStateUnload(arg1, arg_this, arg3) dceclientStateUnload_DISPATCH(arg1, arg_this, arg3)
+#define dceclientConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define dceclientConstructApertures(pGpu, pEngstate) dceclientConstructApertures_DISPATCH(pGpu, pEngstate)
+#define dceclientDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define dceclientDestructApertures(pGpu, pEngstate) dceclientDestructApertures_DISPATCH(pGpu, pEngstate)
 #define dceclientInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define dceclientInitMissing(pGpu, pEngstate) dceclientInitMissing_DISPATCH(pGpu, pEngstate)
 #define dceclientStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -237,59 +231,67 @@ static inline NV_STATUS dceclientSendRpc(struct OBJDCECLIENTRM *arg_this, void *
 
 // Dispatch functions
 static inline NV_STATUS dceclientConstructEngine_DISPATCH(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, ENGDESCRIPTOR arg3) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__dceclientConstructEngine__(arg1, arg_this, arg3);
+    return arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(arg1, staticCast(arg_this, OBJENGSTATE), arg3);
 }
 
 static inline void dceclientStateDestroy_DISPATCH(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this) {
-    arg_this->__nvoc_metadata_ptr->vtable.__dceclientStateDestroy__(arg1, arg_this);
+    arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(arg1, staticCast(arg_this, OBJENGSTATE));
 }
 
 static inline NV_STATUS dceclientStateLoad_DISPATCH(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, NvU32 arg3) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__dceclientStateLoad__(arg1, arg_this, arg3);
+    return arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__(arg1, staticCast(arg_this, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS dceclientStateUnload_DISPATCH(struct OBJGPU *arg1, struct OBJDCECLIENTRM *arg_this, NvU32 arg3) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__dceclientStateUnload__(arg1, arg_this, arg3);
+    return arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__(arg1, staticCast(arg_this, OBJENGSTATE), arg3);
+}
+
+static inline NV_STATUS dceclientConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
+static inline void dceclientDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline void dceclientInitMissing_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__dceclientInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS dceclientStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dceclientStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS dceclientStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dceclientStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS dceclientStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dceclientStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS dceclientStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dceclientStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS dceclientStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dceclientStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS dceclientStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dceclientStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS dceclientStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dceclientStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS dceclientStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dceclientStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NvBool dceclientIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dceclientIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions
@@ -321,7 +323,7 @@ NV_STATUS rpcRmApiDupObject_dce(RM_API *pRmApi, NvHandle hClient,
                                 NvHandle hParent, NvHandle *phObject, NvHandle hClientSrc,
                                 NvHandle hObjectSrc, NvU32 flags);
 NV_STATUS rpcRmApiFree_dce(RM_API *pRmApi, NvHandle hClient, NvHandle hObject);
-NV_STATUS rpcDceRmInit_dce(RM_API *pRmApi, NvBool bInit);
+NV_STATUS rpcDceRmInit_dce(RM_API *pRmApi, NvBool bInit, NvBool bFromResume);
 #endif
 
 #ifdef __cplusplus

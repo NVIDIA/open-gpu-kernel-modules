@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #include "vgpu/rpc.h"
 
 #include "published/blackwell/gb100/dev_fault.h"
+#include "published/blackwell/gb100/dev_top_zb.h"
 #include "published/blackwell/gb100/dev_hubmmu_base.h"
 #include "published/blackwell/gb100/dev_vm.h"
 

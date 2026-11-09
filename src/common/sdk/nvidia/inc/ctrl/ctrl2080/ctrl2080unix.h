@@ -187,4 +187,27 @@ typedef struct NV2080_CTRL_OS_UNIX_VIDMEM_PERSISTENCE_STATUS_PARAMS {
 typedef struct NV2080_CTRL_OS_UNIX_UPDATE_TGP_STATUS_PARAMS {
     NvBool bUpdateTGP;
 } NV2080_CTRL_OS_UNIX_UPDATE_TGP_STATUS_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_OS_UNIX_GET_PCIE_PEER_MMIO_REMAP_INFO
+ *
+ * This command reports whether the driver can DMA-map a PCIe peer device's
+ * MMIO (BAR) region through the IOMMU for this GPU, i.e. whether peer MMIO
+ * remap via the kernel's DMA-remapping APIs is usable.
+ *
+ *   bMmioRemapUsable [out]
+ *     NV_TRUE if peer MMIO remap is usable for this GPU.
+ *
+ * Possible status values returned are:
+ *  NV_OK
+ *  NV_ERR_NOT_SUPPORTED - the GPU is coherently attached to the CPU
+ *    (self-hosted), so there is no PCIe peer path, query does not apply.
+ */
+#define NV2080_CTRL_CMD_OS_UNIX_GET_PCIE_PEER_MMIO_REMAP_INFO (0x20803d09) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_OS_UNIX_INTERFACE_ID << 8) | NV2080_CTRL_OS_UNIX_GET_PCIE_PEER_MMIO_REMAP_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_OS_UNIX_GET_PCIE_PEER_MMIO_REMAP_INFO_PARAMS_MESSAGE_ID (0x9U)
+
+typedef struct NV2080_CTRL_OS_UNIX_GET_PCIE_PEER_MMIO_REMAP_INFO_PARAMS {
+    NvBool bMmioRemapUsable;
+} NV2080_CTRL_OS_UNIX_GET_PCIE_PEER_MMIO_REMAP_INFO_PARAMS;
 /* _ctrl2080unix_h_ */

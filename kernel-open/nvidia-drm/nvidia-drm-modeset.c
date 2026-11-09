@@ -234,6 +234,12 @@ static int __nv_drm_convert_in_fences(
                 plane_req_config->config.syncParams.preSyncptSpecified = true;
                 continue;
             }
+
+            if (dma_fence_is_signaled(plane_state->fence)) {
+                dma_fence_put(plane_state->fence);
+                plane_state->fence = NULL;
+                continue;
+            }
 #endif
         }
 

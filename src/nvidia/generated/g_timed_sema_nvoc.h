@@ -74,10 +74,9 @@ MAKE_LIST(GF100_TIMED_SEM_ENTRY_LIST, GF100_TIMED_SEM_ENTRY);
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__TimedSemaSwObject;
 struct NVOC_METADATA__ChannelDescendant;
-struct NVOC_VTABLE__TimedSemaSwObject;
 
 
 struct TimedSemaSwObject {
@@ -120,47 +119,10 @@ struct TimedSemaSwObject {
 };
 
 
-// Vtable with 32 per-class function pointers
-struct NVOC_VTABLE__TimedSemaSwObject {
-    NV_STATUS (*__tsemaGetSwMethods__)(struct TimedSemaSwObject * /*this*/, const METHOD **, NvU32 *);  // virtual override (chandes) base (chandes)
-    NvBool (*__tsemaIsSwMethodStalling__)(struct TimedSemaSwObject * /*this*/, NvU32);  // virtual inherited (chandes) base (chandes)
-    NV_STATUS (*__tsemaCheckMemInterUnmap__)(struct TimedSemaSwObject * /*this*/, NvBool);  // virtual inherited (chandes) base (chandes)
-    NV_STATUS (*__tsemaControl__)(struct TimedSemaSwObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (chandes)
-    NV_STATUS (*__tsemaMap__)(struct TimedSemaSwObject * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (chandes)
-    NV_STATUS (*__tsemaUnmap__)(struct TimedSemaSwObject * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (chandes)
-    NvBool (*__tsemaShareCallback__)(struct TimedSemaSwObject * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (chandes)
-    NV_STATUS (*__tsemaGetRegBaseOffsetAndSize__)(struct TimedSemaSwObject * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (chandes)
-    NV_STATUS (*__tsemaGetMapAddrSpace__)(struct TimedSemaSwObject * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (chandes)
-    NV_STATUS (*__tsemaInternalControlForward__)(struct TimedSemaSwObject * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (chandes)
-    NvHandle (*__tsemaGetInternalObjectHandle__)(struct TimedSemaSwObject * /*this*/);  // virtual inherited (gpures) base (chandes)
-    NvBool (*__tsemaAccessCallback__)(struct TimedSemaSwObject * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (chandes)
-    NV_STATUS (*__tsemaGetMemInterMapParams__)(struct TimedSemaSwObject * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (chandes)
-    NV_STATUS (*__tsemaGetMemoryMappingDescriptor__)(struct TimedSemaSwObject * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (chandes)
-    NV_STATUS (*__tsemaControlSerialization_Prologue__)(struct TimedSemaSwObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (chandes)
-    void (*__tsemaControlSerialization_Epilogue__)(struct TimedSemaSwObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (chandes)
-    NV_STATUS (*__tsemaControl_Prologue__)(struct TimedSemaSwObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (chandes)
-    void (*__tsemaControl_Epilogue__)(struct TimedSemaSwObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (chandes)
-    NvBool (*__tsemaCanCopy__)(struct TimedSemaSwObject * /*this*/);  // virtual inherited (res) base (chandes)
-    NV_STATUS (*__tsemaIsDuplicate__)(struct TimedSemaSwObject * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (chandes)
-    void (*__tsemaPreDestruct__)(struct TimedSemaSwObject * /*this*/);  // virtual inherited (res) base (chandes)
-    NV_STATUS (*__tsemaControlFilter__)(struct TimedSemaSwObject * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (chandes)
-    NvBool (*__tsemaIsPartialUnmapSupported__)(struct TimedSemaSwObject * /*this*/);  // inline virtual inherited (res) base (chandes) body
-    NV_STATUS (*__tsemaMapTo__)(struct TimedSemaSwObject * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (chandes)
-    NV_STATUS (*__tsemaUnmapFrom__)(struct TimedSemaSwObject * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (chandes)
-    NvU32 (*__tsemaGetRefCount__)(struct TimedSemaSwObject * /*this*/);  // virtual inherited (res) base (chandes)
-    void (*__tsemaAddAdditionalDependants__)(struct RsClient *, struct TimedSemaSwObject * /*this*/, RsResourceRef *);  // virtual inherited (res) base (chandes)
-    PEVENTNOTIFICATION * (*__tsemaGetNotificationListPtr__)(struct TimedSemaSwObject * /*this*/);  // virtual inherited (notify) base (chandes)
-    struct NotifShare * (*__tsemaGetNotificationShare__)(struct TimedSemaSwObject * /*this*/);  // virtual inherited (notify) base (chandes)
-    void (*__tsemaSetNotificationShare__)(struct TimedSemaSwObject * /*this*/, struct NotifShare *);  // virtual inherited (notify) base (chandes)
-    NV_STATUS (*__tsemaUnregisterEvent__)(struct TimedSemaSwObject * /*this*/, NvHandle, NvHandle, NvHandle, NvHandle);  // virtual inherited (notify) base (chandes)
-    NV_STATUS (*__tsemaGetOrAllocNotifShare__)(struct TimedSemaSwObject * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (chandes)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__TimedSemaSwObject {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__ChannelDescendant metadata__ChannelDescendant;
-    const struct NVOC_VTABLE__TimedSemaSwObject vtable;
 };
 
 #ifndef __nvoc_class_id_TimedSemaSwObject
@@ -239,20 +201,20 @@ static inline NV_STATUS tsemaCtrlCmdRelease(struct TimedSemaSwObject *pTimedSema
 
 
 // Wrapper macros for halified functions
-#define tsemaGetSwMethods_FNPTR(pTimedSemSw) pTimedSemSw->__nvoc_metadata_ptr->vtable.__tsemaGetSwMethods__
+#define tsemaGetSwMethods_FNPTR(pTimedSemSw) pTimedSemSw->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesGetSwMethods__
 #define tsemaGetSwMethods(pTimedSemSw, ppMethods, pNumMethods) tsemaGetSwMethods_DISPATCH(pTimedSemSw, ppMethods, pNumMethods)
 #define tsemaRelease_HAL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice) tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice)
 #define tsemaIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__
 #define tsemaIsSwMethodStalling(pChannelDescendant, hHandle) tsemaIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
-#define tsemaCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesCheckMemInterUnmap__
+#define tsemaCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define tsemaCheckMemInterUnmap(pChannelDescendant, bSubdeviceHandleProvided) tsemaCheckMemInterUnmap_DISPATCH(pChannelDescendant, bSubdeviceHandleProvided)
-#define tsemaControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define tsemaControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define tsemaControl(pGpuResource, pCallContext, pParams) tsemaControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define tsemaMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
+#define tsemaMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define tsemaMap(pGpuResource, pCallContext, pParams, pCpuMapping) tsemaMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define tsemaUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
+#define tsemaUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define tsemaUnmap(pGpuResource, pCallContext, pCpuMapping) tsemaUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define tsemaShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define tsemaShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define tsemaShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) tsemaShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define tsemaGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define tsemaGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) tsemaGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -262,19 +224,19 @@ static inline NV_STATUS tsemaCtrlCmdRelease(struct TimedSemaSwObject *pTimedSema
 #define tsemaInternalControlForward(pGpuResource, command, pParams, size) tsemaInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define tsemaGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define tsemaGetInternalObjectHandle(pGpuResource) tsemaGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define tsemaAccessCallback_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define tsemaAccessCallback_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define tsemaAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) tsemaAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define tsemaGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define tsemaGetMemInterMapParams(pRmResource, pParams) tsemaGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define tsemaGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define tsemaGetMemoryMappingDescriptor(pRmResource, ppMemDesc) tsemaGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define tsemaControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define tsemaControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define tsemaControlSerialization_Prologue(pResource, pCallContext, pParams) tsemaControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define tsemaControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define tsemaControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define tsemaControlSerialization_Epilogue(pResource, pCallContext, pParams) tsemaControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define tsemaControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define tsemaControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define tsemaControl_Prologue(pResource, pCallContext, pParams) tsemaControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define tsemaControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define tsemaControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define tsemaControl_Epilogue(pResource, pCallContext, pParams) tsemaControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define tsemaCanCopy_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define tsemaCanCopy(pResource) tsemaCanCopy_DISPATCH(pResource)
@@ -294,144 +256,144 @@ static inline NV_STATUS tsemaCtrlCmdRelease(struct TimedSemaSwObject *pTimedSema
 #define tsemaGetRefCount(pResource) tsemaGetRefCount_DISPATCH(pResource)
 #define tsemaAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define tsemaAddAdditionalDependants(pClient, pResource, pReference) tsemaAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define tsemaGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
+#define tsemaGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationListPtr__
 #define tsemaGetNotificationListPtr(pNotifier) tsemaGetNotificationListPtr_DISPATCH(pNotifier)
-#define tsemaGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
+#define tsemaGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationShare__
 #define tsemaGetNotificationShare(pNotifier) tsemaGetNotificationShare_DISPATCH(pNotifier)
-#define tsemaSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
+#define tsemaSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifySetNotificationShare__
 #define tsemaSetNotificationShare(pNotifier, pNotifShare) tsemaSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define tsemaUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
+#define tsemaUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyUnregisterEvent__
 #define tsemaUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) tsemaUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define tsemaGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
+#define tsemaGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetOrAllocNotifShare__
 #define tsemaGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) tsemaGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NV_STATUS tsemaGetSwMethods_DISPATCH(struct TimedSemaSwObject *pTimedSemSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
-    return pTimedSemSw->__nvoc_metadata_ptr->vtable.__tsemaGetSwMethods__(pTimedSemSw, ppMethods, pNumMethods);
+    return pTimedSemSw->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesGetSwMethods__(staticCast(pTimedSemSw, ChannelDescendant), ppMethods, pNumMethods);
 }
 
 static inline NvBool tsemaIsSwMethodStalling_DISPATCH(struct TimedSemaSwObject *pChannelDescendant, NvU32 hHandle) {
-    return pChannelDescendant->__nvoc_metadata_ptr->vtable.__tsemaIsSwMethodStalling__(pChannelDescendant, hHandle);
+    return pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_metadata_ptr->vtable.__chandesIsSwMethodStalling__(staticCast(pChannelDescendant, ChannelDescendant), hHandle);
 }
 
 static inline NV_STATUS tsemaCheckMemInterUnmap_DISPATCH(struct TimedSemaSwObject *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
-    return pChannelDescendant->__nvoc_metadata_ptr->vtable.__tsemaCheckMemInterUnmap__(pChannelDescendant, bSubdeviceHandleProvided);
+    return pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pChannelDescendant, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS tsemaControl_DISPATCH(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__tsemaControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS tsemaMap_DISPATCH(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__tsemaMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pGpuResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS tsemaUnmap_DISPATCH(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__tsemaUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pGpuResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool tsemaShareCallback_DISPATCH(struct TimedSemaSwObject *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__tsemaShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS tsemaGetRegBaseOffsetAndSize_DISPATCH(struct TimedSemaSwObject *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__tsemaGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS tsemaGetMapAddrSpace_DISPATCH(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__tsemaGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pGpuResource, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS tsemaInternalControlForward_DISPATCH(struct TimedSemaSwObject *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__tsemaInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle tsemaGetInternalObjectHandle_DISPATCH(struct TimedSemaSwObject *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__tsemaGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool tsemaAccessCallback_DISPATCH(struct TimedSemaSwObject *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__tsemaAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS tsemaGetMemInterMapParams_DISPATCH(struct TimedSemaSwObject *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__tsemaGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS tsemaGetMemoryMappingDescriptor_DISPATCH(struct TimedSemaSwObject *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__tsemaGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS tsemaControlSerialization_Prologue_DISPATCH(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__tsemaControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void tsemaControlSerialization_Epilogue_DISPATCH(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__tsemaControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS tsemaControl_Prologue_DISPATCH(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__tsemaControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void tsemaControl_Epilogue_DISPATCH(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__tsemaControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool tsemaCanCopy_DISPATCH(struct TimedSemaSwObject *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__tsemaCanCopy__(pResource);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS tsemaIsDuplicate_DISPATCH(struct TimedSemaSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__tsemaIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void tsemaPreDestruct_DISPATCH(struct TimedSemaSwObject *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__tsemaPreDestruct__(pResource);
+    pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS tsemaControlFilter_DISPATCH(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__tsemaControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool tsemaIsPartialUnmapSupported_DISPATCH(struct TimedSemaSwObject *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__tsemaIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS tsemaMapTo_DISPATCH(struct TimedSemaSwObject *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__tsemaMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS tsemaUnmapFrom_DISPATCH(struct TimedSemaSwObject *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__tsemaUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 tsemaGetRefCount_DISPATCH(struct TimedSemaSwObject *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__tsemaGetRefCount__(pResource);
+    return pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void tsemaAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct TimedSemaSwObject *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__tsemaAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 static inline PEVENTNOTIFICATION * tsemaGetNotificationListPtr_DISPATCH(struct TimedSemaSwObject *pNotifier) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__tsemaGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationListPtr__(staticCast(pNotifier, INotifier));
 }
 
 static inline struct NotifShare * tsemaGetNotificationShare_DISPATCH(struct TimedSemaSwObject *pNotifier) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__tsemaGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationShare__(staticCast(pNotifier, INotifier));
 }
 
 static inline void tsemaSetNotificationShare_DISPATCH(struct TimedSemaSwObject *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_metadata_ptr->vtable.__tsemaSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifySetNotificationShare__(staticCast(pNotifier, INotifier), pNotifShare);
 }
 
 static inline NV_STATUS tsemaUnregisterEvent_DISPATCH(struct TimedSemaSwObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__tsemaUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyUnregisterEvent__(staticCast(pNotifier, INotifier), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS tsemaGetOrAllocNotifShare_DISPATCH(struct TimedSemaSwObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__tsemaGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetOrAllocNotifShare__(staticCast(pNotifier, INotifier), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 // Virtual method declarations and/or inline definitions

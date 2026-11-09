@@ -68,10 +68,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__DebugBufferApi;
 struct NVOC_METADATA__GpuResource;
-struct NVOC_VTABLE__DebugBufferApi;
 
 
 struct DebugBufferApi {
@@ -98,40 +97,10 @@ struct DebugBufferApi {
 };
 
 
-// Vtable with 25 per-class function pointers
-struct NVOC_VTABLE__DebugBufferApi {
-    NV_STATUS (*__dbgbufMap__)(struct DebugBufferApi * /*this*/, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual override (res) base (gpures)
-    NV_STATUS (*__dbgbufUnmap__)(struct DebugBufferApi * /*this*/, CALL_CONTEXT *, RsCpuMapping *);  // virtual override (res) base (gpures)
-    NV_STATUS (*__dbgbufGetMapAddrSpace__)(struct DebugBufferApi * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual override (gpures) base (gpures)
-    NV_STATUS (*__dbgbufGetMemoryMappingDescriptor__)(struct DebugBufferApi * /*this*/, MEMORY_DESCRIPTOR **);  // virtual override (rmres) base (gpures)
-    NV_STATUS (*__dbgbufControl__)(struct DebugBufferApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__dbgbufShareCallback__)(struct DebugBufferApi * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__dbgbufGetRegBaseOffsetAndSize__)(struct DebugBufferApi * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__dbgbufInternalControlForward__)(struct DebugBufferApi * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__dbgbufGetInternalObjectHandle__)(struct DebugBufferApi * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__dbgbufAccessCallback__)(struct DebugBufferApi * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__dbgbufGetMemInterMapParams__)(struct DebugBufferApi * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__dbgbufCheckMemInterUnmap__)(struct DebugBufferApi * /*this*/, NvBool);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__dbgbufControlSerialization_Prologue__)(struct DebugBufferApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__dbgbufControlSerialization_Epilogue__)(struct DebugBufferApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__dbgbufControl_Prologue__)(struct DebugBufferApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__dbgbufControl_Epilogue__)(struct DebugBufferApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NvBool (*__dbgbufCanCopy__)(struct DebugBufferApi * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__dbgbufIsDuplicate__)(struct DebugBufferApi * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__dbgbufPreDestruct__)(struct DebugBufferApi * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__dbgbufControlFilter__)(struct DebugBufferApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (gpures)
-    NvBool (*__dbgbufIsPartialUnmapSupported__)(struct DebugBufferApi * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__dbgbufMapTo__)(struct DebugBufferApi * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__dbgbufUnmapFrom__)(struct DebugBufferApi * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__dbgbufGetRefCount__)(struct DebugBufferApi * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__dbgbufAddAdditionalDependants__)(struct RsClient *, struct DebugBufferApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__DebugBufferApi {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResource metadata__GpuResource;
-    const struct NVOC_VTABLE__DebugBufferApi vtable;
 };
 
 #ifndef __nvoc_class_id_DebugBufferApi
@@ -168,17 +137,17 @@ void dbgbufDestruct_IMPL(struct DebugBufferApi *pDebugBufferApi);
 
 
 // Wrapper macros for halified functions
-#define dbgbufMap_FNPTR(pDebugBufferApi) pDebugBufferApi->__nvoc_metadata_ptr->vtable.__dbgbufMap__
+#define dbgbufMap_FNPTR(pDebugBufferApi) pDebugBufferApi->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define dbgbufMap(pDebugBufferApi, pCallContext, pParams, pCpuMapping) dbgbufMap_DISPATCH(pDebugBufferApi, pCallContext, pParams, pCpuMapping)
-#define dbgbufUnmap_FNPTR(pDebugBufferApi) pDebugBufferApi->__nvoc_metadata_ptr->vtable.__dbgbufUnmap__
+#define dbgbufUnmap_FNPTR(pDebugBufferApi) pDebugBufferApi->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define dbgbufUnmap(pDebugBufferApi, pCallContext, pCpuMapping) dbgbufUnmap_DISPATCH(pDebugBufferApi, pCallContext, pCpuMapping)
-#define dbgbufGetMapAddrSpace_FNPTR(pDebugBufferApi) pDebugBufferApi->__nvoc_metadata_ptr->vtable.__dbgbufGetMapAddrSpace__
+#define dbgbufGetMapAddrSpace_FNPTR(pDebugBufferApi) pDebugBufferApi->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__
 #define dbgbufGetMapAddrSpace(pDebugBufferApi, pCallContext, mapFlags, pAddrSpace) dbgbufGetMapAddrSpace_DISPATCH(pDebugBufferApi, pCallContext, mapFlags, pAddrSpace)
-#define dbgbufGetMemoryMappingDescriptor_FNPTR(pDebugBufferApi) pDebugBufferApi->__nvoc_metadata_ptr->vtable.__dbgbufGetMemoryMappingDescriptor__
+#define dbgbufGetMemoryMappingDescriptor_FNPTR(pDebugBufferApi) pDebugBufferApi->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define dbgbufGetMemoryMappingDescriptor(pDebugBufferApi, ppMemDesc) dbgbufGetMemoryMappingDescriptor_DISPATCH(pDebugBufferApi, ppMemDesc)
-#define dbgbufControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define dbgbufControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define dbgbufControl(pGpuResource, pCallContext, pParams) dbgbufControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define dbgbufShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define dbgbufShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define dbgbufShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) dbgbufShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define dbgbufGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define dbgbufGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) dbgbufGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -186,19 +155,19 @@ void dbgbufDestruct_IMPL(struct DebugBufferApi *pDebugBufferApi);
 #define dbgbufInternalControlForward(pGpuResource, command, pParams, size) dbgbufInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define dbgbufGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define dbgbufGetInternalObjectHandle(pGpuResource) dbgbufGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define dbgbufAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define dbgbufAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define dbgbufAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) dbgbufAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define dbgbufGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define dbgbufGetMemInterMapParams(pRmResource, pParams) dbgbufGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define dbgbufCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define dbgbufCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) dbgbufCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define dbgbufControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define dbgbufControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define dbgbufControlSerialization_Prologue(pResource, pCallContext, pParams) dbgbufControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define dbgbufControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define dbgbufControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define dbgbufControlSerialization_Epilogue(pResource, pCallContext, pParams) dbgbufControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define dbgbufControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define dbgbufControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define dbgbufControl_Prologue(pResource, pCallContext, pParams) dbgbufControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define dbgbufControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define dbgbufControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define dbgbufControl_Epilogue(pResource, pCallContext, pParams) dbgbufControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define dbgbufCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define dbgbufCanCopy(pResource) dbgbufCanCopy_DISPATCH(pResource)
@@ -221,103 +190,103 @@ void dbgbufDestruct_IMPL(struct DebugBufferApi *pDebugBufferApi);
 
 // Dispatch functions
 static inline NV_STATUS dbgbufMap_DISPATCH(struct DebugBufferApi *pDebugBufferApi, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pDebugBufferApi->__nvoc_metadata_ptr->vtable.__dbgbufMap__(pDebugBufferApi, pCallContext, pParams, pCpuMapping);
+    return pDebugBufferApi->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pDebugBufferApi, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS dbgbufUnmap_DISPATCH(struct DebugBufferApi *pDebugBufferApi, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pDebugBufferApi->__nvoc_metadata_ptr->vtable.__dbgbufUnmap__(pDebugBufferApi, pCallContext, pCpuMapping);
+    return pDebugBufferApi->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pDebugBufferApi, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS dbgbufGetMapAddrSpace_DISPATCH(struct DebugBufferApi *pDebugBufferApi, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pDebugBufferApi->__nvoc_metadata_ptr->vtable.__dbgbufGetMapAddrSpace__(pDebugBufferApi, pCallContext, mapFlags, pAddrSpace);
+    return pDebugBufferApi->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pDebugBufferApi, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS dbgbufGetMemoryMappingDescriptor_DISPATCH(struct DebugBufferApi *pDebugBufferApi, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pDebugBufferApi->__nvoc_metadata_ptr->vtable.__dbgbufGetMemoryMappingDescriptor__(pDebugBufferApi, ppMemDesc);
+    return pDebugBufferApi->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pDebugBufferApi, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS dbgbufControl_DISPATCH(struct DebugBufferApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__dbgbufControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool dbgbufShareCallback_DISPATCH(struct DebugBufferApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__dbgbufShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS dbgbufGetRegBaseOffsetAndSize_DISPATCH(struct DebugBufferApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__dbgbufGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS dbgbufInternalControlForward_DISPATCH(struct DebugBufferApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__dbgbufInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle dbgbufGetInternalObjectHandle_DISPATCH(struct DebugBufferApi *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__dbgbufGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool dbgbufAccessCallback_DISPATCH(struct DebugBufferApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__dbgbufAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS dbgbufGetMemInterMapParams_DISPATCH(struct DebugBufferApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__dbgbufGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS dbgbufCheckMemInterUnmap_DISPATCH(struct DebugBufferApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__dbgbufCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS dbgbufControlSerialization_Prologue_DISPATCH(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__dbgbufControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void dbgbufControlSerialization_Epilogue_DISPATCH(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__dbgbufControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS dbgbufControl_Prologue_DISPATCH(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__dbgbufControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void dbgbufControl_Epilogue_DISPATCH(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__dbgbufControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool dbgbufCanCopy_DISPATCH(struct DebugBufferApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__dbgbufCanCopy__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS dbgbufIsDuplicate_DISPATCH(struct DebugBufferApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__dbgbufIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void dbgbufPreDestruct_DISPATCH(struct DebugBufferApi *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__dbgbufPreDestruct__(pResource);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS dbgbufControlFilter_DISPATCH(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__dbgbufControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool dbgbufIsPartialUnmapSupported_DISPATCH(struct DebugBufferApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__dbgbufIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS dbgbufMapTo_DISPATCH(struct DebugBufferApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__dbgbufMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS dbgbufUnmapFrom_DISPATCH(struct DebugBufferApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__dbgbufUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 dbgbufGetRefCount_DISPATCH(struct DebugBufferApi *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__dbgbufGetRefCount__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void dbgbufAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct DebugBufferApi *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__dbgbufAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

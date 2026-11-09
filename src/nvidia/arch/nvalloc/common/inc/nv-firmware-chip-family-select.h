@@ -58,8 +58,9 @@ static inline nv_firmware_chip_family_t nv_firmware_get_chip_family(
         case GPU_ARCHITECTURE_BLACKWELL_GB1XX:
             if (gpuImpl == GPU_IMPLEMENTATION_GB10B)
                 return NV_FIRMWARE_CHIP_FAMILY_GB10Y;
-            else
-                return NV_FIRMWARE_CHIP_FAMILY_GB10X;
+            if (gpuImpl == GPU_IMPLEMENTATION_GB10C)
+                return NV_FIRMWARE_CHIP_FAMILY_GB10Y;
+            return NV_FIRMWARE_CHIP_FAMILY_GB10X;
 
         case GPU_ARCHITECTURE_BLACKWELL_GB2XX:
             if (gpuImpl >= GPU_IMPLEMENTATION_GB20B)

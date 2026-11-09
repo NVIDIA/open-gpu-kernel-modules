@@ -25,14 +25,18 @@
 #include "core/gmcapi_impl.h"
 #include "gpu/gpu.h"
 #include "nvctassert.h"
+#include "resserv/rs_server.h"
+#include "gpu/mmu/kern_gmmu.h" // For VMMU_MAX_GFID
 
 //
 // This file must have access to all types used by GMCAPIs
 //
 #include "rmgspseq.h" // TODO: Move into interface/gmcapi/
 
+#include "gmcapi/gmcapi_sched.h"
 #include "gmcapi/gmcapi_vgpu.h"
 #include "gmcapi/gmcapi_gsp.h"
+#include "gmcapi/gmcapi_gr.h"
 
 // Declare all handler functions..
 #define GMCAPI(numeric_id, symbolic_id, handler_func, input_type, output_type, flags, ...)      \
@@ -116,20 +120,7 @@ NV_STATUS gmcapiDispatch(GMCAPI_CONTEXT *pCtx)
 
     if (bRpc)
     {
-        GMCAPI_HEADER gmchdr = {0};
-        gmchdr.command = pCtx->command;
-        gmchdr.size = (NvU32)pCtx->inParamSize;
-        gmchdr.request.max_response_size = (NvU32)pCtx->maxOutParamSize;
-
-        NvBool bSync = !(flags & GMCAPI_FLAGS_FIRE_AND_FORGET);
-        status = gpuSendGmcRpc(pCtx->pGpu, &gmchdr, pCtx->pInParams, pCtx->pOutParams, bSync);
-
-        if (status == NV_OK && bSync)
-        {
-            status = gmchdr.response.status;
-            pCtx->outParamSize = gmchdr.size;
-        }
-        return status;
+        return gpuSendGmcRpc(pCtx->pGpu, pCtx);
     }
 
     NV_ASSERT_OR_RETURN(handler, NV_ERR_GMCAPI_INTERNAL_RM_ERROR);

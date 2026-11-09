@@ -287,15 +287,6 @@ kgmmuInvalidateTlb_GM107
     return status;
 }
 
-/*!
- * Check if a specific GMMU format version is supported.
- */
-NvBool
-kgmmuFmtIsVersionSupported_GM10X(KernelGmmu *pKernelGmmu, NvU32 version)
-{
-    return (version == GMMU_FMT_VERSION_1);
-}
-
 void
 kgmmuDetermineMaxVASize_GM107
 (

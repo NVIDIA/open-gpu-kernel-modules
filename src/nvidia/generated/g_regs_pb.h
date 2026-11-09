@@ -15,6 +15,7 @@ extern const PRB_ENUM_DESC prb_enums_regs_regsandmem_memtype;
 #define REGS_REGSANDMEM_PCI_CONFIG_REGS 6
 #define REGS_REGSANDMEM_PCI_SPACE 7
 #define REGS_REGSANDMEM_INSTANCE 8
+#define REGS_REGSANDMEM_GPU_REGS_WR 9
 
 extern const PRB_MSG_DESC prb_messages_regs[];
 

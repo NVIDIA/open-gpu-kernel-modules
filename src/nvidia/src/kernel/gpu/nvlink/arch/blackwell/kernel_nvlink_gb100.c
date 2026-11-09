@@ -34,6 +34,9 @@
 #include "nvoc/event_bus.h"
 #include "rmapi/rs_utils.h"
 
+#include "lib/protobuf/prb_util.h"
+#include "g_nvdebug_pb.h"
+
 #define NVLINK_FABRIC_HEALTH_MASK_TIMER_DELAY_NS    60000000000ULL
 
 static void _knvlinkP2PIdleCallback(OBJGPU *pGpu, void *pArgs);
@@ -115,6 +118,156 @@ knvlinkLogAliDebugMessages_GB100
     return NV_OK;
 }
 
+/**  Dumps out the network config regs and remap table for each link in raw bytes format
+ * Format of bytes per link
+ * Dword 0: Link id
+ * Dword 1-10: Network config regs
+ * Dword 11: FLA Remap Table Address
+ * Dword 12: FLA Remap Table Data0
+ * Dword 13: FLA Remap Table Data1
+ * ... repeats for all 4096 entries
+ * Dword 12,288: NODE Remap Table Address
+ * Dword 12,289: NODE Remap Table Data0
+ * Dword 12,290: NODE Remap Table Data1
+ * ... repeats for all 64 entries
+ */
+static NV_STATUS
+_knvlinkDumpRemapTableEngineFunc
+(
+    OBJGPU *pGpu,
+    PRB_ENCODER *pPrbEnc,
+    NVD_STATE   *pNvDumpState,
+    void        *pvData
+)
+{
+    KernelNvlink *pKernelNvlink = (KernelNvlink *)pvData;
+    NvU8 startingDepth = prbEncNestingLevel(pPrbEnc);
+    NV_STATUS status = NV_OK;
+    NvBool bRemapTableStart = NV_FALSE;
+    NV2080_CTRL_INTERNAL_NVLINK_GET_REMAP_TABLE_DUMP_PARAMS *pParams;
+    NVLINK_BIT_VECTOR *pEnabledLinksVec;
+    NvU32 link;
+    NvU32 i;
+
+    NV_ASSERT_OR_RETURN((pGpu != NULL) && (pKernelNvlink != NULL), NV_ERR_INVALID_ARGUMENT);
+
+    // Skip dumping remap table if NVLE is enabled
+    if (knvlinkIsNvleEnabled_HAL(pGpu, pKernelNvlink))
+    {
+        return NV_OK;
+    }
+
+    pParams = portMemAllocNonPaged(sizeof(NV2080_CTRL_INTERNAL_NVLINK_GET_REMAP_TABLE_DUMP_PARAMS));
+    if (pParams == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to allocate memory for remap table dump params\n");
+        goto exit;
+    }
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, 
+        prbEncNestedStart(pPrbEnc, NVDEBUG_GPUINFO_ENG_NVLINK_REMAP_TABLE), exit);
+    bRemapTableStart = NV_TRUE;
+
+    // dump out remap table
+    pEnabledLinksVec = knvlinkGetEnabledLinkMask(pGpu, pKernelNvlink);
+    FOR_EACH_IN_BITVECTOR(pEnabledLinksVec, link)
+    {
+        portMemSet(pParams, 0, sizeof(*pParams));
+        pParams->linkId = link;
+        status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                            NV2080_CTRL_CMD_INTERNAL_NVLINK_GET_REMAP_TABLE_DUMP,
+                                            (void *)pParams,
+                                            sizeof(NV2080_CTRL_INTERNAL_NVLINK_GET_REMAP_TABLE_DUMP_PARAMS));
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "NV2080_CTRL_CMD_NVLINK_GET_REMAP_TABLE_DUMP failed with status: 0x%x\n", status);
+            goto exit;
+        }
+
+        // Dump link id
+        status = prbEncAddBytes(pPrbEnc, NVDEBUG_ENG_NVLINKREMAPTABLE_REMAP_TABLE, (NvU8 *)&link, sizeof(NvU32));
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to dump link id, status=%x\n", status);
+            goto exit;
+        }
+
+        // Dump network config regs
+        for (i = 0; i < NV_ARRAY_ELEMENTS(pParams->networkConfigRegs); i++)
+        {
+            status = prbEncAddBytes(pPrbEnc, NVDEBUG_ENG_NVLINKREMAPTABLE_REMAP_TABLE, (NvU8 *)&pParams->networkConfigRegs[i], sizeof(NvU32));
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Failed to dump network config reg %d, status=%x\n", i, status);
+                goto exit;
+            }
+        }
+
+        // Dump remap table data
+        for (i = 0; i < NV2080_CTRL_INTERNAL_NVLINK_FLA_REMAP_TABLE_MAX_REMAP_ENTRIES; i++)
+        {
+            status = prbEncAddBytes(pPrbEnc, NVDEBUG_ENG_NVLINKREMAPTABLE_REMAP_TABLE, (NvU8 *)&i, sizeof(NvU32));
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Failed to dump FLA remap table index %d, status=%x\n", i, status);
+                goto exit;
+            }
+            status = prbEncAddBytes(pPrbEnc, NVDEBUG_ENG_NVLINKREMAPTABLE_REMAP_TABLE, (NvU8 *)&pParams->flaRemapData0[i], sizeof(NvU32));
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Failed to dump FLA remap table index %d data 0, status=%x\n", i, status);
+                goto exit;
+            }
+            status = prbEncAddBytes(pPrbEnc, NVDEBUG_ENG_NVLINKREMAPTABLE_REMAP_TABLE, (NvU8 *)&pParams->flaRemapData1[i], sizeof(NvU32));
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Failed to dump FLA remap table index %d data 1, status=%x\n", i, status);
+                goto exit;
+            }
+        }
+
+        // Dump node table data
+        for (i = 0; i < NV2080_CTRL_INTERNAL_NVLINK_NODE_REMAP_TABLE_MAX_REMAP_ENTRIES; i++)
+        {
+            status = prbEncAddBytes(pPrbEnc, NVDEBUG_ENG_NVLINKREMAPTABLE_REMAP_TABLE, (NvU8 *)&i, sizeof(NvU32));
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Failed to dump node remap table index %d, status=%x\n", i, status);
+                goto exit;
+            }
+            status = prbEncAddBytes(pPrbEnc, NVDEBUG_ENG_NVLINKREMAPTABLE_REMAP_TABLE, (NvU8 *)&pParams->nodeRemapData0[i], sizeof(NvU32));
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Failed to dump node remap table index %d data, status=%x\n", i, status);
+                goto exit;
+            }
+            status = prbEncAddBytes(pPrbEnc, NVDEBUG_ENG_NVLINKREMAPTABLE_REMAP_TABLE, (NvU8 *)&pParams->nodeRemapData1[i], sizeof(NvU32));
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Failed to dump node remap table index %d data, status=%x\n", i, status);
+                goto exit;
+            }
+        }
+    }
+    FOR_EACH_IN_BITVECTOR_END();
+
+exit:
+    if (bRemapTableStart)
+    {
+        // Unwind the protobuf to the correct depth.
+        NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR,
+            prbEncUnwindNesting(pPrbEnc, startingDepth));
+    }
+
+    if (pParams != NULL)
+    {
+        portMemFree(pParams);
+        pParams = NULL;
+    }
+    // Squash status to ensure remainder of dump can be collected
+    return NV_OK;
+}
+
 /*!
  * @brief Registers Callback to the existing dump framework
  */
@@ -135,7 +288,7 @@ knvlinkDumpCallbackRegister_GB100
     // See if already registered (can be if have multiple)
     if ((nvdFindEngine(pGpu, pNvd, NVDUMP_COMPONENT_ENG_NVLINK, &pEngineCallback) == NV_OK) &&
         (pEngineCallback != NULL))
-        return;
+        goto engine_signup_remap_table;;
 
     // Required to sign up for nvlink callback in Kernel RM in order to dump contents in GSP RM
     nvdEngineSignUp(pGpu,
@@ -144,6 +297,21 @@ knvlinkDumpCallbackRegister_GB100
                     NVDUMP_COMPONENT_ENG_NVLINK,
                     REF_DEF(NVD_ENGINE_FLAGS_PRIORITY, _MED) |
                     REF_DEF(NVD_ENGINE_FLAGS_SOURCE,   _GSP),
+                    (void *)pKernelNvlink);
+
+engine_signup_remap_table:
+    // See if already registered (can be if have multiple)
+    if ((nvdFindEngine(pGpu, pNvd, NVDUMP_COMPONENT_ENG_NVLINK_REMAP_TABLE, &pEngineCallback) == NV_OK) &&
+        (pEngineCallback != NULL))
+        return;
+
+    // Required to sign up for nvlink callback in Kernel RM in order to dump contents in GSP RM
+    nvdEngineSignUp(pGpu,
+                    pNvd,
+                    _knvlinkDumpRemapTableEngineFunc,
+                    NVDUMP_COMPONENT_ENG_NVLINK_REMAP_TABLE,
+                    REF_DEF(NVD_ENGINE_FLAGS_PRIORITY, _MED) |
+                    REF_DEF(NVD_ENGINE_FLAGS_SOURCE,   _CPU),
                     (void *)pKernelNvlink);
 }
 
@@ -652,6 +820,7 @@ knvlinkGetEncryptionBits_GB100
 
     pKernelNvlink->bMmuNvlinkEncryptEn = params.bMmuNvlinkEncryptEn;
     pKernelNvlink->bNvlinkTlwEncryptEn = params.bNvlinkTlwEncryptEn;
+    pKernelNvlink->bNvlinkTlwSelectiveEncryptionEn = params.bNvlinkTlwSelectiveEncryptionEn;
 
     return NV_OK;
 }
@@ -676,8 +845,8 @@ knvlinkIsNvleEnabled_GB100
     if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED))
     {
         //
-        // On MODS and for NVLE Qual mode verification, just check for PDB_PROP_KNVLINK_ENCRYPTION_ENABLED,
-        // for other use-cases, check the following settings as well
+        // On MODS and for NVLE Qual mode verification, update PDB_PROP_KNVLINK_ENCRYPTION_ENABLED
+        // from HW readback bits. For other use-cases, check the following settings as well.
         //
         if (!RMCFG_FEATURE_MODS_FEATURES && !pKernelNvlink->bNvleQualModeRegkey)
         {
@@ -700,6 +869,20 @@ knvlinkIsNvleEnabled_GB100
                           " OR CC is disabled OR NVLE bit is not set\n");
                 pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_FALSE);
             }
+
+            if (pKernelNvlink->bNvlinkTlwEncryptEn && pKernelNvlink->bNvlinkTlwSelectiveEncryptionEn)
+            {
+                pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_SELECTIVE_ENCRYPTION_ENABLED, pKernelNvlink->bNvlinkTlwSelectiveEncryptionEn);
+            }
+        }
+        else
+        {
+            NvBool bNvleEnabled = pKernelNvlink->bMmuNvlinkEncryptEn &&
+                                  pKernelNvlink->bNvlinkTlwEncryptEn;
+
+            pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, bNvleEnabled);
+            pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_SELECTIVE_ENCRYPTION_ENABLED,
+                                       bNvleEnabled && pKernelNvlink->bNvlinkTlwSelectiveEncryptionEn);
         }
     }
 

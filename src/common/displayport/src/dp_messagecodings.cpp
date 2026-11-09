@@ -445,14 +445,22 @@ ParseResponseStatus RemoteDpcdReadMessage::parseResponseAck(EncodedMessage * mes
 {
     reader->readOrDefault(4 /*zeroes*/, 0);
     reply.portNumber = reader->readOrDefault(4 /*Port_Number*/, 0xF);
+
+    if (this->getSinkPort() != reply.portNumber)
+        return ParseResponseWrong;
+
     reply.numBytesReadDPCD = reader->readOrDefault(8 /*Num_Of_Bytes_Read*/, 0x0);
+
+    if (reply.numBytesReadDPCD > REMOTE_READ_BUFFER_SIZE)
+    {
+        reply.numBytesReadDPCD = 0;
+        return ParseResponseWrong;
+    }
+
     for (unsigned i=0; i<reply.numBytesReadDPCD; i++)
     {
         reply.readData[i] = (NvU8)reader->readOrDefault(8 /*data*/, 0x0);
     }
-
-    if (this->getSinkPort() != reply.portNumber)
-        return ParseResponseWrong;
 
     return ParseResponseSuccess;
 }
@@ -563,14 +571,22 @@ ParseResponseStatus RemoteI2cReadMessage::parseResponseAck(EncodedMessage * mess
 {
     reader->readOrDefault(4 /*zeroes*/, 0);
     reply.portNumber = reader->readOrDefault(4 /*Port_Number*/, 0xF);
+
+    if (this->getSinkPort() != reply.portNumber)
+        return ParseResponseWrong;
+
     reply.numBytesReadI2C = reader->readOrDefault(8 /*Num_Of_Bytes_Read*/, 0x0);
+
+    if (reply.numBytesReadI2C > REMOTE_READ_BUFFER_SIZE)
+    {
+        reply.numBytesReadI2C = 0;
+        return ParseResponseWrong;
+    }
+
     for (unsigned i=0; i<reply.numBytesReadI2C; i++)
     {
         reply.readData[i] = (NvU8)reader->readOrDefault(8 /*data*/, 0x0);
     }
-
-    if (this->getSinkPort() != reply.portNumber)
-        return ParseResponseWrong;
 
     return ParseResponseSuccess;
 }

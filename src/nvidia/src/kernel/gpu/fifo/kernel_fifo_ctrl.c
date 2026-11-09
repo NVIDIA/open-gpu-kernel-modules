@@ -77,6 +77,7 @@ _kfifoValidateTargetClient
         (void *)rmclientGetSecurityTokenByHandle(pCallContext->pClient->hClient),
         (void *)rmclientGetSecurityTokenByHandle(hClient));
 }
+
 /*!
  * @brief deviceCtrlCmdFifoGetChannelList
  */
@@ -97,6 +98,12 @@ deviceCtrlCmdFifoGetChannelList_IMPL
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Invalid Params for command NV0080_CTRL_CMD_FIFO_GET_CHANNELLIST\n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+    if ((pChannelHandleList == NULL) || (pChannelList == NULL))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Invalid channel list pointers for command NV0080_CTRL_CMD_FIFO_GET_CHANNELLIST\n");
         return NV_ERR_INVALID_ARGUMENT;
     }
 

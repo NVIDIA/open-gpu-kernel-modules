@@ -37,7 +37,6 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/bus/p2p_api.h"
 #include "mem_mgr/gpu_vaspace.h"
-#include "platform/sli/sli.h"
 #include "kernel/rmapi/mapping_list.h"
 
 #include "class/cl0070.h" // NV01_MEMORY_VIRTUAL
@@ -167,55 +166,10 @@ _virtmemCopyConstruct
     VirtualMemory *pSrcVirtualMemory = dynamicCast(pSrcRef->pResource, VirtualMemory);
     Memory        *pDstMemory = staticCast(pDstVirtualMemory, Memory);
     Memory        *pSrcMemory = staticCast(pSrcVirtualMemory, Memory);
-    OBJGPU        *pSrcGpu = pSrcMemory->pGpu;
     OBJVASPACE    *pVASSrc = NULL;
     NvBool         bIncAllocRefCnt = NV_FALSE;
 
-    // Special handling for Dup of the FLA VASpace
-    if (pSrcVirtualMemory->bFlaVAS)
-    {
-        Device        *pDstDevice;
-        RsClient      *pFlaClient;
-        RM_API        *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-        NvHandle       hImportedVASpace = NV01_NULL_OBJECT;
-        RsResourceRef *pDupedVasRef;
-
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            serverGetClientUnderLock(&g_resServ, GPU_GET_KERNEL_BUS(pSrcGpu)->flaInfo.hClient, &pFlaClient));
-
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            vaspaceGetByHandleOrDeviceDefault(pFlaClient,
-                                              RES_GET_HANDLE(pSrcMemory->pDevice),
-                                              GPU_GET_KERNEL_BUS(pSrcGpu)->flaInfo.hFlaVASpace,
-                                              &pVASSrc));
-
-        //
-        // FLA Memory can be duped during import stage and the importing client which might not be the
-        // same as exporting client. Also the importing client might not also bind to the the exporting FLA
-        // VASpace on the exporting device. In that case, we might see leaks in the exporting FLA VASpace.
-        // To avoid those scenarios, we are duping the FLA VAS to the importing client under the exporting device.
-        // RS-TODO: Bug 3059751 to track the duped VAS as dependant in ResServer
-        //
-        NV_ASSERT_OK_OR_RETURN(deviceGetByGpu(pDstClient, pSrcGpu, NV_TRUE, &pDstDevice));
-
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            pRmApi->DupObject(pRmApi,
-                              pDstClient->hClient,
-                              RES_GET_HANDLE(pDstDevice),
-                              &hImportedVASpace,
-                              GPU_GET_KERNEL_BUS(pSrcGpu)->flaInfo.hClient,
-                              GPU_GET_KERNEL_BUS(pSrcGpu)->flaInfo.hFlaVASpace,
-                              0));
-
-        if (clientGetResourceRef(pDstClient, hImportedVASpace, &pDupedVasRef) == NV_OK)
-            refAddDependant(pDupedVasRef, RES_GET_REF(pDstVirtualMemory));
-
-        pDstVirtualMemory->hVASpace = hImportedVASpace;
-
-        // Increase refcount if locally managed
-        bIncAllocRefCnt = !pSrcMemory->bRpcAlloc;
-    }
-    else if (pSrcVirtualMemory->hVASpace == NV_MEMORY_VIRTUAL_SYSMEM_DYNAMIC_HVASPACE)
+    if (pSrcVirtualMemory->hVASpace == NV_MEMORY_VIRTUAL_SYSMEM_DYNAMIC_HVASPACE)
     {
         // A legacy sysmem dynamic object does not have valid hVASpace
         pDstVirtualMemory->hVASpace = NV_MEMORY_VIRTUAL_SYSMEM_DYNAMIC_HVASPACE;
@@ -248,7 +202,6 @@ _virtmemCopyConstruct
 
     pDstVirtualMemory->bAllowUnicastMapping = pSrcVirtualMemory->bAllowUnicastMapping;
     pDstVirtualMemory->bReserveVaOnAlloc = pSrcVirtualMemory->bReserveVaOnAlloc;
-    pDstVirtualMemory->bFlaVAS = pSrcVirtualMemory->bFlaVAS;
 
     // Mappings do not follow virtual memory object
     pDstVirtualMemory->pDmaMappingList = NULL;
@@ -322,6 +275,7 @@ virtmemConstruct_IMPL
     NvU32                        gpuMask               = 0;
     FB_ALLOC_INFO               *pFbAllocInfo          = NULL;
     FB_ALLOC_PAGE_FORMAT        *pFbAllocPageFormat    = NULL;
+    Device                      *pDevice;
 
     NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
 
@@ -347,7 +301,6 @@ virtmemConstruct_IMPL
     pVirtualMemory->hVASpace = RM_INVALID_VASPACE_HANDLE;
     pVirtualMemory->bAllowUnicastMapping = NV_FALSE;
     pVirtualMemory->bReserveVaOnAlloc = NV_FALSE;
-    pVirtualMemory->bFlaVAS = NV_FALSE;
     pVirtualMemory->pDmaMappingList = NULL;
 
     // NV01_MEMORY_VIRTUAL does not allocate typed memory from the heap
@@ -375,6 +328,10 @@ virtmemConstruct_IMPL
     sizeOut = pAllocData->size;
     offsetOut = pAllocData->offset;
 
+    NV_ASSERT_OK_OR_GOTO(status,
+        deviceGetByHandle(pRsClient, hParent, &pDevice),
+        done);
+
     //
     // Reserve memory for page tables in case of non lazy page table
     // allocations.
@@ -386,35 +343,21 @@ virtmemConstruct_IMPL
         !(pAllocData->flags & NVOS32_ALLOC_FLAGS_LAZY) &&
         !(pAllocData->flags & NVOS32_ALLOC_FLAGS_EXTERNALLY_MANAGED))
     {
-        NvU64 size;
-        NvU64 align;
-        NvU64 pageSizeLockMask;
-        Device *pDevice;
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            deviceGetByHandle(pRsClient, hParent, &pDevice),
-            done);
-
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-
-        pAllocRequest->pGpu = pGpu;
-        size             = 0;
-        align            = 0;
-        pageSizeLockMask = 0;
+        NvU64 size             = 0;
+        NvU64 align            = 0;
+        NvU64 pageSizeLockMask = 0;
 
         status = _virtmemQueryVirtAllocParams(pGpu, hClient, hParent,
                                               pAllocData, &align, &size,
                                               &pVAS, &pageSizeLockMask);
         if (NV_OK != status)
-            SLI_LOOP_GOTO(done);
+            goto done;
 
         status = vaspaceReserveMempool(pVAS, pGpu, pDevice,
                                        size, pageSizeLockMask,
                                        VASPACE_RESERVE_FLAGS_NONE);
         if (NV_OK != status)
-            SLI_LOOP_GOTO(done);
-
-        SLI_LOOP_END;
+            goto done;
     }
 
     if (RMCFG_FEATURE_RM_BASIC_LOCK_MODEL)
@@ -439,10 +382,10 @@ virtmemConstruct_IMPL
         // If using thwap to generate an allocation failure here, fail the
         // alloc right away.
         //
-        KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
-        if (pKernelRc != NULL &&
-            !krcTestAllowAlloc(pGpu, pKernelRc,
-                               NV_ROBUST_CHANNEL_ALLOCFAIL_HEAP))
+        KernelWatchdog *pKernelWatchdog = gpuGetKernelWatchdogFromDevice(pGpu, pDevice);
+        if (pKernelWatchdog != NULL &&
+            !kwdtTestAllowAlloc(pGpu, pKernelWatchdog,
+                                NV_ROBUST_CHANNEL_ALLOCFAIL_HEAP))
         {
             status = NV_ERR_INSUFFICIENT_RESOURCES;
             goto done;
@@ -454,22 +397,17 @@ virtmemConstruct_IMPL
         vaspaceGetByHandleOrDeviceDefault(pRsClient, hParent, pAllocData->hVASpace, &pVAS),
         done);
 
-    pVirtualMemory->bFlaVAS = !!(vaspaceGetFlags(pVAS) & VASPACE_FLAGS_FLA);
     pVirtualMemory->bOptimizePageTableMempoolUsage =
         !!(vaspaceGetFlags(pVAS) & VASPACE_FLAGS_OPTIMIZE_PTETABLE_MEMPOOL_USAGE);
 
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    if (memNeedRpcAlloc(pMemory))
     {
         NvBool bSriovFull = IS_VIRTUAL_WITH_SRIOV(pGpu) &&
                             !gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
         NvBool bBar1VAS   = !!(vaspaceGetFlags(pVAS) & VASPACE_FLAGS_BAR_BAR1);
 
-        //
-        // Skip RPC to the Host RM when local RM is managing page tables.  Special case
-        // for early SR-IOV that only manages BAR1 and FLA page tables in the guest.
-        //
-        bRpcAlloc = !(gpuIsSplitVasManagementServerClientRmEnabled(pGpu) ||
-                        (bSriovFull && (bBar1VAS || pVirtualMemory->bFlaVAS)));
+        // Special case for early SR-IOV that only manages BAR1 page tables in the guest.
+        bRpcAlloc = !(bSriovFull && bBar1VAS);
     }
 
     if (bRpcAlloc)
@@ -736,7 +674,6 @@ virtmemAllocResources
     NvHandle                     hVASpace        = pVidHeapAlloc->hVASpace;
     NvBool                       bAllocedMemDesc = NV_FALSE;
     NvBool                       bBar1VA         = NV_FALSE;
-    NvBool                       bFlaVA          = NV_FALSE;
 
     NV_ASSERT(!(pVidHeapAlloc->flags & NVOS32_ALLOC_FLAGS_WPR1) && !(pVidHeapAlloc->flags & NVOS32_ALLOC_FLAGS_WPR2));
     NV_ASSERT_OR_RETURN(pFbAllocInfoClient != NULL, NV_ERR_INVALID_CLIENT);
@@ -774,12 +711,9 @@ virtmemAllocResources
             goto failed;
 
         bBar1VA = !!(vaspaceGetFlags(pVAS) & VASPACE_FLAGS_BAR_BAR1);
-        bFlaVA = !!(vaspaceGetFlags(pVAS) & VASPACE_FLAGS_FLA);
     }
 
-    // For Virtual FLA allocations, we don't have to RPC
-    if ((!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu)) ||
-        bBar1VA || bFlaVA ||
+    if ((!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu)) || bBar1VA ||
         gpuIsSplitVasManagementServerClientRmEnabled(pGpu))
     {
         OBJVASPACE     *pVAS  = NULL;
@@ -1003,29 +937,23 @@ _virtmemAllocKernelMapping
     Memory               *pMemoryInfo
 )
 {
+    KernelBus *pKernelBus          = GPU_GET_KERNEL_BUS(pGpu);
     NV_STATUS  status              = NV_OK;
     NvBool     bCoherentCpuMapping = pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING);
-    NvU32      gpuSubDevInst;
     RmPhysAddr bar1PhysAddr;
 
-    SLI_LOOP_START(SLI_LOOP_FLAGS_NONE)
-
-    gpuSubDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
     if (bCoherentCpuMapping)
     {
-        // Use a temp pointer to prevent overwriting the previous pointer by accident
-        MEMORY_DESCRIPTOR *pMemDesc      = memdescGetMemDescFromGpu(pDmaMappingInfo->pMemDesc, pGpu);
-        KernelBus         *pKernelBus    = GPU_GET_KERNEL_BUS(pGpu);
-
         NV_PRINTF(LEVEL_INFO,
                   "Allocating coherent link mapping. length=%lld, memDesc->size=%lld\n",
                   size, pDmaMappingInfo->pMemDesc->Size);
 
         NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED));
 
-        status = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc, offset, size,
+        status = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus,
+                                               pDmaMappingInfo->pMemDesc, offset, size,
                                                NV_PROTECT_READ_WRITE,
-                                               &pDmaMappingInfo->KernelVAddr[gpuSubDevInst],
+                                               &pDmaMappingInfo->KernelVAddr,
                                                &pDmaMappingInfo->KernelPriv);
     }
     else
@@ -1034,7 +962,7 @@ _virtmemAllocKernelMapping
         // Allocate GPU virtual address space for the video memory region
         // for those GPUs that support it.
         //
-        pDmaMappingInfo->FbApertureLen[gpuSubDevInst] = pDmaMappingInfo->pMemDesc->Size;
+        pDmaMappingInfo->FbApertureLen = pDmaMappingInfo->pMemDesc->Size;
         if (RMCFG_FEATURE_PLATFORM_GSP)
         {
             status = osMapSystemMemory(pMemoryInfo->pMemDesc,
@@ -1042,20 +970,18 @@ _virtmemAllocKernelMapping
                                        pDmaMappingInfo->pMemDesc->Size,
                                        NV_TRUE /*Kernel*/,
                                        NV_PROTECT_READ_WRITE,
-                                       (NvP64 *) &pDmaMappingInfo->KernelVAddr[gpuSubDevInst],
+                                       (NvP64 *) &pDmaMappingInfo->KernelVAddr,
                                        (NvP64 *) &pDmaMappingInfo->KernelPriv);
 
             if (status != NV_OK)
             {
-                pDmaMappingInfo->FbApertureLen[gpuSubDevInst] = 0;
-                pDmaMappingInfo->FbAperture[gpuSubDevInst]    = 0;
-                pDmaMappingInfo->KernelPriv                   = 0;
-                SLI_LOOP_BREAK;
+                pDmaMappingInfo->FbApertureLen = 0;
+                pDmaMappingInfo->FbAperture    = 0;
+                pDmaMappingInfo->KernelPriv    = 0;
             }
         }
         else
         {
-            KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
             Device *pDevice = NULL;
             CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
             if ((pCallContext != NULL) && (pCallContext->pClient != NULL))
@@ -1072,32 +998,26 @@ _virtmemAllocKernelMapping
 
             status = kbusMapFbApertureSingle(pGpu, pKernelBus,
                                              pMemoryInfo->pMemDesc, offset,
-                                             &pDmaMappingInfo->FbAperture[gpuSubDevInst],
-                                             &pDmaMappingInfo->FbApertureLen[gpuSubDevInst],
+                                             &pDmaMappingInfo->FbAperture,
+                                             &pDmaMappingInfo->FbApertureLen,
                                              BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
 
             if (status != NV_OK)
             {
-                pDmaMappingInfo->FbApertureLen[gpuSubDevInst] = 0;
-                pDmaMappingInfo->FbAperture[gpuSubDevInst]    = 0;
-                SLI_LOOP_BREAK;
+                pDmaMappingInfo->FbApertureLen = 0;
+                pDmaMappingInfo->FbAperture    = 0;
             }
-
-            bar1PhysAddr = gpumgrGetGpuPhysFbAddr(pGpu) + pDmaMappingInfo->FbAperture[gpuSubDevInst];
-            status = osMapPciMemoryKernelOld(pGpu, bar1PhysAddr,
-                                             pDmaMappingInfo->pMemDesc->Size,
-                                             NV_PROTECT_READ_WRITE,
-                                             &pDmaMappingInfo->KernelVAddr[gpuSubDevInst],
-                                             NV_MEMORY_WRITECOMBINED);
+            else
+            {
+                bar1PhysAddr = gpumgrGetGpuPhysFbAddr(pGpu) + pDmaMappingInfo->FbAperture;
+                status = osMapPciMemoryKernelOld(pGpu, bar1PhysAddr,
+                                                 pDmaMappingInfo->pMemDesc->Size,
+                                                 NV_PROTECT_READ_WRITE,
+                                                 &pDmaMappingInfo->KernelVAddr,
+                                                 NV_MEMORY_WRITECOMBINED);
+            }
         }
     }
-
-    if (status != NV_OK)
-    {
-        SLI_LOOP_BREAK;
-    }
-
-    SLI_LOOP_END
 
     if (status != NV_OK)
     {
@@ -1116,58 +1036,50 @@ _virtmemFreeKernelMapping
     CLI_DMA_MAPPING_INFO *pDmaMappingInfo
 )
 {
-    NvU32    gpuSubDevInst;
-    NvBool   bCoherentCpuMapping = pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING);
-
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-
-    gpuSubDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
+    KernelBus *pKernelBus          = GPU_GET_KERNEL_BUS(pGpu);
+    NvBool     bCoherentCpuMapping = pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING);
 
     // Unmap a kernel CPU mapping if one exists
-    if (pDmaMappingInfo->KernelVAddr[gpuSubDevInst] != NULL)
+    if (pDmaMappingInfo->KernelVAddr != NULL)
     {
         if (bCoherentCpuMapping)
         {
-            KernelBus         *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-            MEMORY_DESCRIPTOR *pMemDesc   = memdescGetMemDescFromGpu(pDmaMappingInfo->pMemDesc, pGpu);
-            kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc, pDmaMappingInfo->KernelVAddr[gpuSubDevInst],
+            kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus, pDmaMappingInfo->pMemDesc,
+                                            pDmaMappingInfo->KernelVAddr,
                                             pDmaMappingInfo->KernelPriv);
         }
         else
         {
-            osUnmapPciMemoryKernelOld(pGpu, pDmaMappingInfo->KernelVAddr[gpuSubDevInst]);
+            osUnmapPciMemoryKernelOld(pGpu, pDmaMappingInfo->KernelVAddr);
         }
 
-        pDmaMappingInfo->KernelVAddr[gpuSubDevInst] = NULL;
+        pDmaMappingInfo->KernelVAddr = NULL;
     }
 
     // Unmap the FB aperture mapping if one exists
-    if ((pDmaMappingInfo->FbApertureLen[gpuSubDevInst]) && (!bCoherentCpuMapping))
+    if ((pDmaMappingInfo->FbApertureLen) && (!bCoherentCpuMapping))
     {
         if (RMCFG_FEATURE_PLATFORM_GSP)
         {
             // This is a no-op in GSP, but document it here as code in case it changes.
             osUnmapSystemMemory(pDmaMappingInfo->pMemDesc,
                                 NV_TRUE /*Kernel*/,
-                                (NvP64)pDmaMappingInfo->FbAperture[gpuSubDevInst],
+                                (NvP64)pDmaMappingInfo->FbAperture,
                                 NV_PTR_TO_NvP64(pDmaMappingInfo->KernelPriv));
         }
         else
         {
-            KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
             kbusUnmapFbApertureSingle(pGpu,
                                       pKernelBus,
                                       pDmaMappingInfo->pMemDesc,
-                                      pDmaMappingInfo->FbAperture[gpuSubDevInst],
-                                      pDmaMappingInfo->FbApertureLen[gpuSubDevInst],
+                                      pDmaMappingInfo->FbAperture,
+                                      pDmaMappingInfo->FbApertureLen,
                                       BUS_MAP_FB_FLAGS_MAP_UNICAST);
         }
-        pDmaMappingInfo->FbAperture[gpuSubDevInst] = 0;
-        pDmaMappingInfo->FbApertureLen[gpuSubDevInst] = 0;
+        pDmaMappingInfo->FbAperture = 0;
+        pDmaMappingInfo->FbApertureLen = 0;
         pDmaMappingInfo->KernelPriv = 0;
     }
-
-    SLI_LOOP_END
 }
 
 /*!
@@ -1190,8 +1102,6 @@ virtmemMapTo_IMPL
     NvHandle        hClient           = pClient->hClient;
     NvHandle        hBroadcastDevice  = pParams->hBroadcastDevice;
     NvHandle        hVirtualMem       = RES_GET_HANDLE(pVirtualMemory);
-    NvHandle        hMemoryDevice     = pParams->hMemoryDevice;
-    NvU32           gpuMask           = pParams->gpuMask;
     NvU64           offset            = pParams->offset;    // offset into pMemoryRef to map
     NvU64           length            = pParams->length;
     NvU32           flags             = pParams->flags;
@@ -1207,6 +1117,7 @@ virtmemMapTo_IMPL
 
     NvU32       tgtAddressSpace   = ADDR_UNKNOWN;
     NvBool      bDmaMappingRegistered = NV_FALSE;
+    NvBool      bDmaMapProgrammed     = NV_FALSE;
     NvBool      bFlaMapping           = pParams->bFlaMapping;
     NvBool      bIsIndirectPeer       = NV_FALSE;
     NvBool      bEncrypted;
@@ -1275,7 +1186,7 @@ virtmemMapTo_IMPL
     // one gpu for use by another, then we need to treat that memory as
     // ADDR_SYSMEM.
     //
-    tgtAddressSpace = memdescGetAddressSpace(memdescGetMemDescFromGpu(pSrcMemDesc, pGpu));
+    tgtAddressSpace = memdescGetAddressSpace(pSrcMemDesc);
     if ((pSrcGpu != pGpu) && (tgtAddressSpace == ADDR_FBMEM))
     {
         tgtAddressSpace = ADDR_SYSMEM;
@@ -1295,11 +1206,7 @@ virtmemMapTo_IMPL
     if (status != NV_OK)
         goto done;
 
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-    memdescSetFlag(memdescGetMemDescFromGpu(pDmaMappingInfo->pMemDesc, pGpu),
-               MEMDESC_FLAGS_ENCRYPTED,
-               bEncrypted);
-    SLI_LOOP_END
+    memdescSetFlag(pDmaMappingInfo->pMemDesc, MEMDESC_FLAGS_ENCRYPTED, bEncrypted);
 
     if (FLD_TEST_DRF(OS46, _FLAGS, _ENABLE_FORCE_COMPRESSED_MAP, _TRUE, flags) &&
         pSrcMemDesc->pGpu != NULL && memmgrIsKindCompressible(pMemoryManager, memdescGetPteKind(pSrcMemDesc)))
@@ -1351,9 +1258,8 @@ virtmemMapTo_IMPL
             pteKind = memmgrGetCompressedKind_HAL(pMemoryManager, pteKind, bDisablePlc);
         }
 
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY);
         {
-            NvU32 perGpuKind = pteKind;
+            NvU32 mappingKind = pteKind;
             NvBool downgradeToUncompressed = NV_FALSE;
             if (tgtAddressSpace == ADDR_SYSMEM && !memmgrComprSupported(pMemoryManager, ADDR_SYSMEM))
             {
@@ -1362,12 +1268,12 @@ virtmemMapTo_IMPL
                 NV_PRINTF(LEVEL_INFO,
                           "downgrading pteKind 0x%x -> uncompressed since sysmem compression is unsupported "
                           "(hClient=0x%x hDma=0x%x hMemory=0x%x tgtAS=%d)\n",
-                          perGpuKind, hClient, hVirtualMem,
+                          mappingKind, hClient, hVirtualMem,
                           RES_GET_HANDLE(pSrcMemory),
                           tgtAddressSpace);
                 downgradeToUncompressed = NV_TRUE;
             }
-            else if (memmgrIsKindCompressible(pMemoryManager, perGpuKind) &&
+            else if (memmgrIsKindCompressible(pMemoryManager, mappingKind) &&
                      !memmgrIsKindCompressible(pMemoryManager, memdescGetPteKind(pSrcMemDesc)))
             {
                 //
@@ -1380,7 +1286,7 @@ virtmemMapTo_IMPL
                           "downgrading pteKind 0x%x -> uncompressed for "
                           "PAGE_KIND_VIRTUAL mapping over uncompressed physical backing "
                           "(hClient=0x%x hDma=0x%x hMemory=0x%x tgtAS=%d srcKind=0x%x)\n",
-                          perGpuKind, hClient, hVirtualMem,
+                          mappingKind, hClient, hVirtualMem,
                           RES_GET_HANDLE(pSrcMemory),
                           tgtAddressSpace,
                           memdescGetPteKind(pSrcMemDesc));
@@ -1389,11 +1295,10 @@ virtmemMapTo_IMPL
 
             if (downgradeToUncompressed)
             {
-                perGpuKind = memmgrGetUncompressedKind_HAL(pGpu, pMemoryManager, perGpuKind, 0);
+                mappingKind = memmgrGetUncompressedKind_HAL(pGpu, pMemoryManager, mappingKind, 0);
             }
-            memdescSetPteKind(memdescGetMemDescFromGpu(pDmaMappingInfo->pMemDesc, pGpu), perGpuKind);
+            memdescSetPteKind(pDmaMappingInfo->pMemDesc, mappingKind);
         }
-        SLI_LOOP_END;
     }
 
     if (bIsSysmem ||
@@ -1426,13 +1331,11 @@ virtmemMapTo_IMPL
             status = dmaAllocMap(pGpu, pDma, pVas, pVirtualMemory, pSrcMemory, pDmaMappingInfo);
             if (status != NV_OK)
                 goto done;
+            bDmaMapProgrammed = NV_TRUE;
 
-            status = intermapRegisterDmaMapping(pClient, pVirtualMemory, pDmaMappingInfo, pDmaMappingInfo->DmaOffset, gpuMask);
+            status = intermapRegisterDmaMapping(pClient, pVirtualMemory, pDmaMappingInfo, pDmaMappingInfo->DmaOffset);
             if (status != NV_OK)
             {
-                dmaFreeMap(pGpu, pDma, pVas,
-                           pVirtualMemory, pDmaMappingInfo,
-                           DRF_DEF(OS47, _FLAGS, _DEFER_TLB_INVALIDATION, _FALSE));
                 goto done;
             }
 
@@ -1445,7 +1348,7 @@ virtmemMapTo_IMPL
                                        0,
                                        pDmaMappingInfo->pMemDesc->Size,
                                        NV_TRUE, NV_PROTECT_READ_WRITE,
-                                       &pDmaMappingInfo->KernelVAddr[gpumgrGetSubDeviceInstanceFromGpu(gpumgrGetParentGPU(pGpu))],
+                                       &pDmaMappingInfo->KernelVAddr,
                                        &pDmaMappingInfo->KernelPriv);
 
                 if (status != NV_OK)
@@ -1466,15 +1369,13 @@ virtmemMapTo_IMPL
             status = dmaAllocMap(pGpu, pDma, pVas, pVirtualMemory, pSrcMemory, pDmaMappingInfo);
             if (status != NV_OK)
                 goto done;
+            bDmaMapProgrammed = NV_TRUE;
 
             *pDmaOffset = pDmaMappingInfo->DmaOffset;
 
-            status = intermapRegisterDmaMapping(pClient, pVirtualMemory, pDmaMappingInfo, pDmaMappingInfo->DmaOffset, gpuMask);
+            status = intermapRegisterDmaMapping(pClient, pVirtualMemory, pDmaMappingInfo, pDmaMappingInfo->DmaOffset);
             if (status != NV_OK)
             {
-                dmaFreeMap(pGpu, pDma, pVas,
-                           pVirtualMemory, pDmaMappingInfo,
-                           DRF_DEF(OS47, _FLAGS, _DEFER_TLB_INVALIDATION, _FALSE));
                 goto done;
             }
 
@@ -1501,21 +1402,8 @@ virtmemMapTo_IMPL
         !bFlaMapping &&
         (bBar1P2P || DRF_VAL(OS46, _FLAGS, _P2P_ENABLE, pDmaMappingInfo->Flags) == NVOS46_FLAGS_P2P_ENABLE_NOSLI))
     {
-        //
-        // if we are on SLI and trying to map peer memory between two GPUs
-        // on the same device, we don't rely on dynamic p2p mailbox setup.
-        // SLI uses static p2p mailbox and hence will not have any
-        // P2P object associated with it
-        //
-        if ((hBroadcastDevice == hMemoryDevice) && IsSLIEnabled(pGpu))
-        {
-            goto vgpu_send_rpc;
-        }
-
         pDmaMappingInfo->bP2P = NV_TRUE;
     }
-
-vgpu_send_rpc:
 
     if (pMemory->bRpcAlloc)
     {
@@ -1546,16 +1434,12 @@ vgpu_send_rpc:
             //
             // vGPU doesn't understand subdevice handles.  But clients map memory
             // with subdevice handles and we don't want that to fail on vGPU.
-            // Currently, we just pass down the broadcast device handle to the host
-            // (which should be equivalent if SLI is disabled).  This will need to
-            // be revisited if vGPU ever supports SLI.
+            // Currently, we just pass down the broadcast device handle to the host.
             //
-            NV_ASSERT(!IsSLIEnabled(pGpu));
-
             pDmaMappingInfo->DmaOffset = *pDmaOffset;
 
             status = intermapRegisterDmaMapping(pClient, pVirtualMemory, pDmaMappingInfo,
-                                                pDmaMappingInfo->DmaOffset, gpuMask);
+                                                pDmaMappingInfo->DmaOffset);
             if (status != NV_OK)
                 goto done;
 
@@ -1570,7 +1454,7 @@ vgpu_send_rpc:
                                            0,
                                            pDmaMappingInfo->pMemDesc->Size,
                                            NV_TRUE, NV_PROTECT_READ_WRITE,
-                                           &pDmaMappingInfo->KernelVAddr[gpumgrGetSubDeviceInstanceFromGpu(gpumgrGetParentGPU(pGpu))],
+                                           &pDmaMappingInfo->KernelVAddr,
                                            &pDmaMappingInfo->KernelPriv);
                     if (status != NV_OK)
                         goto done;
@@ -1594,7 +1478,7 @@ done:
                     (memdescGetAddressSpace(pDmaMappingInfo->pMemDesc) == ADDR_SYSMEM))
                 {
                         memdescUnmapOld(pDmaMappingInfo->pMemDesc, NV_TRUE,
-                                        pDmaMappingInfo->KernelVAddr[gpumgrGetSubDeviceInstanceFromGpu(gpumgrGetParentGPU(pGpu))],
+                                        pDmaMappingInfo->KernelVAddr,
                                         pDmaMappingInfo->KernelPriv);
                         pDmaMappingInfo->KernelPriv = NULL;
                 }
@@ -1602,6 +1486,13 @@ done:
                 {
                     _virtmemFreeKernelMapping(pGpu, pDmaMappingInfo);
                 }
+            }
+
+            if (bDmaMapProgrammed)
+            {
+                dmaFreeMap(pGpu, pDma, pVas,
+                           pVirtualMemory, pDmaMappingInfo,
+                           DRF_DEF(OS47, _FLAGS, _DEFER_TLB_INVALIDATION, _FALSE));
             }
 
             if (pDmaMappingInfo->pMemDesc != NULL && bIsIndirectPeer)
@@ -1616,7 +1507,7 @@ done:
 
             if (bDmaMappingRegistered)
             {
-                NV_ASSERT_OK(intermapDelDmaMapping(pClient, pVirtualMemory, *pDmaOffset, gpuMask));
+                NV_ASSERT_OK(intermapDelDmaMapping(pClient, pVirtualMemory, *pDmaOffset));
             }
             else
             {
@@ -1646,7 +1537,6 @@ virtmemUnmapFrom_IMPL
     NvHandle    hMemory           = pParams->hMemory;
     NvHandle    hVirtualMem       = RES_GET_HANDLE(pVirtualMemory);
     NvHandle    hBroadcastDevice  = pParams->hBroadcastDevice;
-    NvU32       gpuMask           = pParams->gpuMask;
     NvU64       dmaOffset         = pParams->dmaOffset;
     OBJVASPACE *pVas              = NULL;
     NV_STATUS   status            = NV_OK;
@@ -1692,10 +1582,9 @@ virtmemUnmapFrom_IMPL
         return status;
 
     // Get DMA mapping info.
-    pDmaMappingInfo = intermapGetDmaMapping(pVirtualMemory, dmaOffset, gpuMask);
+    pDmaMappingInfo = intermapGetDmaMapping(pVirtualMemory, dmaOffset);
     NV_ASSERT_OR_RETURN(pDmaMappingInfo != NULL, NV_ERR_INVALID_OBJECT_HANDLE);
     NvBool bPartialUnmap = dmaOffset != pDmaMappingInfo->DmaOffset || pParams->size != pDmaMappingInfo->pMemDesc->Size;
-    NV_ASSERT_OR_RETURN(!bPartialUnmap || (gpuMask & (gpuMask - 1)) == 0, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(!bPartialUnmap || !bIsIndirectPeer, NV_ERR_INVALID_ARGUMENT);
 
     if (FLD_TEST_DRF(OS46, _FLAGS, _KERNEL_MAPPING, _ENABLE, pDmaMappingInfo->Flags))
@@ -1710,11 +1599,11 @@ virtmemUnmapFrom_IMPL
             (memdescGetAddressSpace(pDmaMappingInfo->pMemDesc) == ADDR_SYSMEM))
         {
             memdescUnmapOld(pDmaMappingInfo->pMemDesc, NV_TRUE,
-                            pDmaMappingInfo->KernelVAddr[gpumgrGetSubDeviceInstanceFromGpu(gpumgrGetParentGPU(pGpu))],
+                            pDmaMappingInfo->KernelVAddr,
                             pDmaMappingInfo->KernelPriv);
             pDmaMappingInfo->KernelPriv = NULL;
         }
-        else if (memdescGetAddressSpace(memdescGetMemDescFromGpu(pDmaMappingInfo->pMemDesc, pGpu)) == ADDR_FBMEM)
+        else if (memdescGetAddressSpace(pDmaMappingInfo->pMemDesc) == ADDR_FBMEM)
         {
             _virtmemFreeKernelMapping(pGpu, pDmaMappingInfo);
         }
@@ -1774,7 +1663,6 @@ virtmemUnmapFrom_IMPL
         pDmaMappingInfoUnmap->bP2P               = pDmaMappingInfo->bP2P;
         pDmaMappingInfoUnmap->addressTranslation = pDmaMappingInfo->addressTranslation;
         pDmaMappingInfoUnmap->mapPageSize        = pDmaMappingInfo->mapPageSize;
-        pDmaMappingInfoUnmap->gpuMask            = pDmaMappingInfo->gpuMask;
 
         NV_ASSERT_OK_OR_GOTO(status,
             memdescCreateSubMem(&pDmaMappingInfoUnmap->pMemDesc, pDmaMappingInfo->pMemDesc, pGpu,
@@ -1788,7 +1676,7 @@ virtmemUnmapFrom_IMPL
         // free mapping in context dma
         dmaFreeMap(pGpu, GPU_GET_DMA(pGpu), pVas, pVirtualMemory, pDmaMappingInfoUnmap, pParams->flags);
 
-        if ((memdescGetAddressSpace(memdescGetMemDescFromGpu(pDmaMappingInfo->pMemDesc, pGpu)) == ADDR_FBMEM) &&
+        if ((memdescGetAddressSpace(pDmaMappingInfo->pMemDesc) == ADDR_FBMEM) &&
              bIsIndirectPeer)
         {
             memdescUnmapIommu(pDmaMappingInfo->pMemDesc, pGpu->busInfo.iovaspaceId);
@@ -1801,13 +1689,13 @@ virtmemUnmapFrom_IMPL
     pDmaMappingInfo->pMemDesc = NULL;
 
     // delete client dma mapping
-    intermapDelDmaMapping(pClient, pVirtualMemory, pDmaMappingInfo->DmaOffset, gpuMask);
+    intermapDelDmaMapping(pClient, pVirtualMemory, pDmaMappingInfo->DmaOffset);
 
     if (pDmaMappingInfoLeft != NULL)
     {
         NV_ASSERT_OK_OR_GOTO(status,
             intermapRegisterDmaMapping(pClient, pVirtualMemory, pDmaMappingInfoLeft,
-                                       pDmaMappingInfoLeft->DmaOffset, gpuMask),
+                                       pDmaMappingInfoLeft->DmaOffset),
             failed);
         bDmaMappingInfoLeftRegistered = NV_TRUE;
     }
@@ -1816,7 +1704,7 @@ virtmemUnmapFrom_IMPL
     {
         NV_ASSERT_OK_OR_GOTO(status,
             intermapRegisterDmaMapping(pClient, pVirtualMemory, pDmaMappingInfoRight,
-                                       pDmaMappingInfoRight->DmaOffset, gpuMask),
+                                       pDmaMappingInfoRight->DmaOffset),
             failed);
         bDmaMappingInfoRightRegistered = NV_TRUE;
     }
@@ -1836,7 +1724,7 @@ failed:
             memdescFree(pDmaMappingInfoLeft->pMemDesc);
             memdescDestroy(pDmaMappingInfoLeft->pMemDesc);
             if (bDmaMappingInfoLeftRegistered)
-                intermapDelDmaMapping(pClient, pVirtualMemory, pDmaMappingInfoLeft->DmaOffset, gpuMask);
+                intermapDelDmaMapping(pClient, pVirtualMemory, pDmaMappingInfoLeft->DmaOffset);
             else
                 intermapFreeDmaMapping(pDmaMappingInfoLeft);
         }
@@ -1846,7 +1734,7 @@ failed:
             memdescFree(pDmaMappingInfoRight->pMemDesc);
             memdescDestroy(pDmaMappingInfoRight->pMemDesc);
             if (bDmaMappingInfoRightRegistered)
-                intermapDelDmaMapping(pClient, pVirtualMemory, pDmaMappingInfoRight->DmaOffset, gpuMask);
+                intermapDelDmaMapping(pClient, pVirtualMemory, pDmaMappingInfoRight->DmaOffset);
             else
                 intermapFreeDmaMapping(pDmaMappingInfoRight);
         }
@@ -1861,12 +1749,8 @@ failed:
     //
     // vGPU doesn't understand subdevice handles.  But clients map memory
     // with subdevice handles and we don't want that to fail on vGPU.
-    // Currently, we just pass down the broadcast device handle to the host
-    // (which should be equivalent if SLI is disabled).  This will need to
-    // be revisited if vGPU ever supports SLI.
+    // Currently, we just pass down the broadcast device handle to the host.
     //
-    NV_ASSERT((!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu)) || !IsSLIEnabled(pGpu));
-
     if (pMemory->bRpcAlloc &&
         (NV01_NULL_OBJECT != hMemory) &&
         (resGetRefCount(staticCast(pVirtualMemory, RsResource)) || (hVirtualMem == hMemory)))

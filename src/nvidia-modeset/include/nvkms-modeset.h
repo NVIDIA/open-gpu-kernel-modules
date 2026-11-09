@@ -33,7 +33,6 @@ extern "C" {
 
 NvBool
 nvGetHwModeTimings(const NVDispEvoRec *pDispEvo,
-                   const NvU32 apiHead,
                    const struct NvKmsSetModeOneHeadRequest *pRequestHead,
                    NVHwModeTimingsEvo *pTimings,
                    NVDpyAttributeColor *pDpyColor,

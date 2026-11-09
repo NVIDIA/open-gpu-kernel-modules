@@ -916,8 +916,6 @@ serverControlLookupLockFlags
 
     if (lock == RS_LOCK_TOP)
     {
-        OBJSYS *pSys = SYS_GET_INSTANCE();
-
         if (controlFlags & RMCTRL_FLAGS_NO_API_LOCK)
         {
             // NO_API_LOCK requires no access to GPU lock protected data
@@ -952,16 +950,6 @@ serverControlLookupLockFlags
         if (g_resServ.bRouteToPhysicalLockBypass && bUseGspLockingMode)
         {
             *pAccess = LOCK_ACCESS_READ;
-        }
-
-        //
-        // Take API lock in WRITE mode for this control while we investigate why READ mode
-        // acquires cause bug 5785851...
-        //
-        if (pSys->getProperty(pSys, PDB_PROP_SYS_USE_RW_API_LOCK_GET_MEM_ALIGNMENT_BUG_5785851_WAR) &&
-            (pRmCtrlParams->cmd == NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT))
-        {
-            *pAccess = LOCK_ACCESS_WRITE;
         }
 
         return NV_OK;
@@ -1064,7 +1052,19 @@ rmapiControlWithSecInfo
               "Nv04Control: hClient:0x%x hObject:0x%x cmd:0x%x params:" NvP64_fmt " paramSize:0x%x flags:0x%x\n",
               hClient, hObject, cmd, pParams, paramsSize, flags);
 
+    //
+    // Bug 5785851: nudge DxgKrnl's DC-mode priority-promotion heuristic around
+    // NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT (gated on the RmWar5785851 regkey).
+    // Bracketing the control reproduces the paired KeSetPriorityThread events
+    // the WRITE-lock path used to emit for this command. See rmapiDxgkrnlNudge().
+    //
+    if (cmd == NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT)
+        rmapiDxgkrnlNudge();
+
     status = _rmapiRmControl(hClient, hObject, cmd, pParams, paramsSize, flags, pRmApi, pSecInfo);
+
+    if (cmd == NV2080_CTRL_CMD_FB_GET_MEM_ALIGNMENT)
+        rmapiDxgkrnlNudge();
 
     if (status == NV_OK)
     {

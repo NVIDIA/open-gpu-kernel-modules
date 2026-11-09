@@ -67,6 +67,22 @@ static NV_STATUS _memUtilsMapUserd_GM107(OBJGPU *pGpu, MemoryManager *pMemoryMan
                            OBJCHANNEL *pChannel, NvHandle hClientId, NvHandle hDeviceId,
                            NvHandle hChannelId, NvBool bUseRmApiForBar1);
 
+//
+// TDISP scrubber channel resources must be protected so the trusted GPU can
+// fetch the pushbuffer and access notifier/USERD memory.
+//
+static NvBool
+_memUtilsUseProtectedSysmemForChannel
+(
+    OBJGPU     *pGpu,
+    OBJCHANNEL *pChannel
+)
+{
+    return gpuIsTdispFeatureEnabled(pGpu) &&
+           ((pChannel->type == CE_SCRUBBER_CHANNEL) ||
+            (pChannel->type == FAST_SCRUBBER_CHANNEL));
+}
+
 
 static NV_STATUS
 _memUtilsChannelAllocatePB_GM107
@@ -103,6 +119,7 @@ _memUtilsChannelAllocatePB_GM107
             if (!IS_MIG_IN_USE(pGpu))
             {
                 attr |= DRF_DEF(OS32, _ATTR, _ALLOCATE_FROM_RESERVED_HEAP, _YES);
+
             }
             attrNotifier = attr;
             break;
@@ -160,7 +177,9 @@ _memUtilsChannelAllocatePB_GM107
     // are required to be accessed from GPU should be in unprotected memory
     // but all vidmem allocations must go to protected memory
     //
-    if (FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _PCI, memAllocParams.attr))
+    if (FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _PCI, memAllocParams.attr)
+        && !_memUtilsUseProtectedSysmemForChannel(pGpu, pChannel)
+       )
     {
         memAllocParams.attr2 |= DRF_DEF(OS32, _ATTR2, _MEMORY_PROTECTION,
                                         _UNPROTECTED);
@@ -227,7 +246,9 @@ _memUtilsChannelAllocatePB_GM107
     // are required to be accessed from GPU should be in unprotected memory
     // but all vidmem allocations must go to protected memory
     //
-    if (FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _PCI, memAllocParams.attr))
+    if (FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _PCI, memAllocParams.attr)
+        && !_memUtilsUseProtectedSysmemForChannel(pGpu, pChannel)
+       )
     {
         memAllocParams.attr2 |= DRF_DEF(OS32, _ATTR2, _MEMORY_PROTECTION,
                                         _UNPROTECTED);
@@ -1044,7 +1065,9 @@ _memUtilsAllocateUserD
     // are required to be accessed from GPU should be in unprotected memory
     // but all vidmem allocations must go to protected memory
     //
-    if (FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _PCI, memAllocParams.attr))
+    if (FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _PCI, memAllocParams.attr)
+        && !_memUtilsUseProtectedSysmemForChannel(pGpu, pChannel)
+       )
     {
         memAllocParams.attr2 |= DRF_DEF(OS32, _ATTR2, _MEMORY_PROTECTION,
                                         _UNPROTECTED);
@@ -1074,7 +1097,7 @@ _memUtilsAllocateChannel
     NvU32          chId
 )
 {
-    NV_CHANNEL_ALLOC_PARAMS channelGPFIFOAllocParams;
+    PORT_ALLOC_LARGE_STRUCTURE(NV_CHANNEL_ALLOC_PARAMS, pChannelGPFIFOAllocParams, return NV_ERR_NO_MEMORY);
     NV_STATUS               rmStatus =  NV_OK;
     NvU32                   hClass;
     RM_API                 *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
@@ -1100,7 +1123,11 @@ _memUtilsAllocateChannel
         numChannels = kfifoChidMgrGetNumChannels(pGpu, pKernelFifo,
                           kfifoGetChidMgr(pGpu, pKernelFifo, 0));
 
-        NV_ASSERT_OR_RETURN(chId < numChannels, NV_ERR_INVALID_ARGUMENT);
+        if (!(chId < numChannels))
+        {
+            rmStatus = NV_ERR_INVALID_ARGUMENT;
+            goto free_params;
+        }
 
         flags |=
             DRF_DEF(OS04, _FLAGS, _CHANNEL_USERD_INDEX_PAGE_FIXED, _TRUE) |
@@ -1111,14 +1138,14 @@ _memUtilsAllocateChannel
                     chId % userdAlignment);
     }
 
-    portMemSet(&channelGPFIFOAllocParams, 0, sizeof(NV_CHANNEL_ALLOC_PARAMS));
-    channelGPFIFOAllocParams.hObjectError  = hObjectError;
-    channelGPFIFOAllocParams.hObjectBuffer = hObjectBuffer;
-    channelGPFIFOAllocParams.gpFifoOffset  = pChannel->pbGpuVA + pChannel->channelPbSize;
-    channelGPFIFOAllocParams.gpFifoEntries = pChannel->channelNumGpFifioEntries;
-    channelGPFIFOAllocParams.hContextShare = NV01_NULL_OBJECT;
-    channelGPFIFOAllocParams.flags         = flags;
-    channelGPFIFOAllocParams.hVASpace      = pChannel->hVASpaceId;
+    portMemSet(pChannelGPFIFOAllocParams, 0, sizeof(*pChannelGPFIFOAllocParams));
+    pChannelGPFIFOAllocParams->hObjectError  = hObjectError;
+    pChannelGPFIFOAllocParams->hObjectBuffer = hObjectBuffer;
+    pChannelGPFIFOAllocParams->gpFifoOffset  = pChannel->pbGpuVA + pChannel->channelPbSize;
+    pChannelGPFIFOAllocParams->gpFifoEntries = pChannel->channelNumGpFifioEntries;
+    pChannelGPFIFOAllocParams->hContextShare = NV01_NULL_OBJECT;
+    pChannelGPFIFOAllocParams->flags         = flags;
+    pChannelGPFIFOAllocParams->hVASpace      = pChannel->hVASpaceId;
 
     //
     // Use GPU instance local Id if MIG is enabled
@@ -1132,32 +1159,37 @@ _memUtilsAllocateChannel
         RsClient *pClient;
         Device *pDevice;
 
-        NV_ASSERT_OK_OR_RETURN(
-            serverGetClientUnderLock(&g_resServ, hClientId, &pClient));
+        NV_ASSERT_OK_OR_GOTO(rmStatus,
+            serverGetClientUnderLock(&g_resServ, hClientId, &pClient),
+            free_params);
 
-        NV_ASSERT_OK_OR_RETURN(
-            deviceGetByHandle(pClient, hDeviceId, &pDevice));
+        NV_ASSERT_OK_OR_GOTO(rmStatus,
+            deviceGetByHandle(pClient, hDeviceId, &pDevice),
+            free_params);
 
-        NV_ASSERT_OK_OR_RETURN(
-            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
+        NV_ASSERT_OK_OR_GOTO(rmStatus,
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref),
+            free_params);
         // Clear the Compute instance portion, if present
         ref = kmigmgrMakeGIReference(ref.pKernelMIGGpuInstance);
-        NV_ASSERT_OK_OR_RETURN(
+        NV_ASSERT_OK_OR_GOTO(rmStatus,
             kmigmgrGetGlobalToLocalEngineType(pGpu, pKernelMIGManager, ref,
                                               engineType,
-                                              &localCe));
-        channelGPFIFOAllocParams.engineType = gpuGetNv2080EngineType(localCe);
+                                              &localCe),
+            free_params);
+        pChannelGPFIFOAllocParams->engineType = gpuGetNv2080EngineType(localCe);
     }
     else
     {
-        channelGPFIFOAllocParams.engineType = gpuGetNv2080EngineType(engineType);
+        pChannelGPFIFOAllocParams->engineType = gpuGetNv2080EngineType(engineType);
     }
 
     hClass = kfifoGetChannelClassId(pGpu, GPU_GET_KERNEL_FIFO(pGpu));
     if (!hClass)
     {
         NV_PRINTF(LEVEL_ERROR, "Unable to determine CE's channel class.\n");
-        return NV_ERR_GENERIC;
+        rmStatus = NV_ERR_GENERIC;
+        goto free_params;
     }
 
     rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
@@ -1171,16 +1203,16 @@ _memUtilsAllocateChannel
                                    hClientId,
                                    hDeviceId,
                                    pChannel),
-            cleanup);
+            reacquire_lock);
 
-        channelGPFIFOAllocParams.hUserdMemory[0] = pChannel->hUserD;
-        channelGPFIFOAllocParams.userdOffset[0] = 0;
+        pChannelGPFIFOAllocParams->hUserdMemory[0] = pChannel->hUserD;
+        pChannelGPFIFOAllocParams->userdOffset[0] = 0;
     }
 
     if (RMCFG_FEATURE_PLATFORM_GSP)
     {
-        channelGPFIFOAllocParams.internalFlags = DRF_DEF(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _PRIVILEGE, _KERNEL) |
-                                                 DRF_DEF(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _GSP_OWNED, _YES);
+        pChannelGPFIFOAllocParams->internalFlags = DRF_DEF(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _PRIVILEGE, _KERNEL) |
+                                                   DRF_DEF(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _GSP_OWNED, _YES);
     }
 
     NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(
@@ -1190,13 +1222,14 @@ _memUtilsAllocateChannel
                                 hDeviceId,
                                 hChannelId,
                                 hClass,
-                                &channelGPFIFOAllocParams,
-                                sizeof(channelGPFIFOAllocParams)));
+                                pChannelGPFIFOAllocParams,
+                                sizeof(*pChannelGPFIFOAllocParams)));
 
-cleanup:
+reacquire_lock:
     NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,
                                         rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_MEM));
-
+free_params:
+    PORT_FREE_LARGE_STRUCTURE(pChannelGPFIFOAllocParams);
     return rmStatus;
 }
 

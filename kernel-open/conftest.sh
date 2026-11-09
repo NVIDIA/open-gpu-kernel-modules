@@ -158,6 +158,11 @@ build_cflags() {
         MACH_CFLAGS="$MACH_CFLAGS -D__LINUX_ARM_ARCH__=7"
     fi
 
+    # Add this flag for including shared ARM64 and S390 headers
+    if [ "$ARCH" = "arm64" ]; then
+        MACH_CFLAGS="$MACH_CFLAGS -DARM64_S390_COMMON=1"
+    fi
+
     # Add the mach-default includes (only found on x86/older kernels)
     MACH_CFLAGS="$MACH_CFLAGS -I$SOURCE_HEADERS/asm-$KERNEL_ARCH/mach-default"
     MACH_CFLAGS="$MACH_CFLAGS -I$SOURCE_ARCH_HEADERS/asm/mach-default"
@@ -839,6 +844,20 @@ compile_test() {
             "
 
             compile_check_conftest "$CODE" "NV_VFIO_PRECOPY_INFO_PRESENT" "" "types"
+        ;;
+
+        vfio_migration_stun)
+            #
+            # Determine if VFIO_MIGRATION_STUN flag is present or not.
+            #
+            # Added by Alibaba for KVM-GPU-STUN kernel/QEMU private patch series.
+            #
+            CODE="
+            #include <linux/vfio.h>
+            unsigned long migration_flags = VFIO_MIGRATION_STUN;
+            "
+
+            compile_check_conftest "$CODE" "NV_VFIO_MIGRATION_STUN_PRESENT" "" "types"
         ;;
 
         vfio_log_ops)
@@ -1539,6 +1558,41 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PHYS_TO_DMA_PRESENT" "" "functions"
         ;;
 
+        dma_addr_unencrypted)
+            #
+            # Determine if the dma_addr_unencrypted() macro is present.
+            #
+            # Added by commit b66e2ee7b6c8 ("dma: Introduce generic
+            # dma_addr_*crypted helpers") in v6.15 (2025-02-27).
+            #
+            CODE="
+            #include <linux/types.h>
+            #include <linux/mem_encrypt.h>
+            #ifndef dma_addr_unencrypted
+            #error dma_addr_unencrypted() is not defined
+            #endif
+            "
+
+            compile_check_conftest "$CODE" "NV_DMA_ADDR_UNENCRYPTED_PRESENT" "" "types"
+        ;;
+
+        dma_attr_require_coherent)
+            #
+            # Determine whether DMA_ATTR_REQUIRE_COHERENT is present.
+            #
+            CODE="
+            #include <linux/dma-mapping.h>
+            #ifndef DMA_ATTR_REQUIRE_COHERENT
+            #error DMA_ATTR_REQUIRE_COHERENT is not defined
+            #endif
+            unsigned long conftest_dma_attr_require_coherent(void) {
+                return DMA_ATTR_REQUIRE_COHERENT;
+            }"
+
+            compile_check_conftest "$CODE" \
+                "NV_DMA_ATTR_REQUIRE_COHERENT_PRESENT" "" "types"
+        ;;
+
        nvhost_dma_fence_unpack)
            #
            # Determine if the nvhost_dma_fence_unpack function is present.
@@ -2128,8 +2182,8 @@ compile_test() {
             #
             CODE="
             #include <linux/device.h>
-            int conftest_device_has_tdi_enabled(void) {
-                return offsetof(struct device, tdi_enabled);
+            int conftest_device_has_tdi_enabled(struct device *dev) {
+                return (int)dev->tdi_enabled;
             }"
 
             compile_check_conftest "$CODE" "NV_DEVICE_HAS_TDI_ENABLED" "" "types"
@@ -2934,6 +2988,24 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_CRTC_STATE_HAS_VRR_ENABLED" "" "types"
         ;;
 
+        drm_connector_has_ycbcr_420_allowed)
+            #
+            # Determine if 'drm_connector' structure has a
+            # 'ycbcr_420_allowed' field.
+            #
+            # Added by commit d85231530b07 ("drm: add helper to validate
+            # YCBCR420 modes") in v4.14.
+            #
+            CODE="
+            #include <drm/drm_connector.h>
+
+            int conftest_drm_connector_has_ycbcr_420_allowed(void) {
+                return offsetof(struct drm_connector, ycbcr_420_allowed);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_HAS_YCBCR_420_ALLOWED" "" "types"
+        ;;
+
         ktime_get_raw_ts64)
             #
             # Determine if ktime_get_raw_ts64() is present
@@ -2967,6 +3039,21 @@ compile_test() {
             }"
             compile_check_conftest "$CODE" "NV_VMALLOC_HAS_PGPROT_T_ARG" "" "types"
 
+        ;;
+
+        pgprot_encrypted)
+            #
+            # Determine if pgprot_encrypted() is present and usable.
+            #
+            CODE="
+            #include <linux/mm.h>
+
+            void conftest_pgprot_encrypted(void) {
+                pgprot_t prot = PAGE_KERNEL;
+                prot = pgprot_encrypted(prot);
+            }"
+
+            compile_check_conftest "$CODE" "NV_PGPROT_ENCRYPTED_PRESENT" "" "types"
         ;;
 
         mm_has_mmap_lock)
@@ -4048,6 +4135,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DEVFREQ_HAS_SUSPEND_FREQ" "" "types"
         ;;
 
+        devfreq_has_governor_data)
+            #
+            # Determine if the 'devfreq' structure has 'governor_data'
+            #
+            # governor_data was added by commit 5fdded8448924 
+            # ("PM/devfreq: governor: Add a private governor_data for governor")
+            # in v6.2-rc1.
+            #
+            CODE="
+            #include <linux/devfreq.h>
+            int conftest_devfreq_has_governor_data(void) {
+                return offsetof(struct devfreq, governor_data);
+            }
+            "
+            compile_check_conftest "$CODE" "NV_DEVFREQ_HAS_GOVERNOR_DATA" "" "types"
+        ;;
+
         bpmp_mrq_has_strap_set)
             #
             # Determine if STRAP_SET is present in the bpmp MRQ ABI.
@@ -4843,6 +4947,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_SYNCOBJ_FEATURES_PRESENT" "" "types"
         ;;
 
+        drm_syncobj_eventfd_present)
+            # Determine if the DRM core supports the syncobj eventfd IOCTL.
+            # The eventfd lets userspace register for notification when a
+            # syncobj timeline point becomes available, which the timeline
+            # DRM synchronization object support relies on.
+            #
+            # struct drm_syncobj_eventfd (and DRM_IOCTL_SYNCOBJ_EVENTFD) were
+            # added by commit c7a47229716 ("drm/syncobj: add IOCTL to register
+            # an eventfd") in v6.6. The IOCTL handler itself is static, so test
+            # for the UAPI structure that was added alongside it.
+            CODE="
+            #include <uapi/drm/drm.h>
+            struct drm_syncobj_eventfd params;"
+
+            compile_check_conftest "$CODE" "NV_DRM_SYNCOBJ_EVENTFD_PRESENT" "" "types"
+        ;;
+
         stack_trace)
             # Determine if functions stack_trace_{save,print} are present.
             # Added by commit e9b98e162 ("stacktrace: Provide helpers for
@@ -5367,7 +5488,7 @@ compile_test() {
             CODE="
             #include <asm/page.h>
             int conftest_pfn_is_map_memory(void) {
-                return pfn_is_map_memory();
+                return pfn_is_map_memory(0);
             }"
             compile_check_conftest "$CODE" "NV_PFN_IS_MAP_MEMORY_PRESENT" "" "functions"
         ;;
@@ -5385,6 +5506,33 @@ compile_test() {
             "
 
             compile_check_conftest "$CODE" "NV_DMEM_CGROUP_PRESENT" "" "types"
+        ;;
+
+        dmem_cgroup_register_region_has_init_arg)
+            #
+            # Determine if dmem_cgroup_register_region() takes a
+            # 'const struct dmem_cgroup_init *' argument.
+            #
+            # Commit e11640b9cea4 ("cgroup/dmem: Introduce struct
+            # dmem_cgroup_init for region initialization") changed the first
+            # argument from 'u64 size' to 'const struct dmem_cgroup_init *'
+            # in Linux 7.3.
+            #
+            CODE="
+            #include <linux/cgroup_dmem.h>
+
+            typeof(dmem_cgroup_register_region)
+                conftest_dmem_cgroup_register_region_has_init_arg;
+
+            struct dmem_cgroup_region *
+            conftest_dmem_cgroup_register_region_has_init_arg(
+                const struct dmem_cgroup_init *init,
+                const char *name_fmt, ...)
+            {
+                return NULL;
+            }"
+
+            compile_check_conftest "$CODE" "NV_DMEM_CGROUP_REGISTER_REGION_HAS_INIT_ARG" "" "types"
         ;;
 
         misc_cgrp_id)
@@ -5454,6 +5602,29 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_COLOROP_HAS_FUNCS" "" "types"
         ;;
 
+        drm_plane_helper_funcs_atomic_async_check_has_flip_arg)
+            #
+            # Determine if atomic_async_check has a flip parameter.
+            #
+            # Changed by commit fd40a63c63a1 ("drm/atomic: Let drivers
+            # decide which planes to async flip") in v6.15.
+            #
+            CODE="
+            #include <drm/drm_modeset_helper_vtables.h>
+
+            static int
+            conftest_drm_plane_atomic_async_check(struct drm_plane *plane,
+                                                  struct drm_atomic_state *state,
+                                                  bool flip) {
+                return 0;
+            }
+            const struct drm_plane_helper_funcs conftest_plane_helper_funcs = {
+                .atomic_async_check = conftest_drm_plane_atomic_async_check,
+            };"
+
+            compile_check_conftest "$CODE" "NV_DRM_PLANE_HELPER_FUNCS_ATOMIC_ASYNC_CHECK_HAS_FLIP_ARG" "" "types"
+        ;;
+
         use_dma_iommu)
             #
             # Determine if use_dma_iommu() function is present.
@@ -5462,6 +5633,7 @@ compile_test() {
             # calls for common alloc/free page calls") in 6.12
             #
             CODE="
+            #include <linux/dma-mapping.h>
             #if defined(NV_LINUX_IOMMU_DMA_H_PRESENT)
             #include <linux/iommu-dma.h>
             #endif
@@ -5527,6 +5699,108 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_SG_ALLOC_TABLE_FROM_PAGES_SEGMENT_PRESENT" "" "functions"
+        ;;
+
+        drm_atomic_helper_connector_state_init)
+            #
+            # Determine if __drm_atomic_helper_connector_state_init is present.
+            #
+            # Added by commit b74940afe5bc ("drm/atomic-state-helper: Rename
+            # __drm_atomic_helper_connector_state_reset()") in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            void conftest_drm_atomic_helper_connector_state_init() {
+                __drm_atomic_helper_connector_state_init();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_CONNECTOR_STATE_INIT" "" "functions"
+        ;;
+
+        drm_atomic_helper_crtc_state_init)
+            #
+            # Determine if __drm_atomic_helper_crtc_state_init is present.
+            #
+            # Added by commit 915fdd2c7e87 ("drm/atomic-state-helper: Rename
+            # __drm_atomic_helper_crtc_state_reset()") in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            void conftest_drm_atomic_helper_crtc_state_init() {
+                __drm_atomic_helper_crtc_state_init();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_CRTC_STATE_INIT" "" "functions"
+        ;;
+
+        drm_atomic_helper_plane_state_init)
+            #
+            # Determine if __drm_atomic_helper_plane_state_init is present.
+            #
+            # Added by commit 3e5656ea5e73 ("drm/atomic-state-helper: Rename
+            # __drm_atomic_helper_plane_state_reset()") in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            void conftest_drm_atomic_helper_plane_state_init() {
+                __drm_atomic_helper_plane_state_init();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_PLANE_STATE_INIT" "" "functions"
+        ;;
+
+        drm_connector_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_connector_funcs has a 'atomic_create_state' function pointer.
+            #
+            # Added by commit 6db0e11f4806 ("drm/connector: Add new atomic_create_state callback")
+            # in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            int conftest_drm_connector_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_connector_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
+        ;;
+
+        drm_crtc_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_crtc_funcs has a 'atomic_create_state' function pointer.
+            #
+            # Added by commit 58d426b5ed0d ("drm/crtc: Add new atomic_create_state callback")
+            # in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            int conftest_drm_crtc_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_crtc_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CRTC_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
+        ;;
+
+        drm_plane_funcs_has_atomic_create_state)
+            #
+            # Determine if drm_plane_funcs has a 'atomic_create_state' function pointer.
+            #
+            # Added by commit 1a185ddecaf9 ("drm/plane: Add new atomic_create_state callback")
+            # in v7.3-rc1.
+            #
+            CODE="
+            #include <drm/drm_atomic_helper.h>
+
+            int conftest_drm_plane_funcs_has_atomic_create_state(void) {
+                return offsetof(struct drm_plane_funcs, atomic_create_state);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_PLANE_FUNCS_HAS_ATOMIC_CREATE_STATE" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

@@ -27,7 +27,6 @@
 #include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/bus/kern_bus.h"
-#include "gpu/bus/p2p_api.h"
 #include "gpu/bif/kernel_bif.h"
 
 #include "published/maxwell/gm200/dev_nv_p2p.h"
@@ -291,41 +290,6 @@ kbusGetP2PMailboxAttributes_GM200
     }
 
     return;
-}
-
-/*!
- * @brief  Create PCIE Mailbox P2P mapping between 2 GPUs
- *
- * @param[in]   pGpu0          (local GPU)
- * @param[in]   pKernelBus0    (local GPU)
- * @param[in]   pGpu1          (remote GPU)
- * @param[in]   pKernelBus1    (remote GPU)
- * @param[out]  peer0          NvU32 pointer, peerId on pGpu0
- * @param[out]  peer1          NvU32 pointer, peerId on pGpu1
- * @param[in]   attributes     Sepcial attributes for the mapping
- *
- * @return NV_STATUS
- */
-NV_STATUS
-kbusCreateP2PMapping_GM200
-(
-    OBJGPU    *pGpu0,
-    KernelBus *pKernelBus0,
-    OBJGPU    *pGpu1,
-    KernelBus *pKernelBus1,
-    NvU32     *peer0,
-    NvU32     *peer1,
-    NvU32      attributes
-)
-{
-    if (FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _CONNECTION_TYPE, _PCIE, attributes))
-    {
-        return kbusCreateP2PMappingForMailbox_HAL(pGpu0, pKernelBus0, pGpu1, pKernelBus1, peer0, peer1, attributes);
-    }
-
-    NV_PRINTF(LEVEL_ERROR, "P2P type %d is not supported\n", DRF_VAL(_P2PAPI, _ATTRIBUTES, _CONNECTION_TYPE, attributes));
-
-    return NV_ERR_NOT_SUPPORTED;
 }
 
 /*!
@@ -604,41 +568,6 @@ kbusNeedWarForBug999673_GM200
     }
 
     return NV_TRUE;
-}
-
-/*!
- * @brief Remove the P2P mapping to a given peer GPU
- *
- * @param[in]   pGpu0          (local GPU)
- * @param[in]   pKernelBus0    (local GPU)
- * @param[in]   pGpu1          (remote GPU)
- * @param[in]   pKernelBus1    (remote GPU)
- * @param[in]   peer0  Peer ID (local to remote)
- * @param[in]   peer1  Peer ID (remote to local)
- * @param[in]   attributes Sepcial attributes for the mapping
- *
- * return NV_OK on success
- */
-NV_STATUS
-kbusRemoveP2PMapping_GM200
-(
-    OBJGPU    *pGpu0,
-    KernelBus *pKernelBus0,
-    OBJGPU    *pGpu1,
-    KernelBus *pKernelBus1,
-    NvU32      peer0,
-    NvU32      peer1,
-    NvU32      attributes
-)
-{
-    if (FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _CONNECTION_TYPE, _PCIE, attributes))
-    {
-        return kbusRemoveP2PMappingForMailbox_HAL(pGpu0, pKernelBus0, pGpu1, pKernelBus1, peer0, peer1, attributes);
-    }
-
-    NV_PRINTF(LEVEL_ERROR, "P2P type %d is not supported\n", DRF_VAL(_P2PAPI, _ATTRIBUTES, _CONNECTION_TYPE, attributes));
-
-    return NV_ERR_NOT_SUPPORTED;
 }
 
 /*!

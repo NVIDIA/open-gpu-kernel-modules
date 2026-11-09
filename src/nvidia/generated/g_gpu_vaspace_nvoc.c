@@ -38,6 +38,9 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJGVASPACE;
 // Down-thunk(s) to bridge OBJGVASPACE methods from ancestors (if any)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceConstruct_(struct OBJVASPACE *pGVAS, NvU32 classId, NvU32 vaspaceId, NvU64 vaStart, NvU64 vaLimit, NvU64 vaStartInternal, NvU64 vaLimitInternal, NvU32 flags);    // this
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceReserveMempool(struct OBJVASPACE *pGVAS, struct OBJGPU *pGpu, struct Device *pDevice, NvU64 size, NvU64 pageSizeLockMask, NvU32 flags);    // this
+NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceGetPageLevelInfo(struct OBJVASPACE *pGVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceGetFreeHeap(struct OBJVASPACE *pGVAS, NvU64 *pFreeSize);    // this
+NvBool __nvoc_down_thunk_OBJGVASPACE_vaspaceIsInUse(struct OBJVASPACE *pGVAS);    // this
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceAlloc(struct OBJVASPACE *pVAS, NvU64 size, NvU64 align, NvU64 rangeLo, NvU64 rangeHi, NvU64 pageSizeLockMask, VAS_ALLOC_FLAGS flags, NvU64 *pAddr);    // this
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceFree(struct OBJVASPACE *pVAS, NvU64 vAddr);    // this
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceApplyDefaultAlignment(struct OBJVASPACE *pVAS, const FB_ALLOC_INFO *pAllocInfo, NvU64 *pAlign, NvU64 *pSize, NvU64 *pPageSizeLockMask);    // this
@@ -65,8 +68,6 @@ NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceSetPteInfo(struct OBJVASPACE *pVA
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceFreeV2(struct OBJVASPACE *pGVAS, NvU64 vAddr, NvU64 *pSize);    // this
 
 // Up-thunk(s) to bridge OBJGVASPACE methods to ancestors (if any)
-NvU64 __nvoc_up_thunk_OBJVASPACE_gvaspaceGetVaStart(struct OBJGVASPACE *pVAS);    // this
-NvU64 __nvoc_up_thunk_OBJVASPACE_gvaspaceGetVaLimit(struct OBJGVASPACE *pVAS);    // this
 
 // Class-specific details for OBJGVASPACE
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGVASPACE = 
@@ -84,7 +85,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGVASPACE =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__OBJGVASPACE __nvoc_metadata__OBJGVASPACE = {
     .rtti.pClassDef = &__nvoc_class_def_OBJGVASPACE,    // (gvaspace) this
     .rtti.dtor      = &__nvoc_dtor_OBJGVASPACE,
@@ -96,63 +97,37 @@ static const struct NVOC_METADATA__OBJGVASPACE __nvoc_metadata__OBJGVASPACE = {
     .metadata__OBJVASPACE.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__OBJVASPACE.metadata__Object.rtti.offset    = NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE.__nvoc_base_Object),
 
-    .vtable.__gvaspaceConstruct___ = &gvaspaceConstruct__IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceConstruct___ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceConstruct_,    // pure virtual
-    .vtable.__gvaspaceReserveMempool__ = &gvaspaceReserveMempool_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceReserveMempool__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceReserveMempool,    // inline virtual body
-    .vtable.__gvaspaceAlloc__ = &gvaspaceAlloc_IMPL,    // virtual override (vaspace) base (vaspace)
+    .metadata__OBJVASPACE.vtable.__vaspaceGetPageLevelInfo__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetPageLevelInfo,    // inline virtual body
+    .metadata__OBJVASPACE.vtable.__vaspaceGetFreeHeap__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetFreeHeap,    // inline virtual body
+    .metadata__OBJVASPACE.vtable.__vaspaceIsInUse__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceIsInUse,    // inline virtual body
     .metadata__OBJVASPACE.vtable.__vaspaceAlloc__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceAlloc,    // pure virtual
-    .vtable.__gvaspaceFree__ = &gvaspaceFree_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceFree__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceFree,    // pure virtual
-    .vtable.__gvaspaceApplyDefaultAlignment__ = &gvaspaceApplyDefaultAlignment_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceApplyDefaultAlignment__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceApplyDefaultAlignment,    // pure virtual
-    .vtable.__gvaspaceIncAllocRefCnt__ = &gvaspaceIncAllocRefCnt_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceIncAllocRefCnt__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceIncAllocRefCnt,    // inline virtual body
-    .vtable.__gvaspaceMap__ = &gvaspaceMap_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceMap__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceMap,    // inline virtual body
-    .vtable.__gvaspaceUnmap__ = &gvaspaceUnmap_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceUnmap__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceUnmap,    // inline virtual body
-    .vtable.__gvaspaceGetHeap__ = &gvaspaceGetHeap_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetHeap__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetHeap,    // inline virtual body
-    .vtable.__gvaspaceGetMapPageSize__ = &gvaspaceGetMapPageSize_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetMapPageSize__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetMapPageSize,    // inline virtual body
-    .vtable.__gvaspaceGetBigPageSize__ = &gvaspaceGetBigPageSize_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetBigPageSize__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetBigPageSize,    // inline virtual body
-    .vtable.__gvaspaceGetFlags__ = &gvaspaceGetFlags_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetFlags__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetFlags,    // inline virtual body
-    .vtable.__gvaspaceIsFaultCapable__ = &gvaspaceIsFaultCapable_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceIsFaultCapable__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceIsFaultCapable,    // inline virtual body
-    .vtable.__gvaspaceIsExternallyOwned__ = &gvaspaceIsExternallyOwned_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceIsExternallyOwned__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceIsExternallyOwned,    // inline virtual body
-    .vtable.__gvaspaceIsAtsEnabled__ = &gvaspaceIsAtsEnabled_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceIsAtsEnabled__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceIsAtsEnabled,    // inline virtual body
-    .vtable.__gvaspaceGetPasid__ = &gvaspaceGetPasid_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetPasid__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetPasid,    // inline virtual body
-    .vtable.__gvaspaceGetPageDirBase__ = &gvaspaceGetPageDirBase_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetPageDirBase__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetPageDirBase,    // inline virtual body
-    .vtable.__gvaspaceGetGmmuFmt__ = &gvaspaceGetGmmuFmt_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetGmmuFmt__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetGmmuFmt,    // inline virtual body
-    .vtable.__gvaspaceGetMmuWalker__ = &gvaspaceGetMmuWalker_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetMmuWalker__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetMmuWalker,    // inline virtual body
-    .vtable.__gvaspacePinRootPageDir__ = &gvaspacePinRootPageDir_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspacePinRootPageDir__ = &__nvoc_down_thunk_OBJGVASPACE_vaspacePinRootPageDir,    // inline virtual body
-    .vtable.__gvaspaceUnpinRootPageDir__ = &gvaspaceUnpinRootPageDir_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceUnpinRootPageDir__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceUnpinRootPageDir,    // inline virtual body
-    .vtable.__gvaspaceInvalidateTlb__ = &gvaspaceInvalidateTlb_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceInvalidateTlb__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceInvalidateTlb,    // virtual
-    .vtable.__gvaspaceGetVasInfo__ = &gvaspaceGetVasInfo_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetVasInfo__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetVasInfo,    // pure virtual
-    .vtable.__gvaspaceGetPageTableInfo__ = &gvaspaceGetPageTableInfo_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetPageTableInfo__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetPageTableInfo,    // inline virtual body
-    .vtable.__gvaspaceGetPteInfo__ = &gvaspaceGetPteInfo_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetPteInfo__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceGetPteInfo,    // inline virtual body
-    .vtable.__gvaspaceSetPteInfo__ = &gvaspaceSetPteInfo_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceSetPteInfo__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceSetPteInfo,    // inline virtual body
-    .vtable.__gvaspaceFreeV2__ = &gvaspaceFreeV2_IMPL,    // virtual override (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceFreeV2__ = &__nvoc_down_thunk_OBJGVASPACE_vaspaceFreeV2,    // inline virtual body
-    .vtable.__gvaspaceGetVaStart__ = &__nvoc_up_thunk_OBJVASPACE_gvaspaceGetVaStart,    // virtual inherited (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetVaStart__ = &vaspaceGetVaStart_IMPL,    // virtual
-    .vtable.__gvaspaceGetVaLimit__ = &__nvoc_up_thunk_OBJVASPACE_gvaspaceGetVaLimit,    // virtual inherited (vaspace) base (vaspace)
     .metadata__OBJVASPACE.vtable.__vaspaceGetVaLimit__ = &vaspaceGetVaLimit_IMPL,    // virtual
 };
 
@@ -167,154 +142,156 @@ const struct NVOC_CASTINFO __nvoc_castinfo__OBJGVASPACE = {
     }
 };
 
-// 27 down-thunk(s) defined to bridge methods in OBJGVASPACE from superclasses
+// 30 down-thunk(s) defined to bridge methods in OBJGVASPACE from superclasses
 
 // gvaspaceConstruct_: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceConstruct_(struct OBJVASPACE *pGVAS, NvU32 classId, NvU32 vaspaceId, NvU64 vaStart, NvU64 vaLimit, NvU64 vaStartInternal, NvU64 vaLimitInternal, NvU32 flags) {
-    return gvaspaceConstruct_((struct OBJGVASPACE *)(((unsigned char *) pGVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), classId, vaspaceId, vaStart, vaLimit, vaStartInternal, vaLimitInternal, flags);
+    return gvaspaceConstruct__IMPL((struct OBJGVASPACE *)(((unsigned char *) pGVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), classId, vaspaceId, vaStart, vaLimit, vaStartInternal, vaLimitInternal, flags);
 }
 
 // gvaspaceReserveMempool: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceReserveMempool(struct OBJVASPACE *pGVAS, struct OBJGPU *pGpu, struct Device *pDevice, NvU64 size, NvU64 pageSizeLockMask, NvU32 flags) {
-    return gvaspaceReserveMempool((struct OBJGVASPACE *)(((unsigned char *) pGVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, pDevice, size, pageSizeLockMask, flags);
+    return gvaspaceReserveMempool_IMPL((struct OBJGVASPACE *)(((unsigned char *) pGVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, pDevice, size, pageSizeLockMask, flags);
+}
+
+// gvaspaceGetPageLevelInfo: virtual override (vaspace) base (vaspace)
+NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceGetPageLevelInfo(struct OBJVASPACE *pGVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams) {
+    return gvaspaceGetPageLevelInfo_IMPL((struct OBJGVASPACE *)(((unsigned char *) pGVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, pParams);
+}
+
+// gvaspaceGetFreeHeap: virtual override (vaspace) base (vaspace)
+NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceGetFreeHeap(struct OBJVASPACE *pGVAS, NvU64 *pFreeSize) {
+    return gvaspaceGetFreeHeap_IMPL((struct OBJGVASPACE *)(((unsigned char *) pGVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pFreeSize);
+}
+
+// gvaspaceIsInUse: virtual override (vaspace) base (vaspace)
+NvBool __nvoc_down_thunk_OBJGVASPACE_vaspaceIsInUse(struct OBJVASPACE *pGVAS) {
+    return gvaspaceIsInUse_IMPL((struct OBJGVASPACE *)(((unsigned char *) pGVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
 }
 
 // gvaspaceAlloc: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceAlloc(struct OBJVASPACE *pVAS, NvU64 size, NvU64 align, NvU64 rangeLo, NvU64 rangeHi, NvU64 pageSizeLockMask, VAS_ALLOC_FLAGS flags, NvU64 *pAddr) {
-    return gvaspaceAlloc((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), size, align, rangeLo, rangeHi, pageSizeLockMask, flags, pAddr);
+    return gvaspaceAlloc_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), size, align, rangeLo, rangeHi, pageSizeLockMask, flags, pAddr);
 }
 
 // gvaspaceFree: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceFree(struct OBJVASPACE *pVAS, NvU64 vAddr) {
-    return gvaspaceFree((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), vAddr);
+    return gvaspaceFree_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), vAddr);
 }
 
 // gvaspaceApplyDefaultAlignment: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceApplyDefaultAlignment(struct OBJVASPACE *pVAS, const FB_ALLOC_INFO *pAllocInfo, NvU64 *pAlign, NvU64 *pSize, NvU64 *pPageSizeLockMask) {
-    return gvaspaceApplyDefaultAlignment((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pAllocInfo, pAlign, pSize, pPageSizeLockMask);
+    return gvaspaceApplyDefaultAlignment_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pAllocInfo, pAlign, pSize, pPageSizeLockMask);
 }
 
 // gvaspaceIncAllocRefCnt: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceIncAllocRefCnt(struct OBJVASPACE *pVAS, NvU64 vAddr) {
-    return gvaspaceIncAllocRefCnt((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), vAddr);
+    return gvaspaceIncAllocRefCnt_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), vAddr);
 }
 
 // gvaspaceMap: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceMap(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, const NvU64 vaLo, const NvU64 vaHi, const MMU_MAP_TARGET *pTarget, const VAS_MAP_FLAGS flags) {
-    return gvaspaceMap((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, vaLo, vaHi, pTarget, flags);
+    return gvaspaceMap_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, vaLo, vaHi, pTarget, flags);
 }
 
 // gvaspaceUnmap: virtual override (vaspace) base (vaspace)
 void __nvoc_down_thunk_OBJGVASPACE_vaspaceUnmap(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, const NvU64 vaLo, const NvU64 vaHi) {
-    gvaspaceUnmap((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, vaLo, vaHi);
+    gvaspaceUnmap_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, vaLo, vaHi);
 }
 
 // gvaspaceGetHeap: virtual override (vaspace) base (vaspace)
 OBJEHEAP * __nvoc_down_thunk_OBJGVASPACE_vaspaceGetHeap(struct OBJVASPACE *pVAS) {
-    return gvaspaceGetHeap((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
+    return gvaspaceGetHeap_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
 }
 
 // gvaspaceGetMapPageSize: virtual override (vaspace) base (vaspace)
 NvU64 __nvoc_down_thunk_OBJGVASPACE_vaspaceGetMapPageSize(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
-    return gvaspaceGetMapPageSize((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, pMemBlock);
+    return gvaspaceGetMapPageSize_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, pMemBlock);
 }
 
 // gvaspaceGetBigPageSize: virtual override (vaspace) base (vaspace)
 NvU64 __nvoc_down_thunk_OBJGVASPACE_vaspaceGetBigPageSize(struct OBJVASPACE *pVAS) {
-    return gvaspaceGetBigPageSize((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
+    return gvaspaceGetBigPageSize_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
 }
 
 // gvaspaceGetFlags: virtual override (vaspace) base (vaspace)
 NvU32 __nvoc_down_thunk_OBJGVASPACE_vaspaceGetFlags(struct OBJVASPACE *pVAS) {
-    return gvaspaceGetFlags((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
+    return gvaspaceGetFlags_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
 }
 
 // gvaspaceIsFaultCapable: virtual override (vaspace) base (vaspace)
 NvBool __nvoc_down_thunk_OBJGVASPACE_vaspaceIsFaultCapable(struct OBJVASPACE *pVAS) {
-    return gvaspaceIsFaultCapable((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
+    return gvaspaceIsFaultCapable_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
 }
 
 // gvaspaceIsExternallyOwned: virtual override (vaspace) base (vaspace)
 NvBool __nvoc_down_thunk_OBJGVASPACE_vaspaceIsExternallyOwned(struct OBJVASPACE *pVAS) {
-    return gvaspaceIsExternallyOwned((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
+    return gvaspaceIsExternallyOwned_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
 }
 
 // gvaspaceIsAtsEnabled: virtual override (vaspace) base (vaspace)
 NvBool __nvoc_down_thunk_OBJGVASPACE_vaspaceIsAtsEnabled(struct OBJVASPACE *pVAS) {
-    return gvaspaceIsAtsEnabled((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
+    return gvaspaceIsAtsEnabled_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
 }
 
 // gvaspaceGetPasid: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceGetPasid(struct OBJVASPACE *pVAS, NvU32 *pPasid) {
-    return gvaspaceGetPasid((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pPasid);
+    return gvaspaceGetPasid_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pPasid);
 }
 
 // gvaspaceGetPageDirBase: virtual override (vaspace) base (vaspace)
 PMEMORY_DESCRIPTOR __nvoc_down_thunk_OBJGVASPACE_vaspaceGetPageDirBase(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu) {
-    return gvaspaceGetPageDirBase((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu);
+    return gvaspaceGetPageDirBase_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu);
 }
 
 // gvaspaceGetGmmuFmt: virtual override (vaspace) base (vaspace)
 const GMMU_FMT * __nvoc_down_thunk_OBJGVASPACE_vaspaceGetGmmuFmt(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu) {
-    return gvaspaceGetGmmuFmt((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu);
+    return gvaspaceGetGmmuFmt_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu);
 }
 
 // gvaspaceGetMmuWalker: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceGetMmuWalker(struct OBJVASPACE *pGVAS, struct OBJGPU *pGpu, MMU_WALK **ppWalk) {
-    return gvaspaceGetMmuWalker((struct OBJGVASPACE *)(((unsigned char *) pGVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, ppWalk);
+    return gvaspaceGetMmuWalker_IMPL((struct OBJGVASPACE *)(((unsigned char *) pGVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, ppWalk);
 }
 
 // gvaspacePinRootPageDir: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspacePinRootPageDir(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu) {
-    return gvaspacePinRootPageDir((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu);
+    return gvaspacePinRootPageDir_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu);
 }
 
 // gvaspaceUnpinRootPageDir: virtual override (vaspace) base (vaspace)
 void __nvoc_down_thunk_OBJGVASPACE_vaspaceUnpinRootPageDir(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu) {
-    gvaspaceUnpinRootPageDir((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu);
+    gvaspaceUnpinRootPageDir_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu);
 }
 
 // gvaspaceInvalidateTlb: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceInvalidateTlb(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, VAS_PTE_UPDATE_TYPE type) {
-    return gvaspaceInvalidateTlb((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, type);
+    return gvaspaceInvalidateTlb_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, type);
 }
 
 // gvaspaceGetVasInfo: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceGetVasInfo(struct OBJVASPACE *pVAS, NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PARAMS *pParams) {
-    return gvaspaceGetVasInfo((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pParams);
+    return gvaspaceGetVasInfo_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pParams);
 }
 
 // gvaspaceGetPageTableInfo: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceGetPageTableInfo(struct OBJVASPACE *pVAS, NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS *pParams) {
-    return gvaspaceGetPageTableInfo((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pParams);
+    return gvaspaceGetPageTableInfo_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pParams);
 }
 
 // gvaspaceGetPteInfo: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceGetPteInfo(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS *pParams, RmPhysAddr *pPhysAddr) {
-    return gvaspaceGetPteInfo((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, pParams, pPhysAddr);
+    return gvaspaceGetPteInfo_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, pParams, pPhysAddr);
 }
 
 // gvaspaceSetPteInfo: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceSetPteInfo(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, NV0080_CTRL_DMA_SET_PTE_INFO_PARAMS *pParams) {
-    return gvaspaceSetPteInfo((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, pParams);
+    return gvaspaceSetPteInfo_IMPL((struct OBJGVASPACE *)(((unsigned char *) pVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), pGpu, pParams);
 }
 
 // gvaspaceFreeV2: virtual override (vaspace) base (vaspace)
 NV_STATUS __nvoc_down_thunk_OBJGVASPACE_vaspaceFreeV2(struct OBJVASPACE *pGVAS, NvU64 vAddr, NvU64 *pSize) {
-    return gvaspaceFreeV2((struct OBJGVASPACE *)(((unsigned char *) pGVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), vAddr, pSize);
-}
-
-
-// 2 up-thunk(s) defined to bridge methods in OBJGVASPACE to superclasses
-
-// gvaspaceGetVaStart: virtual inherited (vaspace) base (vaspace)
-NvU64 __nvoc_up_thunk_OBJVASPACE_gvaspaceGetVaStart(struct OBJGVASPACE *pVAS) {
-    return vaspaceGetVaStart((struct OBJVASPACE *)(((unsigned char *) pVAS) + NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
-}
-
-// gvaspaceGetVaLimit: virtual inherited (vaspace) base (vaspace)
-NvU64 __nvoc_up_thunk_OBJVASPACE_gvaspaceGetVaLimit(struct OBJGVASPACE *pVAS) {
-    return vaspaceGetVaLimit((struct OBJVASPACE *)(((unsigned char *) pVAS) + NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)));
+    return gvaspaceFreeV2_IMPL((struct OBJGVASPACE *)(((unsigned char *) pGVAS) - NV_OFFSETOF(OBJGVASPACE, __nvoc_base_OBJVASPACE)), vAddr, pSize);
 }
 
 
@@ -370,7 +347,7 @@ static void __nvoc_init_funcTable_OBJGVASPACE_1(OBJGVASPACE *pThis) {
 } // End __nvoc_init_funcTable_OBJGVASPACE_1
 
 
-// Initialize vtable(s) for 29 virtual method(s).
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJGVASPACE(OBJGVASPACE *pThis) {
     __nvoc_init_funcTable_OBJGVASPACE_1(pThis);
 }

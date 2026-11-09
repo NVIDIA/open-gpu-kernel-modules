@@ -256,5 +256,7 @@ intrInitInterruptTable_VF
                 pVSI->intrCategorySubtreeMapParams.subtreeMap,
                 sizeof(pVSI->intrCategorySubtreeMapParams.subtreeMap));
 
+    pIntr->disabledGinMessage = pVSI->mcStaticIntrTable.disabledGinMessage;
+
     return NV_OK;
 }

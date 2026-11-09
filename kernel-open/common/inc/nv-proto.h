@@ -44,7 +44,7 @@ extern nv_pm_action_depth_t nv_procfs_pm_action_depth;
 
 int         nvidia_mmap                 (struct file *, struct vm_area_struct *);
 int         nvidia_mmap_helper          (nv_state_t *, nv_linux_file_private_t *, nvidia_stack_t *, struct vm_area_struct *, void *);
-int         nv_encode_caching           (pgprot_t *, NvU32, nv_memory_type_t);
+pgprot_t    nv_encode_caching           (pgprot_t, NvU32);
 void        nv_revoke_gpu_mappings_locked(nv_state_t *);
 
 NvUPtr      nv_vm_map_pages             (struct page **, NvU32, NvBool, NvBool);

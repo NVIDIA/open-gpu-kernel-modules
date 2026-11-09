@@ -230,6 +230,18 @@ NV_STATUS __nvoc_objCreateDynamic(
     }
     else if (pClassDef->objCreatefn == NULL)
     {
+        //
+        // A NULL objCreatefn means the class is abstract: it has (or inherits)
+        // pure virtual functions with no implementation, so NVOC generated no
+        // constructor for it. The comment above the class's __nvoc_class_def_*
+        // definition in the generated g_*_nvoc.c file lists the exact pure
+        // virtual functions that make the class non-instantiable.
+        //
+#if NV_PRINTF_STRINGS_ALLOWED
+        portDbgPrintf("NVOC: %s: class '%s' is abstract (has unimplemented pure virtual functions) and cannot be instantiated. "
+                      "See the comment above __nvoc_class_def_%s in the generated g_*_nvoc.c file for details.\n",
+                      __FUNCTION__, pClassInfo->name, pClassInfo->name);
+#endif // NV_PRINTF_STRINGS_ALLOWED
         return NV_ERR_INVALID_CLASS;
     }
 

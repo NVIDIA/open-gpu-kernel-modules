@@ -251,7 +251,6 @@ typedef struct ADDRESS_TRANSLATION_ *ADDRESS_TRANSLATION;
 #define MEMDESC_FLAGS_LOST_ON_SUSPEND              NVBIT64(2)
 #define MEMDESC_FLAGS_PRE_ALLOCATED                NVBIT64(3)
 #define MEMDESC_FLAGS_FIXED_ADDRESS_ALLOCATE       NVBIT64(4)
-#define MEMDESC_FLAGS_GPU_IN_RESET                 NVBIT64(6)
 #define MEMDESC_ALLOC_FLAGS_PROTECTED              NVBIT64(7)
 #define MEMDESC_FLAGS_GUEST_ALLOCATED              NVBIT64(8)
 #define MEMDESC_FLAGS_KERNEL_MODE                  NVBIT64(9)
@@ -260,7 +259,6 @@ typedef struct ADDRESS_TRANSLATION_ *ADDRESS_TRANSLATION;
 #define MEMDESC_FLAGS_PAGED_SYSMEM                 NVBIT64(12)
 #define MEMDESC_FLAGS_GPU_PRIVILEGED               NVBIT64(13)
 #define MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND  NVBIT64(14)
-#define MEMDESC_FLAGS_DUMMY_TOPLEVEL               NVBIT64(15)
 
 // Don't use the below two flags. For memdesc internal use only.
 // These flags will be removed on memory allocation refactoring in RM
@@ -605,13 +603,13 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_152       = 185U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_153       = 186U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_GSP_TRACE_CRASH_BUFFER = 187U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_GSP_OOM_REPORT_BUFFER = 188U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_GSP_CTXSW_HANG_DUMP_BUFFER = 189U,
 
     //
     // Unused tags from here, for any new use-case it's required 
     // to replace the below tags with known verbose strings
     //
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_155       = 188U,
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_156       = 189U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_157       = 190U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_158       = 191U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_159       = 192U,
@@ -665,6 +663,44 @@ typedef enum {
 typedef struct _memdescDestroyCallback MEM_DESC_DESTROY_CALLBACK;
 
 typedef void (MEM_DATA_RELEASE_CALL_BACK)(struct MEMORY_DESCRIPTOR *);
+
+// Opaque pointer for the OS layer to use
+typedef struct OS_IOVA_MAPPING_DATA *POS_IOVA_MAPPING_DATA;
+
+typedef struct IOVAMAPPING
+{
+    NvU32 iovaspaceId;
+
+    //
+    // Each memdescMapIommu() call increments the refcount, and each
+    // memdescUnmapIommu() call decrements it. Additionally, submappings
+    // increment the refcount of their root mapping on creation and only
+    // decrement it when they are destroyed.
+    //
+    NvU32 refcount;
+
+    struct MEMORY_DESCRIPTOR *pPhysMemDesc;
+
+    // For submappings, points to the parent mapping in the same IOVA space.
+    // NULL for root mappings.
+    struct IOVAMAPPING *pParent;
+
+    // Links this mapping into pPhysMemDesc->iommuMappings.
+    ListNode node;
+
+    // OS data associated with this mapping. Core RM doesn't touch this.
+    POS_IOVA_MAPPING_DATA pOsData;
+
+    //
+    // If the memory is contiguous, this array consists of one element.
+    // If the memory is discontiguous, this array is actually larger and has
+    // one entry for each physical page in pPhysMemDesc.
+    //
+    RmPhysAddr iovaArray[1];
+    // WARNING: DO NOT place anything behind the IOVA array!
+} IOVAMAPPING, *PIOVAMAPPING;
+
+MAKE_INTRUSIVE_LIST(IOVAMAPPING_LIST, IOVAMAPPING, node);
 
 //
 // A memory descriptor is an object that describes and can be used to manipulate
@@ -733,12 +769,6 @@ typedef struct MEMORY_DESCRIPTOR
     // Has the memory been allocated yet?
     NvBool Allocated;
 
-    //
-    // Marks that a request to deallocate memory has been called on this memdesc while it had multiple references
-    // NV_TRUE denotes that memFree will be called when refcount reaches 0.
-    //
-    NvBool bDeferredFree;
-
     // Does this use SUBALLOCATOR?
     NvBool bUsingSuballocator;
 
@@ -781,11 +811,6 @@ typedef struct MEMORY_DESCRIPTOR
     // The page kind of this memory
     NvU32 _pteKind;
     NvU32 _pteKindCompressed;
-
-    //
-    // Scale memory allocation by this value
-    //
-    NvU32 _subDeviceAllocCount;
 
     //
     // Reference count for the object.
@@ -835,9 +860,6 @@ typedef struct MEMORY_DESCRIPTOR
     // Count used for sanity check
     NvU32 childDescriptorCnt;
 
-    // Next memory descriptor in subdevice list
-    struct MEMORY_DESCRIPTOR *_pNext;
-
     // Pointer to system Memory descriptor which used to back some FB content across S3/S4.
     struct MEMORY_DESCRIPTOR *_pStandbyBuffer;
 
@@ -850,12 +872,8 @@ typedef struct MEMORY_DESCRIPTOR
     // If strung in a intrusive linked list
     ListNode   node;
 
-    //
-    // Pointer to IOVA mappings used to back the IOMMU VAs for different IOVA spaces
-    // Submemory descriptors only have on mapping, but the root descriptor will have
-    // one per IOVA space that the memory is mapped into.
-    //
-    struct IOVAMAPPING *_pIommuMappings;
+    // IOVA mappings used to back the IOMMU VAs for different IOVA spaces.
+    IOVAMAPPING_LIST iommuMappings;
 
     //
     // TODO Bug 1811006: This is a temporary WAR to unblock Fabric cross-GPU
@@ -943,9 +961,6 @@ NV_STATUS memdescCreate(MEMORY_DESCRIPTOR **ppMemDesc, OBJGPU *pGpu, NvU64 Size,
                         NvU64 alignment, NvBool PhysicallyContiguous,
                         NV_ADDRESS_SPACE AddressSpace, NvU32 CpuCacheAttrib, NvU64 Flags);
 
-#define MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE_FB_BC_ONLY(pGpu, addressSpace) \
-    ((gpumgrGetBcEnabledStatus(pGpu) && (pGpu != NULL) && (addressSpace == ADDR_FBMEM)) ?  MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE : MEMDESC_FLAGS_NONE)
-
 // Initialize a caller supplied memory descriptor for use with memdescDescribe()
 void memdescCreateExisting(MEMORY_DESCRIPTOR *pMemDesc, OBJGPU *pGpu, NvU64 Size,
                            NV_ADDRESS_SPACE AddressSpace,
@@ -983,8 +998,8 @@ NV_STATUS memdescAlloc(MEMORY_DESCRIPTOR *pMemDesc);
 // Allocate memory from one of the possible locations specified in pList.
 NV_STATUS memdescAllocList(MEMORY_DESCRIPTOR *pMemDesc, const NV_ADDRESS_SPACE *pList);
 
-// Free physical storage for a memory descriptor
-void memdescFree(MEMORY_DESCRIPTOR *pMemDesc);
+// deprecated, to be removed
+static inline void memdescFree(MEMORY_DESCRIPTOR *pMemDesc) {}
 
 // Lock the paged virtual memory
 NV_STATUS memdescLock(MEMORY_DESCRIPTOR *pMemDesc);
@@ -1107,29 +1122,14 @@ const char* memdescGetApertureString(NV_ADDRESS_SPACE addrSpace);
 // Return true if two MEMORY_DESCRIPTOR are equal
 NvBool memdescDescIsEqual(MEMORY_DESCRIPTOR *pMemDescOne, MEMORY_DESCRIPTOR *pMemDescTwo);
 
-// Retrieve the per-GPU memory descriptor for a subdevice
-MEMORY_DESCRIPTOR *memdescGetMemDescFromSubDeviceInst(MEMORY_DESCRIPTOR *pMemDesc, NvU32 subDeviceInst);
-
 // Retrieve the per-GPU memory descriptor for a GPU
 MEMORY_DESCRIPTOR *memdescGetMemDescFromGpu(MEMORY_DESCRIPTOR *pMemDesc, OBJGPU *pGpu);
-
-// Retrieve the per-GPU memory descriptor at an index
-MEMORY_DESCRIPTOR *memdescGetMemDescFromIndex(MEMORY_DESCRIPTOR *pMemDesc, NvU32 index);
 
 // Print information on memory descriptor
 void memdescPrintMemdesc(MEMORY_DESCRIPTOR *pMemDesc, NvBool bPrintIndividualPages, const char *pPrefixMessage);
 
 // Get the page offset for an arbitrary power of two page size
 NvU64 memdescGetPageOffset(MEMORY_DESCRIPTOR *pMemDesc, NvU64 pageSize);
-
-//
-// Internal APIs for the IOVASPACE to manage IOMMU mappings in a memdesc.
-//
-// Note that the external APIs are memdescMapIommu(),
-// memdescUnmapIommu() and memdescGetIommuMap().
-//
-NV_STATUS memdescAddIommuMap(PMEMORY_DESCRIPTOR pMemDesc, struct IOVAMAPPING *pIommuMap);
-void memdescRemoveIommuMap(PMEMORY_DESCRIPTOR pMemDesc, struct IOVAMAPPING *pIommuMap);
 
 //
 // Map and unmap IOMMU for the specified VA space
@@ -1147,16 +1147,6 @@ void memdescUnmapIommu(PMEMORY_DESCRIPTOR pMemDesc, NvU32 vaspaceId);
 
 // Returns the IOVA mapping created by memdescMapIommu().
 struct IOVAMAPPING *memdescGetIommuMap(PMEMORY_DESCRIPTOR pMemDesc, NvU32 vaspaceId);
-
-//
-// Check subdevice consistency functions
-//
-void memdescCheckSubDevicePageSizeConsistency(OBJGPU *pGpu, PMEMORY_DESCRIPTOR pMemDesc, struct OBJVASPACE *pVAS,
-                                              NvU64 pageSize, NvU64 pageOffset);
-void memdescCheckSubDeviceMemContiguityConsistency(OBJGPU *pGpu, PMEMORY_DESCRIPTOR pMemDesc, struct OBJVASPACE *pVAS,
-                                                   NvBool bIsMemContiguous);
-NV_STATUS memdescCheckSubDeviceKindComprConsistency(OBJGPU *pGpu, PMEMORY_DESCRIPTOR pMemDesc, struct OBJVASPACE *pVAS,
-                                                    NvU32 kind, COMPR_INFO *pComprInfo);
 
 //
 // Accessor functions
@@ -1346,19 +1336,6 @@ memdescGetPteAdjust(PMEMORY_DESCRIPTOR pMemDesc)
 }
 
 /*!
- *  @brief Get subdevice allocation count.
- *
- *  @param[in]  pMemDesc    Memory descriptor pointer
- *
- *  @returns Current subdevice allocation count value.
- */
-static inline NvU32
-memdescGetSubDeviceAllocCount (MEMORY_DESCRIPTOR *pMemDesc)
-{
-    return pMemDesc->_subDeviceAllocCount;
-}
-
-/*!
  *  @brief Get memory descriptor of parent
  *
  *  @param[in]  pMemDesc    Memory descriptor pointer
@@ -1427,17 +1404,17 @@ memdescGetNumaNode(MEMORY_DESCRIPTOR *pMemDesc)
 /*!
  *  @brief Checks if subdevice memory descriptors are present
  *
- *  See memdescGetMemDescFromSubDeviceInst for an explanation of subdevice memory
- *  descriptors
+ *  Per-subdevice memory descriptors were an SLI construct, so this is always
+ *  NV_FALSE.
  *
  *  @param[in]  pMemDesc  Memory descriptor to query
  *
- *  @returns NV_TRUE if subdevice memory descriptors exist
+ *  @returns NV_FALSE
  */
 static NV_INLINE NvBool
 memdescHasSubDeviceMemDescs(MEMORY_DESCRIPTOR *pMemDesc)
 {
-    return (pMemDesc->_subDeviceAllocCount > 1);
+    return NV_FALSE;
 }
 
 /*!

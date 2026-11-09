@@ -80,9 +80,6 @@ uvmchanrtnrConstruct_IMPL
                                                                FIFO_CTX_INST_BLOCK,
                                                                &pUvmChannelRetainer->pInstMemDesc),
                          fail);
-    if (pUvmChannelRetainer->pInstMemDesc->Allocated > 0)
-        pUvmChannelRetainer->pInstMemDesc->Allocated++;
-
     memdescAddRef(pUvmChannelRetainer->pInstMemDesc);
 
 fail:

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -419,7 +419,7 @@ initializeHdmiPktInterface0073(NVHDMIPKT_CLASS* pClass)
     pClass->hdmiSetFRLConfig            = hdmiSetFRLConfigDummy;
     pClass->hdmiClearFRLConfig          = hdmiClearFRLConfigDummy;
 
-    // More (generic) infoframe support on T239+
+    // More (generic) infoframe support on C8+ display class
     pClass->hdmiPacketRead              = hdmiPacketReadDummy;
     pClass->programAdvancedInfoframe    = programAdvancedInfoframeDummy;
 }

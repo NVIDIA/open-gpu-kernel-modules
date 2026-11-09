@@ -122,22 +122,12 @@ static vm_fault_t __nv_drm_gem_nvkms_handle_vma_fault(
     unsigned long page_offset, pfn;
     vm_fault_t ret;
 
-    page_offset = vmf->pgoff - drm_vma_node_start(&gem->vma_node);
+    page_offset = nv_drm_vma_fault_get_page_offset(vmf, gem);
 
     if (nv_nvkms_memory->pages_count == 0) {
         pfn = (unsigned long)(uintptr_t)nv_nvkms_memory->pPhysicalAddress;
         pfn >>= PAGE_SHIFT;
-#if defined(NV_LINUX)
-        /*
-         * FreeBSD doesn't set pgoff. We instead have pfn be the base physical
-         * address, and we will calculate the index pidx from the virtual address.
-         *
-         * This only works because linux_cdev_pager_populate passes the pidx as
-         * vmf->virtual_address. Then we turn the virtual address
-         * into a physical page number.
-         */
         pfn += page_offset;
-#endif
     } else {
         BUG_ON(page_offset >= nv_nvkms_memory->pages_count);
         pfn = page_to_pfn(nv_nvkms_memory->pages[page_offset]);

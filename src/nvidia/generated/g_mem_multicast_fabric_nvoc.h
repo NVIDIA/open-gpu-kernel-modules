@@ -109,35 +109,9 @@ struct MemoryMulticastFabric {
 };
 
 
-// Vtable with 27 per-class function pointers
+// Vtable with 1 per-class function pointer
 struct NVOC_VTABLE__MemoryMulticastFabric {
-    NV_STATUS (*__memorymulticastfabricUnmapFrom__)(struct MemoryMulticastFabric * /*this*/, struct RS_RES_UNMAP_FROM_PARAMS *);  // virtual override (res) base (mem)
-    NvBool (*__memorymulticastfabricCanCopy__)(struct MemoryMulticastFabric * /*this*/);  // virtual override (res) base (mem)
     NV_STATUS (*__memorymulticastfabricCopyConstruct__)(struct MemoryMulticastFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);  // virtual override (mem) base (mem)
-    NV_STATUS (*__memorymulticastfabricIsReady__)(struct MemoryMulticastFabric * /*this*/, NvBool);  // virtual override (mem) base (mem)
-    NV_STATUS (*__memorymulticastfabricControl__)(struct MemoryMulticastFabric * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (mem)
-    NvBool (*__memorymulticastfabricIsGpuMapAllowed__)(struct MemoryMulticastFabric * /*this*/, struct OBJGPU *);  // virtual override (mem) base (mem)
-    NvBool (*__memorymulticastfabricIsExportAllowed__)(struct MemoryMulticastFabric * /*this*/);  // virtual override (mem) base (mem)
-    NV_STATUS (*__memorymulticastfabricGetMapAddrSpace__)(struct MemoryMulticastFabric * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual override (mem) base (mem)
-    NV_STATUS (*__memorymulticastfabricIsDuplicate__)(struct MemoryMulticastFabric * /*this*/, NvHandle, NvBool *);  // virtual inherited (mem) base (mem)
-    NV_STATUS (*__memorymulticastfabricMap__)(struct MemoryMulticastFabric * /*this*/, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (mem) base (mem)
-    NV_STATUS (*__memorymulticastfabricUnmap__)(struct MemoryMulticastFabric * /*this*/, CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (mem) base (mem)
-    NV_STATUS (*__memorymulticastfabricGetMemInterMapParams__)(struct MemoryMulticastFabric * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (mem) base (mem)
-    NV_STATUS (*__memorymulticastfabricCheckMemInterUnmap__)(struct MemoryMulticastFabric * /*this*/, NvBool);  // inline virtual inherited (mem) base (mem) body
-    NV_STATUS (*__memorymulticastfabricGetMemoryMappingDescriptor__)(struct MemoryMulticastFabric * /*this*/, MEMORY_DESCRIPTOR **);  // virtual inherited (mem) base (mem)
-    NV_STATUS (*__memorymulticastfabricCheckCopyPermissions__)(struct MemoryMulticastFabric * /*this*/, struct OBJGPU *, struct Device *);  // inline virtual inherited (mem) base (mem) body
-    NvBool (*__memorymulticastfabricAccessCallback__)(struct MemoryMulticastFabric * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
-    NvBool (*__memorymulticastfabricShareCallback__)(struct MemoryMulticastFabric * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__memorymulticastfabricControlSerialization_Prologue__)(struct MemoryMulticastFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__memorymulticastfabricControlSerialization_Epilogue__)(struct MemoryMulticastFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    NV_STATUS (*__memorymulticastfabricControl_Prologue__)(struct MemoryMulticastFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__memorymulticastfabricControl_Epilogue__)(struct MemoryMulticastFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
-    void (*__memorymulticastfabricPreDestruct__)(struct MemoryMulticastFabric * /*this*/);  // virtual inherited (res) base (mem)
-    NV_STATUS (*__memorymulticastfabricControlFilter__)(struct MemoryMulticastFabric * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
-    NvBool (*__memorymulticastfabricIsPartialUnmapSupported__)(struct MemoryMulticastFabric * /*this*/);  // inline virtual inherited (res) base (mem) body
-    NV_STATUS (*__memorymulticastfabricMapTo__)(struct MemoryMulticastFabric * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (mem)
-    NvU32 (*__memorymulticastfabricGetRefCount__)(struct MemoryMulticastFabric * /*this*/);  // virtual inherited (res) base (mem)
-    void (*__memorymulticastfabricAddAdditionalDependants__)(struct RsClient *, struct MemoryMulticastFabric * /*this*/, RsResourceRef *);  // virtual inherited (res) base (mem)
 };
 
 // Metadata with per-class RTTI and vtable with ancestor(s)
@@ -260,47 +234,47 @@ static inline void memorymulticastfabricRemoveFromCache(struct MemoryMulticastFa
 
 
 // Wrapper macros for halified functions
-#define memorymulticastfabricUnmapFrom_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricUnmapFrom__
+#define memorymulticastfabricUnmapFrom_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__
 #define memorymulticastfabricUnmapFrom(pMemoryMulticastFabric, pParams) memorymulticastfabricUnmapFrom_DISPATCH(pMemoryMulticastFabric, pParams)
-#define memorymulticastfabricCanCopy_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricCanCopy__
+#define memorymulticastfabricCanCopy_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define memorymulticastfabricCanCopy(pMemoryMulticastFabric) memorymulticastfabricCanCopy_DISPATCH(pMemoryMulticastFabric)
 #define memorymulticastfabricCopyConstruct_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricCopyConstruct__
 #define memorymulticastfabricCopyConstruct(pMemoryMulticastFabric, pCallContext, pParams) memorymulticastfabricCopyConstruct_DISPATCH(pMemoryMulticastFabric, pCallContext, pParams)
-#define memorymulticastfabricIsReady_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricIsReady__
+#define memorymulticastfabricIsReady_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsReady__
 #define memorymulticastfabricIsReady(pMemoryMulticastFabric, bCopyConstructorContext) memorymulticastfabricIsReady_DISPATCH(pMemoryMulticastFabric, bCopyConstructorContext)
-#define memorymulticastfabricControl_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricControl__
+#define memorymulticastfabricControl_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define memorymulticastfabricControl(pMemoryMulticastFabric, pCallContext, pParams) memorymulticastfabricControl_DISPATCH(pMemoryMulticastFabric, pCallContext, pParams)
-#define memorymulticastfabricIsGpuMapAllowed_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricIsGpuMapAllowed__
+#define memorymulticastfabricIsGpuMapAllowed_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsGpuMapAllowed__
 #define memorymulticastfabricIsGpuMapAllowed(pMemoryMulticastFabric, pGpu) memorymulticastfabricIsGpuMapAllowed_DISPATCH(pMemoryMulticastFabric, pGpu)
-#define memorymulticastfabricIsExportAllowed_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricIsExportAllowed__
+#define memorymulticastfabricIsExportAllowed_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsExportAllowed__
 #define memorymulticastfabricIsExportAllowed(pMemoryMulticastFabric) memorymulticastfabricIsExportAllowed_DISPATCH(pMemoryMulticastFabric)
-#define memorymulticastfabricGetMapAddrSpace_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricGetMapAddrSpace__
+#define memorymulticastfabricGetMapAddrSpace_FNPTR(pMemoryMulticastFabric) pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMapAddrSpace__
 #define memorymulticastfabricGetMapAddrSpace(pMemoryMulticastFabric, pCallContext, mapFlags, pAddrSpace) memorymulticastfabricGetMapAddrSpace_DISPATCH(pMemoryMulticastFabric, pCallContext, mapFlags, pAddrSpace)
-#define memorymulticastfabricIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsDuplicate__
+#define memorymulticastfabricIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define memorymulticastfabricIsDuplicate(pMemory, hMemory, pDuplicate) memorymulticastfabricIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
-#define memorymulticastfabricMap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memMap__
+#define memorymulticastfabricMap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define memorymulticastfabricMap(pMemory, pCallContext, pParams, pCpuMapping) memorymulticastfabricMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
-#define memorymulticastfabricUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memUnmap__
+#define memorymulticastfabricUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define memorymulticastfabricUnmap(pMemory, pCallContext, pCpuMapping) memorymulticastfabricUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
-#define memorymulticastfabricGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMemInterMapParams__
+#define memorymulticastfabricGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define memorymulticastfabricGetMemInterMapParams(pMemory, pParams) memorymulticastfabricGetMemInterMapParams_DISPATCH(pMemory, pParams)
-#define memorymulticastfabricCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memCheckMemInterUnmap__
+#define memorymulticastfabricCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__
 #define memorymulticastfabricCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) memorymulticastfabricCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
-#define memorymulticastfabricGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMemoryMappingDescriptor__
+#define memorymulticastfabricGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define memorymulticastfabricGetMemoryMappingDescriptor(pMemory, ppMemDesc) memorymulticastfabricGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
 #define memorymulticastfabricCheckCopyPermissions_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memCheckCopyPermissions__
 #define memorymulticastfabricCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) memorymulticastfabricCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
-#define memorymulticastfabricAccessCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define memorymulticastfabricAccessCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define memorymulticastfabricAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) memorymulticastfabricAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define memorymulticastfabricShareCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
+#define memorymulticastfabricShareCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define memorymulticastfabricShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) memorymulticastfabricShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define memorymulticastfabricControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define memorymulticastfabricControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define memorymulticastfabricControlSerialization_Prologue(pResource, pCallContext, pParams) memorymulticastfabricControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define memorymulticastfabricControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define memorymulticastfabricControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define memorymulticastfabricControlSerialization_Epilogue(pResource, pCallContext, pParams) memorymulticastfabricControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define memorymulticastfabricControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define memorymulticastfabricControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define memorymulticastfabricControl_Prologue(pResource, pCallContext, pParams) memorymulticastfabricControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define memorymulticastfabricControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define memorymulticastfabricControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define memorymulticastfabricControl_Epilogue(pResource, pCallContext, pParams) memorymulticastfabricControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define memorymulticastfabricPreDestruct_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__
 #define memorymulticastfabricPreDestruct(pResource) memorymulticastfabricPreDestruct_DISPATCH(pResource)
@@ -317,11 +291,11 @@ static inline void memorymulticastfabricRemoveFromCache(struct MemoryMulticastFa
 
 // Dispatch functions
 static inline NV_STATUS memorymulticastfabricUnmapFrom_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, struct RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricUnmapFrom__(pMemoryMulticastFabric, pParams);
+    return pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pMemoryMulticastFabric, RsResource), pParams);
 }
 
 static inline NvBool memorymulticastfabricCanCopy_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric) {
-    return pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricCanCopy__(pMemoryMulticastFabric);
+    return pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pMemoryMulticastFabric, RsResource));
 }
 
 static inline NV_STATUS memorymulticastfabricCopyConstruct_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
@@ -329,99 +303,99 @@ static inline NV_STATUS memorymulticastfabricCopyConstruct_DISPATCH(struct Memor
 }
 
 static inline NV_STATUS memorymulticastfabricIsReady_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, NvBool bCopyConstructorContext) {
-    return pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricIsReady__(pMemoryMulticastFabric, bCopyConstructorContext);
+    return pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsReady__(staticCast(pMemoryMulticastFabric, Memory), bCopyConstructorContext);
 }
 
 static inline NV_STATUS memorymulticastfabricControl_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricControl__(pMemoryMulticastFabric, pCallContext, pParams);
+    return pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pMemoryMulticastFabric, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool memorymulticastfabricIsGpuMapAllowed_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, struct OBJGPU *pGpu) {
-    return pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricIsGpuMapAllowed__(pMemoryMulticastFabric, pGpu);
+    return pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsGpuMapAllowed__(staticCast(pMemoryMulticastFabric, Memory), pGpu);
 }
 
 static inline NvBool memorymulticastfabricIsExportAllowed_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric) {
-    return pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricIsExportAllowed__(pMemoryMulticastFabric);
+    return pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memIsExportAllowed__(staticCast(pMemoryMulticastFabric, Memory));
 }
 
 static inline NV_STATUS memorymulticastfabricGetMapAddrSpace_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pMemoryMulticastFabric->__nvoc_metadata_ptr->vtable.__memorymulticastfabricGetMapAddrSpace__(pMemoryMulticastFabric, pCallContext, mapFlags, pAddrSpace);
+    return pMemoryMulticastFabric->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memGetMapAddrSpace__(staticCast(pMemoryMulticastFabric, Memory), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS memorymulticastfabricIsDuplicate_DISPATCH(struct MemoryMulticastFabric *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__memorymulticastfabricIsDuplicate__(pMemory, hMemory, pDuplicate);
+    return pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pMemory, RsResource), hMemory, pDuplicate);
 }
 
 static inline NV_STATUS memorymulticastfabricMap_DISPATCH(struct MemoryMulticastFabric *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__memorymulticastfabricMap__(pMemory, pCallContext, pParams, pCpuMapping);
+    return pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pMemory, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS memorymulticastfabricUnmap_DISPATCH(struct MemoryMulticastFabric *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__memorymulticastfabricUnmap__(pMemory, pCallContext, pCpuMapping);
+    return pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pMemory, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS memorymulticastfabricGetMemInterMapParams_DISPATCH(struct MemoryMulticastFabric *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__memorymulticastfabricGetMemInterMapParams__(pMemory, pParams);
+    return pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pMemory, RmResource), pParams);
 }
 
 static inline NV_STATUS memorymulticastfabricCheckMemInterUnmap_DISPATCH(struct MemoryMulticastFabric *pMemory, NvBool bSubdeviceHandleProvided) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__memorymulticastfabricCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
+    return pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pMemory, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS memorymulticastfabricGetMemoryMappingDescriptor_DISPATCH(struct MemoryMulticastFabric *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__memorymulticastfabricGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
+    return pMemory->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pMemory, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS memorymulticastfabricCheckCopyPermissions_DISPATCH(struct MemoryMulticastFabric *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return pMemory->__nvoc_metadata_ptr->vtable.__memorymulticastfabricCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
+    return pMemory->__nvoc_base_Memory.__nvoc_metadata_ptr->vtable.__memCheckCopyPermissions__(staticCast(pMemory, Memory), pDstGpu, pDstDevice);
 }
 
 static inline NvBool memorymulticastfabricAccessCallback_DISPATCH(struct MemoryMulticastFabric *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool memorymulticastfabricShareCallback_DISPATCH(struct MemoryMulticastFabric *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS memorymulticastfabricControlSerialization_Prologue_DISPATCH(struct MemoryMulticastFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void memorymulticastfabricControlSerialization_Epilogue_DISPATCH(struct MemoryMulticastFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS memorymulticastfabricControl_Prologue_DISPATCH(struct MemoryMulticastFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void memorymulticastfabricControl_Epilogue_DISPATCH(struct MemoryMulticastFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void memorymulticastfabricPreDestruct_DISPATCH(struct MemoryMulticastFabric *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricPreDestruct__(pResource);
+    pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS memorymulticastfabricControlFilter_DISPATCH(struct MemoryMulticastFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool memorymulticastfabricIsPartialUnmapSupported_DISPATCH(struct MemoryMulticastFabric *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS memorymulticastfabricMapTo_DISPATCH(struct MemoryMulticastFabric *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 memorymulticastfabricGetRefCount_DISPATCH(struct MemoryMulticastFabric *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricGetRefCount__(pResource);
+    return pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void memorymulticastfabricAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct MemoryMulticastFabric *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__memorymulticastfabricAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

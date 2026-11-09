@@ -37,6 +37,10 @@
 *
 ****************************************************************************/
 
+#include <cpuopsys.h>
+
+#if NVCPU_IS_X86_64
+
 #include "x86emu/x86emui.h"
 
 /*----------------------------- Implementation ----------------------------*/
@@ -963,3 +967,5 @@ void x86emuOp_esc_coprocess_df(u8 X86EMU_UNUSED(op1))
     DECODE_CLEAR_SEGOVR();
     END_OF_INSTR_NO_TRACE();
 }
+
+#endif /* NVCPU_IS_X86_64 */

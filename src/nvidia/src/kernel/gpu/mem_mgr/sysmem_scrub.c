@@ -193,7 +193,6 @@ _sysmemscrubScrubAndFreeAsync
     NV_ASSERT(!memdescIsSubMemoryMemDesc(pMemDesc));
 
     memdescAddRef(pMemDesc);
-    pMemDesc->Allocated++;
 
     status = ceutilsMemset(pSysmemScrubber->pCeUtils, &params);
     NV_ASSERT_OK(status);

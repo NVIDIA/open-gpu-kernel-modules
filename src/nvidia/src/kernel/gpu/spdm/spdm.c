@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -109,6 +109,7 @@ _spdmClearContext
     portMemFree(pSpdm->pLibspdmContext);
     portMemFree(pSpdm->pLibspdmScratch);
     portMemFree(pSpdm->pAttestationCertChain);
+    portMemFree(pSpdm->pGspCertSerialNumber);
     portMemFree(pSpdm->pDeviceIOContext);
     portMemFree(pSpdm->pMsgLog);
     portMemFree(pSpdm->pTranscriptLog);
@@ -116,6 +117,7 @@ _spdmClearContext
     pSpdm->pLibspdmContext          = NULL;
     pSpdm->pLibspdmScratch          = NULL;
     pSpdm->pAttestationCertChain    = NULL;
+    pSpdm->pGspCertSerialNumber     = NULL;
     pSpdm->pDeviceIOContext         = NULL;
     pSpdm->pMsgLog                  = NULL;
     pSpdm->pTranscriptLog           = NULL;
@@ -123,6 +125,7 @@ _spdmClearContext
     pSpdm->libspdmContextSize       = 0;
     pSpdm->libspdmScratchSize       = 0;
     pSpdm->attestationCertChainSize = 0;
+    pSpdm->gspCertSerialNumberSize  = 0;
     pSpdm->msgLogMaxSize            = 0;
     pSpdm->transcriptLogSize        = 0;
 
@@ -270,11 +273,16 @@ spdmSetupCommunicationBuffers_IMPL
     MemoryManager    *pMemoryManager = NULL;
     TRANSFER_SURFACE  surf           = {0};
     NV_STATUS         status         = NV_OK;
+    NvU64             memdescFlags   = MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
+
+    memdescFlags = confComputeForceUnprotAlloc(pGpu) ?
+                   MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY :
+                   MEMDESC_FLAGS_NONE;
 
     // Create memory descriptor for payload buffer
     status = memdescCreate(&pSpdm->pPayloadBufferMemDesc, pGpu, NV_SPDM_SYSMEM_SURFACE_SIZE_PAGE_ALIGNED,
                            NV_SPDM_SYSMEM_SURFACE_ALIGNMENT_IN_BYTES, NV_TRUE, ADDR_SYSMEM,
-                           NV_MEMORY_CACHED, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY);
+                           NV_MEMORY_CACHED, memdescFlags);
     if (status != NV_OK || pSpdm->pPayloadBufferMemDesc == NULL)
     {
         status = NV_ERR_INSUFFICIENT_RESOURCES;
@@ -287,8 +295,7 @@ spdmSetupCommunicationBuffers_IMPL
         goto ErrorExit;
     }
 
-    // We over-allocate since we must allocate page-aligned. Set size only to what we will use.
-    pSpdm->payloadBufferSize = NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES;
+    pSpdm->payloadBufferSize = spdmGetTransportSurfaceSize_HAL(pGpu, pSpdm);
 
     // Scrub surface
     SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
@@ -480,7 +487,6 @@ spdmContextInit_IMPL
     CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext, LIBSPDM_DATA_APP_CONTEXT_DATA,
                                        NULL, (void *)&pSpdm, sizeof(void *)));
 
-    // TODO: When we move to SPDM 1.2 for all profiles, remove the THV check and set opaqueDataFormat1 directly.
     //
     // Perform any device-specific initialization. spdmDeviceInit is also
     // responsible for registering transport layer functions with libspdm.
@@ -492,7 +498,7 @@ spdmContextInit_IMPL
     }
 
     libspdm_register_device_buffer_func(pSpdm->pLibspdmContext,
-        NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES, NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES,
+        pSpdm->payloadBufferSize, pSpdm->payloadBufferSize,
         _spdmAcquireTransportBuffer, _spdmReleaseTransportBuffer,
         _spdmAcquireTransportBuffer, _spdmReleaseTransportBuffer);
 
@@ -657,17 +663,6 @@ spdmStart_IMPL
             status = NV_ERR_GENERIC;
             goto ErrorExit;
         }
-        else if (heartbeatPeriodInSec != SPDM_DEFAULT_HEARTBEAT_PERIOD_IN_SEC)
-        {
-            //
-            // Do a basic check to make sure the SPDM heartbeat period agreed between
-            // Requester and Responder is expected, even if it is overridden via regkey.
-            //
-            NV_PRINTF(LEVEL_ERROR, "SPDM: Responder returned unexpected heartbeat 0x%x\n",
-                      heartbeatPeriodInSec);
-            status = NV_ERR_NOT_SUPPORTED;
-            goto ErrorExit;
-        }
 
         NV_PRINTF(LEVEL_INFO, "SPDM: Session establishment successful: sessionId 0x%x.\n",
                   pSpdm->sessionId);
@@ -737,6 +732,11 @@ spdmRetrieveExportSecret_IMPL
     // Ensure we are in valid state. Note that export master secret can only be retrieved once.
     if (pSpdm->pLibspdmContext == NULL || !pSpdm->bSessionEstablished || pSpdm->bExportSecretCleared)
     {
+        NV_PRINTF(LEVEL_ERROR,
+                  SPDM_HBEAT_LOG "RetrieveExportSecret: not ready "
+                  "(ctx=%p sessionEstablished=%u secretCleared=%u)\n",
+                  pSpdm->pLibspdmContext, pSpdm->bSessionEstablished,
+                  pSpdm->bExportSecretCleared);
         return NV_ERR_NOT_READY;
     }
 
@@ -793,7 +793,8 @@ spdmSendApplicationMessage_IMPL
     NV_STATUS status        = NV_OK;
     size_t    responseSizeT = 0;
 
-    if (pRequest == NULL || pResponse == NULL || pResponseSize == NULL ||
+    if (pSpdm == NULL || pSpdm->pLibspdmContext == NULL ||
+        pRequest == NULL || pResponse == NULL || pResponseSize == NULL ||
         requestSize < sizeof(RM_SPDM_NV_CMD_HDR) || *pResponseSize < sizeof(RM_SPDM_NV_CMD_HDR))
     {
         return NV_ERR_INVALID_PARAMETER;
@@ -853,6 +854,198 @@ subdeviceSpdmRetrieveTranscript_IMPL
 }
 
 /*!
+ * Retrieves a single DER certificate out of a chain of back-to-back DER
+ * certificates.
+ *
+ * @param[in]  pGpu           Pointer to GPU object.
+ * @param[in]  pSpdm          Pointer to SPDM object.
+ * @param[in]  pCertChain     Buffer holding the concatenated DER certificates.
+ * @param[in]  certChainSize  The size of pCertChain in bytes.
+ * @param[in]  certIndex      Zero-based index of the certificate to return.
+ *                            -1 returns the last certificate in the chain.
+ * @param[out] ppCert         Set to the start of the certificate within pCertChain.
+ * @param[out] pCertSize      Set to the size of that certificate in bytes.
+ *
+ * @return  NV_OK if no error; otherwise return NV_ERR_XXXX
+ */
+NV_STATUS
+spdmGetCertFromChain_IMPL
+(
+    OBJGPU      *pGpu,
+    Spdm        *pSpdm,
+    const NvU8  *pCertChain,
+    NvU32        certChainSize,
+    NvS32        certIndex,
+    const NvU8 **ppCert,
+    NvU32       *pCertSize
+)
+{
+    size_t derCertSize;
+
+    if (pGpu == NULL || pSpdm == NULL || pCertChain == NULL ||
+        ppCert == NULL || pCertSize == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (!libspdm_x509_get_cert_from_cert_chain(pCertChain, certChainSize,
+                                               (int32_t)certIndex, ppCert,
+                                               &derCertSize))
+    {
+        return NV_ERR_OBJECT_NOT_FOUND;
+    }
+
+    *pCertSize = (NvU32)derCertSize;
+
+    return NV_OK;
+}
+
+/*!
+ * Retrieves the serial number from a DER certificate.
+ *
+ * @param[in]     pGpu         Pointer to GPU object.
+ * @param[in]     pSpdm        Pointer to SPDM object.
+ * @param[in]     pCert        The DER certificate to parse.
+ * @param[in]     certSize     The size of pCert in bytes.
+ * @param[out]    pSerial      Buffer receiving the serial number. libspdm appends
+ *                             a NUL terminator, so the buffer must be one byte
+ *                             larger than the serial itself. Pass NULL to query
+ *                             the required size.
+ * @param[in,out] pSerialSize  On input, the size of pSerial in bytes. On output,
+ *                             the length of the serial number excluding the
+ *                             terminator, or the required buffer size when
+ *                             pSerial was NULL or too small.
+ *
+ * @return  NV_OK if no error; otherwise return NV_ERR_XXXX
+ */
+NV_STATUS
+spdmGetCertSerialNumber_IMPL
+(
+    OBJGPU     *pGpu,
+    Spdm       *pSpdm,
+    const NvU8 *pCert,
+    NvU32       certSize,
+    NvU8       *pSerial,
+    NvU32      *pSerialSize
+)
+{
+    size_t serialSize;
+
+    if (pGpu == NULL || pSpdm == NULL || pCert == NULL || pSerialSize == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    //
+    // Probe for the required buffer size. libspdm counts the NUL terminator it
+    // appends, so the answer is one larger than the serial number itself.
+    //
+    serialSize = 0;
+    libspdm_x509_get_serial_number(pCert, certSize, NULL, &serialSize);
+    if (serialSize < 2)
+    {
+        return NV_ERR_INVALID_DATA;
+    }
+
+    if (pSerial == NULL)
+    {
+        *pSerialSize = (NvU32)serialSize;
+        return NV_OK;
+    }
+
+    if (*pSerialSize < serialSize)
+    {
+        *pSerialSize = (NvU32)serialSize;
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    serialSize = *pSerialSize;
+    if (!libspdm_x509_get_serial_number(pCert, certSize, pSerial, &serialSize))
+    {
+        *pSerialSize = 0;
+        return NV_ERR_INVALID_DATA;
+    }
+
+    // Report the serial number length, without the terminator libspdm added.
+    *pSerialSize = (NvU32)(serialSize - 1);
+
+    return NV_OK;
+}
+
+/*!
+ * Verifies a device certificate chain against the FSP root CA that RM ships.
+ *
+ * The chain carries its own root, but that root is only as trustworthy as the
+ * chain it came in, so verification is anchored on the FSP L1 certificate built
+ * into RM instead.
+ *
+ * @param[in] pGpu           Pointer to GPU object.
+ * @param[in] pSpdm          Pointer to SPDM object.
+ * @param[in] pCertChain     Chain of back-to-back DER certificates to verify.
+ * @param[in] certChainSize  The size of pCertChain in bytes.
+ *
+ * @return  NV_OK if the chain verifies; otherwise return NV_ERR_XXXX
+ */
+NV_STATUS
+spdmVerifyDeviceCertChain_IMPL
+(
+    OBJGPU     *pGpu,
+    Spdm       *pSpdm,
+    const NvU8 *pCertChain,
+    NvU32       certChainSize
+)
+{
+    NV_STATUS  status;
+    NvU8      *pRootCert    = NULL;
+    NvU64      rootCertSize = 0;
+
+    if (pGpu == NULL || pSpdm == NULL || pCertChain == NULL || certChainSize == 0)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // Query the size of the FSP root CA in DER form, then retrieve it.
+    status = spdmGetIndividualCertificate_HAL(pGpu, pSpdm, NV_SPDM_FSP_L1_CERTIFICATE_ID,
+                                              NV_TRUE, NULL, &rootCertSize);
+
+    if (status != NV_OK || rootCertSize == 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to query FSP root certificate size !!! \n");
+        return (status != NV_OK) ? status : NV_ERR_INVALID_DATA;
+    }
+
+    pRootCert = portMemAllocNonPaged(rootCertSize);
+
+    if (pRootCert == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    status = spdmGetIndividualCertificate_HAL(pGpu, pSpdm, NV_SPDM_FSP_L1_CERTIFICATE_ID,
+                                              NV_TRUE, pRootCert, &rootCertSize);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "spdmGetIndividualCertificate() failed for FSP root cert !!! \n");
+        goto ErrorExit;
+    }
+
+    if (!libspdm_x509_verify_cert_chain(pRootCert, (size_t)rootCertSize,
+                                        pCertChain, certChainSize))
+    {
+        NV_PRINTF(LEVEL_ERROR, "libspdm_x509_verify_cert_chain() failed for device chain !!! \n");
+        status = NV_ERR_INVALID_DATA;
+
+    }
+
+ErrorExit:
+
+    portMemFree(pRootCert);
+
+    return status;
+}
+
+/*!
  * Setup responder certificate context
  * RM(requester) send GET_CERTIFICATE command to responer, responder return
  * all certificates in one buffer. This functions is used to parse buffer and
@@ -887,7 +1080,8 @@ spdmSetupResponderCertCtx_IMPL
     NV_SPDM_CERT_CONTEXT  *pCertCtx       = NULL;
     NV_STATUS              status;
 
-    if (pGpu == NULL || pSpdm == NULL || pCertResponder == NULL ||
+    if (pGpu == NULL || pSpdm == NULL || pSpdm->pLibspdmContext == NULL ||
+        pCertResponder == NULL ||
         pCertRespCtx == NULL || pCertCount == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
@@ -914,14 +1108,14 @@ spdmSetupResponderCertCtx_IMPL
             return NV_ERR_INVALID_DATA;
         }
 
-        pCertCtx->pCert = pCertStartSrc;
-        pCertCtx->certSize = certSize;
-        certCount ++;
-
-        if (certCount > NV_SPDM_RESPONDER_CERT_COUNT_MAX)
+        if (certCount >= NV_SPDM_RESPONDER_CERT_COUNT_MAX)
         {
             return NV_ERR_BUFFER_TOO_SMALL;
         }
+
+        pCertCtx->pCert = pCertStartSrc;
+        pCertCtx->certSize = certSize;
+        certCount ++;
 
         pCertStartSrc += certSize;
         pCertCtx++;
@@ -978,6 +1172,8 @@ spdmBuildCertChainDer_IMPL
 
     if (certCountResp == 0)
     {
+        // Nothing was written to the output buffer.
+        *pCertChainOutSize = 0;
         return NV_OK;
     }
 
@@ -1043,6 +1239,8 @@ spdmBuildCertChainDer_IMPL
 
         return NV_ERR_INVALID_DATA;
     }
+
+    *pCertChainOutSize = certTotalSize;
 
     return NV_OK;
 }
@@ -1230,4 +1428,38 @@ spdmEstablishSession_IMPL
     pSpdm->nvSpdmRequesterId = requesterId;
 
     return NV_OK;
+}
+
+/*!
+ * @brief Return the active SPDM heartbeat responder for this GPU.
+ *
+ * @param[in] pGpu   GPU object pointer.
+ * @param[in] pSpdm  SPDM object pointer.
+ *
+ * @return Responder ID when heartbeat is enabled, otherwise
+ *         SPDM_HEARTBEAT_RESPONDER_UNKNOWN.
+ */
+NV_STATUS spdmGetHeartbeatResponder_IMPL
+(
+    OBJGPU *pGpu,
+    Spdm   *pSpdm,
+    NvU32  *pResponder
+)
+{
+    if (pResponder == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (gpuIsSpdmHeartbeatEnabled(pGpu))
+    {
+        if (SPDM_HEARTBEAT_RESPONDER_DEFAULT == SPDM_HEARTBEAT_RESPONDER_SEC2)
+        {
+            *pResponder = SPDM_HEARTBEAT_RESPONDER_DEFAULT;
+            return NV_OK;
+        }
+    }
+
+   *pResponder = SPDM_HEARTBEAT_RESPONDER_UNKNOWN;
+    return NV_ERR_NOT_SUPPORTED;
 }

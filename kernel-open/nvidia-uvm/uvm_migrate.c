@@ -703,7 +703,7 @@ static NV_STATUS semaphore_release_from_gpu(uvm_gpu_t *gpu,
 
     UVM_ASSERT(uvm_mem_mapped_on_gpu_kernel(semaphore_va_range->mem, gpu));
 
-    semaphore_offset = semaphore_user_addr - (NvU64)(uintptr_t)semaphore_va_range->mem->user->addr;
+    semaphore_offset = semaphore_user_addr - semaphore_va_range->va_range.node.start;
     semaphore_gpu_va = uvm_mem_get_gpu_va_kernel(semaphore_va_range->mem, gpu) + semaphore_offset;
 
     // Outside of SR-IOV heavy, using UVM_CHANNEL_TYPE_MEMOPS is optimal from a
@@ -742,14 +742,16 @@ static NV_STATUS semaphore_release_from_gpu(uvm_gpu_t *gpu,
     return status;
 }
 
-static void semaphore_release_from_cpu(uvm_mem_t *semaphore_mem, NvU64 semaphore_user_addr, NvU32 semaphore_payload)
+static void semaphore_release_from_cpu(uvm_va_range_semaphore_pool_t *semaphore_va_range,
+                                       NvU64 semaphore_user_addr,
+                                       NvU32 semaphore_payload)
 {
     char *semaphore_cpu_va;
     NvU64 semaphore_offset;
 
-    UVM_ASSERT(uvm_mem_mapped_on_cpu_kernel(semaphore_mem));
+    UVM_ASSERT(uvm_mem_mapped_on_cpu_kernel(semaphore_va_range->mem));
 
-    semaphore_offset = semaphore_user_addr - (NvU64)(uintptr_t)semaphore_mem->user->addr;
+    semaphore_offset = semaphore_user_addr - semaphore_va_range->va_range.node.start;
 
     // Prevent processor speculation prior to accessing user-mapped memory to
     // avoid leaking information from side-channel attacks. Under speculation, a
@@ -760,7 +762,7 @@ static void semaphore_release_from_cpu(uvm_mem_t *semaphore_mem, NvU64 semaphore
     // block speculation.
     nv_speculation_barrier();
 
-    semaphore_cpu_va = (char *) uvm_mem_get_cpu_addr_kernel(semaphore_mem) + semaphore_offset;
+    semaphore_cpu_va = (char *) uvm_mem_get_cpu_addr_kernel(semaphore_va_range->mem) + semaphore_offset;
 
     WRITE_ONCE(*(NvU32 *)semaphore_cpu_va, semaphore_payload);
 }
@@ -780,7 +782,7 @@ static NV_STATUS semaphore_release(NvU64 semaphore_address,
 
     // Attempt eager release from CPU if the tracker is already completed.
     if (uvm_tracker_is_completed(tracker_ptr)) {
-        semaphore_release_from_cpu(semaphore_pool->mem, semaphore_address, semaphore_payload);
+        semaphore_release_from_cpu(semaphore_pool, semaphore_address, semaphore_payload);
         return NV_OK;
     }
 

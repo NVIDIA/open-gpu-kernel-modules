@@ -96,10 +96,9 @@ NV_STATUS opEventBufferInstallClientRmNotify(
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__OpEventBufferBind;
 struct NVOC_METADATA__RmResource;
-struct NVOC_VTABLE__OpEventBufferBind;
 
 
 struct OpEventBufferBind {
@@ -132,36 +131,10 @@ struct OpEventBufferBind {
 };
 
 
-// Vtable with 21 per-class function pointers
-struct NVOC_VTABLE__OpEventBufferBind {
-    NvBool (*__opevtbufbindAccessCallback__)(struct OpEventBufferBind * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__opevtbufbindShareCallback__)(struct OpEventBufferBind * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__opevtbufbindGetMemInterMapParams__)(struct OpEventBufferBind * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__opevtbufbindCheckMemInterUnmap__)(struct OpEventBufferBind * /*this*/, NvBool);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__opevtbufbindGetMemoryMappingDescriptor__)(struct OpEventBufferBind * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__opevtbufbindControlSerialization_Prologue__)(struct OpEventBufferBind * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__opevtbufbindControlSerialization_Epilogue__)(struct OpEventBufferBind * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__opevtbufbindControl_Prologue__)(struct OpEventBufferBind * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__opevtbufbindControl_Epilogue__)(struct OpEventBufferBind * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__opevtbufbindCanCopy__)(struct OpEventBufferBind * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__opevtbufbindIsDuplicate__)(struct OpEventBufferBind * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (rmres)
-    void (*__opevtbufbindPreDestruct__)(struct OpEventBufferBind * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__opevtbufbindControl__)(struct OpEventBufferBind * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__opevtbufbindControlFilter__)(struct OpEventBufferBind * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__opevtbufbindMap__)(struct OpEventBufferBind * /*this*/, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__opevtbufbindUnmap__)(struct OpEventBufferBind * /*this*/, struct CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NvBool (*__opevtbufbindIsPartialUnmapSupported__)(struct OpEventBufferBind * /*this*/);  // inline virtual inherited (res) base (rmres) body
-    NV_STATUS (*__opevtbufbindMapTo__)(struct OpEventBufferBind * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__opevtbufbindUnmapFrom__)(struct OpEventBufferBind * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
-    NvU32 (*__opevtbufbindGetRefCount__)(struct OpEventBufferBind * /*this*/);  // virtual inherited (res) base (rmres)
-    void (*__opevtbufbindAddAdditionalDependants__)(struct RsClient *, struct OpEventBufferBind * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__OpEventBufferBind {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__RmResource metadata__RmResource;
-    const struct NVOC_VTABLE__OpEventBufferBind vtable;
 };
 
 #ifndef __nvoc_class_id_OpEventBufferBind
@@ -198,9 +171,9 @@ void opevtbufbindDestruct_IMPL(struct OpEventBufferBind *pResource);
 
 
 // Wrapper macros for halified functions
-#define opevtbufbindAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define opevtbufbindAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define opevtbufbindAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) opevtbufbindAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define opevtbufbindShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
+#define opevtbufbindShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define opevtbufbindShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) opevtbufbindShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define opevtbufbindGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define opevtbufbindGetMemInterMapParams(pRmResource, pParams) opevtbufbindGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -208,13 +181,13 @@ void opevtbufbindDestruct_IMPL(struct OpEventBufferBind *pResource);
 #define opevtbufbindCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) opevtbufbindCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define opevtbufbindGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define opevtbufbindGetMemoryMappingDescriptor(pRmResource, ppMemDesc) opevtbufbindGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define opevtbufbindControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define opevtbufbindControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define opevtbufbindControlSerialization_Prologue(pResource, pCallContext, pParams) opevtbufbindControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define opevtbufbindControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define opevtbufbindControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define opevtbufbindControlSerialization_Epilogue(pResource, pCallContext, pParams) opevtbufbindControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define opevtbufbindControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define opevtbufbindControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define opevtbufbindControl_Prologue(pResource, pCallContext, pParams) opevtbufbindControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define opevtbufbindControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define opevtbufbindControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define opevtbufbindControl_Epilogue(pResource, pCallContext, pParams) opevtbufbindControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define opevtbufbindCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define opevtbufbindCanCopy(pResource) opevtbufbindCanCopy_DISPATCH(pResource)
@@ -243,87 +216,87 @@ void opevtbufbindDestruct_IMPL(struct OpEventBufferBind *pResource);
 
 // Dispatch functions
 static inline NvBool opevtbufbindAccessCallback_DISPATCH(struct OpEventBufferBind *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool opevtbufbindShareCallback_DISPATCH(struct OpEventBufferBind *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS opevtbufbindGetMemInterMapParams_DISPATCH(struct OpEventBufferBind *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__opevtbufbindGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS opevtbufbindCheckMemInterUnmap_DISPATCH(struct OpEventBufferBind *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__opevtbufbindCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS opevtbufbindGetMemoryMappingDescriptor_DISPATCH(struct OpEventBufferBind *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__opevtbufbindGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS opevtbufbindControlSerialization_Prologue_DISPATCH(struct OpEventBufferBind *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void opevtbufbindControlSerialization_Epilogue_DISPATCH(struct OpEventBufferBind *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS opevtbufbindControl_Prologue_DISPATCH(struct OpEventBufferBind *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void opevtbufbindControl_Epilogue_DISPATCH(struct OpEventBufferBind *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool opevtbufbindCanCopy_DISPATCH(struct OpEventBufferBind *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindCanCopy__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS opevtbufbindIsDuplicate_DISPATCH(struct OpEventBufferBind *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void opevtbufbindPreDestruct_DISPATCH(struct OpEventBufferBind *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindPreDestruct__(pResource);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS opevtbufbindControl_DISPATCH(struct OpEventBufferBind *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS opevtbufbindControlFilter_DISPATCH(struct OpEventBufferBind *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS opevtbufbindMap_DISPATCH(struct OpEventBufferBind *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS opevtbufbindUnmap_DISPATCH(struct OpEventBufferBind *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool opevtbufbindIsPartialUnmapSupported_DISPATCH(struct OpEventBufferBind *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS opevtbufbindMapTo_DISPATCH(struct OpEventBufferBind *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS opevtbufbindUnmapFrom_DISPATCH(struct OpEventBufferBind *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 opevtbufbindGetRefCount_DISPATCH(struct OpEventBufferBind *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindGetRefCount__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void opevtbufbindAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct OpEventBufferBind *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__opevtbufbindAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

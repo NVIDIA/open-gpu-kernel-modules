@@ -130,10 +130,11 @@ typedef struct
     /*!
      * @brief Report an event that is runnable on the bus.
      *
-     * Invoked after the bus takes ownership of a newly published event, and
-     * when a suspended group resumes with dispatchable work. Owners can use
-     * this hook to wake an event thread or schedule deferred work that calls
-     * eventbusFlush().
+     * Invoked after the bus takes ownership of a newly published runnable event,
+     * and when a suspended group resumes with dispatchable work. Publish-paused
+     * events do not trigger this callback until their group becomes runnable.
+     * Owners can use this hook to wake an event thread or schedule deferred work
+     * that calls eventbusFlush().
      *
      * If NULL, runnable work is processed only when a caller explicitly invokes
      * eventbusFlush().
@@ -336,6 +337,26 @@ static inline NV_STATUS eventbusEventPublish(struct EventBus *pEventBus, struct 
 }
 #else // __nvoc_event_bus_h_disabled
 #define eventbusEventPublish(pEventBus, pEvent) eventbusEventPublish_IMPL(pEventBus, pEvent)
+#endif // __nvoc_event_bus_h_disabled
+
+NV_STATUS eventbusEventPublishPaused_IMPL(struct EventBus *pEventBus, struct Event *pEvent);
+#ifdef __nvoc_event_bus_h_disabled
+static inline NV_STATUS eventbusEventPublishPaused(struct EventBus *pEventBus, struct Event *pEvent) {
+    NV_ASSERT_FAILED_PRECOMP("EventBus was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_event_bus_h_disabled
+#define eventbusEventPublishPaused(pEventBus, pEvent) eventbusEventPublishPaused_IMPL(pEventBus, pEvent)
+#endif // __nvoc_event_bus_h_disabled
+
+NV_STATUS eventbusEventPublishWithAttributes_IMPL(struct EventBus *pEventBus, struct Event *pEvent, NvU8 groupAttributes);
+#ifdef __nvoc_event_bus_h_disabled
+static inline NV_STATUS eventbusEventPublishWithAttributes(struct EventBus *pEventBus, struct Event *pEvent, NvU8 groupAttributes) {
+    NV_ASSERT_FAILED_PRECOMP("EventBus was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else // __nvoc_event_bus_h_disabled
+#define eventbusEventPublishWithAttributes(pEventBus, pEvent, groupAttributes) eventbusEventPublishWithAttributes_IMPL(pEventBus, pEvent, groupAttributes)
 #endif // __nvoc_event_bus_h_disabled
 
 NV_STATUS eventbusEventPublishAssociated_IMPL(struct EventBus *pEventBus, struct Event *pExistingEvent, struct Event *pEvent);

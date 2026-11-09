@@ -803,6 +803,24 @@ enum NvKmsDpyAttributeRequestedDitheringModeValue {
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_DITHERING_MODE_TEMPORAL = 3,
 };
 
+enum NvKmsDpyAttributeColorBpcValue {
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN =  0,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6       =  6,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8       =  8,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10      = 10,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12      = 12,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_MAX     =
+        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12,
+};
+
+/*! Values for the NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT attribute. */
+enum NvKmsDpyAttributeRequestedColorFormatValue {
+    NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_RGB = 0,
+    NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_YCbCr422 = 1,
+    NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_YCbCr444 = 2,
+    NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_UNKNOWN = 3,
+};
+
 typedef void (*NVRgInterruptCallbackProc)(NvU64 clientData,
                                           NvU64 timestamp);
 
@@ -821,6 +839,15 @@ typedef void (*NVRgInterruptCallbackProc)(NvU64 clientData,
 struct NvKmsHdmiVsifMetadata {
     NvU8 payloadSize;
     NvU8 payload[NVKMS_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE];
+};
+
+/*
+ * ALLM (Auto Low Latency Mode) enable mode for HDMI 2.1 displays.
+ */
+enum NvKmsAllmMode {
+    NVKMS_ALLM_MODE_DISABLED        = 0, /* ALLM bit always 0 */
+    NVKMS_ALLM_MODE_ENABLED_DYNAMIC = 1, /* ALLM bit follows VRR active state */
+    NVKMS_ALLM_MODE_ENABLED_FORCED  = 2, /* ALLM bit always 1 (requires EDID cap) */
 };
 
 #endif /* NVKMS_API_TYPES_H */

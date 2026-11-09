@@ -197,9 +197,12 @@ namespace DisplayPort
             checkSumValid = false;
             forcedCheckSum = false;
             fallbackEdid = false;
-            // clear the WARFlags
-            _WARFlags temp = {0};
-            WARFlags = temp;
+            patchedChecksum = false;
+            // clear the WARFlags and WARData.
+            _WARFlags flagTemp = {0};
+            _WARData  dataTemp = {0};
+            WARFlags = flagTemp;
+            WARData  = dataTemp;
         }
 
         bool operator== (const Edid & other)

@@ -74,10 +74,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__ProfilerContextEvent;
 struct NVOC_METADATA__RmResource;
-struct NVOC_VTABLE__ProfilerContextEvent;
 
 
 struct ProfilerContextEvent {
@@ -103,36 +102,10 @@ struct ProfilerContextEvent {
 };
 
 
-// Vtable with 21 per-class function pointers
-struct NVOC_VTABLE__ProfilerContextEvent {
-    NvBool (*__profilerContextEventCanCopy__)(struct ProfilerContextEvent * /*this*/);  // virtual override (res) base (rmres)
-    NvBool (*__profilerContextEventAccessCallback__)(struct ProfilerContextEvent * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__profilerContextEventShareCallback__)(struct ProfilerContextEvent * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__profilerContextEventGetMemInterMapParams__)(struct ProfilerContextEvent * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__profilerContextEventCheckMemInterUnmap__)(struct ProfilerContextEvent * /*this*/, NvBool);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__profilerContextEventGetMemoryMappingDescriptor__)(struct ProfilerContextEvent * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__profilerContextEventControlSerialization_Prologue__)(struct ProfilerContextEvent * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__profilerContextEventControlSerialization_Epilogue__)(struct ProfilerContextEvent * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__profilerContextEventControl_Prologue__)(struct ProfilerContextEvent * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__profilerContextEventControl_Epilogue__)(struct ProfilerContextEvent * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__profilerContextEventIsDuplicate__)(struct ProfilerContextEvent * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (rmres)
-    void (*__profilerContextEventPreDestruct__)(struct ProfilerContextEvent * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__profilerContextEventControl__)(struct ProfilerContextEvent * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__profilerContextEventControlFilter__)(struct ProfilerContextEvent * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__profilerContextEventMap__)(struct ProfilerContextEvent * /*this*/, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__profilerContextEventUnmap__)(struct ProfilerContextEvent * /*this*/, struct CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NvBool (*__profilerContextEventIsPartialUnmapSupported__)(struct ProfilerContextEvent * /*this*/);  // inline virtual inherited (res) base (rmres) body
-    NV_STATUS (*__profilerContextEventMapTo__)(struct ProfilerContextEvent * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__profilerContextEventUnmapFrom__)(struct ProfilerContextEvent * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
-    NvU32 (*__profilerContextEventGetRefCount__)(struct ProfilerContextEvent * /*this*/);  // virtual inherited (res) base (rmres)
-    void (*__profilerContextEventAddAdditionalDependants__)(struct RsClient *, struct ProfilerContextEvent * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__ProfilerContextEvent {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__RmResource metadata__RmResource;
-    const struct NVOC_VTABLE__ProfilerContextEvent vtable;
 };
 
 #ifndef __nvoc_class_id_ProfilerContextEvent
@@ -169,11 +142,11 @@ void profilerContextEventDestruct_IMPL(struct ProfilerContextEvent *profilerCont
 
 
 // Wrapper macros for halified functions
-#define profilerContextEventCanCopy_FNPTR(profilerContextEvent) profilerContextEvent->__nvoc_metadata_ptr->vtable.__profilerContextEventCanCopy__
+#define profilerContextEventCanCopy_FNPTR(profilerContextEvent) profilerContextEvent->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define profilerContextEventCanCopy(profilerContextEvent) profilerContextEventCanCopy_DISPATCH(profilerContextEvent)
-#define profilerContextEventAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define profilerContextEventAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define profilerContextEventAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) profilerContextEventAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define profilerContextEventShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
+#define profilerContextEventShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define profilerContextEventShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) profilerContextEventShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define profilerContextEventGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define profilerContextEventGetMemInterMapParams(pRmResource, pParams) profilerContextEventGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -181,13 +154,13 @@ void profilerContextEventDestruct_IMPL(struct ProfilerContextEvent *profilerCont
 #define profilerContextEventCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) profilerContextEventCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define profilerContextEventGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define profilerContextEventGetMemoryMappingDescriptor(pRmResource, ppMemDesc) profilerContextEventGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define profilerContextEventControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define profilerContextEventControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define profilerContextEventControlSerialization_Prologue(pResource, pCallContext, pParams) profilerContextEventControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define profilerContextEventControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define profilerContextEventControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define profilerContextEventControlSerialization_Epilogue(pResource, pCallContext, pParams) profilerContextEventControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define profilerContextEventControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define profilerContextEventControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define profilerContextEventControl_Prologue(pResource, pCallContext, pParams) profilerContextEventControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define profilerContextEventControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define profilerContextEventControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define profilerContextEventControl_Epilogue(pResource, pCallContext, pParams) profilerContextEventControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define profilerContextEventIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__
 #define profilerContextEventIsDuplicate(pResource, hMemory, pDuplicate) profilerContextEventIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
@@ -214,87 +187,87 @@ void profilerContextEventDestruct_IMPL(struct ProfilerContextEvent *profilerCont
 
 // Dispatch functions
 static inline NvBool profilerContextEventCanCopy_DISPATCH(struct ProfilerContextEvent *profilerContextEvent) {
-    return profilerContextEvent->__nvoc_metadata_ptr->vtable.__profilerContextEventCanCopy__(profilerContextEvent);
+    return profilerContextEvent->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(profilerContextEvent, RsResource));
 }
 
 static inline NvBool profilerContextEventAccessCallback_DISPATCH(struct ProfilerContextEvent *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool profilerContextEventShareCallback_DISPATCH(struct ProfilerContextEvent *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS profilerContextEventGetMemInterMapParams_DISPATCH(struct ProfilerContextEvent *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__profilerContextEventGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS profilerContextEventCheckMemInterUnmap_DISPATCH(struct ProfilerContextEvent *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__profilerContextEventCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS profilerContextEventGetMemoryMappingDescriptor_DISPATCH(struct ProfilerContextEvent *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__profilerContextEventGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS profilerContextEventControlSerialization_Prologue_DISPATCH(struct ProfilerContextEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void profilerContextEventControlSerialization_Epilogue_DISPATCH(struct ProfilerContextEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS profilerContextEventControl_Prologue_DISPATCH(struct ProfilerContextEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void profilerContextEventControl_Epilogue_DISPATCH(struct ProfilerContextEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS profilerContextEventIsDuplicate_DISPATCH(struct ProfilerContextEvent *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void profilerContextEventPreDestruct_DISPATCH(struct ProfilerContextEvent *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventPreDestruct__(pResource);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS profilerContextEventControl_DISPATCH(struct ProfilerContextEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS profilerContextEventControlFilter_DISPATCH(struct ProfilerContextEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS profilerContextEventMap_DISPATCH(struct ProfilerContextEvent *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS profilerContextEventUnmap_DISPATCH(struct ProfilerContextEvent *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool profilerContextEventIsPartialUnmapSupported_DISPATCH(struct ProfilerContextEvent *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS profilerContextEventMapTo_DISPATCH(struct ProfilerContextEvent *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS profilerContextEventUnmapFrom_DISPATCH(struct ProfilerContextEvent *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 profilerContextEventGetRefCount_DISPATCH(struct ProfilerContextEvent *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventGetRefCount__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void profilerContextEventAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ProfilerContextEvent *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__profilerContextEventAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

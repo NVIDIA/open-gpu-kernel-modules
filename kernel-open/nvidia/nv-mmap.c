@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -130,7 +130,6 @@ nvidia_vma_access(
     nv_alloc_mapping_context_t *mmap_context = NULL;
     NvU64 offsInVma = addr - vma->vm_start;
     int ret = -EINVAL;
-    NvBool has_pages;
 
     pageIndex = (offsInVma >> PAGE_SHIFT);
     pageOffset = (offsInVma & ~PAGE_MASK);
@@ -149,8 +148,6 @@ nvidia_vma_access(
     }
 
     mmap_context = &(*pfile_mapping_list)->context;
-
-    has_pages = (mmap_context->num_pages != 0);
 
     if (write && !(mmap_context->prot & NV_PROTECT_WRITEABLE))
     {
@@ -180,16 +177,19 @@ nvidia_vma_access(
         pageIndex = nv_array_index_no_speculate(pageIndex, at->num_pages);
         kernel_mapping = (void *)(at->page_table[pageIndex].virt_addr + pageOffset);
     }
-    else if (has_pages)
-    {
-        struct page *pPage = NV_GET_PAGE_STRUCT(mmap_context->page_array[pageIndex]);
-        NvU8 *pPagePtr = (NvU8 *) page_address(pPage);
-        kernel_mapping = &pPagePtr[pageOffset];
-    }
     else
     {
         NvU64 idx = 0;
         NvU64 curOffs = 0;
+        NvU32 caching = mmap_context->caching;
+
+        //
+        // Some systems cannot map WC memory, so we need to convert it to UC.
+        // TODO: push this into higher layer logic.
+        //
+        caching = (rm_disable_iomap_wc() && (caching == NV_MEMORY_WRITECOMBINED)) ?
+                    NV_MEMORY_UNCACHED : caching;
+
         for(; idx < mmap_context->memArea.numRanges; idx++)
         {
             NvU64 nextOffs = mmap_context->memArea.pRanges[idx].size + curOffs;
@@ -204,7 +204,7 @@ nvidia_vma_access(
         ret = -EINVAL;
         goto done;
 found:
-        kernel_mapping = os_map_kernel_space(addr, PAGE_SIZE, NV_MEMORY_UNCACHED);
+        kernel_mapping = os_map_kernel_space(addr, PAGE_SIZE, caching);
         if (kernel_mapping == NULL)
         {
             ret = -ENOMEM;
@@ -222,7 +222,7 @@ found:
     else
         os_mem_copy(buffer, kernel_mapping, length);
 
-    if (at == NULL && !has_pages)
+    if (at == NULL)
     {
         kernel_mapping = ((char *)kernel_mapping - pageOffset);
         os_unmap_kernel_space(kernel_mapping, PAGE_SIZE);
@@ -343,69 +343,23 @@ static struct vm_operations_struct nv_vm_ops = {
     .access = nvidia_vma_access,
 };
 
-int nv_encode_caching(
-    pgprot_t *prot,
-    NvU32     cache_type,
-    nv_memory_type_t memory_type
+pgprot_t nv_encode_caching(
+    pgprot_t prot,
+    NvU32    cache_type
 )
 {
-    pgprot_t tmp;
-
-    if (prot == NULL)
-    {
-        tmp = __pgprot(0);
-        prot = &tmp;
-    }
-
     switch (cache_type)
     {
-        case NV_MEMORY_UNCACHED_WEAK:
-#if defined(NV_PGPROT_UNCACHED_WEAK)
-            *prot = NV_PGPROT_UNCACHED_WEAK(*prot);
-            break;
-#endif
         case NV_MEMORY_UNCACHED:
-            *prot = (memory_type == NV_MEMORY_TYPE_SYSTEM) ?
-                    NV_PGPROT_UNCACHED(*prot) :
-                    NV_PGPROT_UNCACHED_DEVICE(*prot);
-            break;
-#if defined(NV_PGPROT_WRITE_COMBINED)
-        case NV_MEMORY_DEFAULT:
+            return pgprot_noncached(prot);
         case NV_MEMORY_WRITECOMBINED:
-            if (NV_ALLOW_WRITE_COMBINING(memory_type))
-            {
-                *prot = NV_PGPROT_WRITE_COMBINED(*prot);
-                break;
-            }
-
-            /*
-             * If WC support is unavailable, we need to return an error
-             * code to the caller, but need not print a warning.
-             *
-             * For frame buffer memory, callers are expected to use the
-             * UC- memory type if we report WC as unsupported, which
-             * translates to the effective memory type WC if a WC MTRR
-             * exists or else UC.
-             */
-            return 1;
-#endif
+            return pgprot_writecombine(prot);
         case NV_MEMORY_CACHED:
-            if (!NV_ALLOW_CACHING(memory_type))
-            {
-                nv_printf(NV_DBG_ERRORS,
-                    "NVRM: VM: memory type %d does not allow caching!\n",
-                    memory_type);
-                return 1;
-            }
-            break;
-
-        default:
-            nv_printf(NV_DBG_ERRORS,
-                "NVRM: VM: cache type %d not supported for memory type %d!\n",
-                cache_type, memory_type);
-            return 1;
+            return prot;
     }
-    return 0;
+
+    BUG();
+    return prot;
 }
 
 static int nvidia_mmap_peer_io(
@@ -488,37 +442,6 @@ static int nvidia_mmap_sysmem(
     return ret;
 }
 
-static int nvidia_mmap_numa(
-    struct vm_area_struct *vma,
-    const nv_alloc_mapping_context_t *mmap_context)
-{
-    NvU64 start, addr;
-    NvU64 pages;
-    NvU64 i;
-
-    pages = NV_VMA_SIZE(vma) >> PAGE_SHIFT;
-    start = vma->vm_start;
-
-    if (mmap_context->num_pages < pages)
-    {
-        return -EINVAL;
-    }
-
-    // Needed for the linux kernel for mapping compound pages
-    nv_vm_flags_set(vma, VM_MIXEDMAP);
-
-    for (i = 0, addr = mmap_context->page_array[0]; i < pages;
-         addr = mmap_context->page_array[++i], start += PAGE_SIZE)
-    {
-        if (vm_insert_page(vma, start, NV_GET_PAGE_STRUCT(addr)) != 0)
-        {
-            return -EAGAIN;
-        }
-    }
-
-    return 0;
-}
-
 int nvidia_mmap_helper(
     nv_state_t *nv,
     nv_linux_file_private_t *nvlfp,
@@ -571,14 +494,21 @@ int nvidia_mmap_helper(
 
     prot = mmap_context->prot;
 
+    // Page-table entries inherit vm_page_prot when they are installed.
+    if ((prot & NV_PROTECT_WRITEABLE) == 0)
+    {
+        vma->vm_page_prot = NV_PGPROT_READ_ONLY(vma->vm_page_prot);
+        nv_vm_flags_clear(vma, VM_WRITE);
+        nv_vm_flags_clear(vma, VM_MAYWRITE);
+    }
+
     /*
      * Nvidia device node(nvidia#) maps device's BAR memory,
      * Nvidia control node(nvidiactrl) maps system memory.
      */
     if (!NV_IS_CTL_DEVICE(nv))
     {
-        NvU64 access_start = mmap_context->access_start;
-        NvU64 access_len = mmap_context->access_size;
+        NvU32 caching = mmap_context->caching;
 
         // Ensure size is correct.
         if (NV_VMA_SIZE(vma) != memareaSize(mmap_context->memArea))
@@ -587,82 +517,44 @@ int nvidia_mmap_helper(
             goto done;
         }
 
-        if (IS_REG_OFFSET(nv, access_start, access_len))
-        {
-            if (nv_encode_caching(&vma->vm_page_prot, NV_MEMORY_UNCACHED,
-                        NV_MEMORY_TYPE_REGISTERS))
-            {
-                ret = -ENXIO;
-                goto done;
-            }
-        }
-        else if (IS_FB_OFFSET(nv, access_start, access_len))
-        {
-            if (IS_UD_OFFSET(nv, access_start, access_len))
-            {
-                if (nv_encode_caching(&vma->vm_page_prot, NV_MEMORY_UNCACHED,
-                            NV_MEMORY_TYPE_FRAMEBUFFER))
-                {
-                    ret = -ENXIO;
-                    goto done;
-                }
-            }
-            else
-            {
-                if (nv_encode_caching(&vma->vm_page_prot,
-                        rm_disable_iomap_wc() ? NV_MEMORY_UNCACHED : mmap_context->caching, 
-                        NV_MEMORY_TYPE_FRAMEBUFFER))
-                {
-                    if (nv_encode_caching(&vma->vm_page_prot,
-                            NV_MEMORY_UNCACHED_WEAK, NV_MEMORY_TYPE_FRAMEBUFFER))
-                    {
-                        ret = -ENXIO;
-                        goto done;
-                    }
-                }
-            }
-        }
+        //
+        // Some systems cannot map WC memory, so we need to convert it to UC.
+        // TODO: push this into higher layer logic.
+        //
+        caching = (rm_disable_iomap_wc() && (caching == NV_MEMORY_WRITECOMBINED)) ?
+                    NV_MEMORY_UNCACHED : caching;
+
+        vma->vm_page_prot = nv_encode_caching(vma->vm_page_prot, caching);
 
         down(&nvl->mmap_lock);
         if (nvl->safe_to_mmap)
         {
+            NvU64 idx = 0;
+            NvU64 curOffs = 0;
+            /*
+             * Use adjusted unprotected/decrypted mappings outside TDI RUN
+             * state in TDISP, bounce buffer CC and non-CC.
+             * In TDISP system and TDI is RUN, keep the protected pgprot.
+             */
+            pgprot_t prot = nv_tdisp_is_tdi_in_run_state(nvl) ?
+                vma->vm_page_prot :
+                nv_adjust_pgprot(vma->vm_page_prot);
+
             nvl->all_mappings_revoked = NV_FALSE;
 
-            //
-            // This path is similar to the sysmem mapping code.
-            // TODO: Refactor is needed as part of bug#2001704.
-            //
-            if ((nv_get_numa_status(nvl) == NV_NUMA_STATUS_ONLINE) &&
-                pfn_to_page(__phys_to_pfn(access_start)) != NULL &&
-                pfn_to_page(__phys_to_pfn(access_start + access_len - 1)) != NULL &&
-                (mmap_context->num_pages != 0))
+            for(; idx < mmap_context->memArea.numRanges; idx++)
             {
-                ret = nvidia_mmap_numa(vma, mmap_context);
-                if (ret)
+                NvU64 nextOffs = curOffs + mmap_context->memArea.pRanges[idx].size;
+                if (nv_io_remap_page_range(vma,
+                        mmap_context->memArea.pRanges[idx].start,
+                        mmap_context->memArea.pRanges[idx].size,
+                        vma->vm_start + curOffs, prot) != 0)
                 {
                     up(&nvl->mmap_lock);
+                    ret = -EAGAIN;
                     goto done;
                 }
-            }
-            else
-            {
-                NvU64 idx = 0;
-                NvU64 curOffs = 0;
-                pgprot_t prot = nv_adjust_pgprot(vma->vm_page_prot);
-                for(; idx < mmap_context->memArea.numRanges; idx++)
-                {
-                    NvU64 nextOffs = curOffs + mmap_context->memArea.pRanges[idx].size;
-                    if (nv_io_remap_page_range(vma,
-                            mmap_context->memArea.pRanges[idx].start,
-                            mmap_context->memArea.pRanges[idx].size,
-                            vma->vm_start + curOffs, prot) != 0)
-                    {
-                        up(&nvl->mmap_lock);
-                        ret = -EAGAIN;
-                        goto done;
-                    }
-                    curOffs = nextOffs;
-                }
+                curOffs = nextOffs;
             }
         }
         up(&nvl->mmap_lock);
@@ -695,13 +587,8 @@ int nvidia_mmap_helper(
 
         if (at->flags.peer_io)
         {
-            if (nv_encode_caching(&vma->vm_page_prot,
-                                  at->cache_type,
-                                  NV_MEMORY_TYPE_DEVICE_MMIO))
-            {
-                ret = -ENXIO;
-                goto done;
-            }
+            vma->vm_page_prot = nv_encode_caching(vma->vm_page_prot,
+                                                  at->cache_type);
 
             /*
              * There is no need to keep 'peer IO at' alive till vma_release like
@@ -727,13 +614,8 @@ int nvidia_mmap_helper(
         }
         else
         {
-            if (nv_encode_caching(&vma->vm_page_prot,
-                                  at->cache_type,
-                                  NV_MEMORY_TYPE_SYSTEM))
-            {
-                ret = -ENXIO;
-                goto done;
-            }
+            vma->vm_page_prot = nv_encode_caching(vma->vm_page_prot,
+                                                  at->cache_type);
 
             NV_VMA_PRIVATE(vma) = at;
 
@@ -753,13 +635,6 @@ int nvidia_mmap_helper(
             nv_vm_flags_set(vma, VM_SHARED);
             nv_vm_flags_set(vma, VM_DONTEXPAND | VM_DONTDUMP);
         }
-    }
-
-    if ((prot & NV_PROTECT_WRITEABLE) == 0)
-    {
-        vma->vm_page_prot = NV_PGPROT_READ_ONLY(vma->vm_page_prot);
-        nv_vm_flags_clear(vma, VM_WRITE);
-        nv_vm_flags_clear(vma, VM_MAYWRITE);
     }
 
     vma->vm_ops = &nv_vm_ops;

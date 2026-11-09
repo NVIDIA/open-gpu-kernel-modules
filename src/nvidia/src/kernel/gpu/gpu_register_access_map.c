@@ -182,9 +182,6 @@ static NvBool _getIsProfilingPrivileged(OBJGPU *pGpu)
         //
         return NV_TRUE;
     }
-#if defined(DEBUG) || defined(DEVELOP)
-    return NV_FALSE;
-#else
     NvU32 data32;
     NvBool bReadProfilingRegister;
 
@@ -201,7 +198,6 @@ static NvBool _getIsProfilingPrivileged(OBJGPU *pGpu)
     }
 
     return NV_TRUE;
-#endif
 }
 
 /**

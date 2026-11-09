@@ -80,7 +80,7 @@ static void      _objClGetDownstreamAtomicRoutingCap(void  *, NvU32, NvBool *);
 static void      _objClIsPciePowerControlPresent(OBJGPU *, KernelBif *);
 static void      _objClPushBus(OBJCL *, NvS16);
 static NvU32     _objClPopBus(OBJCL *, NvS16 *);
-static NV_STATUS _objClScanPcieBusDfs(OBJGPU *, OBJCL *, NvU32);
+static NV_STATUS _objClScanPcieBusDfs(OBJGPU *, OBJCL *, NvU32, BUSTOPOLOGYINFO *);
 
 extern void _Set_ASPM_L0S_L1(OBJCL *, NvBool, NvBool);
 
@@ -2898,7 +2898,8 @@ _objClScanPcieBusDfs
 (
     OBJGPU *pGpu,
     OBJCL  *pCl,
-    NvU32   domain
+    NvU32   domain,
+    BUSTOPOLOGYINFO *pBusTopologyInfoLast
 )
 {
     NvS16 bus;
@@ -2913,7 +2914,6 @@ _objClScanPcieBusDfs
     NvU16 deviceID;
     NvU16 pciSubBaseClass;
     PBUSTOPOLOGYINFO pBusTopologyInfo     = NULL;
-    PBUSTOPOLOGYINFO pBusTopologyInfoLast = NULL;
     NvBool bGpuArchIsZeroFb = NV_FALSE;
     
     if ((pGpu != NULL) && (pGpu->pGpuArch != NULL))
@@ -3067,7 +3067,13 @@ clStoreBusTopologyCache_IMPL
     if (bScanPcieBusDfs)
     {
         // Todo : Bug 5819532 - optimize this further and clean up the legacy code
-        status = _objClScanPcieBusDfs(pGpu, pCl, domain);
+        //
+        // pBusTopologyInfoLast is the tail of the existing cache (other
+        // domains). The DFS scan must append to it, otherwise it replaces
+        // pCl->pBusTopologyInfo, leaking the previous domains and forcing
+        // them to be rescanned on the next lookup.
+        //
+        status = _objClScanPcieBusDfs(pGpu, pCl, domain, pBusTopologyInfoLast);
         goto clStoreBusTopologyCache_exit;
     }
 

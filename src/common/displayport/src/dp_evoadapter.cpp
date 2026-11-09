@@ -112,19 +112,22 @@ const struct
     {NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE,                    &dpRegkeyDatabase.bSkipZeroOuiCache,                  DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_FORCE_HEAD_SHUTDOWN,                    &dpRegkeyDatabase.bForceHeadShutdown,                 DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_LEGACY_HEAD_SHUTDOWN_POLICY,            &dpRegkeyDatabase.bUseLegacyHeadShutdownPolicy,       DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_EXPOSE_DSC_DEVID_WAR,                     &dpRegkeyDatabase.bEnableDevId,                       DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_CQA_STATS_COLLECTION,              &dpRegkeyDatabase.bEnableCqaStatsCollection,          DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_IGNORE_CAPS_AND_FORCE_HIGHEST_LC,         &dpRegkeyDatabase.bIgnoreCapsAndForceHighestLc,       DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_128b132b_DSC_LNK_CFG_REDUCTION,    &dpRegkeyDatabase.bEnable128b132bDSCLnkCfgReduction,  DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_NATIVE_DISPLAYID2X_SUPPORT,       &dpRegkeyDatabase.bDisableNativeDisplayId2xSupport,   DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_USE_MAX_DSC_COMPRESSION_MST,              &dpRegkeyDatabase.bUseMaxDSCCompressionMST,           DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_4949066_PCLK_WAR,                 &dpRegkeyDatabase.bDisable4949066PclkWar,             DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_NO_VCPF_WAR,     &dpRegkeyDatabase.bDisableDpMstTunnelingNoVcpfWar,    DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_FEC,             &dpRegkeyDatabase.bDisableDpMstTunnelingFec,          DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_SST_EDID_RECOVERY_FIX,             &dpRegkeyDatabase.bEnableSstEdidRecoveryFix,          DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_DP_TUN_LTTPR_CAPS_CHUNK_READ_WAR, &dpRegkeyDatabase.bDisableDpTunLttprCapsChunkRead,    DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_FEC_ON_EDP,                       &dpRegkeyDatabase.bDisableFecOnEdp,                   DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_PANEL_FW_REVISION_CACHE,           &dpRegkeyDatabase.bEnablePanelFwRevisionCache,        DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_EXPOSE_DSC_DEVID_WAR,                   &dpRegkeyDatabase.bEnableDevId,                       DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_CQA_STATS_COLLECTION,            &dpRegkeyDatabase.bEnableCqaStatsCollection,          DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_IGNORE_CAPS_AND_FORCE_HIGHEST_LC,       &dpRegkeyDatabase.bIgnoreCapsAndForceHighestLc,       DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_128b132b_DSC_LNK_CFG_REDUCTION,  &dpRegkeyDatabase.bEnable128b132bDSCLnkCfgReduction,  DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_NATIVE_DISPLAYID2X_SUPPORT,     &dpRegkeyDatabase.bDisableNativeDisplayId2xSupport,   DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_FORCE_NATIVE_DISPLAYID2X_READ,          &dpRegkeyDatabase.bForceNativeDisplayId2xRead,        DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_USE_MAX_DSC_COMPRESSION_MST,            &dpRegkeyDatabase.bUseMaxDSCCompressionMST,           DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_4949066_PCLK_WAR,               &dpRegkeyDatabase.bDisable4949066PclkWar,             DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_5339220_IRQ_MAX_LC_RECOVERY,    &dpRegkeyDatabase.bDisable5339220IrqMaxLcRecovery,    DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_FEC_ON_EDP,                     &dpRegkeyDatabase.bDisableFecOnEdp,                   DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_DEFERRED_SBM_CALLBACKS,         &dpRegkeyDatabase.bDisableDeferredSBMCallbacks,       DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_DP_TUN_SW_AUTO_READ_WAR_ALL_SINKS, &dpRegkeyDatabase.bEnableDpTunSwAutoReadWarAllSinks,  DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_NO_VCPF_WAR,   &dpRegkeyDatabase.bDisableDpMstTunnelingNoVcpfWar,    DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_FEC,           &dpRegkeyDatabase.bDisableDpMstTunnelingFec,          DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_DP_TUN_LTTPR_CAPS_CHUNK_READ_WAR, &dpRegkeyDatabase.bDisableDpTunLttprCapsChunkRead,  DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_DISABLE_DP_TUN_DIA_DPCD_REV_WAR,          &dpRegkeyDatabase.bDisableDpTunDiaDpcdRevWar,         DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
@@ -361,9 +364,16 @@ void EvoMainLink::setDpWarFlag(NvU32 warId, bool bEnable)
     params.bEnable = bEnable ? NV_TRUE : NV_FALSE;
 
     NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_WAR_FLAGS, &params, sizeof params);
-    if (ret != NVOS_STATUS_SUCCESS)
+
+    //
+    // RM implements this control only where RMCFG_FEATURE_DP_TUNNELING is
+    // enabled. The clear runs on every plug and unplug, so ignore ERROR_NOT_SUPPORTED instead of
+    // logging it on every hotplug on GPUs that cannot have the WAR at all.
+    //
+    if (ret != NVOS_STATUS_SUCCESS && ret != NVOS_STATUS_ERROR_NOT_SUPPORTED)
     {
-        DP_PRINTF(DP_ERROR, "setDpWarFlag failed!");
+        DP_PRINTF(DP_WARNING, "setDpWarFlag failed (warId: 0x%x, bEnable: %d, status: 0x%x)",
+                  warId, bEnable, ret);
     }
 }
 
@@ -377,9 +387,10 @@ void EvoMainLink::configureAndTriggerECF(NvU64 ecf, NvBool bForceClearEcf, NvBoo
     // ForceClearECF will delete DP MST Time slots along with ECF from GA10X and Later
     // if ADD Stream Back is set then it will add back same time slots after clearing ECF
     // bForceClear = TRUE should be set to have significance for bAddStreamBack
-    // bForceClear will be only set in case of Detach Stream/Flush mode
-    // bAddStream will also be set only in case of QSES error scenario
-    // In all other cases these are set to FALSE
+    // bForceClear will be set in case of Detach Stream/Flush mode, QSES error scenario,
+    // or MST HDCP content-type reAuth (GroupImpl::hdcpSetEncrypted, bNeedReNegotiate) —
+    // the latter deletes/re-adds time slots for the whole SOR, not just the group whose
+    // type changed. In all other cases these are set to FALSE.
     //
     params.bForceClearEcf = bForceClearEcf;
     params.bAddStreamBack = bAddStreamBack;
@@ -1105,7 +1116,7 @@ AuxBus::status EvoAuxBus::transaction(Action action, Type type, int address,
         {
             if (bDp20Supported)
             {
-                maxRetries = (params.retryTimeMs / EDP_AUX_BUS_POLL_INTERVAL_MS) + 1;
+                maxRetries = NV_CEIL(params.retryTimeMs, EDP_AUX_BUS_POLL_INTERVAL_MS);
                 // The assumption is that the retryTimeMs is always greater than 0, and static.
                 if (maxRetries > EDP_AUX_BUS_MAX_RETRIES)
                 {
@@ -1133,7 +1144,7 @@ AuxBus::status EvoAuxBus::transaction(Action action, Type type, int address,
         // error, the request still went out on the DPAUX channel as part of
         // the last IC-over-AUX write transaction. So the error should be ignored.
         //
-        DP_PRINTF(DP_NOTICE, "DP> %s: Ignore ERROR_NOT_SUPPORTED for writeStatusUpdateRequest. Returning Success", __FUNCTION__);
+        DP_PRINTF(DP_NOTICE, "DP> Ignore ERROR_NOT_SUPPORTED for writeStatusUpdateRequest. Returning Success");
         return AuxBus::success;
     }
 
@@ -1201,6 +1212,26 @@ void EvoAuxBus::setDevicePlugged(bool plugged)
 void EvoAuxBus::setGpuDPSupportedVersions(NvU32 dpVersionsSupported)
 {
     gpuSupportedDpVersions = dpVersionsSupported;
+}
+
+NvU32 EvoAuxBus::getDpTunnelingDownstreamDpcdRev()
+{
+    NV0073_CTRL_CMD_DP_GET_WAR_DATA_PARAMS params = {0};
+    params.subDeviceInstance = this->subdeviceIndex;
+    params.displayId = this->displayId;
+    params.warId = NV0073_CTRL_DP_WAR_DATA_DIA_DPCD_REV;
+
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_GET_WAR_DATA,
+                                       &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_WARNING,
+                  "DP> Failed to read DIA aggregated DPCD rev, status 0x%08x", ret);
+        return 0;
+    }
+
+    // Zero when the display is not on a DP IN adapter.
+    return params.data;
 }
 
 void EvoMainLink::preLinkTraining(NvU32 head)
@@ -1332,6 +1363,7 @@ bool EvoMainLink::train(const LinkTrainParameters &trainParams)
     NvU32                       targetIndex;
     NvU32                       ltCounter                   = retLink->getLTCounter();
     bool                        bTrainPhyRepeater           = (!link.bDisableLTTPR) && (_isLTPhyRepeaterSupported);
+
     NvU32                       bNotifyLT                   = NVOS_STATUS_SUCCESS;
 
     NV0073_CTRL_DP_NOTIFY_LT_PARAMS     notifyParams;
@@ -1419,6 +1451,14 @@ bool EvoMainLink::train(const LinkTrainParameters &trainParams)
     // sent to us since fallback might happen.
     //
     LinkConfiguration requestRmLC = link;
+    LinkRate lastAttemptRate = link.peakRate;
+    unsigned lastAttemptLanes = link.lanes;
+    bool lastAttemptFecRequested = link.bEnableFEC;
+
+    DP_USED(lastAttemptRate);
+    DP_USED(lastAttemptLanes);
+    DP_USED(lastAttemptFecRequested);
+
     do
     {
         NvU32 dpCtrlData = 0;
@@ -1483,6 +1523,10 @@ bool EvoMainLink::train(const LinkTrainParameters &trainParams)
 
             retries++;
             params.retryTimeMs = 0;
+            // Preserve the attempted configuration before fallback can change it.
+            lastAttemptRate = requestRmLC.peakRate;
+            lastAttemptLanes = requestRmLC.lanes;
+            lastAttemptFecRequested = FLD_TEST_DRF(0073_CTRL, _DP_CMD, _ENABLE_FEC, _TRUE, dpCtrlCmd);
             status = provider->rmControl0073(NV0073_CTRL_CMD_DP_CTRL, &params, sizeof(params));
             ltCounter++;
             err = params.err;
@@ -1642,10 +1686,35 @@ bool EvoMainLink::train(const LinkTrainParameters &trainParams)
     retLink->setLaneRate(requestRmLC.peakRate, result ? requestRmLC.lanes : 0);
     retLink->setLTCounter(ltCounter);
 
+    //
+    // Log RM's 'err' as diagnostic context; only status determines success.
+    // ltCounter is DPLib's cumulative DP_CTRL call count, not RM's internal
+    // training iteration count.
+    //
+    if (!result)
+    {
+        DP_PRINTF(DP_ERROR,
+                  "DP_EVO> Link training failed: status=0x%x err=0x%08x ltCounter=%u "
+                  "peakRate=%" LinkRate_fmtu " lanes=%u fecRequested=%u",
+                  status, err, ltCounter, lastAttemptRate, lastAttemptLanes,
+                  (unsigned)lastAttemptFecRequested);
+    }
+    else if (err != 0)
+    {
+        DP_PRINTF(DP_NOTICE,
+                  "DP_EVO> Link training succeeded with non-zero err=0x%08x (ltCounter=%u "
+                  "peakRate=%" LinkRate_fmtu " lanes=%u)",
+                  err, ltCounter, lastAttemptRate, lastAttemptLanes);
+    }
+
     if (requestRmLC.bEnableFEC && (FLD_TEST_DRF(0073_CTRL_DP, _ERR, _ENABLE_FEC, _ERR, err)))
     {
         retLink->bEnableFEC = false;
-        DP_ASSERT(0);
+        DP_PRINTF(DP_ERROR,
+                  "DP_EVO> RM reported FEC enable failure (err=0x%08x); clearing bEnableFEC "
+                  "for peakRate=%" LinkRate_fmtu " lanes=%u",
+                  err, lastAttemptRate, lastAttemptLanes);
+        DP_ASSERT(0 && "RM reported ENABLE_FEC error during link training");
     }
 
     NV_DPTRACE_INFO(LINK_TRAINING_DONE, status, requestRmLC.peakRate, requestRmLC.lanes);
@@ -2265,8 +2334,7 @@ bool EvoMainLink::configureLinkRateTable
                     pLinkRates->import((NvU16)params.linkBwTbl[i]);
                     break;
                 default:
-                    DP_PRINTF(DP_ERROR, "DP_EVO> %s: Unsupported link rate received",
-                             __FUNCTION__);
+                    DP_PRINTF(DP_ERROR, "DP_EVO> Unsupported link rate received");
                     DP_ASSERT(0);
                     break;
             }

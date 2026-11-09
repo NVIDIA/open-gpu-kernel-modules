@@ -166,9 +166,11 @@ typedef struct
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_950           (0x0000000D)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_1000          (0x0000000E)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_170           (0x0000000F)
-// Custom definition of peak throughput for HDMI YUV modes since those are not defined in spec
-// Starting with 0x100 to provide headroom for DSC spec definitions in future
+// Custom HDMI YUV throughput values that are not defined by the DSC specification.
+// Use 0x100 increments to avoid overlapping the specification-defined values.
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_680           (0x00000100)
+#define DSC_DECODER_PEAK_THROUGHPUT_MODE1_1200          (0x00000200)
+#define DSC_DECODER_PEAK_THROUGHPUT_MODE1_1800          (0x00000300)
 
         // Maximum bits_per_pixel supported by the DSC decompressor multiplied by 16
         NvU32  maxBitsPerPixelX16;
@@ -324,6 +326,9 @@ NVT_STATUS DSC_GeneratePPS(const DSC_INFO *pDscInfo,
  *                                  The data can be send to SetDscPpsData* methods directly.
  * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
  * @param[out]  pSliceCountMask     Mask of all slice counts supported by the mode.
+ * @param[out]  pNormalBitsPerPixelX16  Normal bits per pixel, i.e. the compression
+ *                                  ratio encoded into the returned PPS, multiplied
+ *                                  by 16.
  *
  * @returns NVT_STATUS_SUCCESS if successful;
  *          NVT_STATUS_ERR if unsuccessful;
@@ -338,7 +343,12 @@ DSC_GeneratePPSWithSliceCountMask
     NvU64 availableBandwidthBitsPerSecond,
     NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
     NvU32 *pBitsPerPixelX16,
-    NvU32 *sliceCountMask
+    NvU32 *sliceCountMask,
+#ifdef __cplusplus
+    NvU32 *pNormalBitsPerPixelX16 = NULL
+#else
+    NvU32 *pNormalBitsPerPixelX16
+#endif
 );
 
 NVT_STATUS DSC_ValidatePPSData(DSCPPSDATA *pPps);

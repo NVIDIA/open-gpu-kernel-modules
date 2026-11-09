@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -100,8 +100,7 @@ void Timer::queueCallback(Timer::TimerCallback * target, const  void * context, 
     PendingCallback * callback = new PendingCallback();
     if (callback == NULL)
     {
-        DP_PRINTF(DP_ERROR, "DP> %s: Failed to allocate callback",
-                      __FUNCTION__);
+        DP_PRINTF(DP_ERROR, "DP> Failed to allocate callback");
         return;
     }
     callback->target = target;

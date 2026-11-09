@@ -47,38 +47,6 @@ void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResour
 NvBool __nvoc_down_thunk_TraceDeviceEvent_resCanCopy(struct RsResource *traceDeviceEvent);    // this
 
 // Up-thunk(s) to bridge TraceDeviceEvent methods to ancestors (if any)
-NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super
-NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
-void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super
-NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
-NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
-NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super
-NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super
-NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super
-NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
-NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
-NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super
-void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super
-NvBool __nvoc_up_thunk_RmResource_traceDeviceEventAccessCallback(struct TraceDeviceEvent *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
-NvBool __nvoc_up_thunk_RmResource_traceDeviceEventShareCallback(struct TraceDeviceEvent *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
-NV_STATUS __nvoc_up_thunk_RmResource_traceDeviceEventGetMemInterMapParams(struct TraceDeviceEvent *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
-NV_STATUS __nvoc_up_thunk_RmResource_traceDeviceEventCheckMemInterUnmap(struct TraceDeviceEvent *pRmResource, NvBool bSubdeviceHandleProvided);    // this
-NV_STATUS __nvoc_up_thunk_RmResource_traceDeviceEventGetMemoryMappingDescriptor(struct TraceDeviceEvent *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
-NV_STATUS __nvoc_up_thunk_RmResource_traceDeviceEventControlSerialization_Prologue(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-void __nvoc_up_thunk_RmResource_traceDeviceEventControlSerialization_Epilogue(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-NV_STATUS __nvoc_up_thunk_RmResource_traceDeviceEventControl_Prologue(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-void __nvoc_up_thunk_RmResource_traceDeviceEventControl_Epilogue(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventIsDuplicate(struct TraceDeviceEvent *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
-void __nvoc_up_thunk_RsResource_traceDeviceEventPreDestruct(struct TraceDeviceEvent *pResource);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventControl(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventControlFilter(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventMap(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventUnmap(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // this
-NvBool __nvoc_up_thunk_RsResource_traceDeviceEventIsPartialUnmapSupported(struct TraceDeviceEvent *pResource);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventMapTo(struct TraceDeviceEvent *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventUnmapFrom(struct TraceDeviceEvent *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
-NvU32 __nvoc_up_thunk_RsResource_traceDeviceEventGetRefCount(struct TraceDeviceEvent *pResource);    // this
-void __nvoc_up_thunk_RsResource_traceDeviceEventAddAdditionalDependants(struct RsClient *pClient, struct TraceDeviceEvent *pResource, RsResourceRef *pReference);    // this
 
 // Class-specific details for TraceDeviceEvent
 const struct NVOC_CLASS_DEF __nvoc_class_def_TraceDeviceEvent = 
@@ -96,7 +64,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_TraceDeviceEvent =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__TraceDeviceEvent __nvoc_metadata__TraceDeviceEvent = {
     .rtti.pClassDef = &__nvoc_class_def_TraceDeviceEvent,    // (traceDeviceEvent) this
     .rtti.dtor      = &__nvoc_dtor_TraceDeviceEvent,
@@ -114,65 +82,26 @@ static const struct NVOC_METADATA__TraceDeviceEvent __nvoc_metadata__TraceDevice
     .metadata__RmResource.metadata__RmResourceCommon.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__RmResource.metadata__RmResourceCommon.rtti.offset    = NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RmResourceCommon),
 
-    .vtable.__traceDeviceEventCanCopy__ = &traceDeviceEventCanCopy_IMPL,    // virtual override (res) base (rmres)
-    .metadata__RmResource.vtable.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &__nvoc_down_thunk_TraceDeviceEvent_resCanCopy,    // virtual
-    .vtable.__traceDeviceEventAccessCallback__ = &__nvoc_up_thunk_RmResource_traceDeviceEventAccessCallback,    // virtual inherited (rmres) base (rmres)
-    .metadata__RmResource.vtable.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
-    .vtable.__traceDeviceEventShareCallback__ = &__nvoc_up_thunk_RmResource_traceDeviceEventShareCallback,    // virtual inherited (rmres) base (rmres)
-    .metadata__RmResource.vtable.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
-    .vtable.__traceDeviceEventGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_traceDeviceEventGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
     .metadata__RmResource.vtable.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
-    .vtable.__traceDeviceEventCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_traceDeviceEventCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
     .metadata__RmResource.vtable.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
-    .vtable.__traceDeviceEventGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_traceDeviceEventGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
     .metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
-    .vtable.__traceDeviceEventControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_traceDeviceEventControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
-    .metadata__RmResource.vtable.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
-    .vtable.__traceDeviceEventControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_traceDeviceEventControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
-    .metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-    .vtable.__traceDeviceEventControl_Prologue__ = &__nvoc_up_thunk_RmResource_traceDeviceEventControl_Prologue,    // virtual inherited (rmres) base (rmres)
-    .metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
-    .vtable.__traceDeviceEventControl_Epilogue__ = &__nvoc_up_thunk_RmResource_traceDeviceEventControl_Epilogue,    // virtual inherited (rmres) base (rmres)
-    .metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
-    .vtable.__traceDeviceEventIsDuplicate__ = &__nvoc_up_thunk_RsResource_traceDeviceEventIsDuplicate,    // virtual inherited (res) base (rmres)
-    .metadata__RmResource.vtable.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
-    .vtable.__traceDeviceEventPreDestruct__ = &__nvoc_up_thunk_RsResource_traceDeviceEventPreDestruct,    // virtual inherited (res) base (rmres)
-    .metadata__RmResource.vtable.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
-    .vtable.__traceDeviceEventControl__ = &__nvoc_up_thunk_RsResource_traceDeviceEventControl,    // virtual inherited (res) base (rmres)
-    .metadata__RmResource.vtable.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &resControl_IMPL,    // virtual
-    .vtable.__traceDeviceEventControlFilter__ = &__nvoc_up_thunk_RsResource_traceDeviceEventControlFilter,    // virtual inherited (res) base (rmres)
-    .metadata__RmResource.vtable.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
-    .vtable.__traceDeviceEventMap__ = &__nvoc_up_thunk_RsResource_traceDeviceEventMap,    // virtual inherited (res) base (rmres)
-    .metadata__RmResource.vtable.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resMap__ = &resMap_IMPL,    // virtual
-    .vtable.__traceDeviceEventUnmap__ = &__nvoc_up_thunk_RsResource_traceDeviceEventUnmap,    // virtual inherited (res) base (rmres)
-    .metadata__RmResource.vtable.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resUnmap__ = &resUnmap_IMPL,    // virtual
-    .vtable.__traceDeviceEventIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_traceDeviceEventIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
-    .metadata__RmResource.vtable.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
     .metadata__RmResource.metadata__RsResource.vtable.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
-    .vtable.__traceDeviceEventMapTo__ = &__nvoc_up_thunk_RsResource_traceDeviceEventMapTo,    // virtual inherited (res) base (rmres)
-    .metadata__RmResource.vtable.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resMapTo__ = &resMapTo_IMPL,    // virtual
-    .vtable.__traceDeviceEventUnmapFrom__ = &__nvoc_up_thunk_RsResource_traceDeviceEventUnmapFrom,    // virtual inherited (res) base (rmres)
-    .metadata__RmResource.vtable.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
-    .vtable.__traceDeviceEventGetRefCount__ = &__nvoc_up_thunk_RsResource_traceDeviceEventGetRefCount,    // virtual inherited (res) base (rmres)
-    .metadata__RmResource.vtable.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
-    .vtable.__traceDeviceEventAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_traceDeviceEventAddAdditionalDependants,    // virtual inherited (res) base (rmres)
-    .metadata__RmResource.vtable.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
     .metadata__RmResource.metadata__RsResource.vtable.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
 };
 
@@ -193,110 +122,7 @@ const struct NVOC_CASTINFO __nvoc_castinfo__TraceDeviceEvent = {
 
 // traceDeviceEventCanCopy: virtual override (res) base (rmres)
 NvBool __nvoc_down_thunk_TraceDeviceEvent_resCanCopy(struct RsResource *traceDeviceEvent) {
-    return traceDeviceEventCanCopy((struct TraceDeviceEvent *)(((unsigned char *) traceDeviceEvent) - NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)));
-}
-
-
-// 20 up-thunk(s) defined to bridge methods in TraceDeviceEvent to superclasses
-
-// traceDeviceEventAccessCallback: virtual inherited (rmres) base (rmres)
-NvBool __nvoc_up_thunk_RmResource_traceDeviceEventAccessCallback(struct TraceDeviceEvent *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource)), pInvokingClient, pAllocParams, accessRight);
-}
-
-// traceDeviceEventShareCallback: virtual inherited (rmres) base (rmres)
-NvBool __nvoc_up_thunk_RmResource_traceDeviceEventShareCallback(struct TraceDeviceEvent *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource)), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-// traceDeviceEventGetMemInterMapParams: virtual inherited (rmres) base (rmres)
-NV_STATUS __nvoc_up_thunk_RmResource_traceDeviceEventGetMemInterMapParams(struct TraceDeviceEvent *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource)), pParams);
-}
-
-// traceDeviceEventCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
-NV_STATUS __nvoc_up_thunk_RmResource_traceDeviceEventCheckMemInterUnmap(struct TraceDeviceEvent *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource)), bSubdeviceHandleProvided);
-}
-
-// traceDeviceEventGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
-NV_STATUS __nvoc_up_thunk_RmResource_traceDeviceEventGetMemoryMappingDescriptor(struct TraceDeviceEvent *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource)), ppMemDesc);
-}
-
-// traceDeviceEventControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
-NV_STATUS __nvoc_up_thunk_RmResource_traceDeviceEventControlSerialization_Prologue(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource)), pCallContext, pParams);
-}
-
-// traceDeviceEventControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
-void __nvoc_up_thunk_RmResource_traceDeviceEventControlSerialization_Epilogue(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource)), pCallContext, pParams);
-}
-
-// traceDeviceEventControl_Prologue: virtual inherited (rmres) base (rmres)
-NV_STATUS __nvoc_up_thunk_RmResource_traceDeviceEventControl_Prologue(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource)), pCallContext, pParams);
-}
-
-// traceDeviceEventControl_Epilogue: virtual inherited (rmres) base (rmres)
-void __nvoc_up_thunk_RmResource_traceDeviceEventControl_Epilogue(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource)), pCallContext, pParams);
-}
-
-// traceDeviceEventIsDuplicate: virtual inherited (res) base (rmres)
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventIsDuplicate(struct TraceDeviceEvent *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)), hMemory, pDuplicate);
-}
-
-// traceDeviceEventPreDestruct: virtual inherited (res) base (rmres)
-void __nvoc_up_thunk_RsResource_traceDeviceEventPreDestruct(struct TraceDeviceEvent *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)));
-}
-
-// traceDeviceEventControl: virtual inherited (res) base (rmres)
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventControl(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
-}
-
-// traceDeviceEventControlFilter: virtual inherited (res) base (rmres)
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventControlFilter(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
-}
-
-// traceDeviceEventMap: virtual inherited (res) base (rmres)
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventMap(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams, pCpuMapping);
-}
-
-// traceDeviceEventUnmap: virtual inherited (res) base (rmres)
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventUnmap(struct TraceDeviceEvent *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pCpuMapping);
-}
-
-// traceDeviceEventIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
-NvBool __nvoc_up_thunk_RsResource_traceDeviceEventIsPartialUnmapSupported(struct TraceDeviceEvent *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)));
-}
-
-// traceDeviceEventMapTo: virtual inherited (res) base (rmres)
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventMapTo(struct TraceDeviceEvent *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
-}
-
-// traceDeviceEventUnmapFrom: virtual inherited (res) base (rmres)
-NV_STATUS __nvoc_up_thunk_RsResource_traceDeviceEventUnmapFrom(struct TraceDeviceEvent *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)), pParams);
-}
-
-// traceDeviceEventGetRefCount: virtual inherited (res) base (rmres)
-NvU32 __nvoc_up_thunk_RsResource_traceDeviceEventGetRefCount(struct TraceDeviceEvent *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)));
-}
-
-// traceDeviceEventAddAdditionalDependants: virtual inherited (res) base (rmres)
-void __nvoc_up_thunk_RsResource_traceDeviceEventAddAdditionalDependants(struct RsClient *pClient, struct TraceDeviceEvent *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)), pReference);
+    return traceDeviceEventCanCopy_IMPL((struct TraceDeviceEvent *)(((unsigned char *) traceDeviceEvent) - NV_OFFSETOF(TraceDeviceEvent, __nvoc_base_RmResource.__nvoc_base_RsResource)));
 }
 
 
@@ -358,7 +184,7 @@ static void __nvoc_init_funcTable_TraceDeviceEvent_1(TraceDeviceEvent *pThis) {
 } // End __nvoc_init_funcTable_TraceDeviceEvent_1
 
 
-// Initialize vtable(s) for 21 virtual method(s).
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_TraceDeviceEvent(TraceDeviceEvent *pThis) {
     __nvoc_init_funcTable_TraceDeviceEvent_1(pThis);
 }

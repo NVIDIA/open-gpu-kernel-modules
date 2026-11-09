@@ -43,6 +43,7 @@ typedef struct {
     enum NvKmsOutputTf tf;
     NvBool hdrInfoFrameOverride;
     NvU32 hdrStaticMetadataLayerMask;
+    enum NvKmsAllmMode allmMode;
     NvBool postcompColorPassthrough : 1;
     NvBool colorFormatSpecified     : 1;
     NvBool colorBpcSpecified        : 1;

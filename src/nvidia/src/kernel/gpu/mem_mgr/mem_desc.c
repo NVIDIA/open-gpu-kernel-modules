@@ -38,10 +38,7 @@
 #include "mem_mgr/virt_mem_mgr.h"
 #include "core/system.h"
 #include "vgpu/vgpu_util.h"
-#include "platform/sli/sli.h"
 #include "resserv/rs_client.h"
-
-#include "gpu/mem_mgr/virt_mem_allocator.h"
 
 #include "rmconfig.h"
 #include "vgpu/rpc.h"
@@ -80,6 +77,8 @@ const NV_ADDRESS_SPACE ADDRLIST_FBMEM_PREFERRED[] = {ADDR_FBMEM, ADDR_SYSMEM, AD
 const NV_ADDRESS_SPACE ADDRLIST_SYSMEM_PREFERRED[] = {ADDR_SYSMEM, ADDR_FBMEM, ADDR_UNKNOWN};
 const NV_ADDRESS_SPACE ADDRLIST_FBMEM_ONLY[] = {ADDR_FBMEM, ADDR_UNKNOWN};
 const NV_ADDRESS_SPACE ADDRLIST_SYSMEM_ONLY[] = {ADDR_SYSMEM, ADDR_UNKNOWN};
+
+static void _memdescFreeInternal(MEMORY_DESCRIPTOR *pMemDesc);
 
 // XXX These could probably encode the whole list in the u32 bits.
 NvU32 memdescAddrSpaceListToU32(const NV_ADDRESS_SPACE *addrlist)
@@ -189,6 +188,9 @@ static NV_STATUS _memdescSetGuestAllocatedFlag
     return NV_OK;
 }
 
+#if (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_PLATFORM_MODS) && !NVCPU_IS_ARM
+static void _memdescReleaseIommuMapping(PIOVAMAPPING pIovaMapping, NvBool bIgnoreRefCount);
+#endif
 
 static NV_STATUS
 _memdescCalculateAllocSize(
@@ -392,6 +394,7 @@ memdescCreate
     }
 
     portMemSet(pMemDesc, 0, (NvU32)MdSize);
+    listInitIntrusive(&pMemDesc->iommuMappings);
 
     // Fill in initial non-zero parameters
     pMemDesc->pGpu                 = pGpu;
@@ -401,14 +404,12 @@ memdescCreate
     pMemDesc->_addressSpace        = AddressSpace;
     pMemDesc->RefCount             = 1;
     pMemDesc->DupCount             = 1;
-    pMemDesc->_subDeviceAllocCount = 1;
     pMemDesc->_flags               = Flags;
     pMemDesc->_gpuCacheAttrib      = gpuCacheAttrib;
     pMemDesc->_gpuP2PCacheAttrib   = NV_MEMORY_UNCACHED;
     pMemDesc->Alignment            = Alignment;
     pMemDesc->gfid                 = GPU_GFID_PF;
     pMemDesc->bUsingSuballocator   = NV_FALSE;
-    pMemDesc->bDeferredFree        = NV_FALSE;
     pMemDesc->numaNode             = NV0000_CTRL_NO_NUMA_NODE;
 
     if ((AddressSpace == ADDR_SYSMEM) &&
@@ -470,6 +471,8 @@ failed:
             portSyncMutexDestroy(pMemDesc->pFabricIommuMappingLock);
             pMemDesc->pFabricIommuMappingLock = NULL;
         }
+
+        listDestroy(&pMemDesc->iommuMappings);
 
         if (!(Flags & MEMDESC_FLAGS_PRE_ALLOCATED))
         {
@@ -551,8 +554,7 @@ void memdescRemoveRef
 }
 
 //
-// Destroy all IOMMU mappings under this memdesc, including child
-// mappings for root memdescs.
+// Destroy all IOMMU mappings under this memdesc.
 //
 // TODO: merge the new IOMMU paths with the SMMU paths (see bug 1625121).
 //
@@ -560,25 +562,16 @@ static void
 _memdescFreeIommuMappings(PMEMORY_DESCRIPTOR pMemDesc)
 {
 #if (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_PLATFORM_MODS) && !NVCPU_IS_ARM
-    PIOVAMAPPING pIovaMapping = pMemDesc->_pIommuMappings;
+    PIOVAMAPPING pIovaMapping;
 
-    if (!pIovaMapping)
-        return;
+    pIovaMapping = listHead(&pMemDesc->iommuMappings);
 
-    if (memdescIsSubMemoryMemDesc(pMemDesc))
+    while (pIovaMapping != NULL)
     {
-        iovaMappingDestroy(pIovaMapping);
-        return;
+        _memdescReleaseIommuMapping(pIovaMapping, NV_TRUE);
+        pIovaMapping = listHead(&pMemDesc->iommuMappings);
     }
 
-    while (pIovaMapping)
-    {
-        PIOVAMAPPING pTmpIovaMapping = pIovaMapping->pNext;
-        iovaMappingDestroy(pIovaMapping);
-        pIovaMapping = pTmpIovaMapping;
-    }
-
-    pMemDesc->_pIommuMappings = NULL;
 #endif
 }
 
@@ -614,12 +607,16 @@ memdescDestroy
         MEM_DESC_DESTROY_CALLBACK *pCb = memdescGetDestroyCallbackList(pMemDesc);
         MEM_DESC_DESTROY_CALLBACK *pNext;
 
-        if (pMemDesc->_flags & MEMDESC_FLAGS_DUMMY_TOPLEVEL)
+        // Notify all interested parties of destruction
+        while (pCb)
         {
-            // When called from RmFreeFrameBuffer() and memdescFree could not do it because it is unallocated.
-            pMemDesc->_pNext = NULL;
-            pMemDesc->_subDeviceAllocCount = 1;
+            pNext = pCb->pNext;
+            pCb->destroyCallback(pMemDesc->pGpu, pCb->pObject, pMemDesc);
+            // pCb is now invalid
+            pCb = pNext;
         }
+
+        _memdescFreeInternal(pMemDesc);
 
         NV_ASSERT(pMemDesc->childDescriptorCnt == 0);
         NV_ASSERT(pMemDesc->_addressSpace == ADDR_FBMEM || pMemDesc->pHeap == NULL);
@@ -630,23 +627,6 @@ memdescDestroy
         if (pMemDesc->_pMemData && pMemDesc->_pMemDataReleaseCallback)
         {
             pMemDesc->_pMemDataReleaseCallback(pMemDesc);
-        }
-
-        if (pMemDesc->bDeferredFree)
-        {
-            memdescFree(pMemDesc);
-        }
-        else if (pMemDesc->Allocated != 0)
-        {
-            //
-            // The caller forgot to free the actual memory before destroying the memdesc.
-            // Please fix this by calling memdescFree().
-            // To prevent memory leaks, we explicitly free here until its fixed elsewhere.
-            //
-            NV_PRINTF(LEVEL_ERROR, "Destroying unfreed memory %p\n", pMemDesc);
-            NV_PRINTF(LEVEL_ERROR, "Please call memdescFree()\n");
-            memdescFree(pMemDesc);
-            NV_ASSERT(!pMemDesc->Allocated);
         }
 
         if (memdescGetStandbyBuffer(pMemDesc))
@@ -668,20 +648,12 @@ memdescDestroy
         // attached to this root memory descriptor, so release them now.
         //
         _memdescFreeIommuMappings(pMemDesc);
+        listDestroy(&pMemDesc->iommuMappings);
 
         if (pMemDesc->pFabricIommuMappingLock != NULL)
         {
             portSyncMutexDestroy(pMemDesc->pFabricIommuMappingLock);
             pMemDesc->pFabricIommuMappingLock = NULL;
-        }
-
-        // Notify all interested parties of destruction
-        while (pCb)
-        {
-            pNext = pCb->pNext;
-            pCb->destroyCallback(pMemDesc->pGpu, pCb->pObject, pMemDesc);
-            // pCb is now invalid
-            pCb = pNext;
         }
 
         portMemFree(pMemDesc->pPteSpaMappings);
@@ -711,47 +683,6 @@ memdescDestroy
             portMemFree(pMemDesc);
         }
     }
-}
-
-/*!
- *  @brief Function that frees subdevice memory descriptors. If there are no
- *  subdevice memory descriptors function just simply resets memdesc structure.
- *  Top level memory descriptor is not destroyed.
- *
- *  @param[in,out] pMemDesc  Top level memory descriptor.
- *
- *  @returns None
- */
-static void
-_memSubDeviceFreeAndDestroy
-(
-    MEMORY_DESCRIPTOR *pMemDesc
-)
-{
-    MEMORY_DESCRIPTOR *pSubDevMemDesc = pMemDesc->_pNext;
-    MEMORY_DESCRIPTOR *pNextMemDesc;
-    OBJGPU            *pGpu           = pMemDesc->pGpu;
-    NvBool             bBcState;
-
-    // No subdevice memdescs
-    if (pSubDevMemDesc == NULL || pGpu == NULL)
-    {
-        return;
-    }
-
-    bBcState       = gpumgrGetBcEnabledStatus(pGpu);
-    gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
-
-    do
-    {
-        pNextMemDesc = pSubDevMemDesc->_pNext;
-        pSubDevMemDesc->_pNext = NULL;
-        memdescFree(pSubDevMemDesc);
-        memdescDestroy(pSubDevMemDesc);
-        pSubDevMemDesc = pNextMemDesc;
-    } while (pSubDevMemDesc != NULL);
-
-    gpumgrSetBcEnabledStatus(pGpu, bBcState);
 }
 
 /*!
@@ -1020,7 +951,10 @@ _memdescAllocInternal
                 // Assume all RM internal allocations to go into protected (CPR)
                 // video memory unless specified otherwise explicitly
                 //
-                if (gpuIsCCFeatureEnabled(pGpu))
+                NvBool bCprMemEnabled = gpuIsCCFeatureEnabled(pGpu);
+
+                bCprMemEnabled = bCprMemEnabled || gpuIsTdispFeatureEnabled(pGpu);
+                if (bCprMemEnabled)
                 {
                     if (pMemDesc->_flags & MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY)
                     {
@@ -1164,10 +1098,21 @@ memdescAlloc
             {
                 if (!gpuIsCCFeatureEnabled(pGpu))
                 {
+                    if (!gpuIsTdispFeatureEnabled(pGpu))
                     {
                         memdescSetFlag(pMemDesc,
                             MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY, NV_TRUE);
                     }
+                }
+                //
+                // Warning: Track allocations going to unprotected memory when TDISP is enabled
+                //
+                if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY) &&
+                    gpuIsTdispFeatureEnabled(pGpu))
+                {
+                    NV_PRINTF(LEVEL_INFO,
+                              "TDISP enabled: Allocation going to UNPROTECTED memory (size: 0x%llx bytes)\n",
+                              pMemDesc->Size);
                 }
             }
             else
@@ -1247,103 +1192,6 @@ memdescAlloc
         return status;
     }
 
-    if (gpumgrGetBcEnabledStatus(pGpu))
-    {
-        // Broadcast memdescAlloc call with flag set to allocate per subdevice.
-        if (pMemDesc->_flags & MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE)
-        {
-            NvU32               i;
-            MEMORY_DESCRIPTOR   *pSubDevMemDesc = pMemDesc;
-            MEMORY_DESCRIPTOR   *pPrev = pMemDesc;
-            OBJGPU             *pGpuChild;
-
-            pMemDesc->_subDeviceAllocCount = NumSubDevices(pGpu);
-
-            for (i = 0; i < pMemDesc->_subDeviceAllocCount; i++)
-            {
-                // Get pGpu for this subdeviceinst
-                pGpuChild = gpumgrGetGpuFromSubDeviceInst(gpuGetDeviceInstance(pGpu), i);
-                if (NULL == pGpuChild)
-                {
-                    NV_ASSERT(0);
-                    status = NV_ERR_OBJECT_NOT_FOUND;
-                    goto subdeviceAlloc_failed;
-                }
-
-                //
-                // We are accessing the fields of the top level desc here directly without using the
-                // accessor routines on purpose.
-                //
-                status = memdescCreate(&pSubDevMemDesc, pGpuChild, pMemDesc->Size, pMemDesc->Alignment,
-                                       !!(pMemDesc->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS),
-                                       pMemDesc->_addressSpace,
-                                       pMemDesc->_cpuCacheAttrib,
-                                       pMemDesc->_flags & ~MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE);
-
-                if (status != NV_OK)
-                {
-                    NV_ASSERT(0);
-                    goto subdeviceAlloc_failed;
-                }
-
-                pSubDevMemDesc->_gpuCacheAttrib   = pMemDesc->_gpuCacheAttrib;
-                pSubDevMemDesc->_pageSize = pMemDesc->_pageSize;
-
-                // Force broadcast state to false when allocating a subdevice memdesc
-                gpumgrSetBcEnabledStatus(pGpuChild, NV_FALSE);
-
-                status = memdescAlloc(pSubDevMemDesc);
-
-                if (pMemDesc->_addressSpace == ADDR_FBMEM)
-                {
-                    //
-                    // The top level memdesc could have flags that don't reflect contiguity which
-                    // is set after memdescAlloc.
-                    //
-                    pMemDesc->Alignment            = pSubDevMemDesc->Alignment;
-                    pMemDesc->_flags               = pSubDevMemDesc->_flags | MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE;
-                    pMemDesc->ActualSize           = pSubDevMemDesc->ActualSize;
-                }
-
-                // Restore broadcast state to true after allocating a subdevice memdesc
-                gpumgrSetBcEnabledStatus(pGpuChild, NV_TRUE);
-
-                if (status != NV_OK)
-                {
-                    memdescDestroy(pSubDevMemDesc);
-                    NV_ASSERT(0);
-                    goto subdeviceAlloc_failed;
-                }
-
-                // Check for similarity in allocations for previous allocated subdev with current allocated subdev.
-                // If subdev0 ~ subdev1 && subdev1~subdev2 then subdev0 ~ subdev2 and so on...Thus can check symmetry across all subdev allocations
-                if (i > 0)
-                {
-                    NV_ASSERT(pPrev->Size == pSubDevMemDesc->Size);
-                    NV_ASSERT(pPrev->PteAdjust == pSubDevMemDesc->PteAdjust);
-                    NV_ASSERT(pPrev->_addressSpace == pSubDevMemDesc->_addressSpace);
-                    NV_ASSERT(pPrev->_flags == pSubDevMemDesc->_flags);
-                    NV_ASSERT(pPrev->_pteKind == pSubDevMemDesc->_pteKind);
-                    NV_ASSERT(pPrev->_pteKindCompressed == pSubDevMemDesc->_pteKindCompressed);
-                    NV_ASSERT(pPrev->pHeap != pSubDevMemDesc->pHeap);
-                }
-
-                pPrev->_pNext = pSubDevMemDesc;
-                pPrev        = pSubDevMemDesc;
-            }
-            pMemDesc->Allocated = 1;
-            return NV_OK;
-        }
-        else if (pMemDesc->_addressSpace == ADDR_FBMEM)
-        {
-            // Broadcast memdescAlloc call on vidmem *without* flag set to allocate per subdevice
-            NV_ASSERT(0);
-        }
-    }
-
-    // Unicast memdescAlloc call but with flag set to allocate per subdevice.
-    NV_ASSERT(!((pMemDesc->_flags & MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE) && !gpumgrGetBcEnabledStatus(pGpu)));
-
     // Actually allocate the memory
     NV_CHECK_OK(status, LEVEL_ERROR, _memdescAllocInternal(pMemDesc));
 
@@ -1352,12 +1200,6 @@ memdescAlloc
         pMemDesc->pHeap = NULL;
     }
 
-    return status;
-
-subdeviceAlloc_failed:
-    _memSubDeviceFreeAndDestroy(pMemDesc);
-    pMemDesc->_subDeviceAllocCount = 1;
-    pMemDesc->_pNext               = NULL;
     return status;
 }
 
@@ -1431,28 +1273,34 @@ _memdescFreeInternal
     MEMORY_DESCRIPTOR *pMemDesc
 )
 {
-    MEM_DESC_DESTROY_CALLBACK *pCb, *pNext;
     NvU64 oldSize;
 
-    // Allow null frees
-    if (!pMemDesc)
+    if (!pMemDesc->Allocated)
     {
         return;
     }
 
-    pCb = memdescGetDestroyCallbackList(pMemDesc);
-
-    // Notify all interested parties of destruction
-    while (pCb)
+    // If standbyBuffer memory was allocated then free it
+    if (pMemDesc->_pStandbyBuffer)
     {
-        pNext = pCb->pNext;
-        pCb->destroyCallback(pMemDesc->pGpu, pCb->pObject, pMemDesc);
-        // pCb is now invalid
-        pCb = pNext;
+        memdescFree(pMemDesc->_pStandbyBuffer);
+        memdescDestroy(pMemDesc->_pStandbyBuffer);
+        pMemDesc->_pStandbyBuffer = NULL;
     }
 
-    if (memdescHasSubDeviceMemDescs(pMemDesc))
+    NV_ASSERT(!pMemDesc->_pInternalMapping);
+
+    if (pMemDesc->_addressSpace == ADDR_SYSMEM)
+    {
+        // The memdesc is being freed so destroy all of its IOMMU mappings.
+        _memdescFreeIommuMappings(pMemDesc);
+    }
+
+    if (pMemDesc->_addressSpace != ADDR_FBMEM &&
+        pMemDesc->_addressSpace != ADDR_SYSMEM)
+    {
         return;
+    }
 
     memdescPrintMemdesc(pMemDesc, NV_FALSE, MAKE_NV_PRINTF_STR("memdesc being freed"));
 
@@ -1495,7 +1343,15 @@ _memdescFreeInternal
                     NV_PRINTF(LEVEL_ERROR, "ctx buf pool not found\n");
                     return;
                 }
-                NV_STATUS status = ctxBufPoolFree(pCtxBufPool, pMemDesc);
+                //
+                // WAR: ctxBufPoolFree() may scrub the buffer via memmgrMemsetInBlocks()
+                // it creates a temporary sub-memdesc, which calls memdescAddRef() on the parent
+                // this triggers recursive memdescDestroy() when the reference is dropped
+                //
+                NV_STATUS status;
+                pMemDesc->RefCount = 1;
+                status = ctxBufPoolFree(pCtxBufPool, pMemDesc);
+                pMemDesc->RefCount = 0;
                 if (status != NV_OK)
                 {
                     DBG_BREAKPOINT();
@@ -1529,122 +1385,6 @@ _memdescFreeInternal
         default:
             // Don't know how to do any other types of memory yet
             DBG_BREAKPOINT();
-    }
-}
-
-/*!
- *  @brief Upper memdesc free layer. Provides support for per-subdevice
- *  sysmem buffers and lockless sysmem allocation. Because of SLI and subdevice
- *  submem allocations (refer to submem chart) support, if memory has never
- *  been allocated function will just unlink subdevice structure and destroy
- *  subdevice descriptors.
- *
- *  @param[in,out] pMemDesc Memory descriptor to free
- *
- *  @returns None
- */
-void
-memdescFree
-(
-    MEMORY_DESCRIPTOR *pMemDesc
-)
-{
-    // Allow null frees
-    if (!pMemDesc)
-    {
-        return;
-    }
-
-
-    if (memdescIsSubMemoryMemDesc(pMemDesc))
-    {
-        NV_ASSERT(!pMemDesc->_pInternalMapping);
-
-        if (pMemDesc->_addressSpace == ADDR_SYSMEM)
-        {
-            // The memdesc is being freed so destroy all of its IOMMU mappings.
-            _memdescFreeIommuMappings(pMemDesc);
-        }
-
-        if (pMemDesc->_addressSpace != ADDR_FBMEM &&
-            pMemDesc->_addressSpace != ADDR_SYSMEM)
-        {
-            return;
-        }
-
-        _memSubDeviceFreeAndDestroy(pMemDesc);
-    }
-    else
-    {
-        //
-        // In case RM attempts to free memory that has more than 1 refcount, the free is deferred until refcount reaches 0
-        //
-        // Bug 3307574 RM crashes when client's specify sysmem UserD location.
-        // RM attempts to peek at the client allocated UserD when waiting for a channel to go idle.
-        //
-        if (pMemDesc->RefCount > 1 && pMemDesc->Allocated == 1)
-        {
-            pMemDesc->bDeferredFree = NV_TRUE;
-            return;
-        }
-
-        if (!pMemDesc->Allocated)
-        {
-            return;
-        }
-        pMemDesc->Allocated--;
-        if (0 != pMemDesc->Allocated)
-        {
-            return;
-        }
-
-        // If standbyBuffer memory was allocated then free it
-        if (pMemDesc->_pStandbyBuffer)
-        {
-            memdescFree(pMemDesc->_pStandbyBuffer);
-            memdescDestroy(pMemDesc->_pStandbyBuffer);
-            pMemDesc->_pStandbyBuffer = NULL;
-        }
-
-        NV_ASSERT(!pMemDesc->_pInternalMapping);
-
-        if (pMemDesc->_addressSpace == ADDR_SYSMEM)
-        {
-            // The memdesc is being freed so destroy all of its IOMMU mappings.
-            _memdescFreeIommuMappings(pMemDesc);
-        }
-
-        if (pMemDesc->_addressSpace != ADDR_FBMEM &&
-            pMemDesc->_addressSpace != ADDR_SYSMEM)
-        {
-            return;
-        }
-
-        _memSubDeviceFreeAndDestroy(pMemDesc);
-
-        _memdescFreeInternal(pMemDesc);
-    }
-
-    // Reset tracking state
-    pMemDesc->_pNext = NULL;
-    pMemDesc->_subDeviceAllocCount = 1;
-
-    //
-    // Reset tracking state of parent
-    // Why it is needed:
-    // When a submemory toplevel memdesc with subdevices is freed,
-    // the subdecice memdescs and their parent are destroyed or their
-    // refcount decreased.
-    // When the parent subdevice descriptors are destroyed, their
-    // top level descriptor is left alone and has a dangling
-    // _pNext pointer
-    //
-    if ((pMemDesc->_pParentDescriptor != NULL) &&
-        (memdescHasSubDeviceMemDescs(pMemDesc->_pParentDescriptor)) &&
-        (pMemDesc->_pParentDescriptor->RefCount == 1))
-    {
-        pMemDesc->_pParentDescriptor->_pNext = NULL;
-        pMemDesc->_pParentDescriptor->_subDeviceAllocCount = 1;
     }
 }
 
@@ -2091,13 +1831,13 @@ memdescMapInternal
 
     NV_ASSERT_OR_RETURN(pMemDesc != NULL, NULL);
 
-    if (pMemDesc->_addressSpace == ADDR_FBMEM ||
-        memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
-    {
-        pMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
-    }
-
     mapType = memdescGetMapInternalType(pGpu, pMemDesc);
+
+    if ((API_GPU_IN_RESET_SANITY_CHECK(pGpu) || API_GPU_NOT_REACHABLE(pGpu)) &&
+        (mapType == MEMDESC_MAP_INTERNAL_TYPE_COHERENT_FBMEM || mapType == MEMDESC_MAP_INTERNAL_TYPE_BAR2))
+    {
+        return NULL;
+    }
 
     // We need to flush & invalidate GPU L2 cache only for directed BAR mappings.
     // Reflected BAR mappings will access memory via GPU, and hence go through GPU L2 cache.
@@ -2107,14 +1847,6 @@ memdescMapInternal
     if (pMemDesc->_pInternalMapping != NULL)
     {
         NV_ASSERT(pMemDesc->_internalMappingRefCount);
-
-        // Existing BAR2 mapping may be invalid due to GPU reset
-        if (mapType == MEMDESC_MAP_INTERNAL_TYPE_BAR2)
-        {
-            pMemDesc->_pInternalMapping = kbusValidateBar2ApertureMapping_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), pMemDesc,
-                                                                              pMemDesc->_pInternalMapping);
-            NV_CHECK_OR_RETURN(LEVEL_ERROR, pMemDesc->_pInternalMapping != NULL, NULL);
-        }
 
         pMemDesc->_internalMappingRefCount++;
         return pMemDesc->_pInternalMapping;
@@ -2168,12 +1900,6 @@ void memdescUnmapInternal
 
     NV_ASSERT_OR_RETURN_VOID(pMemDesc != NULL);
     NV_ASSERT_OR_RETURN_VOID(pMemDesc->_pInternalMapping != NULL && pMemDesc->_internalMappingRefCount != 0);
-
-    if (pMemDesc->_addressSpace == ADDR_FBMEM ||
-        memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
-    {
-        pMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
-    }
 
     mapType = memdescGetMapInternalType(pGpu, pMemDesc);
 
@@ -2273,7 +1999,7 @@ memdescDescribe
               (memdescGetDestroyCallbackList(pMemDesc) == NULL) &&
               (pMemDesc->PteAdjust == 0));
 
-    NV_ASSERT(pMemDesc->_pIommuMappings == NULL);
+    NV_ASSERT(listCount(&pMemDesc->iommuMappings) == 0);
     NV_ASSERT(pMemDesc->Allocated == 0);
     NV_ASSERT(!memdescHasSubDeviceMemDescs(pMemDesc));
 
@@ -2526,12 +2252,8 @@ memdescCreateSubMem
 {
     NV_STATUS status;
     MEMORY_DESCRIPTOR *pMemDescNew;
-    NvU32 subDevInst;
     NvU64 OffsetAdjust;
     NvU64 tmpEnd;
-    MEMORY_DESCRIPTOR *pLast;
-    MEMORY_DESCRIPTOR *pNew;
-    OBJGPU *pGpuChild;
 
     NV_ASSERT_OR_RETURN(Offset < pMemDesc->Size, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(Size != 0, NV_ERR_INVALID_ARGUMENT);
@@ -2623,9 +2345,9 @@ memdescCreateSubMem
 
     if ((pMemDesc->_addressSpace == ADDR_SYSMEM) &&
         !memdescIsEgm(pMemDesc) &&
-        !memdescGetFlag(memdescGetMemDescFromGpu(pMemDesc, pGpu), MEMDESC_FLAGS_CPU_ONLY) &&
-        !memdescGetFlag(memdescGetMemDescFromGpu(pMemDesc, pGpu), MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1) &&
-        !memdescGetFlag(memdescGetMemDescFromGpu(pMemDesc, pGpu), MEMDESC_FLAGS_SKIP_IOMMU_MAPPING))
+        !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_CPU_ONLY) &&
+        !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1) &&
+        !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_IOMMU_MAPPING))
     {
         //
         // For different IOVA spaces, the IOMMU mapping will often not be a
@@ -2642,43 +2364,6 @@ memdescCreateSubMem
             memdescDestroy(pMemDescNew);
             return status;
         }
-    }
-
-    // Support for SLI submemory per-subdevice allocations (refer to chart)
-    if (memdescHasSubDeviceMemDescs(pMemDesc))
-    {
-        NvBool bBcState = gpumgrGetBcEnabledStatus(pGpu);
-
-        if (gpumgrGetBcEnabledStatus(pGpu) && (pMemDesc->_addressSpace == ADDR_FBMEM))
-        {
-            NV_ASSERT(!!(pMemDesc->_flags & MEMDESC_FLAGS_ALLOC_PER_SUBDEVICE));
-            gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
-        }
-        pLast = pMemDescNew;
-
-        pMemDescNew->_subDeviceAllocCount = pMemDesc->_subDeviceAllocCount;
-
-        for (subDevInst = 0; subDevInst < pMemDesc->_subDeviceAllocCount; subDevInst++)
-        {
-            pGpuChild = gpumgrGetGpuFromSubDeviceInst(gpuGetDeviceInstance(pGpu), subDevInst);
-            status = memdescCreateSubMem(&pNew, memdescGetMemDescFromGpu(pMemDesc, pGpuChild), pGpuChild, Offset, Size);
-
-            if (status != NV_OK)
-            {
-                while (NULL != pMemDescNew)
-                {
-                    pNew = pMemDescNew;
-                    pMemDescNew = pMemDescNew->_pNext;
-                    memdescDestroy(pNew);
-                }
-                return status;
-            }
-
-            pLast->_pNext = pNew;
-            pLast = pNew;
-        }
-
-        gpumgrSetBcEnabledStatus(pGpu, bBcState);
     }
 
     *ppMemDescNew = pMemDescNew;
@@ -3344,103 +3029,20 @@ memdescRemoveDestroyCallback
 }
 
 /*!
- *  @brief Retrieves a subdevice's memory descriptor by subdevice instance
- *
- *  Subdevice memory descriptors are memory descriptors that describe
- *  per-subdevice memory buffers. This functionality is required by our current
- *  SLI programming model as our memdescAlloc() calls are primarily broadcast
- *  operations. A singular memdesc works for video memory as the
- *  heaps are symmetric. However, we run into trouble when dealing with system
- *  memory as both GPUs then share the same address space and symmetric
- *  addressing is no longer possible.
- *
- *  N.B. The rational for exposing this routine is that it keeps SLI-isms out of
- *  most of the RM -- the alternative approach would've been to pass in the
- *  subdevice or a pGpu for all memdesc methods which would require more code
- *  changes solely for SLI. Long term hopefully we can transition to a unicast
- *  allocation model (SLI loops above memdescAlloc()/memdescCreate()) and the
- *  subdevice support in memdesc can (easily) be deleted. This approach also
- *  provides a safety net against misuse, e.g., if we added pGpu to
- *  memdescGetPhysAddr, current code which utilizes that routine outside an SLI loop
- *  would execute cleanly even though it's incorrect.
- *
- *  @param[in]  pMemDesc        Memory descriptor to query
- *  @param[in]  subDeviceInst   SLI subdevice instance (subdevice - 1)
- *
- *  @returns Memory descriptor if one exist for the subdevice.
- *           NULL if none is found.
- */
-MEMORY_DESCRIPTOR *
-memdescGetMemDescFromSubDeviceInst(MEMORY_DESCRIPTOR *pMemDesc, NvU32 subDeviceInst)
-{
-    if (!memdescHasSubDeviceMemDescs(pMemDesc))
-    {
-        return pMemDesc;
-    }
-    else
-    {
-        return memdescGetMemDescFromIndex(pMemDesc, subDeviceInst);
-    }
-}
-
-/*!
  *  @brief Retrieves a subdevice's memory descriptor by GPU object
  *
- *  See memdescGetMemDescFromSubDeviceInst for an explanation of subdevice memory
- *  descriptors
+ *  Per-subdevice memory descriptors were an SLI construct. With SLI removed a
+ *  memdesc always maps to a single GPU, so this returns the descriptor itself.
  *
  *  @param[in]  pMemDesc  Memory descriptor to query
  *  @param[in]  pGpu
  *
- *  @returns Memory descriptor if one exist for the GPU.
- *           NULL if none is found.
+ *  @returns The memory descriptor.
  */
 MEMORY_DESCRIPTOR *
 memdescGetMemDescFromGpu(MEMORY_DESCRIPTOR *pMemDesc, OBJGPU *pGpu)
 {
-    NvU32 subDeviceInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-
-    return memdescGetMemDescFromSubDeviceInst(pMemDesc, subDeviceInst);
-}
-
-/*!
- *  @brief Retrieves a subdevice's memory descriptor by memdesc index.
- *
- *  See memdescGetMemDescFromSubDeviceInst for an explanation of subdevice memory
- *  descriptors
- *
- *  @param[in]  pMemDesc  Memory descriptor to query
- *  @param[in]  index     Index into array of memdesc
- *
- *  @returns Memory descriptor if one exist for the GPU.
- *           NULL if none is found.
- */
-MEMORY_DESCRIPTOR *
-memdescGetMemDescFromIndex(MEMORY_DESCRIPTOR *pMemDesc, NvU32 index)
-{
-    if (!memdescHasSubDeviceMemDescs(pMemDesc))
-    {
-        return pMemDesc;
-    }
-    else
-    {
-        MEMORY_DESCRIPTOR *pSubDevMemDesc = pMemDesc->_pNext;
-
-        NV_ASSERT(pSubDevMemDesc);
-
-        while (index--)
-        {
-            pSubDevMemDesc = pSubDevMemDesc->_pNext;
-
-            if (!pSubDevMemDesc)
-            {
-                NV_ASSERT(0);
-                return NULL;
-            }
-        }
-
-        return pSubDevMemDesc;
-    }
+    return pMemDesc;
 }
 
 /*!
@@ -3589,6 +3191,7 @@ void memdescPrintMemdesc
 )
 {
 #if NV_PRINTF_ENABLED
+    PIOVAMAPPING pIovaMap;
 
     if ((DBG_RMMSG_CHECK(LEVEL_INFO) == 0) || (pPrefixMessage == NULL) || (pMemDesc == NULL))
     {
@@ -3614,26 +3217,14 @@ void memdescPrintMemdesc
     }
 
     // TODO: merge with SMMU path above (see bug 1625121).
-    if (pMemDesc->_pIommuMappings != NULL)
+    for (pIovaMap = listHead(&pMemDesc->iommuMappings);
+         pIovaMap != NULL;
+         pIovaMap = listNext(&pMemDesc->iommuMappings, pIovaMap))
     {
-        if (!memdescIsSubMemoryMemDesc(pMemDesc))
-        {
-            PIOVAMAPPING pIovaMap = pMemDesc->_pIommuMappings;
-            while (pIovaMap != NULL)
-            {
-                NV_PRINTF(LEVEL_INFO,
-                    "Has additional IOMMU mapping for IOVA space 0x%x starting @ 0x%llx\n",
-                    pIovaMap->iovaspaceId,
-                    pIovaMap->iovaArray[0]);
-                pIovaMap = pIovaMap->pNext;
-            }
-        }
-        else
-        {
-            NV_PRINTF(LEVEL_INFO,
-                "Has additional IOMMU mapping starting @ 0x%llx\n",
-                memdescGetPhysAddr(pMemDesc, AT_PA, 0));
-        }
+        NV_PRINTF(LEVEL_INFO,
+            "Has additional IOMMU mapping for IOVA space 0x%x starting @ 0x%llx\n",
+            pIovaMap->iovaspaceId,
+            pIovaMap->iovaArray[0]);
     }
 #endif // NV_PRINTF_ENABLED
 }
@@ -3904,11 +3495,7 @@ NvBool memdescGetFlag
 {
     // For checking contiguity, use the memdescGetContiguity() api
     NV_ASSERT(flag != MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS);
-    // GPU_IN_RESET is set/got from top level memdesc always.
-    if (flag != MEMDESC_FLAGS_GPU_IN_RESET)
-    {
-        NV_ASSERT(!memdescHasSubDeviceMemDescs(pMemDesc));
-    }
+    NV_ASSERT(!memdescHasSubDeviceMemDescs(pMemDesc));
     return !!(pMemDesc->_flags & flag);
 }
 
@@ -3931,11 +3518,7 @@ void memdescSetFlag
     // For setting contiguity, use the memdescSetContiguity() api
     NV_ASSERT(flag != MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS);
 
-    // GPU_IN_RESET is set/got from top level memdesc always.
-    if (flag != MEMDESC_FLAGS_GPU_IN_RESET)
-    {
-        NV_ASSERT(!memdescHasSubDeviceMemDescs(pMemDesc));
-    }
+    NV_ASSERT(!memdescHasSubDeviceMemDescs(pMemDesc));
 
     if (flag == MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE)
     {
@@ -4215,94 +3798,100 @@ memdescGetCustomHeap
     return MEMDESC_CUSTOM_HEAP_NONE;
 }
 
+static PIOVAMAPPING
+_memdescGetIommuMap
+(
+    PMEMORY_DESCRIPTOR pMemDesc,
+    NvU32 iovaspaceId
+)
+{
+    PIOVAMAPPING pIommuMap;
+
+    for (pIommuMap = listHead(&pMemDesc->iommuMappings);
+         pIommuMap != NULL;
+         pIommuMap = listNext(&pMemDesc->iommuMappings, pIommuMap))
+    {
+        if (pIommuMap->iovaspaceId == iovaspaceId)
+            return pIommuMap;
+    }
+
+    return NULL;
+}
+
 PIOVAMAPPING memdescGetIommuMap
 (
     PMEMORY_DESCRIPTOR pMemDesc,
     NvU32 iovaspaceId
 )
 {
-    PIOVAMAPPING pIommuMap = pMemDesc->_pIommuMappings;
-    while (pIommuMap != NULL)
-    {
-        if (pIommuMap->iovaspaceId == iovaspaceId)
-        {
-            break;
-        }
-
-        pIommuMap = pIommuMap->pNext;
-    }
-
-    return pIommuMap;
+    return _memdescGetIommuMap(pMemDesc, iovaspaceId);
 }
 
-NV_STATUS memdescAddIommuMap
+#if (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_PLATFORM_MODS) && !NVCPU_IS_ARM
+static void
+_memdescReleaseIommuMapping
 (
-    PMEMORY_DESCRIPTOR pMemDesc,
-    PIOVAMAPPING pIommuMap
+    PIOVAMAPPING pIovaMapping,
+    NvBool bIgnoreRefCount
 )
 {
-    NV_ASSERT_OR_RETURN((pMemDesc->_pIommuMappings == NULL) ||
-        (!memdescIsSubMemoryMemDesc(pMemDesc)), NV_ERR_INVALID_ARGUMENT);
+    PMEMORY_DESCRIPTOR pMemDesc = pIovaMapping->pPhysMemDesc;
+    PIOVAMAPPING pParentIovaMapping = pIovaMapping->pParent;
 
-    //
-    // Only root physical memdescs can have multiple IOMMU mappings.
-    // Submemdescs can only have one, and the list linkage is used
-    // instead to link it as a child of the root IOMMU mapping, so we
-    // don't want to overwrite that here.
-    //
-    if (!memdescIsSubMemoryMemDesc(pMemDesc))
+    if (!bIgnoreRefCount)
     {
-        pIommuMap->pNext = pMemDesc->_pIommuMappings;
+        NV_ASSERT_OR_RETURN_VOID(pIovaMapping->refcount != 0);
+
+        if (--pIovaMapping->refcount != 0)
+            return;
     }
 
-    pMemDesc->_pIommuMappings = pIommuMap;
+    listRemove(&pMemDesc->iommuMappings, pIovaMapping);
+    iovaspaceDestroyMapping(iovaspaceFromMapping(pIovaMapping), pIovaMapping);
 
-    return NV_OK;
+    if (pParentIovaMapping != NULL)
+        _memdescReleaseIommuMapping(pParentIovaMapping, NV_FALSE);
 }
 
-void memdescRemoveIommuMap
+static PIOVAMAPPING
+_memdescAcquireIommuMapping
 (
     PMEMORY_DESCRIPTOR pMemDesc,
-    PIOVAMAPPING pIommuMap
+    OBJIOVASPACE *pIOVAS,
+    NvU32 iovaspaceId
 )
 {
-    //
-    // Only root physical memdescs can have multiple IOMMU mappings.
-    // Submemdescs can only have one, and the list linkage is used
-    // instead to link it as a child of the root IOMMU mapping, so we
-    // don't want to overwrite that here.
-    //
-    if (!memdescIsSubMemoryMemDesc(pMemDesc))
-    {
-        PIOVAMAPPING *ppTmpIommuMap = &pMemDesc->_pIommuMappings;
-        while ((*ppTmpIommuMap != NULL) && (*ppTmpIommuMap != pIommuMap))
-        {
-            ppTmpIommuMap = &(*ppTmpIommuMap)->pNext;
-        }
+    PIOVAMAPPING pIovaMapping = _memdescGetIommuMap(pMemDesc, iovaspaceId);
+    PIOVAMAPPING pParentIovaMapping = NULL;
 
-        if (*ppTmpIommuMap != NULL)
-        {
-            *ppTmpIommuMap = pIommuMap->pNext;
+    if (pIovaMapping != NULL)
+    {
+        NV_ASSERT(pIovaMapping->refcount != 0);
+        ++pIovaMapping->refcount;
+        return pIovaMapping;
+    }
 
-        }
-        else
-        {
-            NV_ASSERT(*ppTmpIommuMap != NULL);
-        }
-    }
-    else if (pMemDesc->_pIommuMappings == pIommuMap)
+    if (memdescIsSubMemoryMemDesc(pMemDesc))
     {
-        pMemDesc->_pIommuMappings = NULL;
+        PMEMORY_DESCRIPTOR pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
+
+        pParentIovaMapping = _memdescAcquireIommuMapping(pRootMemDesc, pIOVAS, iovaspaceId);
+        NV_ASSERT_OR_RETURN(pParentIovaMapping != NULL, NULL);
     }
-    else
+
+    pIovaMapping = iovaspaceCreateMapping(pIOVAS, pMemDesc, pParentIovaMapping);
+    if (pIovaMapping == NULL)
     {
-        //
-        // Trying to remove a submemory mapping that doesn't belong to this
-        // descriptor?
-        //
-        NV_ASSERT(pMemDesc->_pIommuMappings == pIommuMap);
+        if (pParentIovaMapping != NULL)
+            _memdescReleaseIommuMapping(pParentIovaMapping, NV_FALSE);
+        return NULL;
     }
+
+    pIovaMapping->refcount = 1;
+    listAppendExisting(&pMemDesc->iommuMappings, pIovaMapping);
+    return pIovaMapping;
 }
+#endif
 
 NV_STATUS memdescMapIommu
 (
@@ -4318,12 +3907,10 @@ NV_STATUS memdescMapIommu
         PMEMORY_DESCRIPTOR pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
         if ((addrSpace == ADDR_SYSMEM) || gpumgrCheckIndirectPeer(pMappingGpu, pRootMemDesc->pGpu))
         {
-            NV_STATUS status;
             OBJIOVASPACE *pIOVAS = iovaspaceFromId(iovaspaceId);
             NV_ASSERT_OR_RETURN(pIOVAS, NV_ERR_OBJECT_NOT_FOUND);
 
-            status = iovaspaceAcquireMapping(pIOVAS, pMemDesc);
-            NV_ASSERT_OR_RETURN(status == NV_OK, status);
+            NV_ASSERT_OR_RETURN(_memdescAcquireIommuMapping(pMemDesc, pIOVAS, iovaspaceId) != NULL, NV_ERR_NO_MEMORY);
         }
     }
 #endif
@@ -4387,95 +3974,15 @@ void memdescUnmapIommu
 {
 #if (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_PLATFORM_MODS) && !NVCPU_IS_ARM
     PIOVAMAPPING pIovaMapping;
-    OBJIOVASPACE *pIOVAS;
 
     if (iovaspaceId == NV_IOVA_DOMAIN_NONE)
         return;
 
-    pIovaMapping = memdescGetIommuMap(pMemDesc, iovaspaceId);
-    NV_ASSERT(pIovaMapping);
+    pIovaMapping = _memdescGetIommuMap(pMemDesc, iovaspaceId);
+    NV_ASSERT_OR_RETURN_VOID(pIovaMapping != NULL);
 
-    pIOVAS = iovaspaceFromMapping(pIovaMapping);
-    iovaspaceReleaseMapping(pIOVAS, pIovaMapping);
+    _memdescReleaseIommuMapping(pIovaMapping, NV_FALSE);
 #endif
-}
-
-void memdescCheckSubDevicePageSizeConsistency
-(
-    OBJGPU              *pGpu,
-    PMEMORY_DESCRIPTOR   pMemDesc,
-    OBJVASPACE          *pVAS,
-    NvU64                pageSize,
-    NvU64                pageOffset
-)
-{
-    NvU64 tempPageSize, tempPageOffset;
-    PMEMORY_DESCRIPTOR pTempMemDesc = NULL;
-
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-       pTempMemDesc   = memdescGetMemDescFromGpu(pMemDesc, pGpu);
-       tempPageSize   = memdescGetPageSize(pTempMemDesc, VAS_ADDRESS_TRANSLATION(pVAS));
-       tempPageOffset = memdescGetPhysAddr(pTempMemDesc, VAS_ADDRESS_TRANSLATION(pVAS), 0) & (tempPageSize - 1);
-
-       // Assert if inconsistent
-       NV_ASSERT(pageSize == tempPageSize);
-       NV_ASSERT(pageOffset == tempPageOffset);
-    SLI_LOOP_END
-}
-
-void memdescCheckSubDeviceMemContiguityConsistency
-(
-    OBJGPU              *pGpu,
-    PMEMORY_DESCRIPTOR   pMemDesc,
-    OBJVASPACE          *pVAS,
-    NvBool               bIsMemContiguous
-)
-{
-    NvBool bTempIsMemContiguous = NV_FALSE;
-
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-       bTempIsMemContiguous = memdescGetContiguity(memdescGetMemDescFromGpu(pMemDesc, pGpu), VAS_ADDRESS_TRANSLATION(pVAS));
-       // Assert if inconsistent
-       NV_ASSERT(bIsMemContiguous == bTempIsMemContiguous);
-    SLI_LOOP_END
-}
-
-NV_STATUS memdescCheckSubDeviceKindComprConsistency
-(
-    OBJGPU             *pGpu,
-    MEMORY_DESCRIPTOR  *pMemDesc,
-    OBJVASPACE         *pVAS,
-    NvU32               kind,
-    COMPR_INFO         *pComprInfo
-)
-{
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-    {
-        MemoryManager    *MemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-        NvU32             tempKind;
-        COMPR_INFO        tempComprInfo = {0};
-        NV_STATUS         status;
-
-        status = memmgrGetKindComprFromMemDesc(MemoryManager,
-                                               memdescGetMemDescFromGpu(pMemDesc, pGpu),
-                                               0,
-                                               &tempKind, &tempComprInfo);
-
-        if (NV_OK != status)
-            SLI_LOOP_RETURN(status);
-
-        // Assert if inconsistent
-        NV_ASSERT(kind == tempKind);
-        NV_ASSERT(tempComprInfo.compPageShift         == pComprInfo->compPageShift &&
-                  tempComprInfo.kind                  == pComprInfo->kind &&
-                  tempComprInfo.compPageIndexLo       == pComprInfo->compPageIndexLo &&
-                  tempComprInfo.compPageIndexHi       == pComprInfo->compPageIndexHi &&
-                  tempComprInfo.compTagLineMin        == pComprInfo->compTagLineMin &&
-                  tempComprInfo.compTagLineMultiplier == pComprInfo->compTagLineMultiplier);
-    }
-    SLI_LOOP_END
-
-    return NV_OK;
 }
 
 /*  @brief Get GPA(guest physical addresses) for given GPU physical addresses.

@@ -29,6 +29,7 @@
 
 #include <soc/tegra/bpmp-abi.h>
 #include <soc/tegra/bpmp.h>
+#include <linux/pm_runtime.h>
 
 // Use the CCF APIs if enabled in Kernel config and RM build
 // has Dual license define enabled.
@@ -510,6 +511,14 @@ NV_STATUS NV_API_CALL nv_set_freq(
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     NV_STATUS status;
     int ret;
+
+    /* Skip GB10Y PCI iGPU clock programming until runtime PM is active. */
+    if (nv->is_tegra_pci_igpu_rg_enabled &&
+        (nvl->dev != NULL) &&
+        !pm_runtime_active(nvl->dev))
+    {
+        return NV_OK;
+    }
 
     if (nvl->soc_clk_handles.clk[whichClkOS].handles != NULL)
     {

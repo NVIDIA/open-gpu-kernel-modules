@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2025, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2019-2026, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -70,6 +70,7 @@ static const u32  nvkms_to_drm_format[] = {
 
     /*
      * 2 plane YCbCr
+     *
      * index 0 = Y plane, [7:0] Y
      * index 1 = Cr:Cb plane, [15:0] Cr:Cb little endian
      * or
@@ -82,38 +83,19 @@ static const u32  nvkms_to_drm_format[] = {
     [NvKmsSurfaceMemoryFormatY8___V8U8_N420]    = DRM_FORMAT_NV12, /* 2x2 subsampled Cr:Cb plane */
     [NvKmsSurfaceMemoryFormatY8___U8V8_N420]    = DRM_FORMAT_NV21, /* 2x2 subsampled Cb:Cr plane */
 
-#if defined(DRM_FORMAT_P210)
     /*
-     * 2 plane YCbCr MSB aligned
-     * index 0 = Y plane, [15:0] Y:x [10:6] little endian
-     * index 1 = Cr:Cb plane, [31:0] Cr:x:Cb:x [10:6:10:6] little endian
-     *
-     * 2x1 subsampled Cr:Cb plane, 10 bit per channel
-     */
-    [NvKmsSurfaceMemoryFormatY10___V10U10_N422] = DRM_FORMAT_P210,
-#endif
-
-#if defined(DRM_FORMAT_P010)
-    /*
-     * 2 plane YCbCr MSB aligned
-     * index 0 = Y plane, [15:0] Y:x [10:6] little endian
-     * index 1 = Cr:Cb plane, [31:0] Cr:x:Cb:x [10:6:10:6] little endian
-     *
-     * 2x2 subsampled Cr:Cb plane 10 bits per channel
+     * index 0 = Y plane, [15:0] Y:x little endian
+     *           10 bpc: [10:6], 12 bpc: [12:4]
+     * index 1 = Cr:Cb plane, [31:0] Cr:x:Cb:x little endian
+     *           10 bpc: [10:6:10:6], 12 bpc: [12:4:12:4]
+     * Subsampling: 4:2:0 (P01x), 4:2:2 (P21x), 4:4:4 (P41x)
      */
     [NvKmsSurfaceMemoryFormatY10___V10U10_N420] = DRM_FORMAT_P010,
-#endif
-
-#if defined(DRM_FORMAT_P012)
-    /*
-     * 2 plane YCbCr MSB aligned
-     * index 0 = Y plane, [15:0] Y:x [12:4] little endian
-     * index 1 = Cr:Cb plane, [31:0] Cr:x:Cb:x [12:4:12:4] little endian
-     *
-     * 2x2 subsampled Cr:Cb plane 12 bits per channel
-     */
     [NvKmsSurfaceMemoryFormatY12___V12U12_N420] = DRM_FORMAT_P012,
-#endif
+    [NvKmsSurfaceMemoryFormatY10___V10U10_N422] = DRM_FORMAT_P210,
+    [NvKmsSurfaceMemoryFormatY12___V12U12_N422] = DRM_FORMAT_P212,
+    [NvKmsSurfaceMemoryFormatY10___V10U10_N444] = DRM_FORMAT_P410,
+    [NvKmsSurfaceMemoryFormatY12___V12U12_N444] = DRM_FORMAT_P412,
 };
 
 bool nv_drm_format_to_nvkms_format(u32 format,
@@ -190,15 +172,12 @@ bool nv_drm_format_is_yuv(u32 format)
         case DRM_FORMAT_NV12:
         case DRM_FORMAT_NV21:
 
-#if defined(DRM_FORMAT_P210)
-        case DRM_FORMAT_P210:
-#endif
-#if defined(DRM_FORMAT_P010)
         case DRM_FORMAT_P010:
-#endif
-#if defined(DRM_FORMAT_P012)
         case DRM_FORMAT_P012:
-#endif
+        case DRM_FORMAT_P210:
+        case DRM_FORMAT_P212:
+        case DRM_FORMAT_P410:
+        case DRM_FORMAT_P412:
             return true;
         default:
             return false;

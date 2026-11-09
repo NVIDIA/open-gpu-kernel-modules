@@ -60,6 +60,9 @@ vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_IMPL
             return rmStatus;
 
         // Verify the allocation is on the same GPU as this VGPU object
+        if (pMemory->pDevice == NULL)
+            return NV_ERR_INVALID_OBJECT;
+
         if (GPU_RES_GET_GPU(pMemory->pDevice) != pGpu)
             return NV_ERR_INVALID_OBJECT_PARENT;
 
@@ -67,6 +70,20 @@ vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_IMPL
         if (memdescGetAddressSpace(pMemory->pMemDesc) != ADDR_FBMEM)
         {
             return NV_ERR_INVALID_OBJECT;
+        }
+
+        {
+            NvU64 allocSize = memdescGetSize(pMemory->pMemDesc);
+
+            // Validate offset is within the memory allocation bounds
+            NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                pParams->offset < allocSize,
+                NV_ERR_INVALID_OFFSET);
+
+            // Validate surface fits within the allocation
+            NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                pParams->surfaceSize <= (allocSize - pParams->offset),
+                NV_ERR_INVALID_OFFSET);
         }
 
         physOffset = memdescGetPhysAddr(pMemory->pMemDesc, AT_GPU, pParams->offset);

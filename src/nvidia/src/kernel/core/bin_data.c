@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -77,10 +77,9 @@ bindataWriteToBuffer
 
     NV_ASSERT_OR_RETURN(pBinStorage != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pBuffer != NULL, NV_ERR_INVALID_ARGUMENT);
-    // resource data should never be NULL
-    NV_ASSERT_OR_RETURN(pBinStoragePvt->pData != NULL, NV_ERR_INVALID_ARGUMENT);
 
     pData = _bindataGetBindataPtr(pBinStoragePvt);
+    NV_ASSERT_OR_RETURN(pData != NULL, NV_ERR_INVALID_ARGUMENT);
 
     if (pBinStoragePvt->flags & BINDATA_FLAG_COMPRESSED)
     {
@@ -200,6 +199,12 @@ NV_STATUS bindataStorageAcquireData(
 
     {
         NvU32 bufferSize = bindataGetBufferSize(pBinStorage);
+
+        if (bufferSize == 0)
+        {
+            return NV_ERR_INVALID_DATA;
+        }
+
         *ppData = portMemAllocNonPaged(bufferSize);
         if (*ppData == NULL)
         {
@@ -236,7 +241,7 @@ void bindataStorageReleaseData(
     }
 }
 
-// File Overriding Feature is only enabled under MODS
+// File Overriding Feature - enabled via RMCFG_FEATURE_BINDATA_LOAD_FROM_FILE
 
 void bindataMarkReferenced(const BINDATA_STORAGE *pBinStorage)
 {

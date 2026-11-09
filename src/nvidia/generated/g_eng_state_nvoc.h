@@ -56,6 +56,7 @@ typedef enum ENGSTATE_STATE
 {
     ENGSTATE_STATE_UNDEFINED = 0,
     ENGSTATE_STATE_CONSTRUCT,
+    ENGSTATE_STATE_CONSTRUCT_APERTURES,
     ENGSTATE_STATE_PRE_INIT,
     ENGSTATE_STATE_INIT,
     ENGSTATE_STATE_PRE_LOAD,
@@ -65,6 +66,7 @@ typedef enum ENGSTATE_STATE
     ENGSTATE_STATE_UNLOAD,
     ENGSTATE_STATE_POST_UNLOAD,
     ENGSTATE_STATE_DESTROY,
+    ENGSTATE_STATE_DESTRUCT_APERTURES,
     ENGSTATE_STATE_COUNT // Keep this last
 } ENGSTATE_STATE;
 
@@ -132,14 +134,16 @@ struct OBJENGSTATE {
     ENGDESCRIPTOR engDesc;
     struct OBJGPU *pGpu;
     ENGSTATE_STATE currentState;
-    ENGSTATE_STATS stats[11];
+    ENGSTATE_STATS stats[13];
     char name[100];
 };
 
 
-// Vtable with 14 per-class function pointers
+// Vtable with 16 per-class function pointers
 struct NVOC_VTABLE__OBJENGSTATE {
     NV_STATUS (*__engstateConstructEngine__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/, ENGDESCRIPTOR);  // virtual
+    NV_STATUS (*__engstateConstructApertures__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
+    void (*__engstateDestructApertures__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
     void (*__engstateInitMissing__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
     NV_STATUS (*__engstateStatePreInitLocked__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
     NV_STATUS (*__engstateStatePreInitUnlocked__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
@@ -278,6 +282,10 @@ static inline const char * engstateGetName(struct OBJENGSTATE *arg_this) {
 // Wrapper macros for halified functions
 #define engstateConstructEngine_FNPTR(pEngstate) pEngstate->__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define engstateConstructEngine(pGpu, pEngstate, arg3) engstateConstructEngine_DISPATCH(pGpu, pEngstate, arg3)
+#define engstateConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define engstateConstructApertures(pGpu, pEngstate) engstateConstructApertures_DISPATCH(pGpu, pEngstate)
+#define engstateDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define engstateDestructApertures(pGpu, pEngstate) engstateDestructApertures_DISPATCH(pGpu, pEngstate)
 #define engstateInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define engstateInitMissing(pGpu, pEngstate) engstateInitMissing_DISPATCH(pGpu, pEngstate)
 #define engstateStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -308,6 +316,14 @@ static inline const char * engstateGetName(struct OBJENGSTATE *arg_this) {
 // Dispatch functions
 static inline NV_STATUS engstateConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, ENGDESCRIPTOR arg3) {
     return pEngstate->__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS engstateConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
+    return pEngstate->__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, pEngstate);
+}
+
+static inline void engstateDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
+    pEngstate->__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, pEngstate);
 }
 
 static inline void engstateInitMissing_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
@@ -364,6 +380,10 @@ static inline NvBool engstateIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJE
 
 // Virtual method declarations and/or inline definitions
 NV_STATUS engstateConstructEngine_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, ENGDESCRIPTOR arg3);
+
+NV_STATUS engstateConstructApertures_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
+
+void engstateDestructApertures_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
 
 void engstateInitMissing_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
 

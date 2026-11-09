@@ -65,7 +65,7 @@ enum {
     X(RM, GET_STATIC_PSTATE_INFO,                                 55)
     X(RM, TRANSLATE_GUEST_GPU_PTES,                               56)
     X(RM, RESERVED_57,                                            57)
-    X(RM, RESET_CURRENT_GR_CONTEXT,                               58)
+    X(RM, RESERVED_58,                                            58) // deprecated
     X(RM, SET_SEMA_MEM_VALIDATION_STATE,                          59)
     X(RM, GET_ENGINE_UTILIZATION,                                 60)
     X(RM, UPDATE_GPU_PDES,                                        61)
@@ -239,7 +239,8 @@ enum {
     X(RM, CTRL_GPU_SET_MIGRATION_BLOCK,                           229)
     X(RM, CTRL_FIFO_VGPU_SWRUNLIST_SUBMIT,                        230)
     X(RM, CTRL_FIFO_VGPU_SWRUNLIST_CHANNEL_UPDATE,                231)
-    X(RM, NUM_FUNCTIONS,                                          232)
+    X(RM, SEND_GUEST_STUN_COMPLETION,                             232)
+    X(RM, NUM_FUNCTIONS,                                          233)
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef X

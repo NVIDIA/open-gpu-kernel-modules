@@ -88,9 +88,14 @@ knvlinkEnableLinksPostTopology_GV100
     // Skip the RPC if linkmask is 0 or if all the links in the mask
     // are already initialized
     //
-    if ((linkMask & (~pKernelNvlink->initializedLinks)) == 0)
     {
-        return NV_OK;
+        NVLINK_BIT_VECTOR linkMaskBitVector;
+        bitVectorClrAll(&linkMaskBitVector);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, convertMaskToBitVector((NvU64)linkMask, &linkMaskBitVector));
+        if (bitVectorTestIsSubset(&linkMaskBitVector, &pKernelNvlink->initializedLinks))
+        {
+            return NV_OK;
+        }
     }
 
     portMemSet(&params, 0, sizeof(params));
@@ -112,7 +117,10 @@ knvlinkEnableLinksPostTopology_GV100
         return status;
     }
 
-    pKernelNvlink->initializedLinks = params.initializedLinks;
+    bitVectorClrAll(&pKernelNvlink->initializedLinks);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        convertLinkMasksToBitVector(NULL, 0,
+                                    &params.initializedLinks, &pKernelNvlink->initializedLinks));
 
     return NV_OK;
 }
@@ -284,7 +292,7 @@ knvlinkApplyNvswitchDegradedModeSettings_GV100
                 }
 
                 // Mark this link as disconnected
-                pKernelNvlink->disconnectedLinkMask |= (NVBIT64(linkId));
+                bitVectorSet(&pKernelNvlink->disconnectedLinkMask, linkId);
                 pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.bConnected = NV_FALSE;
 
                 // RPC into GSP-RM to update the link connected status only if its required
@@ -351,7 +359,7 @@ _knvlinkAreLinksDisconnected
 
     portMemSet(pParams, 0, sizeof(*pParams));
 
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, 
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
         convertBitVectorToLinkMasks(&pKernelNvlink->enabledLinks,
                                     &pParams->linkMask,
                                     sizeof(pParams->linkMask),

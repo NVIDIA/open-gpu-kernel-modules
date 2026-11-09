@@ -129,7 +129,6 @@ deviceInitClientShare
     OBJVMM      *pVmm        = SYS_GET_VMM(pSys);
     NV_STATUS    status;
     OBJGPU      *pGpu        = GPU_RES_GET_GPU(pDevice);
-    NvU32        gpuMask      = gpumgrGetGpuMask(pGpu);
     NvU32        vaspaceClass = 0;
 
     pDevice->pVASpace = NULL;
@@ -266,7 +265,7 @@ deviceInitClientShare
             flags |= VASPACE_FLAGS_REQUIRE_FIXED_OFFSET;
         }
 
-        status = vmmCreateVaspace(pVmm, vaspaceClass, 0, gpuMask, 0,
+        status = vmmCreateVaspace(pVmm, vaspaceClass, 0, pGpu, 0,
                                         vaLimit, pDevice->vaStartInternal,
                                         pDevice->vaLimitInternal, NULL, flags, &pVAS);
         if (NV_OK != status)

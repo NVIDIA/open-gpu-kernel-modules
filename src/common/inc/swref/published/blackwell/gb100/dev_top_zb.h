@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 #ifndef __gb100_dev_top_zb__h__
 #define __gb100_dev_top_zb__h__
 
+#define NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_FBHUB                                     0x1b /*       */
 #define NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_TMR                                       0x1f /*       */
 #define NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_PBUS                                      0x33 /*       */
 #define NV_PTOP_ZB_DEVICE_INFO_DEV_TYPE_ENUM_HUBMMU                                    0x35 /*       */

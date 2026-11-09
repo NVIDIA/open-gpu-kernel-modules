@@ -135,6 +135,8 @@
 #define NV_PMC_BOOT_0_ARCHITECTURE_GB100                 0x0000001A /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_GB200                 0x0000001B /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_GR100                 0x0000001C /* R---V */
+#define NV_PMC_BOOT_0_ARCHITECTURE_AMODEL                0x0000001F /* R---V */
+#define NV_PMC_BOOT_0_ARCHITECTURE_LOOK_AT_BOOT_42       0x00000020 /* R---V */
 
 #define NV_PMC_BOOT_1                                    0x00000004 /* R--4R */
 #define NV_PMC_BOOT_1_VGPU8                                     8:8 /* R--VF */
@@ -171,6 +173,9 @@
 #define NV_PMC_BOOT_42_ARCHITECTURE                           29:24 /*       */
 #define NV_PMC_BOOT_42_CHIP_ID                                29:20 /* R-XVF */
 
+#define NV_PMC_BOOT_42_CHIP_ID_GA100                     0x00000170 /*       */
+
+
 #define NV_PMC_BOOT_42_ARCHITECTURE_GM100                0x00000011 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_GM200                0x00000012 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_GP100                0x00000013 /*       */
@@ -185,7 +190,6 @@
 #define NV_PMC_BOOT_42_ARCHITECTURE_GR100                0x0000001C /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_AMODEL               0x0000001F /*       */
 
-#define NV_PMC_BOOT_42_CHIP_ID_GA100                     0x00000170 /*       */
 
 /* dev_arapb_misc.h */
 #define NV_PAPB_MISC_GP_HIDREV_CHIPID                    15:8 /* ----F */

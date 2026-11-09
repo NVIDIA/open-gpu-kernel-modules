@@ -216,15 +216,26 @@ bool libspdm_decode_base64(const uint8_t *src, uint8_t *dst, size_t srclen, size
             // -1 to avoid decoding the '\n' byte in the end
             decode_size = srclen - s_progress - 1;
         }
-        // calculate the size after decoding
-        decoded_size = (decode_size / 4) * 3;
-        if (src[decode_size - 1] == '=')
+        if (decode_size < 4 || decode_size % 4 != 0)
         {
-            decoded_size--;
+            *p_dstlen = 0;
+            return false;
         }
-        if (src[decoded_size - 2] == '=')
+
+        //
+        // Calculate the size after decoding. Padding only ever appears in the
+        // final two characters of the chunk, and a second '=' is only valid
+        // when the last character is one too.
+        //
+        decoded_size = (decode_size / 4) * 3;
+        if (src[s_progress + decode_size - 1] == '=')
         {
             decoded_size--;
+
+            if (src[s_progress + decode_size - 2] == '=')
+            {
+                decoded_size--;
+            }
         }
         // break early if the buffer is too small
         if (*p_dstlen - d_progress < decoded_size)
@@ -300,6 +311,32 @@ bool libspdm_asn1_get_tag(uint8_t **ptr, const uint8_t *end, size_t *length,
                           uint32_t tag)
 {
     return lkca_asn1_get_tag(*ptr, end, length, tag);
+}
+
+/*
+ * Size of the tag + length header of the TLV at ptr, needed to descend into a
+ * constructed value since lkca_asn1_get_tag() reports the total TLV size rather
+ * than advancing past the header. Accepts exactly the length encodings that
+ * lkca_asn1_get_tag() does, so the two cannot disagree.
+ */
+static bool lkca_asn1_get_header_size(uint8_t const *ptr, uint8_t const *end,
+                                      size_t *header_size)
+{
+    if ((end - ptr) < 2) {
+        return false;
+    }
+
+    if (ptr[1] < 0x80) {
+        *header_size = 2;
+    } else if (ptr[1] == 0x81) {
+        *header_size = 3;
+    } else if (ptr[1] == 0x82) {
+        *header_size = 4;
+    } else {
+        return false;
+    }
+
+    return true;
 }
 
 bool libspdm_x509_get_subject_name(const uint8_t *cert, size_t cert_size,
@@ -515,12 +552,76 @@ bool libspdm_x509_get_version(const uint8_t *cert, size_t cert_size,
     return false;
 }
 
+/*
+ * Walks Certificate -> tbsCertificate -> serialNumber and returns the INTEGER
+ * contents. Returns the value without its ASN.1 header, and reports a size
+ * that includes the NUL terminator appended below.
+ */
 bool libspdm_x509_get_serial_number(const uint8_t *cert, size_t cert_size,
                                     uint8_t *serial_number,
                                     size_t *serial_number_size)
 {
-    LIBSPDM_ASSERT(false);
-    return false;
+    uint8_t const *ptr;
+    uint8_t const *end;
+    size_t tlv_size;
+    size_t header_size;
+    size_t content_size;
+
+    if (cert == NULL || cert_size == 0 || serial_number_size == NULL) {
+        return false;
+    }
+
+    ptr = cert;
+    end = cert + cert_size;
+
+    if (!lkca_asn1_get_tag(ptr, end, &tlv_size,
+                           LIBSPDM_CRYPTO_ASN1_CONSTRUCTED | LIBSPDM_CRYPTO_ASN1_SEQUENCE) ||
+        !lkca_asn1_get_header_size(ptr, end, &header_size)) {
+        return false;
+    }
+    end = ptr + tlv_size;
+    ptr += header_size;
+
+    if (!lkca_asn1_get_tag(ptr, end, &tlv_size,
+                           LIBSPDM_CRYPTO_ASN1_CONSTRUCTED | LIBSPDM_CRYPTO_ASN1_SEQUENCE) ||
+        !lkca_asn1_get_header_size(ptr, end, &header_size)) {
+        return false;
+    }
+    end = ptr + tlv_size;
+    ptr += header_size;
+
+    /* version is [0] EXPLICIT and optional, skip it when present. */
+    if (lkca_asn1_get_tag(ptr, end, &tlv_size,
+                          LIBSPDM_CRYPTO_ASN1_CONTEXT_SPECIFIC |
+                          LIBSPDM_CRYPTO_ASN1_CONSTRUCTED)) {
+        ptr += tlv_size;
+    }
+
+    if (!lkca_asn1_get_tag(ptr, end, &tlv_size, LIBSPDM_CRYPTO_ASN1_INTEGER) &&
+        !lkca_asn1_get_tag(ptr, end, &tlv_size, LIBSPDM_CRYPTO_ASN1_CONTEXT_SPECIFIC)) {
+        return false;
+    }
+
+    if (!lkca_asn1_get_header_size(ptr, end, &header_size) ||
+        tlv_size < header_size) {
+        return false;
+    }
+    content_size = tlv_size - header_size;
+
+    /* The reported size counts the NULL terminator. */
+    if (*serial_number_size <= content_size) {
+        *serial_number_size = content_size + 1;
+        return false;
+    }
+
+    if (serial_number != NULL) {
+        memcpy(serial_number, ptr + header_size, content_size);
+        serial_number[content_size] = '\0';
+    }
+
+    *serial_number_size = content_size + 1;
+
+    return true;
 }
 
 bool libspdm_x509_get_issuer_name(const uint8_t *cert, size_t cert_size,

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -417,6 +417,98 @@ typedef struct
     bool uvm_hmm_must_use_sysmem(uvm_va_block_t *va_block,
                                  struct vm_area_struct *vma);
 
+    // Snapshot the CPU PTE of page_index with a single-page hmm_range_fault()
+    // and no request flags, and classify a GPU fault on it from an
+    // ATS-capable GPU. The snapshot never faults. access_type is the access to
+    // service, after logical permission checks. An ATS GPU has no
+    // GMMU mapping for a HMM va_block, so a fault on a present CPU PTE can
+    // only be resolved by fixing up the CPU PTE; block servicing does not
+    // change the CPU PTE of a page it does not move.
+    //
+    // - If the CPU PTE already permits the access (a read on a valid PTE, or
+    //   a write on a writable one), the fault is an HTTU fault: an access
+    //   flag fault, or a dirty-bit permission fault on a writable-clean PTE.
+    //   The SMMU cannot update access and dirty bits, so software has to. The
+    //   page is recorded in service_context->ats_pte_fixup_mask. A stale TLB
+    //   entry looks the same and is handled the same way.
+    // - If it is a write to a valid PTE without write permission (CoW, an
+    //   exclusive page waiting for wp_page_reuse(), soft-dirty tracking), the
+    //   page is recorded in service_context->ats_pte_write_mask.
+    //
+    // A recorded page is not considered for migration: the fault is a CPU PTE
+    // problem, which block servicing cannot fix, so the PTE is fixed up and the
+    // page stays where it is regardless of preferred_location. Migration for
+    // ATS GPUs is driven by access counters and by faults on pages that are not
+    // present.
+    //
+    // Sets *recorded if the page was recorded. The caller must then skip
+    // normal block servicing for that page and later call
+    // uvm_hmm_ats_pte_fixup() with the va_block lock dropped. *recorded is
+    // left false, leaving the page to normal block servicing, if the va_block
+    // is not HMM, the GPU does not support ATS, the page is outside the VMA, or
+    // the CPU PTE is not present.
+    //
+    // Returns NV_ERR_MORE_PROCESSING_REQUIRED if the block was invalidated
+    // while the va_block lock was dropped for the snapshot, so that
+    // UVM_VA_BLOCK_RETRY_LOCKED() restarts servicing. Nothing recorded by
+    // earlier calls is kept, since the caller zeroes the masks on re-entry.
+    //
+    // Locking: the va_block lock must be held. It is dropped and re-taken
+    // around hmm_range_fault(), so the caller must not hold state that a
+    // concurrent thread could invalidate. service_context->block_context->mm
+    // must be retained and mmap_lock held for at least read, and
+    // service_context->block_context->hmm.vma must be valid.
+    NV_STATUS uvm_hmm_ats_pte_fixup_check_and_record(uvm_va_block_t *va_block,
+                                                     uvm_gpu_t *gpu,
+                                                     uvm_page_index_t page_index,
+                                                     uvm_fault_access_type_t access_type,
+                                                     uvm_service_block_context_t *service_context,
+                                                     bool *recorded);
+
+    // Fix up the CPU PTE for fault_address if its page was recorded by
+    // uvm_hmm_ats_pte_fixup_check_and_record(), clearing it from the mask so
+    // that duplicate fault entries on the same page only fault once.
+    //
+    // - Pages in service_context->ats_pte_fixup_mask (HTTU faults) are fixed
+    //   with handle_mm_fault(), the only way to set the access and dirty bits.
+    //   fault_access_type is the access type from the fault entry. Write is
+    //   re-derived from the VMA, matching uvm_hmm_compute_logical_prot(), so a
+    //   write that was downgraded to a read does not set FAULT_FLAG_WRITE.
+    //   mmap_lock keeps the VMA flags stable.
+    // - Pages in service_context->ats_pte_write_mask are faulted in for write
+    //   with hmm_range_fault() through
+    //   uvm_hmm_va_block_update_residency_info(), which also records the
+    //   resulting CPU page (for example a CoW copy) in the va_block.
+    //   handle_mm_fault() is never called for these.
+    //
+    // Returns:
+    //   NV_OK                   the page was not recorded, or the PTE was
+    //                           fixed up;
+    //   NV_ERR_INVALID_ADDRESS  handle_mm_fault() returned SIGSEGV, SIGBUS or
+    //                           HWPOISON, or hmm_range_fault() failed with
+    //                           -EFAULT. A CPU thread would be killed here,
+    //                           so the caller must mark the fault fatal
+    //                           instead of replaying it forever;
+    //   NV_ERR_NO_MEMORY        handle_mm_fault() returned VM_FAULT_OOM, or
+    //                           hmm_range_fault() failed with -ENOMEM. The
+    //                           caller treats it like an allocation failure
+    //                           in block servicing.
+    // The handle_mm_fault() mapping matches uvm_populate_pageable_vma().
+    //
+    // Locking: the va_block lock must NOT be held because handle_mm_fault() and
+    // hmm_range_fault() can invalidate the range and re-enter hmm_invalidate(),
+    // which takes the va_block lock. This function takes the va_block lock
+    // itself around uvm_hmm_va_block_update_residency_info().
+    // va_block->hmm.migrate_lock must be held so that a concurrent HMM
+    // migration of this block cannot undo the fixup. The va_space lock must be
+    // held for at least read, service_context->block_context->mm must be
+    // retained and mmap_lock held for at least read, and
+    // service_context->block_context->hmm.vma must be valid.
+    NV_STATUS uvm_hmm_ats_pte_fixup(uvm_va_block_t *va_block,
+                                    uvm_service_block_context_t *service_context,
+                                    NvU64 fault_address,
+                                    uvm_fault_access_type_t fault_access_type);
+
 #else // UVM_IS_CONFIG_HMM()
 
     static bool uvm_hmm_is_enabled(uvm_va_space_t *va_space)
@@ -701,6 +793,26 @@ typedef struct
                                         struct vm_area_struct *vma)
     {
         return false;
+    }
+
+    static NV_STATUS uvm_hmm_ats_pte_fixup_check_and_record(uvm_va_block_t *va_block,
+                                                            uvm_gpu_t *gpu,
+                                                            uvm_page_index_t page_index,
+                                                            uvm_fault_access_type_t access_type,
+                                                            uvm_service_block_context_t *service_context,
+                                                            bool *recorded)
+    {
+        *recorded = false;
+
+        return NV_OK;
+    }
+
+    static NV_STATUS uvm_hmm_ats_pte_fixup(uvm_va_block_t *va_block,
+                                           uvm_service_block_context_t *service_context,
+                                           NvU64 fault_address,
+                                           uvm_fault_access_type_t fault_access_type)
+    {
+        return NV_WARN_NOTHING_TO_DO;
     }
 
 #endif // UVM_IS_CONFIG_HMM()

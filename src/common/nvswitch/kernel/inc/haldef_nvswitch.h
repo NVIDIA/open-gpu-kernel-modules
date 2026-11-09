@@ -77,6 +77,7 @@
     _op(void,      nvswitch_led_shutdown,                   (nvswitch_device *device), _arch) \
 
 
+
 #define NVSWITCH_HAL_FUNCTION_LIST(_op, _arch)                                          \
     _op(NvlStatus, nvswitch_initialize_device_state, (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_destroy_device_state,    (nvswitch_device *device), _arch)  \
@@ -317,6 +318,7 @@
     _op(NvlStatus, nvswitch_ctrl_clear_multicast_id_error_vector, (nvswitch_device *device, NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR *p), _arch) \
     _op(NvlStatus, nvswitch_reset_and_train_link, (nvswitch_device *device, nvlink_link *link), _arch) \
 
+
 //
 // Declare HAL function pointer table
 //
@@ -351,8 +353,10 @@ typedef struct nvswitch_hal_functions
 #define NVSWITCH_INIT_HAL(device, arch)                             \
     NVSWITCH_HAL_FUNCTION_LIST(CREATE_HAL_FUNCTIONS, arch)          \
 
+
 #define NVSWITCH_INIT_HAL_LS10(device, arch)                         \
     NVSWITCH_HAL_FUNCTION_LIST_LS10(CREATE_HAL_FUNCTIONS, arch)      \
+
 
 //
 // Declare HAL function dispatch functions

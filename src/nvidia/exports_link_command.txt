@@ -72,6 +72,7 @@
 --undefined=rm_gpu_ops_channel_destroy
 --undefined=rm_gpu_ops_memory_free
 --undefined=rm_gpu_ops_create_session
+--undefined=rm_gpu_ops_is_tdisp_enabled
 --undefined=rm_gpu_ops_memory_alloc_sys
 --undefined=rm_gpu_ops_address_space_create
 --undefined=rm_gpu_ops_tsg_allocate

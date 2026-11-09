@@ -63,10 +63,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__Griddisplayless;
 struct NVOC_METADATA__GpuResource;
-struct NVOC_VTABLE__Griddisplayless;
 
 
 struct Griddisplayless {
@@ -90,40 +89,10 @@ struct Griddisplayless {
 };
 
 
-// Vtable with 25 per-class function pointers
-struct NVOC_VTABLE__Griddisplayless {
-    NV_STATUS (*__griddisplaylessControl__)(struct Griddisplayless * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__griddisplaylessMap__)(struct Griddisplayless * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__griddisplaylessUnmap__)(struct Griddisplayless * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__griddisplaylessShareCallback__)(struct Griddisplayless * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__griddisplaylessGetRegBaseOffsetAndSize__)(struct Griddisplayless * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__griddisplaylessGetMapAddrSpace__)(struct Griddisplayless * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__griddisplaylessInternalControlForward__)(struct Griddisplayless * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__griddisplaylessGetInternalObjectHandle__)(struct Griddisplayless * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__griddisplaylessAccessCallback__)(struct Griddisplayless * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__griddisplaylessGetMemInterMapParams__)(struct Griddisplayless * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__griddisplaylessCheckMemInterUnmap__)(struct Griddisplayless * /*this*/, NvBool);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__griddisplaylessGetMemoryMappingDescriptor__)(struct Griddisplayless * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__griddisplaylessControlSerialization_Prologue__)(struct Griddisplayless * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__griddisplaylessControlSerialization_Epilogue__)(struct Griddisplayless * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__griddisplaylessControl_Prologue__)(struct Griddisplayless * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__griddisplaylessControl_Epilogue__)(struct Griddisplayless * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NvBool (*__griddisplaylessCanCopy__)(struct Griddisplayless * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__griddisplaylessIsDuplicate__)(struct Griddisplayless * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__griddisplaylessPreDestruct__)(struct Griddisplayless * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__griddisplaylessControlFilter__)(struct Griddisplayless * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (gpures)
-    NvBool (*__griddisplaylessIsPartialUnmapSupported__)(struct Griddisplayless * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__griddisplaylessMapTo__)(struct Griddisplayless * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__griddisplaylessUnmapFrom__)(struct Griddisplayless * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__griddisplaylessGetRefCount__)(struct Griddisplayless * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__griddisplaylessAddAdditionalDependants__)(struct RsClient *, struct Griddisplayless * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__Griddisplayless {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResource metadata__GpuResource;
-    const struct NVOC_VTABLE__Griddisplayless vtable;
 };
 
 #ifndef __nvoc_class_id_Griddisplayless
@@ -217,13 +186,13 @@ static inline NV_STATUS griddisplaylessCtrlCmdVirtualDisplayGetMaxPixels(struct 
 
 
 // Wrapper macros for halified functions
-#define griddisplaylessControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define griddisplaylessControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define griddisplaylessControl(pGpuResource, pCallContext, pParams) griddisplaylessControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define griddisplaylessMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
+#define griddisplaylessMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define griddisplaylessMap(pGpuResource, pCallContext, pParams, pCpuMapping) griddisplaylessMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define griddisplaylessUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
+#define griddisplaylessUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define griddisplaylessUnmap(pGpuResource, pCallContext, pCpuMapping) griddisplaylessUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define griddisplaylessShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define griddisplaylessShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define griddisplaylessShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) griddisplaylessShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define griddisplaylessGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define griddisplaylessGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) griddisplaylessGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -233,7 +202,7 @@ static inline NV_STATUS griddisplaylessCtrlCmdVirtualDisplayGetMaxPixels(struct 
 #define griddisplaylessInternalControlForward(pGpuResource, command, pParams, size) griddisplaylessInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define griddisplaylessGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define griddisplaylessGetInternalObjectHandle(pGpuResource) griddisplaylessGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define griddisplaylessAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define griddisplaylessAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define griddisplaylessAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) griddisplaylessAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define griddisplaylessGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define griddisplaylessGetMemInterMapParams(pRmResource, pParams) griddisplaylessGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -241,13 +210,13 @@ static inline NV_STATUS griddisplaylessCtrlCmdVirtualDisplayGetMaxPixels(struct 
 #define griddisplaylessCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) griddisplaylessCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define griddisplaylessGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define griddisplaylessGetMemoryMappingDescriptor(pRmResource, ppMemDesc) griddisplaylessGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define griddisplaylessControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define griddisplaylessControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define griddisplaylessControlSerialization_Prologue(pResource, pCallContext, pParams) griddisplaylessControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define griddisplaylessControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define griddisplaylessControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define griddisplaylessControlSerialization_Epilogue(pResource, pCallContext, pParams) griddisplaylessControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define griddisplaylessControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define griddisplaylessControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define griddisplaylessControl_Prologue(pResource, pCallContext, pParams) griddisplaylessControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define griddisplaylessControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define griddisplaylessControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define griddisplaylessControl_Epilogue(pResource, pCallContext, pParams) griddisplaylessControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define griddisplaylessCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define griddisplaylessCanCopy(pResource) griddisplaylessCanCopy_DISPATCH(pResource)
@@ -270,103 +239,103 @@ static inline NV_STATUS griddisplaylessCtrlCmdVirtualDisplayGetMaxPixels(struct 
 
 // Dispatch functions
 static inline NV_STATUS griddisplaylessControl_DISPATCH(struct Griddisplayless *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__griddisplaylessControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS griddisplaylessMap_DISPATCH(struct Griddisplayless *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__griddisplaylessMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pGpuResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS griddisplaylessUnmap_DISPATCH(struct Griddisplayless *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__griddisplaylessUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pGpuResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool griddisplaylessShareCallback_DISPATCH(struct Griddisplayless *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__griddisplaylessShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS griddisplaylessGetRegBaseOffsetAndSize_DISPATCH(struct Griddisplayless *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__griddisplaylessGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS griddisplaylessGetMapAddrSpace_DISPATCH(struct Griddisplayless *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__griddisplaylessGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pGpuResource, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS griddisplaylessInternalControlForward_DISPATCH(struct Griddisplayless *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__griddisplaylessInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle griddisplaylessGetInternalObjectHandle_DISPATCH(struct Griddisplayless *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__griddisplaylessGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool griddisplaylessAccessCallback_DISPATCH(struct Griddisplayless *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS griddisplaylessGetMemInterMapParams_DISPATCH(struct Griddisplayless *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__griddisplaylessGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS griddisplaylessCheckMemInterUnmap_DISPATCH(struct Griddisplayless *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__griddisplaylessCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS griddisplaylessGetMemoryMappingDescriptor_DISPATCH(struct Griddisplayless *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__griddisplaylessGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS griddisplaylessControlSerialization_Prologue_DISPATCH(struct Griddisplayless *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void griddisplaylessControlSerialization_Epilogue_DISPATCH(struct Griddisplayless *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS griddisplaylessControl_Prologue_DISPATCH(struct Griddisplayless *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void griddisplaylessControl_Epilogue_DISPATCH(struct Griddisplayless *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool griddisplaylessCanCopy_DISPATCH(struct Griddisplayless *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessCanCopy__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS griddisplaylessIsDuplicate_DISPATCH(struct Griddisplayless *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void griddisplaylessPreDestruct_DISPATCH(struct Griddisplayless *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessPreDestruct__(pResource);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS griddisplaylessControlFilter_DISPATCH(struct Griddisplayless *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool griddisplaylessIsPartialUnmapSupported_DISPATCH(struct Griddisplayless *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS griddisplaylessMapTo_DISPATCH(struct Griddisplayless *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS griddisplaylessUnmapFrom_DISPATCH(struct Griddisplayless *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 griddisplaylessGetRefCount_DISPATCH(struct Griddisplayless *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessGetRefCount__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void griddisplaylessAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct Griddisplayless *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__griddisplaylessAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

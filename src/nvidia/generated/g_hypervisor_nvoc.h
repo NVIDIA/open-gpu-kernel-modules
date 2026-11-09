@@ -105,8 +105,9 @@ struct OBJHYPERVISOR {
     struct Object *__nvoc_pbase_Object;    // obj super
     struct OBJHYPERVISOR *__nvoc_pbase_OBJHYPERVISOR;    // hypervisor
 
-    // 1 PDB property
+    // 2 PDB properties
     NvBool PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED;
+    NvBool PDB_PROP_HYPERVISOR_HYPERV_L1VH_ENABLED;
 
     // Data members
     NvBool bDetected;
@@ -144,6 +145,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHYPERVISOR;
 // Property macros
 #define PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED_BASE_CAST
 #define PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED_BASE_NAME PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED
+#define PDB_PROP_HYPERVISOR_HYPERV_L1VH_ENABLED_BASE_CAST
+#define PDB_PROP_HYPERVISOR_HYPERV_L1VH_ENABLED_BASE_NAME PDB_PROP_HYPERVISOR_HYPERV_L1VH_ENABLED
 
 
 NV_STATUS __nvoc_objCreateDynamic_OBJHYPERVISOR(Dynamic**, Dynamic*, NvU32, va_list);

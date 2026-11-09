@@ -427,6 +427,19 @@ DSC_GetMinSliceCountForMode
     NvU32 *pMinSliceCount
 );
 
+static NVT_STATUS
+_DSC_GeneratePPS
+(
+    const DSC_INFO *pDscInfo,
+    const MODESET_INFO *pModesetInfo,
+    const WAR_DATA *pWARData,
+    NvU64 availableBandwidthBitsPerSecond,
+    DSC_GENERATE_PPS_OPAQUE_WORKAREA *pOpaqueWorkarea,
+    NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
+    NvU32 *pBitsPerPixelX16,
+    NvU32 *pNormalBitsPerPixelX16
+);
+
 /* ------------------------ Private Functions ------------------------------ */
 
 /*
@@ -1357,6 +1370,12 @@ DSC_GetPeakThroughputMps(NvU32 peak_throughput)
         case DSC_DECODER_PEAK_THROUGHPUT_MODE0_680:
             peak_throughput_mps = 680;
             break;
+        case DSC_DECODER_PEAK_THROUGHPUT_MODE1_1200:
+            peak_throughput_mps = 1200;
+            break;
+        case DSC_DECODER_PEAK_THROUGHPUT_MODE1_1800:
+            peak_throughput_mps = 1800;
+            break;
         default:
             peak_throughput_mps = 0;
     }
@@ -2245,6 +2264,8 @@ _validateInput
  *                                  The data can be sent to SetDscPpsData* methods directly.
  * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
  * @param[out]  pSliceCountMask     Mask of all slice counts supported by the mode.
+ * @param[out]  pNormalBitsPerPixelX16  Normal bits per pixel used for the returned
+ *                                  PPS, multiplied by 16. Optional, can be NULL.
  *
  * @returns NVT_STATUS_SUCCESS if successful;
  *          NVT_STATUS_DSC_SLICE_ERROR if no common slice count could be found;
@@ -2261,7 +2282,8 @@ DSC_GeneratePPSWithSliceCountMask
     NvU64 availableBandwidthBitsPerSecond,
     NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
     NvU32 *pBitsPerPixelX16,
-    NvU32 *pSliceCountMask
+    NvU32 *pSliceCountMask,
+    NvU32 *pNormalBitsPerPixelX16
 )
 {
     NvU32 commonSliceCountMask;
@@ -2283,13 +2305,19 @@ DSC_GeneratePPSWithSliceCountMask
     // Below are the valid slice counts according to DP2.0 spec. 
     NvU32 validSliceNum[] = {1U,2U,4U,6U,8U,10U,12U,16U,20U,24U};
 
+    if (pNormalBitsPerPixelX16 != NULL)
+    {
+        *pNormalBitsPerPixelX16 = 0U;
+    }
+
     // if any slice parameters are forced, just return PPS.
     if (pDscInfo->forcedDscParams.sliceWidth != 0U || 
         pDscInfo->forcedDscParams.sliceCount != 0U)
     {
-        return DSC_GeneratePPS(pDscInfo, pModesetInfo, pWARData, 
-                               availableBandwidthBitsPerSecond,  
-                               &scratchBuffer, pps, pBitsPerPixelX16);
+        return _DSC_GeneratePPS(pDscInfo, pModesetInfo, pWARData, 
+                                availableBandwidthBitsPerSecond,  
+                                &scratchBuffer, pps, pBitsPerPixelX16,
+                                pNormalBitsPerPixelX16);
     }
 
     sliceArrayCount = sizeof(validSliceNum)/sizeof(NvU32);
@@ -2368,9 +2396,9 @@ DSC_GeneratePPSWithSliceCountMask
                 // Use the forced bits per pixel, if any
                 NvU32 bitsPerPixelX16Local = *pBitsPerPixelX16;
                 localDscInfo.forcedDscParams.sliceCount = validSliceNum[i];
-                status = DSC_GeneratePPS(&localDscInfo, pModesetInfo, pWARData, 
-                                         availableBandwidthBitsPerSecond, &scratchBuffer,
-                                         NULL, &bitsPerPixelX16Local);
+                status = _DSC_GeneratePPS(&localDscInfo, pModesetInfo, pWARData, 
+                                          availableBandwidthBitsPerSecond, &scratchBuffer,
+                                          NULL, &bitsPerPixelX16Local, NULL);
                 if (status == NVT_STATUS_SUCCESS)
                 {
                     //
@@ -2400,9 +2428,9 @@ DSC_GeneratePPSWithSliceCountMask
             // pps with all other possible slice counts to validate them.
             //
             localDscInfo.forcedDscParams.sliceCount = minSliceCountOut;
-            status = DSC_GeneratePPS(&localDscInfo, pModesetInfo, pWARData,
-                                     availableBandwidthBitsPerSecond, &scratchBuffer,
-                                     pps, pBitsPerPixelX16);
+            status = _DSC_GeneratePPS(&localDscInfo, pModesetInfo, pWARData,
+                                      availableBandwidthBitsPerSecond, &scratchBuffer,
+                                      pps, pBitsPerPixelX16, pNormalBitsPerPixelX16);
             if (status != NVT_STATUS_SUCCESS)
             {
                 return status;
@@ -2535,23 +2563,25 @@ _calculateEffectiveBppForDSC
  * @brief Calculate PPS parameters based on passed down Sink,
  *        GPU capability and modeset info
  *
- * @param[in]   pDscInfo       Includes Sink and GPU DSC capabilities
- * @param[in]   pModesetInfo   Modeset related information
- * @param[in]   pWARData       Data required for providing WAR for issues
- * @param[in]   availableBandwidthBitsPerSecond      Available bandwidth for video
- *                                                   transmission(After FEC/Downspread overhead consideration)
- * @param[in]   pOpaqueWorkarea  Scratch buffer of sufficient size pre-allocated
-                                 by client for DSC PPS calculations internal use
- * @param[out]  pps                 Calculated PPS parameter.
- *                                  The data can be send to SetDscPpsData* methods directly.
- * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
+ * @param[in]   pDscInfo                          Includes Sink and GPU DSC capabilities
+ * @param[in]   pModesetInfo                      Modeset related information
+ * @param[in]   pWARData                          Data required for providing WAR for issues
+ * @param[in]   availableBandwidthBitsPerSecond   Available bandwidth for video
+ *                                                transmission(After FEC/Downspread overhead consideration)
+ * @param[in]   pOpaqueWorkarea                   Scratch buffer of sufficient size pre-allocated
+                                                  by client for DSC PPS calculations internal use
+ * @param[out]  pps                               Calculated PPS parameter.
+ *                                                The data can be send to SetDscPpsData* methods directly.
+ * @param[out]  pBitsPerPixelX16                  Bits per pixel multiplied by 16
+ * @param[out]  pNormalBitsPerPixelX16            Normal bits per pixel used for the generated
+ *                                                PPS, multiplied by 16. Optional, can be NULL.
  *
  * @returns NVT_STATUS_SUCCESS if successful;
  *          NVT_STATUS_ERR if unsuccessful;
  *          In case this returns failure consider that PPS is not possible.
  */
-NVT_STATUS
-DSC_GeneratePPS
+static NVT_STATUS
+_DSC_GeneratePPS
 (
     const DSC_INFO *pDscInfo,
     const MODESET_INFO *pModesetInfo,
@@ -2559,7 +2589,8 @@ DSC_GeneratePPS
     NvU64 availableBandwidthBitsPerSecond,
     DSC_GENERATE_PPS_OPAQUE_WORKAREA *pOpaqueWorkarea,
     NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
-    NvU32 *pBitsPerPixelX16
+    NvU32 *pBitsPerPixelX16,
+    NvU32 *pNormalBitsPerPixelX16
 )
 {
     DSC_INPUT_PARAMS  *in  = NULL;
@@ -2952,7 +2983,55 @@ DSC_GeneratePPS
     {
         *pBitsPerPixelX16 = in->bits_per_pixel;
     }
+
+    if ((pNormalBitsPerPixelX16 != NULL) && (ret == NVT_STATUS_SUCCESS))
+    {
+        if (in->native_422)
+        {
+            *pNormalBitsPerPixelX16 = in->bits_per_pixel/2;
+        }
+        else
+        {
+            *pNormalBitsPerPixelX16 = in->bits_per_pixel;
+        }
+    }
     /* fall through */
 done:
     return ret;
+}
+
+/*
+ * @brief Calculate PPS parameters based on passed down Sink,
+ *        GPU capability and modeset info
+ *
+ * @param[in]   pDscInfo       Includes Sink and GPU DSC capabilities
+ * @param[in]   pModesetInfo   Modeset related information
+ * @param[in]   pWARData       Data required for providing WAR for issues
+ * @param[in]   availableBandwidthBitsPerSecond      Available bandwidth for video
+ *                                                   transmission(After FEC/Downspread overhead consideration)
+ * @param[in]   pOpaqueWorkarea  Scratch buffer of sufficient size pre-allocated
+                                 by client for DSC PPS calculations internal use
+ * @param[out]  pps                 Calculated PPS parameter.
+ *                                  The data can be send to SetDscPpsData* methods directly.
+ * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
+ *
+ * @returns NVT_STATUS_SUCCESS if successful;
+ *          NVT_STATUS_ERR if unsuccessful;
+ *          In case this returns failure consider that PPS is not possible.
+ */
+NVT_STATUS
+DSC_GeneratePPS
+(
+    const DSC_INFO *pDscInfo,
+    const MODESET_INFO *pModesetInfo,
+    const WAR_DATA *pWARData,
+    NvU64 availableBandwidthBitsPerSecond,
+    DSC_GENERATE_PPS_OPAQUE_WORKAREA *pOpaqueWorkarea,
+    NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
+    NvU32 *pBitsPerPixelX16
+)
+{
+    return _DSC_GeneratePPS(pDscInfo, pModesetInfo, pWARData,
+                            availableBandwidthBitsPerSecond, pOpaqueWorkarea,
+                            pps, pBitsPerPixelX16, NULL);
 }

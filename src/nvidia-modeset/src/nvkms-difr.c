@@ -188,11 +188,6 @@ NVDIFRStateEvoPtr nvDIFRAllocate(NVDevEvoPtr pDevEvo)
     NVDIFRStateEvoPtr pDifr;
     NvU32 ret;
 
-    /* DIFR not supported/implemented on RM SLI */
-    if (pDevEvo->numSubDevices > 1) {
-        return NULL;
-    }
-
     params.ctrlParamVal = NV2080_CTRL_LPWR_DIFR_CTRL_SUPPORT_STATUS;
     ret = nvRmApiControl(nvEvoGlobal.clientHandle,
                          pDevEvo->pSubDevices[0]->handle,

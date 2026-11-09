@@ -23,11 +23,11 @@
 
 #include "nvkms-dma.h"
 #include "nvkms-evo.h"
+#include "nvkms-hdmi.h"
 #include "nvkms-rm.h"
 #include "nvkms-rmapi.h"
 #include "nvkms-vrr.h"
 #include "dp/nvdp-connector-event-sink.h"
-#include "nvkms-hdmi.h"
 #include "nvkms-dpy.h"
 
 #include <ctrl/ctrl0000/ctrl0000unix.h>
@@ -79,10 +79,6 @@
  *     c. (EVO only) RM's VRR state machine is suspended.
  */
 
-static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo,
-                               const NvU32 applyAllowVrrApiHeadMask,
-                               const NvU32 vrrActiveApiHeadMask);
-
 static void ConfigVrrPstateSwitch(NVDispEvoPtr pDispEvo,
                                   NvBool vrrEnabled,
                                   NvBool vrrState,
@@ -99,50 +95,28 @@ static NvBool DpyIsGsync(const NVDpyEvoRec *pDpyEvo)
            nvIsGsyncV2DpyVrrType(pDpyEvo->vrr.type);
 }
 
-static NvBool AnyEnabledAdaptiveSyncDpys(const NVDevEvoRec *pDevEvo)
+NvBool nvAnyActiveVrrHeads(const NVDevEvoRec *pDevEvo)
 {
-    NVDispEvoPtr pDispEvo;
-    NvU32 dispIndex;
-
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        NvU32 head;
-
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            const NVDispHeadStateEvoRec *pHeadState =
-                &pDispEvo->headState[head];
-
-            if (nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
-                return TRUE;
-            }
-        }
-    }
-
-    return FALSE;
-}
-
-static NvBool AnyActiveVrrHeads(const NVDevEvoRec *pDevEvo)
-{
-    NvU32 sd, apiHead;
+    NvU32 apiHead;
     NVDispEvoPtr pDispEvo;
 
-    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-        pDispEvo = pDevEvo->gpus[sd].pDispEvo;
+    pDispEvo = pDevEvo->gpus[0].pDispEvo;
 
-        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
-            if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
-                continue;
-            }
-            
-            const NVDispApiHeadStateEvoRec *pApiHeadState =
-                &pDispEvo->apiHeadState[apiHead];
-
-            if (!pApiHeadState->vrr.active) {
-                continue;
-            }
-            
-            return NV_TRUE;
+    for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
+            continue;
         }
+        
+        const NVDispApiHeadStateEvoRec *pApiHeadState =
+            &pDispEvo->apiHeadState[apiHead];
+
+        if (!pApiHeadState->vrr.active) {
+            continue;
+        }
+        
+        return NV_TRUE;
     }
+
     return NV_FALSE;
 }
 
@@ -230,15 +204,15 @@ nvGetAllowedDpyVrrType(const NVDpyEvoRec *pDpyEvo,
     return NVKMS_DPY_VRR_TYPE_NONE;
 }
 
-static NvBool GetEdidTimeoutMicroseconds(
+static NvBool GetEdidMinRefreshRate(
     const NVDpyEvoRec *pDpyEvo,
     const NVHwModeTimingsEvo *pTimings,
-    NvU32 *pEdidTimeoutMicroseconds)
+    NvU32 *pEdidMinRefreshRate)
 {
-    const NvU32 rr10kHz = nvGetRefreshRate10kHz(pTimings);
+    const NvU32 rrx10K = nvGetRefreshRatex10K(pTimings);
     const NVParsedEdidEvoRec *pParsedEdid = &pDpyEvo->parsedEdid;
     const NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo = NULL;
-    const NvU32 nominalRefreshRateHz = rr10kHz / 10000; // XXX round?
+    const NvU32 nominalRefreshRateHz = rrx10K / 10000; // XXX round?
     NVT_PROTOCOL sinkProtocol = NVT_PROTOCOL_UNKNOWN;
     NvU32 fmin;
     
@@ -264,6 +238,7 @@ static NvBool GetEdidTimeoutMicroseconds(
                                pDisplayIdInfo,
                                nominalRefreshRateHz,
                                sinkProtocol);
+    *pEdidMinRefreshRate = fmin;
 
     if (fmin == 0) {
         if (pDpyEvo->internal && pDpyEvo->pDispEvo->vrr.hasPlatformCookie) {
@@ -271,20 +246,15 @@ static NvBool GetEdidTimeoutMicroseconds(
             /*
              * An internal notebook VRR panel must have a non-zero fmin.  The
              * recommendation from hardware is to use a default of fmin =
-             * rr/2.4.  So, compute timeoutUsec as:
-             *
-             * timeoutUsec = 10^6 / fmin
-             *             = 10^6 / (rr/2.4)
-             *             = 10^6 * (2.4/rr)
-             *             = 10^5 * 24 / rr
+             * rr/2.4.
              */
-            *pEdidTimeoutMicroseconds = 2400000 / nominalRefreshRateHz;
+            *pEdidMinRefreshRate = ((NvU64) nominalRefreshRateHz * 10) / 24;
+            *pEdidMinRefreshRate = NV_MAX(*pEdidMinRefreshRate, 1);
             return TRUE;
         }
 
         if (nvIsGsyncDpyVrrType(pDpyEvo->vrr.type)) {
             /* GSYNC can have fmin==0; i.e., the panel is self-refreshing. */
-            *pEdidTimeoutMicroseconds = 0;
             return TRUE;
         }
 
@@ -292,39 +262,33 @@ static NvBool GetEdidTimeoutMicroseconds(
         return FALSE;
     }
 
-    *pEdidTimeoutMicroseconds = 1000000 / fmin;
-
     return TRUE;
 }
 
 /*! Adjust mode timings as necessary for VRR. */
 void nvAdjustHwModeTimingsForVrrEvo(const NVDpyEvoRec *pDpyEvo,
-                                    const enum NvKmsDpyVRRType vrrType,
+                                    const enum NvKmsRequestedVrrType vrrType,
                                     const NvU32 vrrOverrideMinRefreshRate,
                                     NVHwModeTimingsEvoPtr pTimings)
 {
-    NvU32 timeoutMicroseconds;
-    NvU32 edidTimeoutMicroseconds;
+    NvU32 minRefreshRate;
+    NvU32 edidMinRefreshRate;
 
-    if (vrrType == NVKMS_DPY_VRR_TYPE_NONE) {
-        return;
-    }
-
-    if (!GetEdidTimeoutMicroseconds(pDpyEvo,
-                                    pTimings,
-                                    &edidTimeoutMicroseconds)) {
+    if (!GetEdidMinRefreshRate(pDpyEvo,
+                               pTimings,
+                               &edidMinRefreshRate)) {
         return;
     }
 
     // Allow overriding the EDID min refresh rate on Adaptive-Sync
     // displays.
-    if (nvIsAdaptiveSyncDpyVrrType(vrrType) && vrrOverrideMinRefreshRate) {
+    if (nvIsAdaptiveSyncDpyVrrType(pDpyEvo->vrr.type) && vrrOverrideMinRefreshRate) {
         NvU32 minMinRefreshRate, maxMinRefreshRate;
         NvU32 clampedMinRefreshRate;
 
         nvGetDpyMinRefreshRateValidValues(pTimings,
-                                          vrrType,
-                                          edidTimeoutMicroseconds,
+                                          pDpyEvo->vrr.type,
+                                          edidMinRefreshRate,
                                           &minMinRefreshRate,
                                           &maxMinRefreshRate);
 
@@ -334,16 +298,16 @@ void nvAdjustHwModeTimingsForVrrEvo(const NVDpyEvoRec *pDpyEvo,
         clampedMinRefreshRate =
             NV_MIN(clampedMinRefreshRate, maxMinRefreshRate);
 
-        timeoutMicroseconds = 1000000 / clampedMinRefreshRate;
+        minRefreshRate = clampedMinRefreshRate;
     } else {
-        timeoutMicroseconds = edidTimeoutMicroseconds;
+        minRefreshRate = edidMinRefreshRate;
     }
+
+    pTimings->vrr.minRefreshRate = minRefreshRate;
 
     // Disallow VRR if the refresh rate is less than 110% of the VRR minimum
     // refresh rate.
-    if (timeoutMicroseconds > 0 &&
-        nvGetRefreshRate10kHz(pTimings) <
-        (((NvU64) 1000000 * 11000) / timeoutMicroseconds)) {
+    if (nvGetRefreshRatex10K(pTimings) < ((NvU64) 11000 * minRefreshRate)) {
         return;
     }
 
@@ -352,14 +316,19 @@ void nvAdjustHwModeTimingsForVrrEvo(const NVDpyEvoRec *pDpyEvo,
      * the monitor that VRR is enabled.  It is not necessary on
      * Adaptive-Sync displays.
      */
-    if (nvIsGsyncDpyVrrType(vrrType)) {
+    if (nvIsGsyncDpyVrrType(pDpyEvo->vrr.type)) {
         pTimings->rasterSize.y += 2;
         pTimings->rasterBlankEnd.y += 2;
         pTimings->rasterBlankStart.y += 2;
     }
 
-    pTimings->vrr.timeoutMicroseconds = timeoutMicroseconds;
-    pTimings->vrr.type = vrrType;
+    switch (vrrType) {
+        case NVKMS_REQUESTED_VRR_TYPE_GAMING:
+            pTimings->vrr.type = NVKMS_VRR_TYPE_GAMING;
+            break;
+        case NVKMS_REQUESTED_VRR_TYPE_MEDIA:
+            pTimings->vrr.type = NVKMS_VRR_TYPE_MEDIA;
+    }
 }
 
 static void TellRMAboutVrrHead(NVDispEvoPtr pDispEvo,
@@ -384,33 +353,30 @@ static void TellRMAboutVrrHead(NVDispEvoPtr pDispEvo,
     }
 }
 
-static void RmDisableVrr(NVDevEvoPtr pDevEvo)
+static void RmDisableVrr(NVDispEvoRec *pDispEvo)
 {
-    NVDispEvoPtr pDispEvo;
-    NvU32 head, dispIndex;
+    NvU32 head;
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            ConfigVrrPstateSwitch(pDispEvo, FALSE /* vrrEnabled */,
-                                  FALSE /* vrrState */,
-                                  TRUE /* vrrDirty */,
-                                  head);
-        }
+    for (head = 0; head < pDevEvo->numHeads; head++) {
+        ConfigVrrPstateSwitch(pDispEvo, FALSE /* vrrEnabled */,
+                              FALSE /* vrrState */,
+                              TRUE /* vrrDirty */,
+                              head);
     }
 }
 
-void nvDisableVrr(NVDevEvoPtr pDevEvo)
+void nvDisableVrr(NVDispEvoRec *pDispEvo, NVEvoUpdateState *updateState)
 {
-    NVDispEvoPtr pDispEvo;
-    NvU32 apiHead, head, dispIndex;
+    NvU32 apiHead, head;
     NVDispHeadStateEvoRec *pHeadState;
+    NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NVDpyEvoRec *pDpyEvo;
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            pHeadState = &pDispEvo->headState[head];
+    for (head = 0; head < pDevEvo->numHeads; head++) {
+        pHeadState = &pDispEvo->headState[head];
 
-            TellRMAboutVrrHead(pDispEvo, pHeadState, FALSE);
-        }
+        TellRMAboutVrrHead(pDispEvo, pHeadState, FALSE);
     }
 
     if (!pDevEvo->vrr.enabled) {
@@ -421,86 +387,62 @@ void nvDisableVrr(NVDevEvoPtr pDevEvo)
     const NvU32 fullApiHeadMask = ~0u;
     const NvU32 emptyApiHeadMask = 0;
 
-    SetVrrActivePriv(pDevEvo, fullApiHeadMask, emptyApiHeadMask);
-    RmDisableVrr(pDevEvo);
+    nvSetVrrActive(pDispEvo, NULL, fullApiHeadMask, emptyApiHeadMask);
+    RmDisableVrr(pDispEvo);
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
-            NVDispApiHeadStateEvoRec *pApiHeadState =
-                &pDispEvo->apiHeadState[apiHead];
+    for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVDispApiHeadStateEvoRec *pApiHeadState =
+            &pDispEvo->apiHeadState[apiHead];
+        NvBool vrrEnabled;
 
-            if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
-                continue;
-            }
+        if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
+            continue;
+        }
 
-            head = nvGetPrimaryHwHeadFromMask(pApiHeadState->hwHeadsMask);
-            nvAssert(head != NV_INVALID_HEAD);
+        head = nvGetPrimaryHwHeadFromMask(pApiHeadState->hwHeadsMask);
+        nvAssert(head != NV_INVALID_HEAD);
 
-            pHeadState = &pDispEvo->headState[head];
-            nvAssert(pHeadState->pConnectorEvo != NULL);
+        pHeadState = &pDispEvo->headState[head];
+        nvAssert(pHeadState->pConnectorEvo != NULL);
 
-            if (nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
-                if (nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
-                    const NVDpyEvoRec *pDpyEvo =
-                        nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
-                    nvDPLibSetAdaptiveSync(pDispEvo, head, FALSE);
-                    nvDpyUpdateAdaptiveSyncSdp(pDpyEvo, &pApiHeadState->timings, NV_FALSE);
-                } else {
-                    nvHdmiSetVRR(pDispEvo, head,
-                                 FALSE, &pApiHeadState->infoFrame.empCtrl);
-                }
+        vrrEnabled = (pHeadState->timings.vrr.type != NVKMS_VRR_TYPE_NONE);
+        pDpyEvo = nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
+
+        if (vrrEnabled && nvIsAdaptiveSyncDpyVrrType(pDpyEvo->vrr.type)) {
+            if (nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
+                nvDPLibSetAdaptiveSync(pDispEvo, head, FALSE);
+                nvDpyUpdateAdaptiveSyncSdp(pDpyEvo, &pApiHeadState->timings, NV_FALSE);
+            } else {
+                nvHdmiSetVRR(pDispEvo, head,
+                             FALSE, &pApiHeadState->infoFrame.empCtrl, updateState);
             }
         }
     }
 
     pDevEvo->vrr.enabled = FALSE;
-    nvAssert(!AnyActiveVrrHeads(pDevEvo));
+    nvAssert(!nvAnyActiveVrrHeads(pDevEvo));
 }
 
-static NvBool AnyEnabledGsyncDpys(const NVDevEvoRec *pDevEvo)
+static void RmEnableVrr(NVDispEvoRec *pDispEvo)
 {
-    NVDispEvoPtr pDispEvo;
-    NvU32 dispIndex;
+    NvU32 head;
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        NvU32 head;
-
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-
-            if (nvIsGsyncDpyVrrType(pHeadState->timings.vrr.type)) {
-                return TRUE;
-            }
-        }
-    }
-
-    return FALSE;
-}
-
-static void RmEnableVrr(NVDevEvoPtr pDevEvo)
-{
-    NVDispEvoPtr pDispEvo;
-    NvU32 dispIndex, head;
-
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            ConfigVrrPstateSwitch(pDispEvo, TRUE /* vrrEnabled */,
-                                  FALSE /* vrrState */,
-                                  TRUE/* vrrDirty */,
-                                  head);
-        }
+    for (head = 0; head < pDevEvo->numHeads; head++) {
+        ConfigVrrPstateSwitch(pDispEvo, TRUE /* vrrEnabled */,
+                              FALSE /* vrrState */,
+                              TRUE/* vrrDirty */,
+                              head);
     }
 }
 
 void nvGetDpyMinRefreshRateValidValues(
     const NVHwModeTimingsEvo *pTimings,
     const enum NvKmsDpyVRRType vrrType,
-    const NvU32 edidTimeoutMicroseconds,
+    const NvU32 edidMinRefreshRate,
     NvU32 *minMinRefreshRate,
     NvU32 *maxMinRefreshRate)
 {
-    NvU32 edidMinRefreshRate;
-
     if (nvIsAdaptiveSyncDpyVrrType(vrrType)) {
         /*
          * Adaptive-Sync monitors must always define a nonzero minimum refresh
@@ -509,15 +451,8 @@ void nvGetDpyMinRefreshRateValidValues(
          * is not below 1hz and the maximum does not exceed the current
          * refresh rate.
          */
-        NvU32 minTimeoutMicroseconds =
-            nvAxBDivC(pTimings->rasterSize.y * 1000,
-                      pTimings->rasterSize.x, pTimings->pixelClock);
-        NvU32 maxRefreshRate = 1000000 / minTimeoutMicroseconds;
-
-        nvAssert(edidTimeoutMicroseconds != 0);
-
-        edidMinRefreshRate =
-            1000000 / edidTimeoutMicroseconds;
+        NvU32 maxRefreshRate = (NvU32)
+            (pTimings->pixelClockHz / ((NvU64) pTimings->rasterSize.y * pTimings->rasterSize.x));
 
         if (edidMinRefreshRate <= NVKMS_VRR_MIN_REFRESH_RATE_MAX_VARIANCE) {
             *minMinRefreshRate = 1;
@@ -534,8 +469,6 @@ void nvGetDpyMinRefreshRateValidValues(
          * refresh rate, which will be 1hz for most G-SYNC panels or 0hz for
          * true self-refresh panels.
          */
-        edidMinRefreshRate = edidTimeoutMicroseconds ?
-            1000000 / edidTimeoutMicroseconds : 0;
         *minMinRefreshRate = *maxMinRefreshRate = edidMinRefreshRate;
     }
 }
@@ -543,76 +476,71 @@ void nvGetDpyMinRefreshRateValidValues(
 /*!
  * Modify the VRR state to enable (but not activate) VRR at modeset time.
  *
- * This prepares VRR displays for VRR (through a DP MSA override for
- * Adaptive-Sync and a backporch extension for G-SYNC) and sets up the RM
+ * This prepares Adaptive-Sync VRR displays for VRR (through a DP MSA override or
+ * HDMI VRR-VTEM) and sets up the RM
  * VRR state machine (for pre-nvdisplay) but does not actually start VRR
  * flipping until nvSetVrrActive() is called at flip time.
  *
  * \param[in]  pDevEvo            The device that is enabling VRR.
  */
-void nvEnableVrr(NVDevEvoPtr pDevEvo)
+void nvEnableVrr(NVDispEvoRec *pDispEvo, NVEvoUpdateState *updateState)
 {
-    NVDispEvoPtr pDispEvo;
-    NvU32 apiHead, head, dispIndex;
+    NvU32 apiHead, head;
     NVDispHeadStateEvoRec *pHeadState;
+    NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NVDpyEvoRec *pDpyEvo;
+    NvBool anyEnabledVrrHeads = FALSE;
 
     nvAssert(!pDevEvo->vrr.enabled);
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
-            NVDispApiHeadStateEvoRec *pApiHeadState =
-                &pDispEvo->apiHeadState[apiHead];
+    for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVDispApiHeadStateEvoRec *pApiHeadState =
+            &pDispEvo->apiHeadState[apiHead];
+        NvBool vrrEnabled;
 
-            if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
-                continue;
-            }
+        if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
+            continue;
+        }
 
-            head = nvGetPrimaryHwHeadFromMask(pApiHeadState->hwHeadsMask);
-            nvAssert(head != NV_INVALID_HEAD);
+        head = nvGetPrimaryHwHeadFromMask(pApiHeadState->hwHeadsMask);
+        nvAssert(head != NV_INVALID_HEAD);
 
-            pHeadState = &pDispEvo->headState[head];
-            nvAssert(pHeadState->pConnectorEvo != NULL);
+        pHeadState = &pDispEvo->headState[head];
+        nvAssert(pHeadState->pConnectorEvo != NULL);
 
-            if (nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
-                if (nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
-                    const NVDpyEvoRec *pDpyEvo =
-                        nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo); 
+        vrrEnabled = (pHeadState->timings.vrr.type != NVKMS_VRR_TYPE_NONE);
+        pDpyEvo = nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
 
-                    if (nvDPLibDpyIsAdaptiveSyncSdpSupported(pDpyEvo)) {
-                        nvDpyUpdateAdaptiveSyncSdp(pDpyEvo, &pApiHeadState->timings, NV_TRUE);
-                    }
-                    nvDPLibSetAdaptiveSync(pDispEvo, head, TRUE);
-                } else {
-                    nvHdmiSetVRR(pDispEvo, head,
-                                 TRUE, &pApiHeadState->infoFrame.empCtrl);
+        anyEnabledVrrHeads = anyEnabledVrrHeads || vrrEnabled;
+
+        if (vrrEnabled && nvIsAdaptiveSyncDpyVrrType(pDpyEvo->vrr.type)) {
+            if (nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
+                if (nvDPLibDpyIsAdaptiveSyncSdpSupported(pDpyEvo)) {
+                    nvDpyUpdateAdaptiveSyncSdp(pDpyEvo, &pApiHeadState->timings, NV_TRUE);
                 }
+                nvDPLibSetAdaptiveSync(pDispEvo, head, TRUE);
+            } else {
+                nvHdmiSetVRR(pDispEvo, head,
+                             TRUE, &pApiHeadState->infoFrame.empCtrl, updateState);
             }
         }
+
+        // To allow VRR-based mclk switching, RM needs to know which heads
+        // are driving VRR displays capable of extending vblank.  This
+        // includes all G-SYNC displays (regardless of whether the modeset
+        // indicates that G-SYNC is allowed) but only Adaptive-Sync
+        // displays which put the display into Adaptive-Sync mode by calling
+        // nvDPLibSetAdaptiveSync above.
+        TellRMAboutVrrHead(pDispEvo,
+                           pHeadState,
+                           (pDpyEvo->vrr.type != NVKMS_DPY_VRR_TYPE_NONE));
     }
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            pHeadState = &pDispEvo->headState[head];
-
-            // To allow VRR-based mclk switching, RM needs to know which heads
-            // are driving VRR displays capable of extending vblank.  This
-            // includes all G-SYNC displays (regardless of whether the modeset
-            // indicates that G-SYNC is allowed) but only Adaptive-Sync
-            // displays which put the display into Adaptive-Sync mode by calling
-            // nvDPLibSetAdaptiveSync above.
-            TellRMAboutVrrHead(pDispEvo,
-                               pHeadState,
-                               (pHeadState->timings.vrr.type !=
-                                NVKMS_DPY_VRR_TYPE_NONE));
-        }
-    }
-
-    if (!(AnyEnabledGsyncDpys(pDevEvo) ||
-          AnyEnabledAdaptiveSyncDpys(pDevEvo))) {
+    if (!anyEnabledVrrHeads) {
         return;
     }
 
-    RmEnableVrr(pDevEvo);
+    RmEnableVrr(pDispEvo);
     pDevEvo->vrr.enabled = TRUE;
 }
 
@@ -641,7 +569,7 @@ static void ConfigVrrPstateSwitch(NVDispEvoPtr pDispEvo, NvBool vrrEnabled,
     const NVHwModeTimingsEvo *pTimings = &pHeadState->timings;
 
     if (nvkms_disable_vrr_memclk_switch() ||
-        (pTimings->vrr.type == NVKMS_DPY_VRR_TYPE_NONE)) {
+        (pTimings->vrr.type == NVKMS_VRR_TYPE_NONE)) {
         return;
     }
 
@@ -657,11 +585,16 @@ static void ConfigVrrPstateSwitch(NVDispEvoPtr pDispEvo, NvBool vrrEnabled,
     params.bVrrDirty = vrrDirty;
 
     if (params.bVrrDirty) {
-        NvU64 frameTimeUs = axb_div_c_64(pTimings->rasterSize.y * 1000ULL,
-                                         pTimings->rasterSize.x, pTimings->pixelClock);
+        NvU64 frameTimeUs = axb_div_c_64(pTimings->rasterSize.y * 1000000ULL,
+                                         pTimings->rasterSize.x, pTimings->pixelClockHz);
         NvU64 timePerLineNs = (frameTimeUs * 1000ULL) / pTimings->rasterSize.y;
 
-        NvU64 maxFrameTimeUs = pTimings->vrr.timeoutMicroseconds;
+        /*
+         * XXX TODO: maxFrameTimeUs should be (maxRasterSize / (timePerLineNs / 1000))
+         * if minRefreshRate = 0.
+         */ 
+        NvU64 maxFrameTimeUs = (pTimings->vrr.minRefreshRate) ?
+                                   (1000000ULL / pTimings->vrr.minRefreshRate) : 0;
         NvU64 maxVblankExtTimeNs = (maxFrameTimeUs - frameTimeUs) * 1000ULL;
 
         params.maxVblankExtension = maxVblankExtTimeNs / timePerLineNs;
@@ -677,8 +610,10 @@ static void ConfigVrrPstateSwitch(NVDispEvoPtr pDispEvo, NvBool vrrEnabled,
     }
 }
 
-static void SetStallLockOneDisp(NVDispEvoPtr pDispEvo, NvU32 applyAllowVrrApiHeadMask,
-                                NvU32 enableApiHeadMask)
+static void SetVrrHwStateOneDisp(NVDispEvoPtr pDispEvo,
+                                 const struct NvKmsFlipWorkArea *pWorkArea,
+                                 NvU32 applyAllowVrrApiHeadMask,
+                                 NvU32 enableApiHeadMask)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NvBool enableVrrOnHead[NVKMS_MAX_HEADS_PER_DISP];
@@ -710,35 +645,53 @@ static void SetStallLockOneDisp(NVDispEvoPtr pDispEvo, NvU32 applyAllowVrrApiHea
         if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {
             continue;
         }
-
+        
         NvBool enable = enableApiHeadMask & (1 << apiHead);
 
         FOR_EACH_EVO_HW_HEAD_IN_MASK(pDispEvo->apiHeadState[apiHead].hwHeadsMask, head) {
-            const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-            const NvU32 timeout = pHeadState->timings.vrr.timeoutMicroseconds;
+            NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
 
             enableVrrOnHead[head] = ((pHeadState->timings.vrr.type !=
-                                        NVKMS_DPY_VRR_TYPE_NONE) && enable);
+                                        NVKMS_VRR_TYPE_NONE) && enable);
 
-            // ignores inactive heads
-            nvEvoArmLightweightSupervisor(pDispEvo, head,
-                                        enableVrrOnHead[head], TRUE);
-            if (!enableVrrOnHead[head]) {
-                ClearElvBlock(pDispEvo, head);
+            if (pHeadState->timings.vrr.type == NVKMS_VRR_TYPE_GAMING) {
+                const NvU32 timeout = (pHeadState->timings.vrr.minRefreshRate) ?
+                                          (1000000ULL / pHeadState->timings.vrr.minRefreshRate) : 0;
+                // ignores inactive heads
+                nvEvoArmLightweightSupervisor(pDispEvo, head,
+                                            enableVrrOnHead[head], TRUE);
+                if (!enableVrrOnHead[head]) {
+                    ClearElvBlock(pDispEvo, head);
+                }
+                pDevEvo->hal->SetStallLock(pDispEvo, head,
+                                           enableVrrOnHead[head],
+                                           &updateState);
+                pDevEvo->hal->SetDisplayRate(pDispEvo, head,
+                                             enableVrrOnHead[head],
+                                             &updateState,
+                                             timeout);
+            } else if (pHeadState->timings.vrr.type == NVKMS_VRR_TYPE_MEDIA) {
+                NvU64 targetVTotal = pHeadState->timings.rasterSize.y;
+                NvU16 targetFraction = 0;
+
+                if (enableVrrOnHead[head] && (pWorkArea != NULL)) {
+                    targetVTotal = pWorkArea->sd[0].head[head].newState.vrr.targetVTotal;
+                    targetFraction = pWorkArea->sd[0].head[head].newState.vrr.targetFraction;
+                }
+
+                pHeadState->vrr.targetVTotal = targetVTotal;
+                pHeadState->vrr.targetFraction = targetFraction;
+
+                nvAssert(pDevEvo->hal->SetVTotalAndFraction != NULL);
+
+                pDevEvo->hal->SetVTotalAndFraction(pDevEvo, head, &pHeadState->timings,
+                                                   targetVTotal, targetFraction, &updateState);
             }
-            pDevEvo->hal->SetStallLock(pDispEvo, head,
-                                    enableVrrOnHead[head],
-                                    &updateState);
-            pDevEvo->hal->SetDisplayRate(pDispEvo, head,
-                                        enableVrrOnHead[head],
-                                        &updateState,
-                                        timeout);
         }
     }
 
     nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState,
                           TRUE /* releaseElv */);
-
 
     for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
         if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {
@@ -767,22 +720,45 @@ static void SetStallLockOneDisp(NVDispEvoPtr pDispEvo, NvU32 applyAllowVrrApiHea
     }
 }
 
+static NvBool IsMediaVrrStateChanged(
+    const struct NvKmsFlipWorkArea *pWorkArea,
+    NvU32 head)
+{
+    if (pWorkArea == NULL) {
+        return FALSE;
+    }
+
+    if ((pWorkArea->sd[0].head[head].newState.vrr.targetVTotal !=
+         pWorkArea->sd[0].head[head].oldState.vrr.targetVTotal)) {
+        return TRUE;
+    }
+
+    if ((pWorkArea->sd[0].head[head].newState.vrr.targetFraction !=
+         pWorkArea->sd[0].head[head].oldState.vrr.targetFraction)) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 /*!
  * Modify the VRR state to activate or deactivate VRR on the heads of a pDevEvo.
  */
-static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo,
-                               const NvU32 applyAllowVrrApiHeadMask,
-                               const NvU32 vrrActiveApiHeadMask)
+void nvSetVrrActive(NVDispEvoRec *pDispEvo,
+                    struct NvKmsFlipWorkArea *pWorkArea,
+                    const NvU32 applyAllowVrrApiHeadMask,
+                    const NvU32 vrrActiveApiHeadMask)
 {
     NvU32 apiHead;
     NvU32 currVrrActiveApiHeadMask = 0;
     NvBool isUpdate;
-    NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[0];
+    NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    const NvU32 sd = pDispEvo->displayOwner;
 
     isUpdate = NV_FALSE;
 
     if (!pDevEvo->vrr.enabled) {
-        return NV_TRUE;
+        return;
     }
 
     for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
@@ -793,6 +769,9 @@ static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo,
 
     // check if we are asking to update the existing activeMasks
     for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+        NvU32 head =
+            nvGetPrimaryHwHeadFromMask(pDispEvo->apiHeadState[apiHead].hwHeadsMask);
+
         if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {
             continue;
         }
@@ -801,14 +780,22 @@ static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo,
             isUpdate = NV_TRUE;
             break;
         }
+
+        if ((pDispEvo->apiHeadState[apiHead].timings.vrr.type == NVKMS_VRR_TYPE_MEDIA) &&
+            (vrrActiveApiHeadMask & (1 << apiHead)) &&
+            IsMediaVrrStateChanged(pWorkArea, head)) {
+
+            isUpdate = NV_TRUE;
+            break;
+        }
     }
 
     if (!isUpdate) {
-        return NV_TRUE;
+        return;
     }
 
-    SetStallLockOneDisp(pDispEvo, applyAllowVrrApiHeadMask,
-                        vrrActiveApiHeadMask);
+    SetVrrHwStateOneDisp(pDispEvo, pWorkArea, applyAllowVrrApiHeadMask,
+                         vrrActiveApiHeadMask);
 
     for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
         if (!(applyAllowVrrApiHeadMask & (1 << apiHead))) {
@@ -816,18 +803,16 @@ static NvBool SetVrrActivePriv(NVDevEvoPtr pDevEvo,
         }
         pDispEvo->apiHeadState[apiHead].vrr.active =
             (vrrActiveApiHeadMask & (1 << apiHead)) > 0;
-    }
 
-    return NV_TRUE;
-}
+        if ((pWorkArea != NULL) &&
+            (pDispEvo->apiHeadState[apiHead].allmMode ==
+                NVKMS_ALLM_MODE_ENABLED_DYNAMIC)) {
+            NVProposedFlipStateOneApiHead *pProposedApiHead =
+                &pWorkArea->disp[sd].apiHead[apiHead].proposedFlipState;
 
-void nvSetVrrActive(NVDevEvoPtr pDevEvo,
-                    const NvU32 applyAllowVrrApiHeadMask,
-                    const NvU32 vrrActiveApiHeadMask)
-{
-    if (!SetVrrActivePriv(pDevEvo, applyAllowVrrApiHeadMask,
-                          vrrActiveApiHeadMask)) {
-        nvDisableVrr(pDevEvo);
+            pProposedApiHead->dirty.allmMode = TRUE;
+            pProposedApiHead->allmMode = NVKMS_ALLM_MODE_ENABLED_DYNAMIC;
+        }
     }
 }
 
@@ -858,7 +843,7 @@ void nvApplyVrrBaseFlipOverrides(const NVDispEvoRec *pDispEvo, NvU32 head,
     // RM will block the flips as necessary using the pre-update trap methods
     // based on the vrrTearing flag above.
     if (pHeadState != NULL &&
-            (pHeadState->timings.vrr.type == NVKMS_DPY_VRR_TYPE_NONE)) {
+            (pHeadState->timings.vrr.type == NVKMS_VRR_TYPE_NONE)) {
         pNew->tearing = TRUE;
         pNew->minPresentInterval = 0;
     }
@@ -869,7 +854,7 @@ void nvApplyVrrBaseFlipOverrides(const NVDispEvoRec *pDispEvo, NvU32 head,
     // non-tearing to WAR bug 2406398 which causes these transitional flips
     // to stall for up to the display's minimum refresh rate.
     if ((pHeadState != NULL) &&
-        (pHeadState->timings.vrr.type != NVKMS_DPY_VRR_TYPE_NONE) &&
+        (pHeadState->timings.vrr.type == NVKMS_VRR_TYPE_GAMING) &&
         !pOld->tearing &&
         (pOld->minPresentInterval != 0) &&
         pNew->tearing &&
@@ -906,28 +891,6 @@ void nvCancelVrrFrameReleaseTimers(NVDevEvoPtr pDevEvo,
             pDispEvo->vrr.unstallTimer = NULL;
         }
     }
-}
-
-/* Get active vrr type used by the flips. */
-enum NvKmsVrrFlipType nvGetActiveVrrType(const NVDevEvoRec *pDevEvo)
-{
-    /*
-     * If VRR is active, and any connected display is G-SYNC, then report that
-     * this flip was a G-SYNC flip, otherwise report it as an Adaptive-Sync
-     * flip.
-     *
-     * XXX NVKMS TODO: We could be smarter about reporting whether this flip
-     * exclusively changed surfaces on Adaptive-Sync or G-SYNC heads.
-     */
-    if (AnyActiveVrrHeads(pDevEvo)) {
-        if (AnyEnabledGsyncDpys(pDevEvo)) {
-            return NV_KMS_VRR_FLIP_GSYNC;
-        } else {
-            return NV_KMS_VRR_FLIP_ADAPTIVE_SYNC;
-        }
-    }
-
-    return NV_KMS_VRR_FLIP_NON_VRR;
 }
 
 static void
@@ -980,7 +943,7 @@ void nvTriggerVrrUnstallMoveCursor(NVDispEvoPtr pDispEvo)
 
     NvU32 apiHead;
 
-    if (!AnyActiveVrrHeads(pDevEvo)) {
+    if (!nvAnyActiveVrrHeads(pDevEvo)) {
         return;
     }
 
@@ -1003,7 +966,7 @@ void nvTriggerVrrUnstallSetCursorImage(NVDispEvoPtr pDispEvo,
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
 
-    if (AnyActiveVrrHeads(pDevEvo)) {
+    if (nvAnyActiveVrrHeads(pDevEvo)) {
         if (!elvReleased) {
             // On nvdisplay, no unstall is necessary if the cursor image update
             // path did a releaseElv=true Update.

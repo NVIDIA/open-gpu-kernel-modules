@@ -166,15 +166,96 @@ static inline void gpuopevtInit(struct GpuOperationalEvent *pEvent, const GpuOpe
 #undef PRIVATE_FIELD
 
 
+/* ------------------------------ Simulated event injection (test) ----------------------------- */
+
+struct OBJGPU;
+
+#ifndef __nvoc_class_id_OBJGPU
+#define __nvoc_class_id_OBJGPU 0x7ef3cbu
+typedef struct OBJGPU OBJGPU;
+#endif /* __nvoc_class_id_OBJGPU */
+
+
+
+//
+// Keep metadata values synchronized with the corresponding concrete event
+// constructor. allowedSeverityMask is a bitwise OR of
+// GPU_OP_EVENT_SEVERITY_MASK_* values. reportingSource is an unused placeholder
+// when bReportingSourceVariable is set.
+//
+#define GPU_OP_EVENT_SEVERITY_MASK_INFORMATIONAL 0x1U
+#define GPU_OP_EVENT_SEVERITY_MASK_CORRECTED     0x2U
+#define GPU_OP_EVENT_SEVERITY_MASK_RECOVERABLE   0x4U
+#define GPU_OP_EVENT_SEVERITY_MASK_FATAL         0x8U
+#define GPU_OP_EVENT_SEVERITY_MASK_ALL           \
+    (GPU_OP_EVENT_SEVERITY_MASK_INFORMATIONAL |  \
+     GPU_OP_EVENT_SEVERITY_MASK_CORRECTED     |  \
+     GPU_OP_EVENT_SEVERITY_MASK_RECOVERABLE   |  \
+     GPU_OP_EVENT_SEVERITY_MASK_FATAL)
+
+typedef struct
+{
+    const char *pModuleSignature;
+    NvU16 moduleEventCode;
+    NvU16 eventCategory;
+    NvU32 allowedSeverityMask;
+    NvU8 attributes;
+    NvU8 scope;
+    NvU8 reportingSource;
+    NvU8 logLevel;
+    NvBool bReportingSourceVariable;
+} GpuOpEventExpectedMetadata;
+
+//
+// Validate the semantic wire fields that a concrete event constructor either
+// consumes or fixes in its class definition. Severity must be both a defined
+// enum value and present in allowedSeverityMask. A variable reporting source
+// must still contain a defined enum value. Delivery/provenance fields are
+// intentionally excluded because injection regenerates them.
+//
+NV_STATUS gpuOpEventValidateMetadata(
+    const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+    const GpuOpEventExpectedMetadata *pExpected);
+
+//
+// Validate the vardata chain and locate one context in a serialized GPU
+// operational event. The returned payload may be unaligned; deserializers must
+// copy scalar/structured data before reading it. Duplicate instances and
+// unsupported versions of the requested context type are rejected.
+//
+NV_STATUS gpuOpEventFindContext(const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+                                const NvU8 *pContextData,
+                                NvU32 contextDataSize,
+                                NvU16 contextType,
+                                NvU16 dataFormatVersion,
+                                const NvU8 **ppPayload,
+                                NvU32 *pPayloadSize);
+
+//
+// Validate one serialized RMAPI wire-format GPU operational event, select its
+// module-owned deserializer by (moduleSignature, moduleEventCode), and emit it
+// on pGpu's event bus as a new single-event SIMULATED group. Multi-event groups
+// and GSP-originated event deserializers are intentionally not supported by the
+// first cut. Semantic metadata and constructor-input contexts are validated;
+// constructor/subscriber-derived contexts are accepted structurally but
+// regenerated. Producer/delivery provenance is regenerated on the target GPU,
+// and subscribed handlers may still gather live HW/SW state.
+//
+NV_STATUS gpuOpEventInjectSimulated(struct OBJGPU *pGpu,
+                                    const NvU8 *pRecordData,
+                                    NvU32 recordSize);
+
 /* ----------------------------------- Generic Event Context ----------------------------------- */
 
 NV_STATUS gpuEventCtxSerializeToEventBufferGoeOpaqueCtx(EventContextHeader *pCtxHeader,
                                                         NV_GPU_OPERATIONAL_EVENT_CONTEXT *pOutputCtx,
-                                                        NvU32 outputSize, NvU32 *pBytesWritten);
+                                                        NvU32 outputSize,
+                                                        EventBufferOpEventCtxInfo *pInfo);
 
 NV_STATUS gpuEventCtxSerializeToEventBufferGoeCtxType(EventContextHeader *pCtxHeader,
                                                       NV_GPU_OPERATIONAL_EVENT_CONTEXT *pOutputCtx,
-                                                      NvU32 outputSize, NvU32 *pBytesWritten,
+                                                      NvU32 outputSize,
+                                                      EventBufferOpEventCtxInfo *pInfo,
                                                       GPU_OPERATIONAL_EVENT_CTX_TYPE ctxType,
                                                       NvU16 dataFormatVersion);
 
@@ -191,7 +272,13 @@ typedef struct
 // GpuXidEventCtx implementation of serializeToEventBufferOpEventCtx 
 NV_STATUS gpuXidEventCtxSerializeToEventBufferGoeCtx(EventContextHeader *pCtxHeader,
                                                      NV_GPU_OPERATIONAL_EVENT_CONTEXT *pOutput,
-                                                     NvU32 outputSize, NvU32 *pBytesWritten);
+                                                     NvU32 outputSize,
+                                                     EventBufferOpEventCtxInfo *pInfo);
+
+NV_STATUS gpuXidEventCtxSerializeToProtobuf(EventContextHeader *pCtxHeader,
+                                            PRB_ENCODER *pPrbEnc,
+                                            NvU32 *pContextType,
+                                            NvU32 *pDataFormatVersion);
 
 // GpuXidEventCtx implementation of serializeToCperEventCtx
 NV_STATUS gpuXidEventCtxSerializeToCperCtx(EventContextHeader *pCtxHeader,

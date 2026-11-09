@@ -41,7 +41,7 @@
 #define ROBUST_CHANNEL_MPEG_ERROR_SW_METHOD             (20)
 #define ROBUST_CHANNEL_ME_ERROR_SW_METHOD               (21)
 #define ROBUST_CHANNEL_VP_ERROR_SW_METHOD               (22)
-#define ROBUST_CHANNEL_RC_LOGGING_ENABLED               (23)
+#define ROBUST_CHANNEL_UNUSED_ERROR_23                  (23)
 #define ROBUST_CHANNEL_VP_ERROR                         (27)
 #define ROBUST_CHANNEL_VP2_ERROR                        (28)
 #define ROBUST_CHANNEL_BSP_ERROR                        (29)
@@ -175,8 +175,12 @@
 #define RIST_ERROR                                      (180)
 #define C2C_TRAINING_FAILURE                            (181)
 #define PCIE_RESET_FAILURE                              (182)
+#define GSP_OOM_ERROR                                   (183)
+#define RESERVED9_ERROR                                 (184)
+#define SPARING_EVENT                                   (185)
+#define COHERENCY_ERROR                                 (186)
 
-#define ROBUST_CHANNEL_LAST_ERROR                       (182)
+#define ROBUST_CHANNEL_LAST_ERROR                       (186)
 
 // Indexed CE reference
 #define ROBUST_CHANNEL_CE_ERROR(x)                                        \

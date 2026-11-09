@@ -799,6 +799,10 @@ _pmaClearScrubBit
     NvU32 i;
     NvU64 base;
     NvU64 size;
+    NvU64 end;
+    NvU64 frameNum, addrBase;
+    NvU32 regId;
+    void *pMap = NULL;
 
     NV_ASSERT(count > 0);
     portSyncSpinlockAcquire(pPma->pPmaLock);
@@ -809,6 +813,61 @@ _pmaClearScrubBit
         size = pPmaScrubList[i].size;
         NV_ASSERT(size > 0);
         pmaSetBlockStateAttribUnderPmaLock(pPma, base, size, 0, ATTRIB_SCRUBBING);
+
+        //
+        // Localized reclaim:
+        // If this region was marked for reclaim, reclaim it now.
+        // Note that another allocation could have come back in and
+        // re-allocated memory in this region as localized memory.
+        // This is fine, and in this case, the reclaim refcount would be
+        // nonzero, and we won't trigger reclaim
+        //
+
+        // The scrubber may coalesce pages, so check through every localized region
+        // that could have been here
+
+        end = base + size - 1;
+
+        // check every localized region (64MB) - hopefully not bad for perf
+        base = NV_ALIGN_DOWN(base, (PMA_LOCALIZED_MEMORY_ALLOC_STRIDE*2));
+
+        for (; base < end; base += (PMA_LOCALIZED_MEMORY_ALLOC_STRIDE*2) )
+        {
+            PMA_LOCALIZATION_INFO localizationInfo;
+
+            //
+            // if this is the first non-64MB-aligned address, continue
+            // lower region is added first, but also today there is only
+            // one region per PMA.
+            //
+            if (base < pPma->pRegDescriptors[0]->base)
+            {
+                continue;
+            }
+
+            regId = findRegionID(pPma, base);
+            pMap = pPma->pRegions[regId];
+            addrBase = pPma->pRegDescriptors[regId]->base;
+            frameNum = PMA_ADDR2FRAME(base, addrBase);
+
+            localizationInfo = pPma->pMapInfo->pmaMapReadLocalizationInfo(pMap, frameNum);
+    
+            if ((localizationInfo.status & LOCALIZATION_STATE_IS_LOCALIZED) == 0)
+            {
+                //
+                // May have already cleared this region,
+                // but keep going to find any more flagged regions
+                // in the allocation being freed.
+                //
+                continue;
+            }
+
+            if (localizationInfo.allocatedFrameCount == 0)
+            {
+                pPma->pMapInfo->pmaMapChangeLocalizationState(pMap, frameNum, 0, LOCALIZATION_STATE_IS_LOCALIZED);
+            }
+        }
+
     }
     portSyncSpinlockRelease(pPma->pPmaLock);
 }

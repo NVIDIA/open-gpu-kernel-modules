@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -568,28 +568,31 @@ _rmAlloc
 )
 {
     NV_STATUS status;
-    RS_RES_ALLOC_PARAMS_INTERNAL   rmAllocParams = {0};
 
     NV_ASSERT_OR_RETURN(phObject != NULL, NV_ERR_INVALID_ARGUMENT);
 
     // init RmAllocParams
-    rmAllocParams.hClient          = hClient;
-    rmAllocParams.hParent          = hParent;
-    rmAllocParams.hResource        = *phObject;
-    rmAllocParams.externalClassId  = hClass;
-    rmAllocParams.allocFlags       = allocFlags;
-    rmAllocParams.allocState       = allocInitStates;
-    rmAllocParams.pSecInfo         = &secInfo;
-    rmAllocParams.pResourceRef     = NULL;
-    rmAllocParams.pAllocParams     = NvP64_VALUE(pUserAllocParams);
-    rmAllocParams.paramsSize       = paramsSize;
-    rmAllocParams.pLockInfo        = pLockInfo;
-    rmAllocParams.pRightsRequested = NvP64_VALUE(pRightsRequested);
-    rmAllocParams.pRightsRequired  = NULL;
+    PORT_ALLOC_LARGE_STRUCTURE(RS_RES_ALLOC_PARAMS_INTERNAL, pRmAllocParams, return NV_ERR_NO_MEMORY);
+    portMemSet(pRmAllocParams, 0, sizeof(*pRmAllocParams));
 
-    status = serverAllocResource(&g_resServ, &rmAllocParams);
-    *phObject = rmAllocParams.hResource;
+    pRmAllocParams->hClient          = hClient;
+    pRmAllocParams->hParent          = hParent;
+    pRmAllocParams->hResource        = *phObject;
+    pRmAllocParams->externalClassId  = hClass;
+    pRmAllocParams->allocFlags       = allocFlags;
+    pRmAllocParams->allocState       = allocInitStates;
+    pRmAllocParams->pSecInfo         = &secInfo;
+    pRmAllocParams->pResourceRef     = NULL;
+    pRmAllocParams->pAllocParams     = NvP64_VALUE(pUserAllocParams);
+    pRmAllocParams->paramsSize       = paramsSize;
+    pRmAllocParams->pLockInfo        = pLockInfo;
+    pRmAllocParams->pRightsRequested = NvP64_VALUE(pRightsRequested);
+    pRmAllocParams->pRightsRequired  = NULL;
 
+    status = serverAllocResource(&g_resServ, pRmAllocParams);
+    *phObject = pRmAllocParams->hResource;
+
+    PORT_FREE_LARGE_STRUCTURE(pRmAllocParams);
     return status;
 
 }
@@ -881,7 +884,6 @@ serverAllocResourceUnderLock
         {
             OBJGPU *pGpu = NULL;
             RmResource *pRmResource = dynamicCast(pResourceRef->pResource, RmResource);
-            CALL_CONTEXT callContext = {0};
             CALL_CONTEXT *pOldContext = NULL;
 
             status = gpuGetByRef(pResourceRef, NULL, &pGpu);
@@ -914,14 +916,17 @@ serverAllocResourceUnderLock
             //
             // Instead, we create basically the same context here once again
             // and use it for the RPC call.
-            callContext.pServer = pServer;
-            callContext.pClient = pClient;
-            callContext.pResourceRef = pResourceRef;
-            callContext.pLockInfo = pRmAllocParams->pLockInfo;
-            callContext.secInfo = *pRmAllocParams->pSecInfo;
+            PORT_ALLOC_LARGE_STRUCTURE(CALL_CONTEXT, pCallContext, { status = NV_ERR_NO_MEMORY; goto done; });
+            portMemSet(pCallContext, 0, sizeof(*pCallContext));
+            pCallContext->pServer = pServer;
+            pCallContext->pClient = pClient;
+            pCallContext->pResourceRef = pResourceRef;
+            pCallContext->pLockInfo = pRmAllocParams->pLockInfo;
+            pCallContext->secInfo = *pRmAllocParams->pSecInfo;
 
-            NV_ASSERT_OK_OR_GOTO(status,
-                resservSwapTlsCallContext(&pOldContext, &callContext), done);
+            NV_ASSERT_OK_OR_ELSE(status,
+                resservSwapTlsCallContext(&pOldContext, pCallContext),
+                { PORT_FREE_LARGE_STRUCTURE(pCallContext); goto done; });
             NV_RM_RPC_ALLOC_OBJECT(pGpu,
                                    pRmAllocParams->hClient,
                                    pRmAllocParams->hParent,
@@ -933,9 +938,13 @@ serverAllocResourceUnderLock
             NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
             if (status != NV_OK)
+            {
+                PORT_FREE_LARGE_STRUCTURE(pCallContext);
                 goto done;
+            }
 
             pRmResource->bRpcFree = NV_TRUE;
+            PORT_FREE_LARGE_STRUCTURE(pCallContext);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -102,7 +102,8 @@ StreamEncryptionStatusDetection::messageFailed
             connector->timer->cancelCallback(parent, &(parent->tagStreamValidation));
             retriesSendQSEMessage++;
             sendQSEMessage(parent);
-            connector->timer->queueCallback(parent, &(parent->tagStreamValidation), HDCP_STREAM_VALIDATION_REQUEST_COOLDOWN);
+            connector->timer->queueCallback(parent, &(parent->tagStreamValidation), HDCP_STREAM_VALIDATION_REQUEST_COOLDOWN,
+                                            false /* not allowed in sleep */);
             return;
         }
         //
@@ -111,8 +112,10 @@ StreamEncryptionStatusDetection::messageFailed
         //
         else
         {
-             DP_PRINTF(DP_ERROR, "DP-QSE> Downstream failed to handle %s QSES message",
-                       reason == qseReason_Ssc ? "SSC" : "generic");
+             if (reason == qseReason_Ssc)
+                 DP_PRINTF(DP_ERROR, "DP-QSE> Downstream failed to handle SSC QSES message");
+             else
+                 DP_PRINTF(DP_ERROR, "DP-QSE> Downstream failed to handle generic QSES message");
              //
              // Non-QSE supported branch would get HDCP off if we honor QSES's result even w/o SSC from it.
              // So to improve compatibility, we honor QSES's result to have HDCP off only if it's fired for SSC.

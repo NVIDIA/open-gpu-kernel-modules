@@ -41,6 +41,7 @@ struct ChipHal {
 typedef struct ChipHal ChipHal;
 void __nvoc_init_halspec_ChipHal(ChipHal*, NvU32, NvU32, NvU32);
 
+
 /*
  * Tegra Chip Type Halspec 
  *
@@ -72,6 +73,7 @@ struct TegraChipHal {
 };
 typedef struct TegraChipHal TegraChipHal;
 void __nvoc_init_halspec_TegraChipHal(TegraChipHal*, TEGRA_CHIP_TYPE);
+
 
 /*
  * RM Runtime Variant Halspec 
@@ -129,12 +131,14 @@ struct RmVariantHal {
 typedef struct RmVariantHal RmVariantHal;
 void __nvoc_init_halspec_RmVariantHal(RmVariantHal*, RM_RUNTIME_VARIANT);
 
+
 /* DISP IP versions */
 struct DispIpHal {
     unsigned short __nvoc_HalVarIdx;
 };
 typedef struct DispIpHal DispIpHal;
 void __nvoc_init_halspec_DispIpHal(DispIpHal*, NvU32);
+
 
 /* The 'delete' rules for DispIpHal and ChipHal */
 // delete DISPv0400 & ~(TU102 | TU104 | TU106 | TU116 | TU117);
@@ -143,8 +147,8 @@ void __nvoc_init_halspec_DispIpHal(DispIpHal*, NvU32);
 // delete ~DISPv0401 & (GA102 | GA103 | GA104 | GA106 | GA107);
 // delete DISPv0402 & ~T234D;
 // delete ~DISPv0402 & T234D;
-// delete DISPv0403 & ~T239D;
-// delete ~DISPv0403 & T239D;
+// delete DISPv0403 & ~T238D;
+// delete ~DISPv0403 & T238D;
 // delete DISPv0404 & ~(AD102 | AD103 | AD104 | AD106 | AD107);
 // delete ~DISPv0404 & (AD102 | AD103 | AD104 | AD106 | AD107);
 // delete DISPv0501 & ~(GB10B | GB10C | T264D);
@@ -163,6 +167,7 @@ struct DpuIpHal {
 };
 typedef struct DpuIpHal DpuIpHal;
 void __nvoc_init_halspec_DpuIpHal(DpuIpHal*, NvU32);
+
 
 /* The 'delete' rules for DpuIpHal and ChipHal */
 

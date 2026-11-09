@@ -40,6 +40,18 @@ NV_STATUS NV_API_CALL rm_gpu_ops_create_session(
     return rmStatus;
 }
 
+NV_STATUS NV_API_CALL rm_gpu_ops_is_tdisp_enabled(
+    nvidia_stack_t *sp,
+    NvBool *pTdispEnabled)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsIsTdispEnabled(pTdispEnabled);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
 NV_STATUS  NV_API_CALL  rm_gpu_ops_destroy_session (
     nvidia_stack_t *sp, gpuSessionHandle session)
 {

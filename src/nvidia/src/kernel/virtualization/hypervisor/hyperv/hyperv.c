@@ -27,6 +27,7 @@
  */
 
 #include "virtualization/hypervisor/hypervisor.h"
+#include "kernel/core/system.h"
 #include "os/os.h"
 
 static NvBool _dummyHypervIsP2PSupported(NvU32 gpuMask)
@@ -47,6 +48,20 @@ static NvBool _dummyHypervIsP2PSupported(NvU32 gpuMask)
 #define CREATE_PARTITIONS  0x00000001   //  0th bit in EBX
 #define CPU_MANAGEMENT     0x00001000   // 12th bit in EBX
 
+static void _hypervSetL1VHProperty(NvBool bL1VH)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
+
+    if (pHypervisor != NULL)
+    {
+        pHypervisor->setProperty(pHypervisor,
+                                 PDB_PROP_HYPERVISOR_HYPERV_L1VH_ENABLED,
+                                 bL1VH);
+    }
+}
+
+
 static NV_STATUS _childPartitionDetection(OBJOS *pOS, NvBool *result)
 {
     NvU32 eax = 0, ebx = 0;
@@ -55,6 +70,8 @@ static NV_STATUS _childPartitionDetection(OBJOS *pOS, NvBool *result)
 
     NV_ASSERT(result != NULL);
     *result = NV_FALSE;
+
+    _hypervSetL1VHProperty(NV_FALSE);
 
     // See if we are in parent/child partition
     if ((osNv_cpuid(FEATURE_IDENTIFICATION_LEAF, 0, &dummyRegister, &ebx, &dummyRegister, &dummyRegister) == 0) ||
@@ -75,6 +92,7 @@ static NV_STATUS _childPartitionDetection(OBJOS *pOS, NvBool *result)
     {
         // We are in L1VH child partition
         *result = NV_TRUE;
+        _hypervSetL1VHProperty(NV_TRUE);
     }
     else if ((ebx & CPU_MANAGEMENT) && (eax & NESTED_HYPERVISOR))
     {

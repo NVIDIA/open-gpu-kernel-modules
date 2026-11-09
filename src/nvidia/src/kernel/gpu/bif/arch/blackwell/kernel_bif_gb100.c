@@ -1570,3 +1570,59 @@ kbifCacheDeviceControlStatus2Reg_GB100
 
     pKernelBif->pf0DeviceControl2Reg = regVal;
 }
+
+/*!
+ * @brief Gets MSI-X table and PBA start offsets and sizes in BAR0
+ *
+ * For Blackwell/Rubin PF, the MSI-X table and PBA reside in the virtual
+ * function physical offset region (NV_VIRTUAL_FUNCTION_PHYS_OFFSET_REGION0)
+ * of BAR0:
+ *    - MSI-X table: NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_ADDR_LO(0) relative
+ *                   to PHYS_OFFSET_REGION0 base (0xB80000)
+ *    - PBA region:  NV_VIRTUAL_FUNCTION_PRIV_MSIX_PBA relative to
+ *                   PHYS_OFFSET_REGION0 base (0xBA0000), one page in size
+ *
+ * @param[in]  pGpu           GPU object pointer
+ * @param[in]  pKernelBif     KernelBif object pointer
+ * @param[out] pMsixStart     MSI-X table start offset in BAR0
+ * @param[out] pMsixSize      MSI-X table size in bytes
+ * @param[out] pPbaStart      PBA start offset in BAR0
+ * @param[out] pPbaSize       PBA size in bytes
+ *
+ * @return NV_OK on success
+ */
+NV_STATUS
+kbifGetMsixPbaTableOffsets_GB100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvU64     *pMsixStart,
+    NvU64     *pMsixSize,
+    NvU64     *pPbaStart,
+    NvU64     *pPbaSize
+)
+{
+    /*
+     * NV_MSIX_PBA_WINDOW_SIZE: MSI-X Pending Bit Array window size.
+     * The PBA occupies one architecturally fixed 4KB page in BAR0 immediately
+     * following the MSI-X table region.  No hardware-defined constant exists for
+     * this size in the hwref headers; the value is taken directly from the
+     * hardware specification.
+     */
+    const NvU64 NV_MSIX_PBA_WINDOW_SIZE = 0x1000U;
+
+    *pMsixStart = DRF_BASE(NV_VIRTUAL_FUNCTION_PHYS_OFFSET_REGION0) +
+                  NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_ADDR_LO(0);
+
+    *pPbaStart  = DRF_BASE(NV_VIRTUAL_FUNCTION_PHYS_OFFSET_REGION0) +
+                  NV_VIRTUAL_FUNCTION_PRIV_MSIX_PBA;
+
+    *pMsixSize  = *pPbaStart - *pMsixStart;
+    *pPbaSize   = NV_MSIX_PBA_WINDOW_SIZE;
+
+    NV_PRINTF(LEVEL_INFO,
+              "MSI-X table: [0x%llx, size=0x%llx]  PBA: [0x%llx, size=0x%llx]\n",
+              *pMsixStart, *pMsixSize, *pPbaStart, *pPbaSize);
+
+    return NV_OK;
+}

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 #include "gpu/ce/kernel_ce.h"
 #include "gpu/ce/kernel_ce_private.h"
 
-#include "published/blackwell/gb20b/dev_ce_base.h"
+#include "published/blackwell/gb20b/dev_ce_zb.h"
 
 /*!
  * @brief Returns the size of the GRCE_CONFIG register array
@@ -41,7 +41,7 @@ kceGetGrceConfigSize1_GB20B
     KernelCE *pKCe
 )
 {
-    return (pKCe->shimInstance == 0) ? NV_CE_BASE_GRCE_CONFIG__SIZE_1 : 0;
+    return (pKCe->shimInstance == 0) ? NV_CE_ZB_GRCE_CONFIG__SIZE_1 : 0;
 }
 
 /*!
@@ -60,7 +60,7 @@ kceGetPce2lceConfigSize1_GB20B
     KernelCE *pKCe
 )
 {
-    return NV_CE_BASE_PCE2LCE_CONFIG__SIZE_1;
+    return NV_CE_ZB_PCE2LCE_CONFIG__SIZE_1;
 }
 
 /**
@@ -87,8 +87,8 @@ kceMapPceLceForGRCE_GB20B
 {
     NvU32       grceIdx   = 0;
 
-    pLocalGrceMap[grceIdx] = DRF_NUM(_CE_BASE, _GRCE_CONFIG, _SHARED, 0) |
-                                DRF_DEF(_CE_BASE, _GRCE_CONFIG, _SHARED_LCE, _NONE);
+    pLocalGrceMap[grceIdx] = DRF_NUM(_CE_ZB, _GRCE_CONFIG, _SHARED, 0) |
+                                DRF_DEF(_CE_ZB, _GRCE_CONFIG, _SHARED_LCE, _NONE);
     NV_PRINTF(LEVEL_INFO, "GRCE %d is not shared\n", grceIdx);
 }
 

@@ -656,7 +656,6 @@ tsemaRelease_KERNEL
                                          semaphoreVA,
                                          releaseValue,
                                          0, /* Index */
-                                         NV_TRUE,
                                          currentTime);
     if (status != NV_OK)
     {

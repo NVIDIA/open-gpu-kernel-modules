@@ -469,6 +469,10 @@ namespace DisplayPort
 
         unsigned replyPortNumber(){return reply.portNumber;}
         unsigned replyNumOfBytesReadI2C(){return reply.numBytesReadI2C;}
+        unsigned char* replyGetData()
+        {
+            return reply.readData;
+        }
         unsigned char* replyGetI2CData(unsigned* numBytes)
         {
             *numBytes = this->replyNumOfBytesReadI2C();

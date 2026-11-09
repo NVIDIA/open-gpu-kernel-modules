@@ -3638,145 +3638,145 @@ NV_STATUS __nvoc_objCreateDynamic_MemoryChannelRepairFailure(Dynamic **__nvoc_pp
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__758a69 = 1;
+char __nvoc_class_id_uniqueness_check__be89e4 = 1;
 #endif
 
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairPendingSameGpc;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_SparingRepairPending;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResourceRetirement;
 
-// Forward declarations for TpcRepairPendingSameGpc
+// Forward declarations for SparingRepairPending
 void __nvoc_init__GpuResourceRetirement(GpuResourceRetirement*);
-void __nvoc_init__TpcRepairPendingSameGpc(TpcRepairPendingSameGpc*);
-void __nvoc_init_funcTable_TpcRepairPendingSameGpc(TpcRepairPendingSameGpc*);
-NV_STATUS __nvoc_ctor_TpcRepairPendingSameGpc(TpcRepairPendingSameGpc*, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-void __nvoc_init_dataField_TpcRepairPendingSameGpc(TpcRepairPendingSameGpc*);
-void __nvoc_dtor_TpcRepairPendingSameGpc(Dynamic*);
+void __nvoc_init__SparingRepairPending(SparingRepairPending*);
+void __nvoc_init_funcTable_SparingRepairPending(SparingRepairPending*);
+NV_STATUS __nvoc_ctor_SparingRepairPending(SparingRepairPending*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_SparingRepairPending(SparingRepairPending*);
+void __nvoc_dtor_SparingRepairPending(Dynamic*);
 
 // Structures used within RTTI (run-time type information)
-extern const struct NVOC_CASTINFO __nvoc_castinfo__TpcRepairPendingSameGpc;
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info__TpcRepairPendingSameGpc;
+extern const struct NVOC_CASTINFO __nvoc_castinfo__SparingRepairPending;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__SparingRepairPending;
 
-// Down-thunk(s) to bridge TpcRepairPendingSameGpc methods from ancestors (if any)
+// Down-thunk(s) to bridge SparingRepairPending methods from ancestors (if any)
 
-// Up-thunk(s) to bridge TpcRepairPendingSameGpc methods to ancestors (if any)
+// Up-thunk(s) to bridge SparingRepairPending methods to ancestors (if any)
 
-// Class-specific details for TpcRepairPendingSameGpc
-const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairPendingSameGpc = 
+// Class-specific details for SparingRepairPending
+const struct NVOC_CLASS_DEF __nvoc_class_def_SparingRepairPending = 
 {
-    .classInfo.size =               sizeof(TpcRepairPendingSameGpc),
-    .classInfo.classId =            classId(TpcRepairPendingSameGpc),
+    .classInfo.size =               sizeof(SparingRepairPending),
+    .classInfo.classId =            classId(SparingRepairPending),
     .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-    .classInfo.name =               "TpcRepairPendingSameGpc",
+    .classInfo.name =               "SparingRepairPending",
 #endif
-    .objCreatefn =        &__nvoc_objCreateDynamic_TpcRepairPendingSameGpc,
-    .pCastInfo =          &__nvoc_castinfo__TpcRepairPendingSameGpc,
-    .pExportInfo =        &__nvoc_export_info__TpcRepairPendingSameGpc
+    .objCreatefn =        &__nvoc_objCreateDynamic_SparingRepairPending,
+    .pCastInfo =          &__nvoc_castinfo__SparingRepairPending,
+    .pExportInfo =        &__nvoc_export_info__SparingRepairPending
 };
 
 
 // Metadata with per-class RTTI with ancestor(s)
-static const struct NVOC_METADATA__TpcRepairPendingSameGpc __nvoc_metadata__TpcRepairPendingSameGpc = {
-    .rtti.pClassDef = &__nvoc_class_def_TpcRepairPendingSameGpc,    // (tpcrepairpendingsamegpc) this
-    .rtti.dtor      = &__nvoc_dtor_TpcRepairPendingSameGpc,
+static const struct NVOC_METADATA__SparingRepairPending __nvoc_metadata__SparingRepairPending = {
+    .rtti.pClassDef = &__nvoc_class_def_SparingRepairPending,    // (sparingrepairpending) this
+    .rtti.dtor      = &__nvoc_dtor_SparingRepairPending,
     .rtti.offset    = 0,
     .metadata__GpuResourceRetirement.rtti.pClassDef = &__nvoc_class_def_GpuResourceRetirement,    // (gpuresret) super
     .metadata__GpuResourceRetirement.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceRetirement.rtti.offset    = NV_OFFSETOF(TpcRepairPendingSameGpc, __nvoc_base_GpuResourceRetirement),
+    .metadata__GpuResourceRetirement.rtti.offset    = NV_OFFSETOF(SparingRepairPending, __nvoc_base_GpuResourceRetirement),
     .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
     .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(TpcRepairPendingSameGpc, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(SparingRepairPending, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent),
     .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
     .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(TpcRepairPendingSameGpc, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(SparingRepairPending, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
     .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
     .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(TpcRepairPendingSameGpc, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(SparingRepairPending, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
     .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
     .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(TpcRepairPendingSameGpc, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(SparingRepairPending, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
 };
 
 
 // Dynamic down-casting information
-const struct NVOC_CASTINFO __nvoc_castinfo__TpcRepairPendingSameGpc = {
+const struct NVOC_CASTINFO __nvoc_castinfo__SparingRepairPending = {
     .numRelatives = 6,
     .relatives = {
-        &__nvoc_metadata__TpcRepairPendingSameGpc.rtti,    // [0]: (tpcrepairpendingsamegpc) this
-        &__nvoc_metadata__TpcRepairPendingSameGpc.metadata__GpuResourceRetirement.rtti,    // [1]: (gpuresret) super
-        &__nvoc_metadata__TpcRepairPendingSameGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
-        &__nvoc_metadata__TpcRepairPendingSameGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
-        &__nvoc_metadata__TpcRepairPendingSameGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
-        &__nvoc_metadata__TpcRepairPendingSameGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+        &__nvoc_metadata__SparingRepairPending.rtti,    // [0]: (sparingrepairpending) this
+        &__nvoc_metadata__SparingRepairPending.metadata__GpuResourceRetirement.rtti,    // [1]: (gpuresret) super
+        &__nvoc_metadata__SparingRepairPending.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__SparingRepairPending.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__SparingRepairPending.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__SparingRepairPending.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
     }
 };
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info__TpcRepairPendingSameGpc = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__SparingRepairPending = 
 {
     .numEntries=     0,
     .pExportEntries= 0
 };
 
 
-// Destruct TpcRepairPendingSameGpc object.
+// Destruct SparingRepairPending object.
 void __nvoc_dtor_GpuResourceRetirement(Dynamic*);
-void __nvoc_dtor_TpcRepairPendingSameGpc(Dynamic* pThis) {
+void __nvoc_dtor_SparingRepairPending(Dynamic* pThis) {
 
-    TpcRepairPendingSameGpc *__nvoc_this = (TpcRepairPendingSameGpc *) pThis;
+    SparingRepairPending *__nvoc_this = (SparingRepairPending *) pThis;
 
 // Recurse to superclass destructors.
     __nvoc_dtor_GpuResourceRetirement((Dynamic *) &__nvoc_this->__nvoc_base_GpuResourceRetirement);
 
     PORT_UNREFERENCED_VARIABLE(__nvoc_this);
 }
-void __nvoc_init_dataField_TpcRepairPendingSameGpc(TpcRepairPendingSameGpc *pThis) {
+void __nvoc_init_dataField_SparingRepairPending(SparingRepairPending *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
 
-// Construct TpcRepairPendingSameGpc object.
+// Construct SparingRepairPending object.
 NV_STATUS __nvoc_ctor_GpuResourceRetirement(GpuResourceRetirement *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource);    // inline
-NV_STATUS __nvoc_ctor_TpcRepairPendingSameGpc(TpcRepairPendingSameGpc *pEvent, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId) {    // inline
+NV_STATUS __nvoc_ctor_SparingRepairPending(SparingRepairPending *pEvent, struct EventBus *pEventBus) {    // inline
     NV_STATUS status = NV_OK;
 
     // Recurse to ancestor constructor(s).
-    status = __nvoc_ctor_GpuResourceRetirement(&pEvent->__nvoc_base_GpuResourceRetirement, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_TPC_REPAIR_PENDING_SAME_GPC, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT);
-    if (status != NV_OK) goto __nvoc_ctor_TpcRepairPendingSameGpc_fail_GpuResourceRetirement;
+    status = __nvoc_ctor_GpuResourceRetirement(&pEvent->__nvoc_base_GpuResourceRetirement, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_SPARING_REPAIR_PENDING, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT);
+    if (status != NV_OK) goto __nvoc_ctor_SparingRepairPending_fail_GpuResourceRetirement;
 
     // Initialize data fields.
-    __nvoc_init_dataField_TpcRepairPendingSameGpc(pEvent);
+    __nvoc_init_dataField_SparingRepairPending(pEvent);
 
     // Call the constructor for this class.
-    status = __nvoc_tpcrepairpendingsamegpcConstruct(pEvent, pEventBus, tpcId, gpcId);
-    if (status != NV_OK) goto __nvoc_ctor_TpcRepairPendingSameGpc_fail__init;
-    goto __nvoc_ctor_TpcRepairPendingSameGpc_exit; // Success
+    status = __nvoc_sparingrepairpendingConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_SparingRepairPending_fail__init;
+    goto __nvoc_ctor_SparingRepairPending_exit; // Success
 
     // Unwind on error.
-__nvoc_ctor_TpcRepairPendingSameGpc_fail__init:
+__nvoc_ctor_SparingRepairPending_fail__init:
     __nvoc_dtor_GpuResourceRetirement((Dynamic *)&pEvent->__nvoc_base_GpuResourceRetirement);
-__nvoc_ctor_TpcRepairPendingSameGpc_fail_GpuResourceRetirement:
-__nvoc_ctor_TpcRepairPendingSameGpc_exit:
+__nvoc_ctor_SparingRepairPending_fail_GpuResourceRetirement:
+__nvoc_ctor_SparingRepairPending_exit:
     return status;
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_TpcRepairPendingSameGpc_1(TpcRepairPendingSameGpc *pThis) {
+static void __nvoc_init_funcTable_SparingRepairPending_1(SparingRepairPending *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-} // End __nvoc_init_funcTable_TpcRepairPendingSameGpc_1
+} // End __nvoc_init_funcTable_SparingRepairPending_1
 
 
 // Initialize vtable(s): Nothing to do for empty vtables
-void __nvoc_init_funcTable_TpcRepairPendingSameGpc(TpcRepairPendingSameGpc *pThis) {
-    __nvoc_init_funcTable_TpcRepairPendingSameGpc_1(pThis);
+void __nvoc_init_funcTable_SparingRepairPending(SparingRepairPending *pThis) {
+    __nvoc_init_funcTable_SparingRepairPending_1(pThis);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__TpcRepairPendingSameGpc(TpcRepairPendingSameGpc *pThis) {
+void __nvoc_init__SparingRepairPending(SparingRepairPending *pThis) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
@@ -3784,28 +3784,28 @@ void __nvoc_init__TpcRepairPendingSameGpc(TpcRepairPendingSameGpc *pThis) {
     pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
     pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
     pThis->__nvoc_pbase_GpuResourceRetirement = &pThis->__nvoc_base_GpuResourceRetirement;    // (gpuresret) super
-    pThis->__nvoc_pbase_TpcRepairPendingSameGpc = pThis;    // (tpcrepairpendingsamegpc) this
+    pThis->__nvoc_pbase_SparingRepairPending = pThis;    // (sparingrepairpending) this
 
     // Recurse to superclass initialization function(s).
     __nvoc_init__GpuResourceRetirement(&pThis->__nvoc_base_GpuResourceRetirement);
 
     // Pointer(s) to metadata structures(s)
-    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingSameGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
-    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingSameGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
-    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingSameGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
-    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingSameGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
-    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingSameGpc.metadata__GpuResourceRetirement;    // (gpuresret) super
-    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingSameGpc;    // (tpcrepairpendingsamegpc) this
+    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairPending.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairPending.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairPending.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairPending.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairPending.metadata__GpuResourceRetirement;    // (gpuresret) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairPending;    // (sparingrepairpending) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_TpcRepairPendingSameGpc(pThis);
+    __nvoc_init_funcTable_SparingRepairPending(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_TpcRepairPendingSameGpc(TpcRepairPendingSameGpc **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId)
+NV_STATUS __nvoc_objCreate_SparingRepairPending(SparingRepairPending **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
 {
     NV_STATUS __nvoc_status;
     Object *__nvoc_pParentObj = NULL;
-    TpcRepairPendingSameGpc *__nvoc_pThis;
+    SparingRepairPending *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
     if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
@@ -3817,12 +3817,12 @@ NV_STATUS __nvoc_objCreate_TpcRepairPendingSameGpc(TpcRepairPendingSameGpc **__n
     // Allocate memory
     else
     {
-        __nvoc_pThis = portMemAllocNonPaged(sizeof(TpcRepairPendingSameGpc));
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(SparingRepairPending));
         NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(__nvoc_pThis, 0, sizeof(TpcRepairPendingSameGpc));
+    portMemSet(__nvoc_pThis, 0, sizeof(SparingRepairPending));
 
     __nvoc_pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
@@ -3838,9 +3838,9 @@ NV_STATUS __nvoc_objCreate_TpcRepairPendingSameGpc(TpcRepairPendingSameGpc **__n
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__TpcRepairPendingSameGpc(__nvoc_pThis);
-    __nvoc_status = __nvoc_ctor_TpcRepairPendingSameGpc(__nvoc_pThis, pEventBus, tpcId, gpcId);
-    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_TpcRepairPendingSameGpc_cleanup;
+    __nvoc_init__SparingRepairPending(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_SparingRepairPending(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_SparingRepairPending_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *__nvoc_ppThis = __nvoc_pThis;
@@ -3849,7 +3849,7 @@ NV_STATUS __nvoc_objCreate_TpcRepairPendingSameGpc(TpcRepairPendingSameGpc **__n
     return NV_OK;
 
     // Do not call destructors here since the constructor already called them.
-__nvoc_objCreate_TpcRepairPendingSameGpc_cleanup:
+__nvoc_objCreate_SparingRepairPending_cleanup:
 
     // Unlink the child from the parent if it was linked above.
     if (__nvoc_pParentObj != NULL)
@@ -3857,7 +3857,7 @@ __nvoc_objCreate_TpcRepairPendingSameGpc_cleanup:
 
     // Zero out memory that was allocated by caller.
     if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(__nvoc_pThis, 0, sizeof(TpcRepairPendingSameGpc));
+        portMemSet(__nvoc_pThis, 0, sizeof(SparingRepairPending));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
@@ -3870,397 +3870,153 @@ __nvoc_objCreate_TpcRepairPendingSameGpc_cleanup:
     return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_TpcRepairPendingSameGpc(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+NV_STATUS __nvoc_objCreateDynamic_SparingRepairPending(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
     struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
-    NvU32 tpcId = va_arg(__nvoc_args, NvU32);
-    NvU32 gpcId = va_arg(__nvoc_args, NvU32);
 
-    return __nvoc_objCreate_TpcRepairPendingSameGpc((TpcRepairPendingSameGpc **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, tpcId, gpcId);
+    return __nvoc_objCreate_SparingRepairPending((SparingRepairPending **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
 }
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__98d3e3 = 1;
+char __nvoc_class_id_uniqueness_check__a29d84 = 1;
 #endif
 
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairPendingDifferentGpc;
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResourceRetirement;
-
-// Forward declarations for TpcRepairPendingDifferentGpc
-void __nvoc_init__GpuResourceRetirement(GpuResourceRetirement*);
-void __nvoc_init__TpcRepairPendingDifferentGpc(TpcRepairPendingDifferentGpc*);
-void __nvoc_init_funcTable_TpcRepairPendingDifferentGpc(TpcRepairPendingDifferentGpc*);
-NV_STATUS __nvoc_ctor_TpcRepairPendingDifferentGpc(TpcRepairPendingDifferentGpc*, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-void __nvoc_init_dataField_TpcRepairPendingDifferentGpc(TpcRepairPendingDifferentGpc*);
-void __nvoc_dtor_TpcRepairPendingDifferentGpc(Dynamic*);
-
-// Structures used within RTTI (run-time type information)
-extern const struct NVOC_CASTINFO __nvoc_castinfo__TpcRepairPendingDifferentGpc;
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info__TpcRepairPendingDifferentGpc;
-
-// Down-thunk(s) to bridge TpcRepairPendingDifferentGpc methods from ancestors (if any)
-
-// Up-thunk(s) to bridge TpcRepairPendingDifferentGpc methods to ancestors (if any)
-
-// Class-specific details for TpcRepairPendingDifferentGpc
-const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairPendingDifferentGpc = 
-{
-    .classInfo.size =               sizeof(TpcRepairPendingDifferentGpc),
-    .classInfo.classId =            classId(TpcRepairPendingDifferentGpc),
-    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
-    .classInfo.providerId =         &__nvoc_rtti_provider,
-#if NV_PRINTF_STRINGS_ALLOWED
-    .classInfo.name =               "TpcRepairPendingDifferentGpc",
-#endif
-    .objCreatefn =        &__nvoc_objCreateDynamic_TpcRepairPendingDifferentGpc,
-    .pCastInfo =          &__nvoc_castinfo__TpcRepairPendingDifferentGpc,
-    .pExportInfo =        &__nvoc_export_info__TpcRepairPendingDifferentGpc
-};
-
-
-// Metadata with per-class RTTI with ancestor(s)
-static const struct NVOC_METADATA__TpcRepairPendingDifferentGpc __nvoc_metadata__TpcRepairPendingDifferentGpc = {
-    .rtti.pClassDef = &__nvoc_class_def_TpcRepairPendingDifferentGpc,    // (tpcrepairpendingdifferentgpc) this
-    .rtti.dtor      = &__nvoc_dtor_TpcRepairPendingDifferentGpc,
-    .rtti.offset    = 0,
-    .metadata__GpuResourceRetirement.rtti.pClassDef = &__nvoc_class_def_GpuResourceRetirement,    // (gpuresret) super
-    .metadata__GpuResourceRetirement.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceRetirement.rtti.offset    = NV_OFFSETOF(TpcRepairPendingDifferentGpc, __nvoc_base_GpuResourceRetirement),
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(TpcRepairPendingDifferentGpc, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent),
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(TpcRepairPendingDifferentGpc, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(TpcRepairPendingDifferentGpc, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(TpcRepairPendingDifferentGpc, __nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
-};
-
-
-// Dynamic down-casting information
-const struct NVOC_CASTINFO __nvoc_castinfo__TpcRepairPendingDifferentGpc = {
-    .numRelatives = 6,
-    .relatives = {
-        &__nvoc_metadata__TpcRepairPendingDifferentGpc.rtti,    // [0]: (tpcrepairpendingdifferentgpc) this
-        &__nvoc_metadata__TpcRepairPendingDifferentGpc.metadata__GpuResourceRetirement.rtti,    // [1]: (gpuresret) super
-        &__nvoc_metadata__TpcRepairPendingDifferentGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
-        &__nvoc_metadata__TpcRepairPendingDifferentGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
-        &__nvoc_metadata__TpcRepairPendingDifferentGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
-        &__nvoc_metadata__TpcRepairPendingDifferentGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
-    }
-};
-
-const struct NVOC_EXPORT_INFO __nvoc_export_info__TpcRepairPendingDifferentGpc = 
-{
-    .numEntries=     0,
-    .pExportEntries= 0
-};
-
-
-// Destruct TpcRepairPendingDifferentGpc object.
-void __nvoc_dtor_GpuResourceRetirement(Dynamic*);
-void __nvoc_dtor_TpcRepairPendingDifferentGpc(Dynamic* pThis) {
-
-    TpcRepairPendingDifferentGpc *__nvoc_this = (TpcRepairPendingDifferentGpc *) pThis;
-
-// Recurse to superclass destructors.
-    __nvoc_dtor_GpuResourceRetirement((Dynamic *) &__nvoc_this->__nvoc_base_GpuResourceRetirement);
-
-    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
-}
-void __nvoc_init_dataField_TpcRepairPendingDifferentGpc(TpcRepairPendingDifferentGpc *pThis) {
-    PORT_UNREFERENCED_VARIABLE(pThis);
-}
-
-
-// Construct TpcRepairPendingDifferentGpc object.
-NV_STATUS __nvoc_ctor_GpuResourceRetirement(GpuResourceRetirement *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource);    // inline
-NV_STATUS __nvoc_ctor_TpcRepairPendingDifferentGpc(TpcRepairPendingDifferentGpc *pEvent, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId) {    // inline
-    NV_STATUS status = NV_OK;
-
-    // Recurse to ancestor constructor(s).
-    status = __nvoc_ctor_GpuResourceRetirement(&pEvent->__nvoc_base_GpuResourceRetirement, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_TPC_REPAIR_PENDING_DIFFERENT_GPC, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT);
-    if (status != NV_OK) goto __nvoc_ctor_TpcRepairPendingDifferentGpc_fail_GpuResourceRetirement;
-
-    // Initialize data fields.
-    __nvoc_init_dataField_TpcRepairPendingDifferentGpc(pEvent);
-
-    // Call the constructor for this class.
-    status = __nvoc_tpcrepairpendingdifferentgpcConstruct(pEvent, pEventBus, tpcId, gpcId);
-    if (status != NV_OK) goto __nvoc_ctor_TpcRepairPendingDifferentGpc_fail__init;
-    goto __nvoc_ctor_TpcRepairPendingDifferentGpc_exit; // Success
-
-    // Unwind on error.
-__nvoc_ctor_TpcRepairPendingDifferentGpc_fail__init:
-    __nvoc_dtor_GpuResourceRetirement((Dynamic *)&pEvent->__nvoc_base_GpuResourceRetirement);
-__nvoc_ctor_TpcRepairPendingDifferentGpc_fail_GpuResourceRetirement:
-__nvoc_ctor_TpcRepairPendingDifferentGpc_exit:
-    return status;
-}
-
-// Vtable initialization
-static void __nvoc_init_funcTable_TpcRepairPendingDifferentGpc_1(TpcRepairPendingDifferentGpc *pThis) {
-    PORT_UNREFERENCED_VARIABLE(pThis);
-} // End __nvoc_init_funcTable_TpcRepairPendingDifferentGpc_1
-
-
-// Initialize vtable(s): Nothing to do for empty vtables
-void __nvoc_init_funcTable_TpcRepairPendingDifferentGpc(TpcRepairPendingDifferentGpc *pThis) {
-    __nvoc_init_funcTable_TpcRepairPendingDifferentGpc_1(pThis);
-}
-
-// Initialize newly constructed object.
-void __nvoc_init__TpcRepairPendingDifferentGpc(TpcRepairPendingDifferentGpc *pThis) {
-
-    // Initialize pointers to inherited data.
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
-    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
-    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
-    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
-    pThis->__nvoc_pbase_GpuResourceRetirement = &pThis->__nvoc_base_GpuResourceRetirement;    // (gpuresret) super
-    pThis->__nvoc_pbase_TpcRepairPendingDifferentGpc = pThis;    // (tpcrepairpendingdifferentgpc) this
-
-    // Recurse to superclass initialization function(s).
-    __nvoc_init__GpuResourceRetirement(&pThis->__nvoc_base_GpuResourceRetirement);
-
-    // Pointer(s) to metadata structures(s)
-    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingDifferentGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
-    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingDifferentGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
-    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingDifferentGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
-    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingDifferentGpc.metadata__GpuResourceRetirement.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
-    pThis->__nvoc_base_GpuResourceRetirement.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingDifferentGpc.metadata__GpuResourceRetirement;    // (gpuresret) super
-    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairPendingDifferentGpc;    // (tpcrepairpendingdifferentgpc) this
-
-    // Initialize per-object vtables.
-    __nvoc_init_funcTable_TpcRepairPendingDifferentGpc(pThis);
-}
-
-NV_STATUS __nvoc_objCreate_TpcRepairPendingDifferentGpc(TpcRepairPendingDifferentGpc **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId)
-{
-    NV_STATUS __nvoc_status;
-    Object *__nvoc_pParentObj = NULL;
-    TpcRepairPendingDifferentGpc *__nvoc_pThis;
-
-    // Don't allocate memory if the caller has already done so.
-    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-    {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
-        __nvoc_pThis = *__nvoc_ppThis;
-    }
-
-    // Allocate memory
-    else
-    {
-        __nvoc_pThis = portMemAllocNonPaged(sizeof(TpcRepairPendingDifferentGpc));
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
-    }
-
-    // Zero is the initial value for everything.
-    portMemSet(__nvoc_pThis, 0, sizeof(TpcRepairPendingDifferentGpc));
-
-    __nvoc_pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
-
-    // Link the child into the parent if there is one unless flagged not to do so.
-    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
-    {
-        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
-        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
-    }
-    else
-    {
-        __nvoc_pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
-    }
-
-    // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__TpcRepairPendingDifferentGpc(__nvoc_pThis);
-    __nvoc_status = __nvoc_ctor_TpcRepairPendingDifferentGpc(__nvoc_pThis, pEventBus, tpcId, gpcId);
-    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_TpcRepairPendingDifferentGpc_cleanup;
-
-    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
-    *__nvoc_ppThis = __nvoc_pThis;
-
-    // Success
-    return NV_OK;
-
-    // Do not call destructors here since the constructor already called them.
-__nvoc_objCreate_TpcRepairPendingDifferentGpc_cleanup:
-
-    // Unlink the child from the parent if it was linked above.
-    if (__nvoc_pParentObj != NULL)
-        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResourceRetirement.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
-
-    // Zero out memory that was allocated by caller.
-    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(__nvoc_pThis, 0, sizeof(TpcRepairPendingDifferentGpc));
-
-    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
-    else
-    {
-        portMemFree(__nvoc_pThis);
-        *__nvoc_ppThis = NULL;
-    }
-
-    // Failure
-    return __nvoc_status;
-}
-
-NV_STATUS __nvoc_objCreateDynamic_TpcRepairPendingDifferentGpc(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
-    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
-    NvU32 tpcId = va_arg(__nvoc_args, NvU32);
-    NvU32 gpcId = va_arg(__nvoc_args, NvU32);
-
-    return __nvoc_objCreate_TpcRepairPendingDifferentGpc((TpcRepairPendingDifferentGpc **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, tpcId, gpcId);
-}
-
-
-#ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__78f4fe = 1;
-#endif
-
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairFailureNoSpare;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_SparingRepairNotPossible;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResourceExhausted;
 
-// Forward declarations for TpcRepairFailureNoSpare
+// Forward declarations for SparingRepairNotPossible
 void __nvoc_init__GpuResourceExhausted(GpuResourceExhausted*);
-void __nvoc_init__TpcRepairFailureNoSpare(TpcRepairFailureNoSpare*);
-void __nvoc_init_funcTable_TpcRepairFailureNoSpare(TpcRepairFailureNoSpare*);
-NV_STATUS __nvoc_ctor_TpcRepairFailureNoSpare(TpcRepairFailureNoSpare*, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-void __nvoc_init_dataField_TpcRepairFailureNoSpare(TpcRepairFailureNoSpare*);
-void __nvoc_dtor_TpcRepairFailureNoSpare(Dynamic*);
+void __nvoc_init__SparingRepairNotPossible(SparingRepairNotPossible*);
+void __nvoc_init_funcTable_SparingRepairNotPossible(SparingRepairNotPossible*);
+NV_STATUS __nvoc_ctor_SparingRepairNotPossible(SparingRepairNotPossible*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_SparingRepairNotPossible(SparingRepairNotPossible*);
+void __nvoc_dtor_SparingRepairNotPossible(Dynamic*);
 
 // Structures used within RTTI (run-time type information)
-extern const struct NVOC_CASTINFO __nvoc_castinfo__TpcRepairFailureNoSpare;
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info__TpcRepairFailureNoSpare;
+extern const struct NVOC_CASTINFO __nvoc_castinfo__SparingRepairNotPossible;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__SparingRepairNotPossible;
 
-// Down-thunk(s) to bridge TpcRepairFailureNoSpare methods from ancestors (if any)
+// Down-thunk(s) to bridge SparingRepairNotPossible methods from ancestors (if any)
 
-// Up-thunk(s) to bridge TpcRepairFailureNoSpare methods to ancestors (if any)
+// Up-thunk(s) to bridge SparingRepairNotPossible methods to ancestors (if any)
 
-// Class-specific details for TpcRepairFailureNoSpare
-const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairFailureNoSpare = 
+// Class-specific details for SparingRepairNotPossible
+const struct NVOC_CLASS_DEF __nvoc_class_def_SparingRepairNotPossible = 
 {
-    .classInfo.size =               sizeof(TpcRepairFailureNoSpare),
-    .classInfo.classId =            classId(TpcRepairFailureNoSpare),
+    .classInfo.size =               sizeof(SparingRepairNotPossible),
+    .classInfo.classId =            classId(SparingRepairNotPossible),
     .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-    .classInfo.name =               "TpcRepairFailureNoSpare",
+    .classInfo.name =               "SparingRepairNotPossible",
 #endif
-    .objCreatefn =        &__nvoc_objCreateDynamic_TpcRepairFailureNoSpare,
-    .pCastInfo =          &__nvoc_castinfo__TpcRepairFailureNoSpare,
-    .pExportInfo =        &__nvoc_export_info__TpcRepairFailureNoSpare
+    .objCreatefn =        &__nvoc_objCreateDynamic_SparingRepairNotPossible,
+    .pCastInfo =          &__nvoc_castinfo__SparingRepairNotPossible,
+    .pExportInfo =        &__nvoc_export_info__SparingRepairNotPossible
 };
 
 
 // Metadata with per-class RTTI with ancestor(s)
-static const struct NVOC_METADATA__TpcRepairFailureNoSpare __nvoc_metadata__TpcRepairFailureNoSpare = {
-    .rtti.pClassDef = &__nvoc_class_def_TpcRepairFailureNoSpare,    // (tpcrepairfailurenospare) this
-    .rtti.dtor      = &__nvoc_dtor_TpcRepairFailureNoSpare,
+static const struct NVOC_METADATA__SparingRepairNotPossible __nvoc_metadata__SparingRepairNotPossible = {
+    .rtti.pClassDef = &__nvoc_class_def_SparingRepairNotPossible,    // (sparingrepairnotpossible) this
+    .rtti.dtor      = &__nvoc_dtor_SparingRepairNotPossible,
     .rtti.offset    = 0,
     .metadata__GpuResourceExhausted.rtti.pClassDef = &__nvoc_class_def_GpuResourceExhausted,    // (gpuresexh) super
     .metadata__GpuResourceExhausted.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceExhausted.rtti.offset    = NV_OFFSETOF(TpcRepairFailureNoSpare, __nvoc_base_GpuResourceExhausted),
+    .metadata__GpuResourceExhausted.rtti.offset    = NV_OFFSETOF(SparingRepairNotPossible, __nvoc_base_GpuResourceExhausted),
     .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
     .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(TpcRepairFailureNoSpare, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(SparingRepairNotPossible, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent),
     .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
     .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(TpcRepairFailureNoSpare, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(SparingRepairNotPossible, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
     .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
     .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(TpcRepairFailureNoSpare, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(SparingRepairNotPossible, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
     .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
     .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(TpcRepairFailureNoSpare, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(SparingRepairNotPossible, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
 };
 
 
 // Dynamic down-casting information
-const struct NVOC_CASTINFO __nvoc_castinfo__TpcRepairFailureNoSpare = {
+const struct NVOC_CASTINFO __nvoc_castinfo__SparingRepairNotPossible = {
     .numRelatives = 6,
     .relatives = {
-        &__nvoc_metadata__TpcRepairFailureNoSpare.rtti,    // [0]: (tpcrepairfailurenospare) this
-        &__nvoc_metadata__TpcRepairFailureNoSpare.metadata__GpuResourceExhausted.rtti,    // [1]: (gpuresexh) super
-        &__nvoc_metadata__TpcRepairFailureNoSpare.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
-        &__nvoc_metadata__TpcRepairFailureNoSpare.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
-        &__nvoc_metadata__TpcRepairFailureNoSpare.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
-        &__nvoc_metadata__TpcRepairFailureNoSpare.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+        &__nvoc_metadata__SparingRepairNotPossible.rtti,    // [0]: (sparingrepairnotpossible) this
+        &__nvoc_metadata__SparingRepairNotPossible.metadata__GpuResourceExhausted.rtti,    // [1]: (gpuresexh) super
+        &__nvoc_metadata__SparingRepairNotPossible.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__SparingRepairNotPossible.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__SparingRepairNotPossible.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__SparingRepairNotPossible.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
     }
 };
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info__TpcRepairFailureNoSpare = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__SparingRepairNotPossible = 
 {
     .numEntries=     0,
     .pExportEntries= 0
 };
 
 
-// Destruct TpcRepairFailureNoSpare object.
+// Destruct SparingRepairNotPossible object.
 void __nvoc_dtor_GpuResourceExhausted(Dynamic*);
-void __nvoc_dtor_TpcRepairFailureNoSpare(Dynamic* pThis) {
+void __nvoc_dtor_SparingRepairNotPossible(Dynamic* pThis) {
 
-    TpcRepairFailureNoSpare *__nvoc_this = (TpcRepairFailureNoSpare *) pThis;
+    SparingRepairNotPossible *__nvoc_this = (SparingRepairNotPossible *) pThis;
 
 // Recurse to superclass destructors.
     __nvoc_dtor_GpuResourceExhausted((Dynamic *) &__nvoc_this->__nvoc_base_GpuResourceExhausted);
 
     PORT_UNREFERENCED_VARIABLE(__nvoc_this);
 }
-void __nvoc_init_dataField_TpcRepairFailureNoSpare(TpcRepairFailureNoSpare *pThis) {
+void __nvoc_init_dataField_SparingRepairNotPossible(SparingRepairNotPossible *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
 
-// Construct TpcRepairFailureNoSpare object.
+// Construct SparingRepairNotPossible object.
 NV_STATUS __nvoc_ctor_GpuResourceExhausted(GpuResourceExhausted *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope);    // inline
-NV_STATUS __nvoc_ctor_TpcRepairFailureNoSpare(TpcRepairFailureNoSpare *pEvent, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId) {    // inline
+NV_STATUS __nvoc_ctor_SparingRepairNotPossible(SparingRepairNotPossible *pEvent, struct EventBus *pEventBus) {    // inline
     NV_STATUS status = NV_OK;
 
     // Recurse to ancestor constructor(s).
-    status = __nvoc_ctor_GpuResourceExhausted(&pEvent->__nvoc_base_GpuResourceExhausted, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_TPC_REPAIR_FAILURE_NO_SPARE, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE);
-    if (status != NV_OK) goto __nvoc_ctor_TpcRepairFailureNoSpare_fail_GpuResourceExhausted;
+    status = __nvoc_ctor_GpuResourceExhausted(&pEvent->__nvoc_base_GpuResourceExhausted, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_SPARING_REPAIR_NOT_POSSIBLE, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE);
+    if (status != NV_OK) goto __nvoc_ctor_SparingRepairNotPossible_fail_GpuResourceExhausted;
 
     // Initialize data fields.
-    __nvoc_init_dataField_TpcRepairFailureNoSpare(pEvent);
+    __nvoc_init_dataField_SparingRepairNotPossible(pEvent);
 
     // Call the constructor for this class.
-    status = __nvoc_tpcrepairfailurenospareConstruct(pEvent, pEventBus, tpcId, gpcId);
-    if (status != NV_OK) goto __nvoc_ctor_TpcRepairFailureNoSpare_fail__init;
-    goto __nvoc_ctor_TpcRepairFailureNoSpare_exit; // Success
+    status = __nvoc_sparingrepairnotpossibleConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_SparingRepairNotPossible_fail__init;
+    goto __nvoc_ctor_SparingRepairNotPossible_exit; // Success
 
     // Unwind on error.
-__nvoc_ctor_TpcRepairFailureNoSpare_fail__init:
+__nvoc_ctor_SparingRepairNotPossible_fail__init:
     __nvoc_dtor_GpuResourceExhausted((Dynamic *)&pEvent->__nvoc_base_GpuResourceExhausted);
-__nvoc_ctor_TpcRepairFailureNoSpare_fail_GpuResourceExhausted:
-__nvoc_ctor_TpcRepairFailureNoSpare_exit:
+__nvoc_ctor_SparingRepairNotPossible_fail_GpuResourceExhausted:
+__nvoc_ctor_SparingRepairNotPossible_exit:
     return status;
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_TpcRepairFailureNoSpare_1(TpcRepairFailureNoSpare *pThis) {
+static void __nvoc_init_funcTable_SparingRepairNotPossible_1(SparingRepairNotPossible *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-} // End __nvoc_init_funcTable_TpcRepairFailureNoSpare_1
+} // End __nvoc_init_funcTable_SparingRepairNotPossible_1
 
 
 // Initialize vtable(s): Nothing to do for empty vtables
-void __nvoc_init_funcTable_TpcRepairFailureNoSpare(TpcRepairFailureNoSpare *pThis) {
-    __nvoc_init_funcTable_TpcRepairFailureNoSpare_1(pThis);
+void __nvoc_init_funcTable_SparingRepairNotPossible(SparingRepairNotPossible *pThis) {
+    __nvoc_init_funcTable_SparingRepairNotPossible_1(pThis);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__TpcRepairFailureNoSpare(TpcRepairFailureNoSpare *pThis) {
+void __nvoc_init__SparingRepairNotPossible(SparingRepairNotPossible *pThis) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
@@ -4268,28 +4024,28 @@ void __nvoc_init__TpcRepairFailureNoSpare(TpcRepairFailureNoSpare *pThis) {
     pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
     pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
     pThis->__nvoc_pbase_GpuResourceExhausted = &pThis->__nvoc_base_GpuResourceExhausted;    // (gpuresexh) super
-    pThis->__nvoc_pbase_TpcRepairFailureNoSpare = pThis;    // (tpcrepairfailurenospare) this
+    pThis->__nvoc_pbase_SparingRepairNotPossible = pThis;    // (sparingrepairnotpossible) this
 
     // Recurse to superclass initialization function(s).
     __nvoc_init__GpuResourceExhausted(&pThis->__nvoc_base_GpuResourceExhausted);
 
     // Pointer(s) to metadata structures(s)
-    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpare.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
-    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpare.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
-    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpare.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
-    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpare.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
-    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpare.metadata__GpuResourceExhausted;    // (gpuresexh) super
-    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpare;    // (tpcrepairfailurenospare) this
+    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairNotPossible.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairNotPossible.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairNotPossible.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairNotPossible.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairNotPossible.metadata__GpuResourceExhausted;    // (gpuresexh) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__SparingRepairNotPossible;    // (sparingrepairnotpossible) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_TpcRepairFailureNoSpare(pThis);
+    __nvoc_init_funcTable_SparingRepairNotPossible(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_TpcRepairFailureNoSpare(TpcRepairFailureNoSpare **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId)
+NV_STATUS __nvoc_objCreate_SparingRepairNotPossible(SparingRepairNotPossible **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
 {
     NV_STATUS __nvoc_status;
     Object *__nvoc_pParentObj = NULL;
-    TpcRepairFailureNoSpare *__nvoc_pThis;
+    SparingRepairNotPossible *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
     if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
@@ -4301,12 +4057,12 @@ NV_STATUS __nvoc_objCreate_TpcRepairFailureNoSpare(TpcRepairFailureNoSpare **__n
     // Allocate memory
     else
     {
-        __nvoc_pThis = portMemAllocNonPaged(sizeof(TpcRepairFailureNoSpare));
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(SparingRepairNotPossible));
         NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(__nvoc_pThis, 0, sizeof(TpcRepairFailureNoSpare));
+    portMemSet(__nvoc_pThis, 0, sizeof(SparingRepairNotPossible));
 
     __nvoc_pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
@@ -4322,9 +4078,9 @@ NV_STATUS __nvoc_objCreate_TpcRepairFailureNoSpare(TpcRepairFailureNoSpare **__n
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__TpcRepairFailureNoSpare(__nvoc_pThis);
-    __nvoc_status = __nvoc_ctor_TpcRepairFailureNoSpare(__nvoc_pThis, pEventBus, tpcId, gpcId);
-    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_TpcRepairFailureNoSpare_cleanup;
+    __nvoc_init__SparingRepairNotPossible(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_SparingRepairNotPossible(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_SparingRepairNotPossible_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *__nvoc_ppThis = __nvoc_pThis;
@@ -4333,7 +4089,7 @@ NV_STATUS __nvoc_objCreate_TpcRepairFailureNoSpare(TpcRepairFailureNoSpare **__n
     return NV_OK;
 
     // Do not call destructors here since the constructor already called them.
-__nvoc_objCreate_TpcRepairFailureNoSpare_cleanup:
+__nvoc_objCreate_SparingRepairNotPossible_cleanup:
 
     // Unlink the child from the parent if it was linked above.
     if (__nvoc_pParentObj != NULL)
@@ -4341,7 +4097,7 @@ __nvoc_objCreate_TpcRepairFailureNoSpare_cleanup:
 
     // Zero out memory that was allocated by caller.
     if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(__nvoc_pThis, 0, sizeof(TpcRepairFailureNoSpare));
+        portMemSet(__nvoc_pThis, 0, sizeof(SparingRepairNotPossible));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
@@ -4354,184 +4110,182 @@ __nvoc_objCreate_TpcRepairFailureNoSpare_cleanup:
     return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_TpcRepairFailureNoSpare(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+NV_STATUS __nvoc_objCreateDynamic_SparingRepairNotPossible(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
     struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
-    NvU32 tpcId = va_arg(__nvoc_args, NvU32);
-    NvU32 gpcId = va_arg(__nvoc_args, NvU32);
 
-    return __nvoc_objCreate_TpcRepairFailureNoSpare((TpcRepairFailureNoSpare **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, tpcId, gpcId);
+    return __nvoc_objCreate_SparingRepairNotPossible((SparingRepairNotPossible **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
 }
 
 
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check__b6fda9 = 1;
+char __nvoc_class_id_uniqueness_check__e78edd = 1;
 #endif
 
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairFailureNoSpareMig;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_SparingEvent;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
-extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResourceExhausted;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuStateChanged;
 
-// Forward declarations for TpcRepairFailureNoSpareMig
-void __nvoc_init__GpuResourceExhausted(GpuResourceExhausted*);
-void __nvoc_init__TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig*);
-void __nvoc_init_funcTable_TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig*);
-NV_STATUS __nvoc_ctor_TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig*, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId);
-void __nvoc_init_dataField_TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig*);
-void __nvoc_dtor_TpcRepairFailureNoSpareMig(Dynamic*);
+// Forward declarations for SparingEvent
+void __nvoc_init__GpuStateChanged(GpuStateChanged*);
+void __nvoc_init__SparingEvent(SparingEvent*);
+void __nvoc_init_funcTable_SparingEvent(SparingEvent*);
+NV_STATUS __nvoc_ctor_SparingEvent(SparingEvent*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_SparingEvent(SparingEvent*);
+void __nvoc_dtor_SparingEvent(Dynamic*);
 
 // Structures used within RTTI (run-time type information)
-extern const struct NVOC_CASTINFO __nvoc_castinfo__TpcRepairFailureNoSpareMig;
-extern const struct NVOC_EXPORT_INFO __nvoc_export_info__TpcRepairFailureNoSpareMig;
+extern const struct NVOC_CASTINFO __nvoc_castinfo__SparingEvent;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__SparingEvent;
 
-// Down-thunk(s) to bridge TpcRepairFailureNoSpareMig methods from ancestors (if any)
+// Down-thunk(s) to bridge SparingEvent methods from ancestors (if any)
 
-// Up-thunk(s) to bridge TpcRepairFailureNoSpareMig methods to ancestors (if any)
+// Up-thunk(s) to bridge SparingEvent methods to ancestors (if any)
 
-// Class-specific details for TpcRepairFailureNoSpareMig
-const struct NVOC_CLASS_DEF __nvoc_class_def_TpcRepairFailureNoSpareMig = 
+// Class-specific details for SparingEvent
+const struct NVOC_CLASS_DEF __nvoc_class_def_SparingEvent = 
 {
-    .classInfo.size =               sizeof(TpcRepairFailureNoSpareMig),
-    .classInfo.classId =            classId(TpcRepairFailureNoSpareMig),
+    .classInfo.size =               sizeof(SparingEvent),
+    .classInfo.classId =            classId(SparingEvent),
     .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
     .classInfo.providerId =         &__nvoc_rtti_provider,
 #if NV_PRINTF_STRINGS_ALLOWED
-    .classInfo.name =               "TpcRepairFailureNoSpareMig",
+    .classInfo.name =               "SparingEvent",
 #endif
-    .objCreatefn =        &__nvoc_objCreateDynamic_TpcRepairFailureNoSpareMig,
-    .pCastInfo =          &__nvoc_castinfo__TpcRepairFailureNoSpareMig,
-    .pExportInfo =        &__nvoc_export_info__TpcRepairFailureNoSpareMig
+    .objCreatefn =        &__nvoc_objCreateDynamic_SparingEvent,
+    .pCastInfo =          &__nvoc_castinfo__SparingEvent,
+    .pExportInfo =        &__nvoc_export_info__SparingEvent
 };
 
 
 // Metadata with per-class RTTI with ancestor(s)
-static const struct NVOC_METADATA__TpcRepairFailureNoSpareMig __nvoc_metadata__TpcRepairFailureNoSpareMig = {
-    .rtti.pClassDef = &__nvoc_class_def_TpcRepairFailureNoSpareMig,    // (tpcrepairfailurenosparemig) this
-    .rtti.dtor      = &__nvoc_dtor_TpcRepairFailureNoSpareMig,
+static const struct NVOC_METADATA__SparingEvent __nvoc_metadata__SparingEvent = {
+    .rtti.pClassDef = &__nvoc_class_def_SparingEvent,    // (sparingevent) this
+    .rtti.dtor      = &__nvoc_dtor_SparingEvent,
     .rtti.offset    = 0,
-    .metadata__GpuResourceExhausted.rtti.pClassDef = &__nvoc_class_def_GpuResourceExhausted,    // (gpuresexh) super
-    .metadata__GpuResourceExhausted.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceExhausted.rtti.offset    = NV_OFFSETOF(TpcRepairFailureNoSpareMig, __nvoc_base_GpuResourceExhausted),
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(TpcRepairFailureNoSpareMig, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent),
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(TpcRepairFailureNoSpareMig, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(TpcRepairFailureNoSpareMig, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
-    .metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(TpcRepairFailureNoSpareMig, __nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+    .metadata__GpuStateChanged.rtti.pClassDef = &__nvoc_class_def_GpuStateChanged,    // (gpustatechanged) super
+    .metadata__GpuStateChanged.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuStateChanged.rtti.offset    = NV_OFFSETOF(SparingEvent, __nvoc_base_GpuStateChanged),
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(SparingEvent, __nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(SparingEvent, __nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(SparingEvent, __nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(SparingEvent, __nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
 };
 
 
 // Dynamic down-casting information
-const struct NVOC_CASTINFO __nvoc_castinfo__TpcRepairFailureNoSpareMig = {
+const struct NVOC_CASTINFO __nvoc_castinfo__SparingEvent = {
     .numRelatives = 6,
     .relatives = {
-        &__nvoc_metadata__TpcRepairFailureNoSpareMig.rtti,    // [0]: (tpcrepairfailurenosparemig) this
-        &__nvoc_metadata__TpcRepairFailureNoSpareMig.metadata__GpuResourceExhausted.rtti,    // [1]: (gpuresexh) super
-        &__nvoc_metadata__TpcRepairFailureNoSpareMig.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
-        &__nvoc_metadata__TpcRepairFailureNoSpareMig.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
-        &__nvoc_metadata__TpcRepairFailureNoSpareMig.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
-        &__nvoc_metadata__TpcRepairFailureNoSpareMig.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+        &__nvoc_metadata__SparingEvent.rtti,    // [0]: (sparingevent) this
+        &__nvoc_metadata__SparingEvent.metadata__GpuStateChanged.rtti,    // [1]: (gpustatechanged) super
+        &__nvoc_metadata__SparingEvent.metadata__GpuStateChanged.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__SparingEvent.metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__SparingEvent.metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__SparingEvent.metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
     }
 };
 
-const struct NVOC_EXPORT_INFO __nvoc_export_info__TpcRepairFailureNoSpareMig = 
+const struct NVOC_EXPORT_INFO __nvoc_export_info__SparingEvent = 
 {
     .numEntries=     0,
     .pExportEntries= 0
 };
 
 
-// Destruct TpcRepairFailureNoSpareMig object.
-void __nvoc_dtor_GpuResourceExhausted(Dynamic*);
-void __nvoc_dtor_TpcRepairFailureNoSpareMig(Dynamic* pThis) {
+// Destruct SparingEvent object.
+void __nvoc_dtor_GpuStateChanged(Dynamic*);
+void __nvoc_dtor_SparingEvent(Dynamic* pThis) {
 
-    TpcRepairFailureNoSpareMig *__nvoc_this = (TpcRepairFailureNoSpareMig *) pThis;
+    SparingEvent *__nvoc_this = (SparingEvent *) pThis;
 
 // Recurse to superclass destructors.
-    __nvoc_dtor_GpuResourceExhausted((Dynamic *) &__nvoc_this->__nvoc_base_GpuResourceExhausted);
+    __nvoc_dtor_GpuStateChanged((Dynamic *) &__nvoc_this->__nvoc_base_GpuStateChanged);
 
     PORT_UNREFERENCED_VARIABLE(__nvoc_this);
 }
-void __nvoc_init_dataField_TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig *pThis) {
+void __nvoc_init_dataField_SparingEvent(SparingEvent *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
 
-// Construct TpcRepairFailureNoSpareMig object.
-NV_STATUS __nvoc_ctor_GpuResourceExhausted(GpuResourceExhausted *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope);    // inline
-NV_STATUS __nvoc_ctor_TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig *pEvent, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId) {    // inline
+// Construct SparingEvent object.
+NV_STATUS __nvoc_ctor_GpuStateChanged(GpuStateChanged *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_SparingEvent(SparingEvent *pEvent, struct EventBus *pEventBus) {    // inline
     NV_STATUS status = NV_OK;
 
     // Recurse to ancestor constructor(s).
-    status = __nvoc_ctor_GpuResourceExhausted(&pEvent->__nvoc_base_GpuResourceExhausted, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_TPC_REPAIR_FAILURE_NO_SPARE_MIG, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE);
-    if (status != NV_OK) goto __nvoc_ctor_TpcRepairFailureNoSpareMig_fail_GpuResourceExhausted;
+    status = __nvoc_ctor_GpuStateChanged(&pEvent->__nvoc_base_GpuStateChanged, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_SPARING_EVENT, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_NOTICE);
+    if (status != NV_OK) goto __nvoc_ctor_SparingEvent_fail_GpuStateChanged;
 
     // Initialize data fields.
-    __nvoc_init_dataField_TpcRepairFailureNoSpareMig(pEvent);
+    __nvoc_init_dataField_SparingEvent(pEvent);
 
     // Call the constructor for this class.
-    status = __nvoc_tpcrepairfailurenosparemigConstruct(pEvent, pEventBus, tpcId, gpcId);
-    if (status != NV_OK) goto __nvoc_ctor_TpcRepairFailureNoSpareMig_fail__init;
-    goto __nvoc_ctor_TpcRepairFailureNoSpareMig_exit; // Success
+    status = __nvoc_sparingeventConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_SparingEvent_fail__init;
+    goto __nvoc_ctor_SparingEvent_exit; // Success
 
     // Unwind on error.
-__nvoc_ctor_TpcRepairFailureNoSpareMig_fail__init:
-    __nvoc_dtor_GpuResourceExhausted((Dynamic *)&pEvent->__nvoc_base_GpuResourceExhausted);
-__nvoc_ctor_TpcRepairFailureNoSpareMig_fail_GpuResourceExhausted:
-__nvoc_ctor_TpcRepairFailureNoSpareMig_exit:
+__nvoc_ctor_SparingEvent_fail__init:
+    __nvoc_dtor_GpuStateChanged((Dynamic *)&pEvent->__nvoc_base_GpuStateChanged);
+__nvoc_ctor_SparingEvent_fail_GpuStateChanged:
+__nvoc_ctor_SparingEvent_exit:
     return status;
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_TpcRepairFailureNoSpareMig_1(TpcRepairFailureNoSpareMig *pThis) {
+static void __nvoc_init_funcTable_SparingEvent_1(SparingEvent *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-} // End __nvoc_init_funcTable_TpcRepairFailureNoSpareMig_1
+} // End __nvoc_init_funcTable_SparingEvent_1
 
 
 // Initialize vtable(s): Nothing to do for empty vtables
-void __nvoc_init_funcTable_TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig *pThis) {
-    __nvoc_init_funcTable_TpcRepairFailureNoSpareMig_1(pThis);
+void __nvoc_init_funcTable_SparingEvent(SparingEvent *pThis) {
+    __nvoc_init_funcTable_SparingEvent_1(pThis);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig *pThis) {
+void __nvoc_init__SparingEvent(SparingEvent *pThis) {
 
     // Initialize pointers to inherited data.
-    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
-    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
-    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
-    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
-    pThis->__nvoc_pbase_GpuResourceExhausted = &pThis->__nvoc_base_GpuResourceExhausted;    // (gpuresexh) super
-    pThis->__nvoc_pbase_TpcRepairFailureNoSpareMig = pThis;    // (tpcrepairfailurenosparemig) this
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuStateChanged = &pThis->__nvoc_base_GpuStateChanged;    // (gpustatechanged) super
+    pThis->__nvoc_pbase_SparingEvent = pThis;    // (sparingevent) this
 
     // Recurse to superclass initialization function(s).
-    __nvoc_init__GpuResourceExhausted(&pThis->__nvoc_base_GpuResourceExhausted);
+    __nvoc_init__GpuStateChanged(&pThis->__nvoc_base_GpuStateChanged);
 
     // Pointer(s) to metadata structures(s)
-    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpareMig.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
-    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpareMig.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
-    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpareMig.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
-    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpareMig.metadata__GpuResourceExhausted.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
-    pThis->__nvoc_base_GpuResourceExhausted.__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpareMig.metadata__GpuResourceExhausted;    // (gpuresexh) super
-    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__TpcRepairFailureNoSpareMig;    // (tpcrepairfailurenosparemig) this
+    pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__SparingEvent.metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__SparingEvent.metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__SparingEvent.metadata__GpuStateChanged.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__SparingEvent.metadata__GpuStateChanged.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuStateChanged.__nvoc_metadata_ptr = &__nvoc_metadata__SparingEvent.metadata__GpuStateChanged;    // (gpustatechanged) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__SparingEvent;    // (sparingevent) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_TpcRepairFailureNoSpareMig(pThis);
+    __nvoc_init_funcTable_SparingEvent(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 tpcId, NvU32 gpcId)
+NV_STATUS __nvoc_objCreate_SparingEvent(SparingEvent **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
 {
     NV_STATUS __nvoc_status;
     Object *__nvoc_pParentObj = NULL;
-    TpcRepairFailureNoSpareMig *__nvoc_pThis;
+    SparingEvent *__nvoc_pThis;
 
     // Don't allocate memory if the caller has already done so.
     if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
@@ -4543,30 +4297,30 @@ NV_STATUS __nvoc_objCreate_TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig
     // Allocate memory
     else
     {
-        __nvoc_pThis = portMemAllocNonPaged(sizeof(TpcRepairFailureNoSpareMig));
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(SparingEvent));
         NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
     }
 
     // Zero is the initial value for everything.
-    portMemSet(__nvoc_pThis, 0, sizeof(TpcRepairFailureNoSpareMig));
+    portMemSet(__nvoc_pThis, 0, sizeof(SparingEvent));
 
-    __nvoc_pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+    __nvoc_pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
 
     // Link the child into the parent if there is one unless flagged not to do so.
     if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
-        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
     }
     else
     {
-        __nvoc_pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+        __nvoc_pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
     }
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__TpcRepairFailureNoSpareMig(__nvoc_pThis);
-    __nvoc_status = __nvoc_ctor_TpcRepairFailureNoSpareMig(__nvoc_pThis, pEventBus, tpcId, gpcId);
-    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_TpcRepairFailureNoSpareMig_cleanup;
+    __nvoc_init__SparingEvent(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_SparingEvent(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_SparingEvent_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *__nvoc_ppThis = __nvoc_pThis;
@@ -4575,15 +4329,15 @@ NV_STATUS __nvoc_objCreate_TpcRepairFailureNoSpareMig(TpcRepairFailureNoSpareMig
     return NV_OK;
 
     // Do not call destructors here since the constructor already called them.
-__nvoc_objCreate_TpcRepairFailureNoSpareMig_cleanup:
+__nvoc_objCreate_SparingEvent_cleanup:
 
     // Unlink the child from the parent if it was linked above.
     if (__nvoc_pParentObj != NULL)
-        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuResourceExhausted.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuStateChanged.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
 
     // Zero out memory that was allocated by caller.
     if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
-        portMemSet(__nvoc_pThis, 0, sizeof(TpcRepairFailureNoSpareMig));
+        portMemSet(__nvoc_pThis, 0, sizeof(SparingEvent));
 
     // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
     else
@@ -4596,12 +4350,6037 @@ __nvoc_objCreate_TpcRepairFailureNoSpareMig_cleanup:
     return __nvoc_status;
 }
 
-NV_STATUS __nvoc_objCreateDynamic_TpcRepairFailureNoSpareMig(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+NV_STATUS __nvoc_objCreateDynamic_SparingEvent(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
     struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
-    NvU32 tpcId = va_arg(__nvoc_args, NvU32);
-    NvU32 gpcId = va_arg(__nvoc_args, NvU32);
 
-    return __nvoc_objCreate_TpcRepairFailureNoSpareMig((TpcRepairFailureNoSpareMig **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, tpcId, gpcId);
+    return __nvoc_objCreate_SparingEvent((SparingEvent **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__62b176 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LtcError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for LtcError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__LtcError(LtcError*);
+void __nvoc_init_funcTable_LtcError(LtcError*);
+NV_STATUS __nvoc_ctor_LtcError(LtcError*, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc);
+void __nvoc_init_dataField_LtcError(LtcError*);
+void __nvoc_dtor_LtcError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__LtcError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__LtcError;
+
+// Down-thunk(s) to bridge LtcError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge LtcError methods to ancestors (if any)
+
+// Class-specific details for LtcError
+const struct NVOC_CLASS_DEF __nvoc_class_def_LtcError = 
+{
+    .classInfo.size =               sizeof(LtcError),
+    .classInfo.classId =            classId(LtcError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "LtcError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_LtcError,
+    .pCastInfo =          &__nvoc_castinfo__LtcError,
+    .pExportInfo =        &__nvoc_export_info__LtcError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__LtcError __nvoc_metadata__LtcError = {
+    .rtti.pClassDef = &__nvoc_class_def_LtcError,    // (ltcerr) this
+    .rtti.dtor      = &__nvoc_dtor_LtcError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(LtcError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(LtcError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(LtcError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(LtcError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(LtcError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__LtcError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__LtcError.rtti,    // [0]: (ltcerr) this
+        &__nvoc_metadata__LtcError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__LtcError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__LtcError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__LtcError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__LtcError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__LtcError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct LtcError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_LtcError(Dynamic* pThis) {
+
+    LtcError *__nvoc_this = (LtcError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_LtcError(LtcError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct LtcError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_LtcError(LtcError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_LTC_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_LtcError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_LtcError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_ltcerrConstruct(pEvent, pEventBus, loc);
+    if (status != NV_OK) goto __nvoc_ctor_LtcError_fail__init;
+    goto __nvoc_ctor_LtcError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_LtcError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_LtcError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_LtcError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_LtcError_1(LtcError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_LtcError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_LtcError(LtcError *pThis) {
+    __nvoc_init_funcTable_LtcError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__LtcError(LtcError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_LtcError = pThis;    // (ltcerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__LtcError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__LtcError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LtcError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LtcError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__LtcError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__LtcError;    // (ltcerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_LtcError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_LtcError(LtcError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    LtcError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(LtcError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(LtcError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__LtcError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_LtcError(__nvoc_pThis, pEventBus, loc);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_LtcError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_LtcError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(LtcError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_LtcError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NV_ERROR_CONT_LOCATION loc = va_arg(__nvoc_args, NV_ERROR_CONT_LOCATION);
+
+    return __nvoc_objCreate_LtcError((LtcError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__3080d3 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_DramError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for DramError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__DramError(DramError*);
+void __nvoc_init_funcTable_DramError(DramError*);
+NV_STATUS __nvoc_ctor_DramError(DramError*, struct EventBus *pEventBus, NvU32 fbpa, NvU32 sublocation, NvU64 physicalAddress, NvBool bHbm, NvU32 encodedBankRemapRegVal);
+void __nvoc_init_dataField_DramError(DramError*);
+void __nvoc_dtor_DramError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__DramError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__DramError;
+
+// Down-thunk(s) to bridge DramError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge DramError methods to ancestors (if any)
+
+// Class-specific details for DramError
+const struct NVOC_CLASS_DEF __nvoc_class_def_DramError = 
+{
+    .classInfo.size =               sizeof(DramError),
+    .classInfo.classId =            classId(DramError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "DramError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_DramError,
+    .pCastInfo =          &__nvoc_castinfo__DramError,
+    .pExportInfo =        &__nvoc_export_info__DramError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__DramError __nvoc_metadata__DramError = {
+    .rtti.pClassDef = &__nvoc_class_def_DramError,    // (dramerr) this
+    .rtti.dtor      = &__nvoc_dtor_DramError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(DramError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(DramError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(DramError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(DramError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(DramError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__DramError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__DramError.rtti,    // [0]: (dramerr) this
+        &__nvoc_metadata__DramError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__DramError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__DramError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__DramError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__DramError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__DramError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct DramError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_DramError(Dynamic* pThis) {
+
+    DramError *__nvoc_this = (DramError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_DramError(DramError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct DramError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_DramError(DramError *pEvent, struct EventBus *pEventBus, NvU32 fbpa, NvU32 sublocation, NvU64 physicalAddress, NvBool bHbm, NvU32 encodedBankRemapRegVal) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_DRAM_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_DramError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_DramError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_dramerrConstruct(pEvent, pEventBus, fbpa, sublocation, physicalAddress, bHbm, encodedBankRemapRegVal);
+    if (status != NV_OK) goto __nvoc_ctor_DramError_fail__init;
+    goto __nvoc_ctor_DramError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_DramError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_DramError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_DramError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_DramError_1(DramError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_DramError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_DramError(DramError *pThis) {
+    __nvoc_init_funcTable_DramError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__DramError(DramError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_DramError = pThis;    // (dramerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__DramError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__DramError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__DramError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__DramError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__DramError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__DramError;    // (dramerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_DramError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_DramError(DramError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 fbpa, NvU32 sublocation, NvU64 physicalAddress, NvBool bHbm, NvU32 encodedBankRemapRegVal)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    DramError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(DramError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(DramError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__DramError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_DramError(__nvoc_pThis, pEventBus, fbpa, sublocation, physicalAddress, bHbm, encodedBankRemapRegVal);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_DramError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_DramError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(DramError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_DramError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 fbpa = va_arg(__nvoc_args, NvU32);
+    NvU32 sublocation = va_arg(__nvoc_args, NvU32);
+    NvU64 physicalAddress = va_arg(__nvoc_args, NvU64);
+    NvBool bHbm = (NvBool) va_arg(__nvoc_args, NvU32);
+    NvU32 encodedBankRemapRegVal = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_DramError((DramError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, fbpa, sublocation, physicalAddress, bHbm, encodedBankRemapRegVal);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__a8a87c = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_DramSidebandError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for DramSidebandError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__DramSidebandError(DramSidebandError*);
+void __nvoc_init_funcTable_DramSidebandError(DramSidebandError*);
+NV_STATUS __nvoc_ctor_DramSidebandError(DramSidebandError*, struct EventBus *pEventBus, NvU32 fbpa, NvU32 sublocation, NvU64 physicalAddress, NvU32 encodedBankRemapRegVal);
+void __nvoc_init_dataField_DramSidebandError(DramSidebandError*);
+void __nvoc_dtor_DramSidebandError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__DramSidebandError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__DramSidebandError;
+
+// Down-thunk(s) to bridge DramSidebandError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge DramSidebandError methods to ancestors (if any)
+
+// Class-specific details for DramSidebandError
+const struct NVOC_CLASS_DEF __nvoc_class_def_DramSidebandError = 
+{
+    .classInfo.size =               sizeof(DramSidebandError),
+    .classInfo.classId =            classId(DramSidebandError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "DramSidebandError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_DramSidebandError,
+    .pCastInfo =          &__nvoc_castinfo__DramSidebandError,
+    .pExportInfo =        &__nvoc_export_info__DramSidebandError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__DramSidebandError __nvoc_metadata__DramSidebandError = {
+    .rtti.pClassDef = &__nvoc_class_def_DramSidebandError,    // (dramsidebanderr) this
+    .rtti.dtor      = &__nvoc_dtor_DramSidebandError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(DramSidebandError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(DramSidebandError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(DramSidebandError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(DramSidebandError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(DramSidebandError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__DramSidebandError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__DramSidebandError.rtti,    // [0]: (dramsidebanderr) this
+        &__nvoc_metadata__DramSidebandError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__DramSidebandError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__DramSidebandError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__DramSidebandError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__DramSidebandError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__DramSidebandError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct DramSidebandError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_DramSidebandError(Dynamic* pThis) {
+
+    DramSidebandError *__nvoc_this = (DramSidebandError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_DramSidebandError(DramSidebandError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct DramSidebandError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_DramSidebandError(DramSidebandError *pEvent, struct EventBus *pEventBus, NvU32 fbpa, NvU32 sublocation, NvU64 physicalAddress, NvU32 encodedBankRemapRegVal) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_DRAM_SIDEBAND_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_DramSidebandError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_DramSidebandError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_dramsidebanderrConstruct(pEvent, pEventBus, fbpa, sublocation, physicalAddress, encodedBankRemapRegVal);
+    if (status != NV_OK) goto __nvoc_ctor_DramSidebandError_fail__init;
+    goto __nvoc_ctor_DramSidebandError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_DramSidebandError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_DramSidebandError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_DramSidebandError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_DramSidebandError_1(DramSidebandError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_DramSidebandError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_DramSidebandError(DramSidebandError *pThis) {
+    __nvoc_init_funcTable_DramSidebandError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__DramSidebandError(DramSidebandError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_DramSidebandError = pThis;    // (dramsidebanderr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__DramSidebandError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__DramSidebandError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__DramSidebandError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__DramSidebandError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__DramSidebandError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__DramSidebandError;    // (dramsidebanderr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_DramSidebandError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_DramSidebandError(DramSidebandError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 fbpa, NvU32 sublocation, NvU64 physicalAddress, NvU32 encodedBankRemapRegVal)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    DramSidebandError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(DramSidebandError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(DramSidebandError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__DramSidebandError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_DramSidebandError(__nvoc_pThis, pEventBus, fbpa, sublocation, physicalAddress, encodedBankRemapRegVal);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_DramSidebandError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_DramSidebandError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(DramSidebandError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_DramSidebandError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 fbpa = va_arg(__nvoc_args, NvU32);
+    NvU32 sublocation = va_arg(__nvoc_args, NvU32);
+    NvU64 physicalAddress = va_arg(__nvoc_args, NvU64);
+    NvU32 encodedBankRemapRegVal = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_DramSidebandError((DramSidebandError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, fbpa, sublocation, physicalAddress, encodedBankRemapRegVal);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__1689b9 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_DramCbcFatalError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for DramCbcFatalError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__DramCbcFatalError(DramCbcFatalError*);
+void __nvoc_init_funcTable_DramCbcFatalError(DramCbcFatalError*);
+NV_STATUS __nvoc_ctor_DramCbcFatalError(DramCbcFatalError*, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, NvBool bHbm);
+void __nvoc_init_dataField_DramCbcFatalError(DramCbcFatalError*);
+void __nvoc_dtor_DramCbcFatalError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__DramCbcFatalError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__DramCbcFatalError;
+
+// Down-thunk(s) to bridge DramCbcFatalError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge DramCbcFatalError methods to ancestors (if any)
+
+// Class-specific details for DramCbcFatalError
+const struct NVOC_CLASS_DEF __nvoc_class_def_DramCbcFatalError = 
+{
+    .classInfo.size =               sizeof(DramCbcFatalError),
+    .classInfo.classId =            classId(DramCbcFatalError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "DramCbcFatalError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_DramCbcFatalError,
+    .pCastInfo =          &__nvoc_castinfo__DramCbcFatalError,
+    .pExportInfo =        &__nvoc_export_info__DramCbcFatalError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__DramCbcFatalError __nvoc_metadata__DramCbcFatalError = {
+    .rtti.pClassDef = &__nvoc_class_def_DramCbcFatalError,    // (dramcbcfatalerr) this
+    .rtti.dtor      = &__nvoc_dtor_DramCbcFatalError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(DramCbcFatalError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(DramCbcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(DramCbcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(DramCbcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(DramCbcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__DramCbcFatalError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__DramCbcFatalError.rtti,    // [0]: (dramcbcfatalerr) this
+        &__nvoc_metadata__DramCbcFatalError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__DramCbcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__DramCbcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__DramCbcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__DramCbcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__DramCbcFatalError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct DramCbcFatalError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_DramCbcFatalError(Dynamic* pThis) {
+
+    DramCbcFatalError *__nvoc_this = (DramCbcFatalError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_DramCbcFatalError(DramCbcFatalError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct DramCbcFatalError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_DramCbcFatalError(DramCbcFatalError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, NvBool bHbm) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_DRAM_CBC_FATAL_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)) | (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 0 : 0)) % 32) + ((((0 != 0) ? 0 : 0)) % 32)))) << ((((0 != 0) ? 0 : 0)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_DramCbcFatalError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_DramCbcFatalError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_dramcbcfatalerrConstruct(pEvent, pEventBus, loc, bHbm);
+    if (status != NV_OK) goto __nvoc_ctor_DramCbcFatalError_fail__init;
+    goto __nvoc_ctor_DramCbcFatalError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_DramCbcFatalError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_DramCbcFatalError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_DramCbcFatalError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_DramCbcFatalError_1(DramCbcFatalError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_DramCbcFatalError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_DramCbcFatalError(DramCbcFatalError *pThis) {
+    __nvoc_init_funcTable_DramCbcFatalError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__DramCbcFatalError(DramCbcFatalError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_DramCbcFatalError = pThis;    // (dramcbcfatalerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcFatalError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcFatalError;    // (dramcbcfatalerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_DramCbcFatalError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_DramCbcFatalError(DramCbcFatalError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, NvBool bHbm)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    DramCbcFatalError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(DramCbcFatalError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(DramCbcFatalError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__DramCbcFatalError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_DramCbcFatalError(__nvoc_pThis, pEventBus, loc, bHbm);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_DramCbcFatalError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_DramCbcFatalError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(DramCbcFatalError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_DramCbcFatalError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NV_ERROR_CONT_LOCATION loc = va_arg(__nvoc_args, NV_ERROR_CONT_LOCATION);
+    NvBool bHbm = (NvBool) va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_DramCbcFatalError((DramCbcFatalError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc, bHbm);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__b1540a = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_DramCbcNonFatalError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for DramCbcNonFatalError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__DramCbcNonFatalError(DramCbcNonFatalError*);
+void __nvoc_init_funcTable_DramCbcNonFatalError(DramCbcNonFatalError*);
+NV_STATUS __nvoc_ctor_DramCbcNonFatalError(DramCbcNonFatalError*, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, NvBool bHbm);
+void __nvoc_init_dataField_DramCbcNonFatalError(DramCbcNonFatalError*);
+void __nvoc_dtor_DramCbcNonFatalError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__DramCbcNonFatalError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__DramCbcNonFatalError;
+
+// Down-thunk(s) to bridge DramCbcNonFatalError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge DramCbcNonFatalError methods to ancestors (if any)
+
+// Class-specific details for DramCbcNonFatalError
+const struct NVOC_CLASS_DEF __nvoc_class_def_DramCbcNonFatalError = 
+{
+    .classInfo.size =               sizeof(DramCbcNonFatalError),
+    .classInfo.classId =            classId(DramCbcNonFatalError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "DramCbcNonFatalError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_DramCbcNonFatalError,
+    .pCastInfo =          &__nvoc_castinfo__DramCbcNonFatalError,
+    .pExportInfo =        &__nvoc_export_info__DramCbcNonFatalError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__DramCbcNonFatalError __nvoc_metadata__DramCbcNonFatalError = {
+    .rtti.pClassDef = &__nvoc_class_def_DramCbcNonFatalError,    // (dramcbcnonfatalerr) this
+    .rtti.dtor      = &__nvoc_dtor_DramCbcNonFatalError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(DramCbcNonFatalError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(DramCbcNonFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(DramCbcNonFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(DramCbcNonFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(DramCbcNonFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__DramCbcNonFatalError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__DramCbcNonFatalError.rtti,    // [0]: (dramcbcnonfatalerr) this
+        &__nvoc_metadata__DramCbcNonFatalError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__DramCbcNonFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__DramCbcNonFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__DramCbcNonFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__DramCbcNonFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__DramCbcNonFatalError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct DramCbcNonFatalError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_DramCbcNonFatalError(Dynamic* pThis) {
+
+    DramCbcNonFatalError *__nvoc_this = (DramCbcNonFatalError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_DramCbcNonFatalError(DramCbcNonFatalError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct DramCbcNonFatalError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_DramCbcNonFatalError(DramCbcNonFatalError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, NvBool bHbm) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_DRAM_CBC_NON_FATAL_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_DramCbcNonFatalError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_DramCbcNonFatalError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_dramcbcnonfatalerrConstruct(pEvent, pEventBus, loc, bHbm);
+    if (status != NV_OK) goto __nvoc_ctor_DramCbcNonFatalError_fail__init;
+    goto __nvoc_ctor_DramCbcNonFatalError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_DramCbcNonFatalError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_DramCbcNonFatalError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_DramCbcNonFatalError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_DramCbcNonFatalError_1(DramCbcNonFatalError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_DramCbcNonFatalError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_DramCbcNonFatalError(DramCbcNonFatalError *pThis) {
+    __nvoc_init_funcTable_DramCbcNonFatalError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__DramCbcNonFatalError(DramCbcNonFatalError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_DramCbcNonFatalError = pThis;    // (dramcbcnonfatalerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcNonFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcNonFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcNonFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcNonFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcNonFatalError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__DramCbcNonFatalError;    // (dramcbcnonfatalerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_DramCbcNonFatalError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_DramCbcNonFatalError(DramCbcNonFatalError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, NvBool bHbm)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    DramCbcNonFatalError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(DramCbcNonFatalError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(DramCbcNonFatalError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__DramCbcNonFatalError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_DramCbcNonFatalError(__nvoc_pThis, pEventBus, loc, bHbm);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_DramCbcNonFatalError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_DramCbcNonFatalError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(DramCbcNonFatalError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_DramCbcNonFatalError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NV_ERROR_CONT_LOCATION loc = va_arg(__nvoc_args, NV_ERROR_CONT_LOCATION);
+    NvBool bHbm = (NvBool) va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_DramCbcNonFatalError((DramCbcNonFatalError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc, bHbm);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__9cb3f5 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LtcFatalError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for LtcFatalError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__LtcFatalError(LtcFatalError*);
+void __nvoc_init_funcTable_LtcFatalError(LtcFatalError*);
+NV_STATUS __nvoc_ctor_LtcFatalError(LtcFatalError*, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, L2_ERROR_TYPE errorType);
+void __nvoc_init_dataField_LtcFatalError(LtcFatalError*);
+void __nvoc_dtor_LtcFatalError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__LtcFatalError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__LtcFatalError;
+
+// Down-thunk(s) to bridge LtcFatalError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge LtcFatalError methods to ancestors (if any)
+
+// Class-specific details for LtcFatalError
+const struct NVOC_CLASS_DEF __nvoc_class_def_LtcFatalError = 
+{
+    .classInfo.size =               sizeof(LtcFatalError),
+    .classInfo.classId =            classId(LtcFatalError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "LtcFatalError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_LtcFatalError,
+    .pCastInfo =          &__nvoc_castinfo__LtcFatalError,
+    .pExportInfo =        &__nvoc_export_info__LtcFatalError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__LtcFatalError __nvoc_metadata__LtcFatalError = {
+    .rtti.pClassDef = &__nvoc_class_def_LtcFatalError,    // (ltcfatalerr) this
+    .rtti.dtor      = &__nvoc_dtor_LtcFatalError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(LtcFatalError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(LtcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(LtcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(LtcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(LtcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__LtcFatalError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__LtcFatalError.rtti,    // [0]: (ltcfatalerr) this
+        &__nvoc_metadata__LtcFatalError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__LtcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__LtcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__LtcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__LtcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__LtcFatalError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct LtcFatalError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_LtcFatalError(Dynamic* pThis) {
+
+    LtcFatalError *__nvoc_this = (LtcFatalError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_LtcFatalError(LtcFatalError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct LtcFatalError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_LtcFatalError(LtcFatalError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, L2_ERROR_TYPE errorType) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_LTC_FATAL_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_LtcFatalError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_LtcFatalError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_ltcfatalerrConstruct(pEvent, pEventBus, loc, errorType);
+    if (status != NV_OK) goto __nvoc_ctor_LtcFatalError_fail__init;
+    goto __nvoc_ctor_LtcFatalError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_LtcFatalError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_LtcFatalError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_LtcFatalError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_LtcFatalError_1(LtcFatalError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_LtcFatalError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_LtcFatalError(LtcFatalError *pThis) {
+    __nvoc_init_funcTable_LtcFatalError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__LtcFatalError(LtcFatalError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_LtcFatalError = pThis;    // (ltcfatalerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__LtcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__LtcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LtcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LtcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__LtcFatalError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__LtcFatalError;    // (ltcfatalerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_LtcFatalError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_LtcFatalError(LtcFatalError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc, L2_ERROR_TYPE errorType)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    LtcFatalError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(LtcFatalError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(LtcFatalError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__LtcFatalError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_LtcFatalError(__nvoc_pThis, pEventBus, loc, errorType);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_LtcFatalError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_LtcFatalError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(LtcFatalError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_LtcFatalError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NV_ERROR_CONT_LOCATION loc = va_arg(__nvoc_args, NV_ERROR_CONT_LOCATION);
+    L2_ERROR_TYPE errorType = va_arg(__nvoc_args, L2_ERROR_TYPE);
+
+    return __nvoc_objCreate_LtcFatalError((LtcFatalError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc, errorType);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__d5e463 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LtcUnsupportedClientPoisonUncontainedError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for LtcUnsupportedClientPoisonUncontainedError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__LtcUnsupportedClientPoisonUncontainedError(LtcUnsupportedClientPoisonUncontainedError*);
+void __nvoc_init_funcTable_LtcUnsupportedClientPoisonUncontainedError(LtcUnsupportedClientPoisonUncontainedError*);
+NV_STATUS __nvoc_ctor_LtcUnsupportedClientPoisonUncontainedError(LtcUnsupportedClientPoisonUncontainedError*, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc);
+void __nvoc_init_dataField_LtcUnsupportedClientPoisonUncontainedError(LtcUnsupportedClientPoisonUncontainedError*);
+void __nvoc_dtor_LtcUnsupportedClientPoisonUncontainedError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__LtcUnsupportedClientPoisonUncontainedError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__LtcUnsupportedClientPoisonUncontainedError;
+
+// Down-thunk(s) to bridge LtcUnsupportedClientPoisonUncontainedError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge LtcUnsupportedClientPoisonUncontainedError methods to ancestors (if any)
+
+// Class-specific details for LtcUnsupportedClientPoisonUncontainedError
+const struct NVOC_CLASS_DEF __nvoc_class_def_LtcUnsupportedClientPoisonUncontainedError = 
+{
+    .classInfo.size =               sizeof(LtcUnsupportedClientPoisonUncontainedError),
+    .classInfo.classId =            classId(LtcUnsupportedClientPoisonUncontainedError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "LtcUnsupportedClientPoisonUncontainedError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_LtcUnsupportedClientPoisonUncontainedError,
+    .pCastInfo =          &__nvoc_castinfo__LtcUnsupportedClientPoisonUncontainedError,
+    .pExportInfo =        &__nvoc_export_info__LtcUnsupportedClientPoisonUncontainedError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__LtcUnsupportedClientPoisonUncontainedError __nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError = {
+    .rtti.pClassDef = &__nvoc_class_def_LtcUnsupportedClientPoisonUncontainedError,    // (ltcclientpoisonuncontainederr) this
+    .rtti.dtor      = &__nvoc_dtor_LtcUnsupportedClientPoisonUncontainedError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(LtcUnsupportedClientPoisonUncontainedError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(LtcUnsupportedClientPoisonUncontainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(LtcUnsupportedClientPoisonUncontainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(LtcUnsupportedClientPoisonUncontainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(LtcUnsupportedClientPoisonUncontainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__LtcUnsupportedClientPoisonUncontainedError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError.rtti,    // [0]: (ltcclientpoisonuncontainederr) this
+        &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__LtcUnsupportedClientPoisonUncontainedError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct LtcUnsupportedClientPoisonUncontainedError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_LtcUnsupportedClientPoisonUncontainedError(Dynamic* pThis) {
+
+    LtcUnsupportedClientPoisonUncontainedError *__nvoc_this = (LtcUnsupportedClientPoisonUncontainedError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_LtcUnsupportedClientPoisonUncontainedError(LtcUnsupportedClientPoisonUncontainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct LtcUnsupportedClientPoisonUncontainedError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_LtcUnsupportedClientPoisonUncontainedError(LtcUnsupportedClientPoisonUncontainedError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_LTC_UNSUPPORTED_CLIENT_POISON_UNCONTAINED_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_LtcUnsupportedClientPoisonUncontainedError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_LtcUnsupportedClientPoisonUncontainedError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_ltcclientpoisonuncontainederrConstruct(pEvent, pEventBus, loc);
+    if (status != NV_OK) goto __nvoc_ctor_LtcUnsupportedClientPoisonUncontainedError_fail__init;
+    goto __nvoc_ctor_LtcUnsupportedClientPoisonUncontainedError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_LtcUnsupportedClientPoisonUncontainedError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_LtcUnsupportedClientPoisonUncontainedError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_LtcUnsupportedClientPoisonUncontainedError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_LtcUnsupportedClientPoisonUncontainedError_1(LtcUnsupportedClientPoisonUncontainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_LtcUnsupportedClientPoisonUncontainedError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_LtcUnsupportedClientPoisonUncontainedError(LtcUnsupportedClientPoisonUncontainedError *pThis) {
+    __nvoc_init_funcTable_LtcUnsupportedClientPoisonUncontainedError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__LtcUnsupportedClientPoisonUncontainedError(LtcUnsupportedClientPoisonUncontainedError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_LtcUnsupportedClientPoisonUncontainedError = pThis;    // (ltcclientpoisonuncontainederr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonUncontainedError;    // (ltcclientpoisonuncontainederr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_LtcUnsupportedClientPoisonUncontainedError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_LtcUnsupportedClientPoisonUncontainedError(LtcUnsupportedClientPoisonUncontainedError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    LtcUnsupportedClientPoisonUncontainedError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(LtcUnsupportedClientPoisonUncontainedError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(LtcUnsupportedClientPoisonUncontainedError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__LtcUnsupportedClientPoisonUncontainedError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_LtcUnsupportedClientPoisonUncontainedError(__nvoc_pThis, pEventBus, loc);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_LtcUnsupportedClientPoisonUncontainedError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_LtcUnsupportedClientPoisonUncontainedError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(LtcUnsupportedClientPoisonUncontainedError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_LtcUnsupportedClientPoisonUncontainedError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NV_ERROR_CONT_LOCATION loc = va_arg(__nvoc_args, NV_ERROR_CONT_LOCATION);
+
+    return __nvoc_objCreate_LtcUnsupportedClientPoisonUncontainedError((LtcUnsupportedClientPoisonUncontainedError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__355a88 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LtcUnsupportedClientPoisonContainedError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for LtcUnsupportedClientPoisonContainedError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__LtcUnsupportedClientPoisonContainedError(LtcUnsupportedClientPoisonContainedError*);
+void __nvoc_init_funcTable_LtcUnsupportedClientPoisonContainedError(LtcUnsupportedClientPoisonContainedError*);
+NV_STATUS __nvoc_ctor_LtcUnsupportedClientPoisonContainedError(LtcUnsupportedClientPoisonContainedError*, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc);
+void __nvoc_init_dataField_LtcUnsupportedClientPoisonContainedError(LtcUnsupportedClientPoisonContainedError*);
+void __nvoc_dtor_LtcUnsupportedClientPoisonContainedError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__LtcUnsupportedClientPoisonContainedError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__LtcUnsupportedClientPoisonContainedError;
+
+// Down-thunk(s) to bridge LtcUnsupportedClientPoisonContainedError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge LtcUnsupportedClientPoisonContainedError methods to ancestors (if any)
+
+// Class-specific details for LtcUnsupportedClientPoisonContainedError
+const struct NVOC_CLASS_DEF __nvoc_class_def_LtcUnsupportedClientPoisonContainedError = 
+{
+    .classInfo.size =               sizeof(LtcUnsupportedClientPoisonContainedError),
+    .classInfo.classId =            classId(LtcUnsupportedClientPoisonContainedError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "LtcUnsupportedClientPoisonContainedError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_LtcUnsupportedClientPoisonContainedError,
+    .pCastInfo =          &__nvoc_castinfo__LtcUnsupportedClientPoisonContainedError,
+    .pExportInfo =        &__nvoc_export_info__LtcUnsupportedClientPoisonContainedError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__LtcUnsupportedClientPoisonContainedError __nvoc_metadata__LtcUnsupportedClientPoisonContainedError = {
+    .rtti.pClassDef = &__nvoc_class_def_LtcUnsupportedClientPoisonContainedError,    // (ltcclientpoisoncontainederr) this
+    .rtti.dtor      = &__nvoc_dtor_LtcUnsupportedClientPoisonContainedError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(LtcUnsupportedClientPoisonContainedError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(LtcUnsupportedClientPoisonContainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(LtcUnsupportedClientPoisonContainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(LtcUnsupportedClientPoisonContainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(LtcUnsupportedClientPoisonContainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__LtcUnsupportedClientPoisonContainedError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError.rtti,    // [0]: (ltcclientpoisoncontainederr) this
+        &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__LtcUnsupportedClientPoisonContainedError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct LtcUnsupportedClientPoisonContainedError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_LtcUnsupportedClientPoisonContainedError(Dynamic* pThis) {
+
+    LtcUnsupportedClientPoisonContainedError *__nvoc_this = (LtcUnsupportedClientPoisonContainedError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_LtcUnsupportedClientPoisonContainedError(LtcUnsupportedClientPoisonContainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct LtcUnsupportedClientPoisonContainedError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_LtcUnsupportedClientPoisonContainedError(LtcUnsupportedClientPoisonContainedError *pEvent, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_LTC_UNSUPPORTED_CLIENT_POISON_CONTAINED_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_LtcUnsupportedClientPoisonContainedError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_LtcUnsupportedClientPoisonContainedError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_ltcclientpoisoncontainederrConstruct(pEvent, pEventBus, loc);
+    if (status != NV_OK) goto __nvoc_ctor_LtcUnsupportedClientPoisonContainedError_fail__init;
+    goto __nvoc_ctor_LtcUnsupportedClientPoisonContainedError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_LtcUnsupportedClientPoisonContainedError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_LtcUnsupportedClientPoisonContainedError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_LtcUnsupportedClientPoisonContainedError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_LtcUnsupportedClientPoisonContainedError_1(LtcUnsupportedClientPoisonContainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_LtcUnsupportedClientPoisonContainedError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_LtcUnsupportedClientPoisonContainedError(LtcUnsupportedClientPoisonContainedError *pThis) {
+    __nvoc_init_funcTable_LtcUnsupportedClientPoisonContainedError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__LtcUnsupportedClientPoisonContainedError(LtcUnsupportedClientPoisonContainedError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_LtcUnsupportedClientPoisonContainedError = pThis;    // (ltcclientpoisoncontainederr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__LtcUnsupportedClientPoisonContainedError;    // (ltcclientpoisoncontainederr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_LtcUnsupportedClientPoisonContainedError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_LtcUnsupportedClientPoisonContainedError(LtcUnsupportedClientPoisonContainedError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NV_ERROR_CONT_LOCATION loc)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    LtcUnsupportedClientPoisonContainedError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(LtcUnsupportedClientPoisonContainedError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(LtcUnsupportedClientPoisonContainedError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__LtcUnsupportedClientPoisonContainedError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_LtcUnsupportedClientPoisonContainedError(__nvoc_pThis, pEventBus, loc);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_LtcUnsupportedClientPoisonContainedError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_LtcUnsupportedClientPoisonContainedError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(LtcUnsupportedClientPoisonContainedError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_LtcUnsupportedClientPoisonContainedError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NV_ERROR_CONT_LOCATION loc = va_arg(__nvoc_args, NV_ERROR_CONT_LOCATION);
+
+    return __nvoc_objCreate_LtcUnsupportedClientPoisonContainedError((LtcUnsupportedClientPoisonContainedError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, loc);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__075c90 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LrcFatalError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for LrcFatalError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__LrcFatalError(LrcFatalError*);
+void __nvoc_init_funcTable_LrcFatalError(LrcFatalError*);
+NV_STATUS __nvoc_ctor_LrcFatalError(LrcFatalError*, struct EventBus *pEventBus, NvU32 partition, NvU32 slice);
+void __nvoc_init_dataField_LrcFatalError(LrcFatalError*);
+void __nvoc_dtor_LrcFatalError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__LrcFatalError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__LrcFatalError;
+
+// Down-thunk(s) to bridge LrcFatalError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge LrcFatalError methods to ancestors (if any)
+
+// Class-specific details for LrcFatalError
+const struct NVOC_CLASS_DEF __nvoc_class_def_LrcFatalError = 
+{
+    .classInfo.size =               sizeof(LrcFatalError),
+    .classInfo.classId =            classId(LrcFatalError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "LrcFatalError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_LrcFatalError,
+    .pCastInfo =          &__nvoc_castinfo__LrcFatalError,
+    .pExportInfo =        &__nvoc_export_info__LrcFatalError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__LrcFatalError __nvoc_metadata__LrcFatalError = {
+    .rtti.pClassDef = &__nvoc_class_def_LrcFatalError,    // (lrcfatalerr) this
+    .rtti.dtor      = &__nvoc_dtor_LrcFatalError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(LrcFatalError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(LrcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(LrcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(LrcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(LrcFatalError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__LrcFatalError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__LrcFatalError.rtti,    // [0]: (lrcfatalerr) this
+        &__nvoc_metadata__LrcFatalError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__LrcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__LrcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__LrcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__LrcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__LrcFatalError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct LrcFatalError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_LrcFatalError(Dynamic* pThis) {
+
+    LrcFatalError *__nvoc_this = (LrcFatalError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_LrcFatalError(LrcFatalError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct LrcFatalError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_LrcFatalError(LrcFatalError *pEvent, struct EventBus *pEventBus, NvU32 partition, NvU32 slice) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_LRC_FATAL_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)) | (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 0 : 0)) % 32) + ((((0 != 0) ? 0 : 0)) % 32)))) << ((((0 != 0) ? 0 : 0)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_LrcFatalError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_LrcFatalError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_lrcfatalerrConstruct(pEvent, pEventBus, partition, slice);
+    if (status != NV_OK) goto __nvoc_ctor_LrcFatalError_fail__init;
+    goto __nvoc_ctor_LrcFatalError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_LrcFatalError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_LrcFatalError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_LrcFatalError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_LrcFatalError_1(LrcFatalError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_LrcFatalError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_LrcFatalError(LrcFatalError *pThis) {
+    __nvoc_init_funcTable_LrcFatalError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__LrcFatalError(LrcFatalError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_LrcFatalError = pThis;    // (lrcfatalerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__LrcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__LrcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LrcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LrcFatalError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__LrcFatalError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__LrcFatalError;    // (lrcfatalerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_LrcFatalError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_LrcFatalError(LrcFatalError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 partition, NvU32 slice)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    LrcFatalError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(LrcFatalError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(LrcFatalError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__LrcFatalError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_LrcFatalError(__nvoc_pThis, pEventBus, partition, slice);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_LrcFatalError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_LrcFatalError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(LrcFatalError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_LrcFatalError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 partition = va_arg(__nvoc_args, NvU32);
+    NvU32 slice = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_LrcFatalError((LrcFatalError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, partition, slice);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__fce4f3 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PcieIngressPoisonContainedError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuInterconnectError;
+
+// Forward declarations for PcieIngressPoisonContainedError
+void __nvoc_init__GpuInterconnectError(GpuInterconnectError*);
+void __nvoc_init__PcieIngressPoisonContainedError(PcieIngressPoisonContainedError*);
+void __nvoc_init_funcTable_PcieIngressPoisonContainedError(PcieIngressPoisonContainedError*);
+NV_STATUS __nvoc_ctor_PcieIngressPoisonContainedError(PcieIngressPoisonContainedError*, struct EventBus *pEventBus, NvU32 gfid);
+void __nvoc_init_dataField_PcieIngressPoisonContainedError(PcieIngressPoisonContainedError*);
+void __nvoc_dtor_PcieIngressPoisonContainedError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__PcieIngressPoisonContainedError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__PcieIngressPoisonContainedError;
+
+// Down-thunk(s) to bridge PcieIngressPoisonContainedError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge PcieIngressPoisonContainedError methods to ancestors (if any)
+
+// Class-specific details for PcieIngressPoisonContainedError
+const struct NVOC_CLASS_DEF __nvoc_class_def_PcieIngressPoisonContainedError = 
+{
+    .classInfo.size =               sizeof(PcieIngressPoisonContainedError),
+    .classInfo.classId =            classId(PcieIngressPoisonContainedError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "PcieIngressPoisonContainedError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_PcieIngressPoisonContainedError,
+    .pCastInfo =          &__nvoc_castinfo__PcieIngressPoisonContainedError,
+    .pExportInfo =        &__nvoc_export_info__PcieIngressPoisonContainedError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__PcieIngressPoisonContainedError __nvoc_metadata__PcieIngressPoisonContainedError = {
+    .rtti.pClassDef = &__nvoc_class_def_PcieIngressPoisonContainedError,    // (pcieingresspoisoncontainederr) this
+    .rtti.dtor      = &__nvoc_dtor_PcieIngressPoisonContainedError,
+    .rtti.offset    = 0,
+    .metadata__GpuInterconnectError.rtti.pClassDef = &__nvoc_class_def_GpuInterconnectError,    // (gpuinterconnecterr) super
+    .metadata__GpuInterconnectError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.rtti.offset    = NV_OFFSETOF(PcieIngressPoisonContainedError, __nvoc_base_GpuInterconnectError),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(PcieIngressPoisonContainedError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(PcieIngressPoisonContainedError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(PcieIngressPoisonContainedError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(PcieIngressPoisonContainedError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__PcieIngressPoisonContainedError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__PcieIngressPoisonContainedError.rtti,    // [0]: (pcieingresspoisoncontainederr) this
+        &__nvoc_metadata__PcieIngressPoisonContainedError.metadata__GpuInterconnectError.rtti,    // [1]: (gpuinterconnecterr) super
+        &__nvoc_metadata__PcieIngressPoisonContainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__PcieIngressPoisonContainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__PcieIngressPoisonContainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__PcieIngressPoisonContainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__PcieIngressPoisonContainedError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct PcieIngressPoisonContainedError object.
+void __nvoc_dtor_GpuInterconnectError(Dynamic*);
+void __nvoc_dtor_PcieIngressPoisonContainedError(Dynamic* pThis) {
+
+    PcieIngressPoisonContainedError *__nvoc_this = (PcieIngressPoisonContainedError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuInterconnectError((Dynamic *) &__nvoc_this->__nvoc_base_GpuInterconnectError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_PcieIngressPoisonContainedError(PcieIngressPoisonContainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct PcieIngressPoisonContainedError object.
+NV_STATUS __nvoc_ctor_GpuInterconnectError(GpuInterconnectError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_PcieIngressPoisonContainedError(PcieIngressPoisonContainedError *pEvent, struct EventBus *pEventBus, NvU32 gfid) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuInterconnectError(&pEvent->__nvoc_base_GpuInterconnectError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_PCIE_INGRESS_POISON_CONTAINED_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_PcieIngressPoisonContainedError_fail_GpuInterconnectError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_PcieIngressPoisonContainedError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_pcieingresspoisoncontainederrConstruct(pEvent, pEventBus, gfid);
+    if (status != NV_OK) goto __nvoc_ctor_PcieIngressPoisonContainedError_fail__init;
+    goto __nvoc_ctor_PcieIngressPoisonContainedError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_PcieIngressPoisonContainedError_fail__init:
+    __nvoc_dtor_GpuInterconnectError((Dynamic *)&pEvent->__nvoc_base_GpuInterconnectError);
+__nvoc_ctor_PcieIngressPoisonContainedError_fail_GpuInterconnectError:
+__nvoc_ctor_PcieIngressPoisonContainedError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_PcieIngressPoisonContainedError_1(PcieIngressPoisonContainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_PcieIngressPoisonContainedError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_PcieIngressPoisonContainedError(PcieIngressPoisonContainedError *pThis) {
+    __nvoc_init_funcTable_PcieIngressPoisonContainedError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__PcieIngressPoisonContainedError(PcieIngressPoisonContainedError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuInterconnectError = &pThis->__nvoc_base_GpuInterconnectError;    // (gpuinterconnecterr) super
+    pThis->__nvoc_pbase_PcieIngressPoisonContainedError = pThis;    // (pcieingresspoisoncontainederr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuInterconnectError(&pThis->__nvoc_base_GpuInterconnectError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonContainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonContainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonContainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonContainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonContainedError.metadata__GpuInterconnectError;    // (gpuinterconnecterr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonContainedError;    // (pcieingresspoisoncontainederr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_PcieIngressPoisonContainedError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_PcieIngressPoisonContainedError(PcieIngressPoisonContainedError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 gfid)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    PcieIngressPoisonContainedError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(PcieIngressPoisonContainedError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(PcieIngressPoisonContainedError));
+
+    __nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__PcieIngressPoisonContainedError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_PcieIngressPoisonContainedError(__nvoc_pThis, pEventBus, gfid);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_PcieIngressPoisonContainedError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_PcieIngressPoisonContainedError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(PcieIngressPoisonContainedError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_PcieIngressPoisonContainedError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 gfid = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_PcieIngressPoisonContainedError((PcieIngressPoisonContainedError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, gfid);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__f20fad = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PcieIngressPoisonUncontainedError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuInterconnectError;
+
+// Forward declarations for PcieIngressPoisonUncontainedError
+void __nvoc_init__GpuInterconnectError(GpuInterconnectError*);
+void __nvoc_init__PcieIngressPoisonUncontainedError(PcieIngressPoisonUncontainedError*);
+void __nvoc_init_funcTable_PcieIngressPoisonUncontainedError(PcieIngressPoisonUncontainedError*);
+NV_STATUS __nvoc_ctor_PcieIngressPoisonUncontainedError(PcieIngressPoisonUncontainedError*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_PcieIngressPoisonUncontainedError(PcieIngressPoisonUncontainedError*);
+void __nvoc_dtor_PcieIngressPoisonUncontainedError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__PcieIngressPoisonUncontainedError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__PcieIngressPoisonUncontainedError;
+
+// Down-thunk(s) to bridge PcieIngressPoisonUncontainedError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge PcieIngressPoisonUncontainedError methods to ancestors (if any)
+
+// Class-specific details for PcieIngressPoisonUncontainedError
+const struct NVOC_CLASS_DEF __nvoc_class_def_PcieIngressPoisonUncontainedError = 
+{
+    .classInfo.size =               sizeof(PcieIngressPoisonUncontainedError),
+    .classInfo.classId =            classId(PcieIngressPoisonUncontainedError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "PcieIngressPoisonUncontainedError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_PcieIngressPoisonUncontainedError,
+    .pCastInfo =          &__nvoc_castinfo__PcieIngressPoisonUncontainedError,
+    .pExportInfo =        &__nvoc_export_info__PcieIngressPoisonUncontainedError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__PcieIngressPoisonUncontainedError __nvoc_metadata__PcieIngressPoisonUncontainedError = {
+    .rtti.pClassDef = &__nvoc_class_def_PcieIngressPoisonUncontainedError,    // (pcieingresspoisonuncontainederr) this
+    .rtti.dtor      = &__nvoc_dtor_PcieIngressPoisonUncontainedError,
+    .rtti.offset    = 0,
+    .metadata__GpuInterconnectError.rtti.pClassDef = &__nvoc_class_def_GpuInterconnectError,    // (gpuinterconnecterr) super
+    .metadata__GpuInterconnectError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.rtti.offset    = NV_OFFSETOF(PcieIngressPoisonUncontainedError, __nvoc_base_GpuInterconnectError),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(PcieIngressPoisonUncontainedError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(PcieIngressPoisonUncontainedError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(PcieIngressPoisonUncontainedError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(PcieIngressPoisonUncontainedError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__PcieIngressPoisonUncontainedError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__PcieIngressPoisonUncontainedError.rtti,    // [0]: (pcieingresspoisonuncontainederr) this
+        &__nvoc_metadata__PcieIngressPoisonUncontainedError.metadata__GpuInterconnectError.rtti,    // [1]: (gpuinterconnecterr) super
+        &__nvoc_metadata__PcieIngressPoisonUncontainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__PcieIngressPoisonUncontainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__PcieIngressPoisonUncontainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__PcieIngressPoisonUncontainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__PcieIngressPoisonUncontainedError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct PcieIngressPoisonUncontainedError object.
+void __nvoc_dtor_GpuInterconnectError(Dynamic*);
+void __nvoc_dtor_PcieIngressPoisonUncontainedError(Dynamic* pThis) {
+
+    PcieIngressPoisonUncontainedError *__nvoc_this = (PcieIngressPoisonUncontainedError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuInterconnectError((Dynamic *) &__nvoc_this->__nvoc_base_GpuInterconnectError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_PcieIngressPoisonUncontainedError(PcieIngressPoisonUncontainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct PcieIngressPoisonUncontainedError object.
+NV_STATUS __nvoc_ctor_GpuInterconnectError(GpuInterconnectError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_PcieIngressPoisonUncontainedError(PcieIngressPoisonUncontainedError *pEvent, struct EventBus *pEventBus) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuInterconnectError(&pEvent->__nvoc_base_GpuInterconnectError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_PCIE_INGRESS_POISON_UNCONTAINED_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)) | (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 0 : 0)) % 32) + ((((0 != 0) ? 0 : 0)) % 32)))) << ((((0 != 0) ? 0 : 0)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_PcieIngressPoisonUncontainedError_fail_GpuInterconnectError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_PcieIngressPoisonUncontainedError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_pcieingresspoisonuncontainederrConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_PcieIngressPoisonUncontainedError_fail__init;
+    goto __nvoc_ctor_PcieIngressPoisonUncontainedError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_PcieIngressPoisonUncontainedError_fail__init:
+    __nvoc_dtor_GpuInterconnectError((Dynamic *)&pEvent->__nvoc_base_GpuInterconnectError);
+__nvoc_ctor_PcieIngressPoisonUncontainedError_fail_GpuInterconnectError:
+__nvoc_ctor_PcieIngressPoisonUncontainedError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_PcieIngressPoisonUncontainedError_1(PcieIngressPoisonUncontainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_PcieIngressPoisonUncontainedError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_PcieIngressPoisonUncontainedError(PcieIngressPoisonUncontainedError *pThis) {
+    __nvoc_init_funcTable_PcieIngressPoisonUncontainedError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__PcieIngressPoisonUncontainedError(PcieIngressPoisonUncontainedError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuInterconnectError = &pThis->__nvoc_base_GpuInterconnectError;    // (gpuinterconnecterr) super
+    pThis->__nvoc_pbase_PcieIngressPoisonUncontainedError = pThis;    // (pcieingresspoisonuncontainederr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuInterconnectError(&pThis->__nvoc_base_GpuInterconnectError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonUncontainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonUncontainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonUncontainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonUncontainedError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonUncontainedError.metadata__GpuInterconnectError;    // (gpuinterconnecterr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__PcieIngressPoisonUncontainedError;    // (pcieingresspoisonuncontainederr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_PcieIngressPoisonUncontainedError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_PcieIngressPoisonUncontainedError(PcieIngressPoisonUncontainedError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    PcieIngressPoisonUncontainedError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(PcieIngressPoisonUncontainedError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(PcieIngressPoisonUncontainedError));
+
+    __nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__PcieIngressPoisonUncontainedError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_PcieIngressPoisonUncontainedError(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_PcieIngressPoisonUncontainedError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_PcieIngressPoisonUncontainedError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(PcieIngressPoisonUncontainedError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_PcieIngressPoisonUncontainedError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+
+    return __nvoc_objCreate_PcieIngressPoisonUncontainedError((PcieIngressPoisonUncontainedError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__5f1cc9 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PcieEgressPoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuInterconnectError;
+
+// Forward declarations for PcieEgressPoisonError
+void __nvoc_init__GpuInterconnectError(GpuInterconnectError*);
+void __nvoc_init__PcieEgressPoisonError(PcieEgressPoisonError*);
+void __nvoc_init_funcTable_PcieEgressPoisonError(PcieEgressPoisonError*);
+NV_STATUS __nvoc_ctor_PcieEgressPoisonError(PcieEgressPoisonError*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_PcieEgressPoisonError(PcieEgressPoisonError*);
+void __nvoc_dtor_PcieEgressPoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__PcieEgressPoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__PcieEgressPoisonError;
+
+// Down-thunk(s) to bridge PcieEgressPoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge PcieEgressPoisonError methods to ancestors (if any)
+
+// Class-specific details for PcieEgressPoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_PcieEgressPoisonError = 
+{
+    .classInfo.size =               sizeof(PcieEgressPoisonError),
+    .classInfo.classId =            classId(PcieEgressPoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "PcieEgressPoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_PcieEgressPoisonError,
+    .pCastInfo =          &__nvoc_castinfo__PcieEgressPoisonError,
+    .pExportInfo =        &__nvoc_export_info__PcieEgressPoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__PcieEgressPoisonError __nvoc_metadata__PcieEgressPoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_PcieEgressPoisonError,    // (pcieegresspoisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_PcieEgressPoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuInterconnectError.rtti.pClassDef = &__nvoc_class_def_GpuInterconnectError,    // (gpuinterconnecterr) super
+    .metadata__GpuInterconnectError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.rtti.offset    = NV_OFFSETOF(PcieEgressPoisonError, __nvoc_base_GpuInterconnectError),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(PcieEgressPoisonError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(PcieEgressPoisonError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(PcieEgressPoisonError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(PcieEgressPoisonError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__PcieEgressPoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__PcieEgressPoisonError.rtti,    // [0]: (pcieegresspoisonerr) this
+        &__nvoc_metadata__PcieEgressPoisonError.metadata__GpuInterconnectError.rtti,    // [1]: (gpuinterconnecterr) super
+        &__nvoc_metadata__PcieEgressPoisonError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__PcieEgressPoisonError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__PcieEgressPoisonError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__PcieEgressPoisonError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__PcieEgressPoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct PcieEgressPoisonError object.
+void __nvoc_dtor_GpuInterconnectError(Dynamic*);
+void __nvoc_dtor_PcieEgressPoisonError(Dynamic* pThis) {
+
+    PcieEgressPoisonError *__nvoc_this = (PcieEgressPoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuInterconnectError((Dynamic *) &__nvoc_this->__nvoc_base_GpuInterconnectError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_PcieEgressPoisonError(PcieEgressPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct PcieEgressPoisonError object.
+NV_STATUS __nvoc_ctor_GpuInterconnectError(GpuInterconnectError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_PcieEgressPoisonError(PcieEgressPoisonError *pEvent, struct EventBus *pEventBus) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuInterconnectError(&pEvent->__nvoc_base_GpuInterconnectError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_PCIE_EGRESS_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)) | (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 0 : 0)) % 32) + ((((0 != 0) ? 0 : 0)) % 32)))) << ((((0 != 0) ? 0 : 0)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_PcieEgressPoisonError_fail_GpuInterconnectError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_PcieEgressPoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_pcieegresspoisonerrConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_PcieEgressPoisonError_fail__init;
+    goto __nvoc_ctor_PcieEgressPoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_PcieEgressPoisonError_fail__init:
+    __nvoc_dtor_GpuInterconnectError((Dynamic *)&pEvent->__nvoc_base_GpuInterconnectError);
+__nvoc_ctor_PcieEgressPoisonError_fail_GpuInterconnectError:
+__nvoc_ctor_PcieEgressPoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_PcieEgressPoisonError_1(PcieEgressPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_PcieEgressPoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_PcieEgressPoisonError(PcieEgressPoisonError *pThis) {
+    __nvoc_init_funcTable_PcieEgressPoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__PcieEgressPoisonError(PcieEgressPoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuInterconnectError = &pThis->__nvoc_base_GpuInterconnectError;    // (gpuinterconnecterr) super
+    pThis->__nvoc_pbase_PcieEgressPoisonError = pThis;    // (pcieegresspoisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuInterconnectError(&pThis->__nvoc_base_GpuInterconnectError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__PcieEgressPoisonError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__PcieEgressPoisonError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PcieEgressPoisonError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PcieEgressPoisonError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_metadata_ptr = &__nvoc_metadata__PcieEgressPoisonError.metadata__GpuInterconnectError;    // (gpuinterconnecterr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__PcieEgressPoisonError;    // (pcieegresspoisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_PcieEgressPoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_PcieEgressPoisonError(PcieEgressPoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    PcieEgressPoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(PcieEgressPoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(PcieEgressPoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__PcieEgressPoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_PcieEgressPoisonError(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_PcieEgressPoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_PcieEgressPoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(PcieEgressPoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_PcieEgressPoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+
+    return __nvoc_objCreate_PcieEgressPoisonError((PcieEgressPoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__4823f5 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_CopyEnginePoisonContainedError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for CopyEnginePoisonContainedError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__CopyEnginePoisonContainedError(CopyEnginePoisonContainedError*);
+void __nvoc_init_funcTable_CopyEnginePoisonContainedError(CopyEnginePoisonContainedError*);
+NV_STATUS __nvoc_ctor_CopyEnginePoisonContainedError(CopyEnginePoisonContainedError*, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+void __nvoc_init_dataField_CopyEnginePoisonContainedError(CopyEnginePoisonContainedError*);
+void __nvoc_dtor_CopyEnginePoisonContainedError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__CopyEnginePoisonContainedError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__CopyEnginePoisonContainedError;
+
+// Down-thunk(s) to bridge CopyEnginePoisonContainedError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge CopyEnginePoisonContainedError methods to ancestors (if any)
+
+// Class-specific details for CopyEnginePoisonContainedError
+const struct NVOC_CLASS_DEF __nvoc_class_def_CopyEnginePoisonContainedError = 
+{
+    .classInfo.size =               sizeof(CopyEnginePoisonContainedError),
+    .classInfo.classId =            classId(CopyEnginePoisonContainedError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "CopyEnginePoisonContainedError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_CopyEnginePoisonContainedError,
+    .pCastInfo =          &__nvoc_castinfo__CopyEnginePoisonContainedError,
+    .pExportInfo =        &__nvoc_export_info__CopyEnginePoisonContainedError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__CopyEnginePoisonContainedError __nvoc_metadata__CopyEnginePoisonContainedError = {
+    .rtti.pClassDef = &__nvoc_class_def_CopyEnginePoisonContainedError,    // (copyenginepoisoncontainederr) this
+    .rtti.dtor      = &__nvoc_dtor_CopyEnginePoisonContainedError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(CopyEnginePoisonContainedError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(CopyEnginePoisonContainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(CopyEnginePoisonContainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(CopyEnginePoisonContainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(CopyEnginePoisonContainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__CopyEnginePoisonContainedError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__CopyEnginePoisonContainedError.rtti,    // [0]: (copyenginepoisoncontainederr) this
+        &__nvoc_metadata__CopyEnginePoisonContainedError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__CopyEnginePoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__CopyEnginePoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__CopyEnginePoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__CopyEnginePoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__CopyEnginePoisonContainedError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct CopyEnginePoisonContainedError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_CopyEnginePoisonContainedError(Dynamic* pThis) {
+
+    CopyEnginePoisonContainedError *__nvoc_this = (CopyEnginePoisonContainedError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_CopyEnginePoisonContainedError(CopyEnginePoisonContainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct CopyEnginePoisonContainedError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_CopyEnginePoisonContainedError(CopyEnginePoisonContainedError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_COPY_ENGINE_POISON_CONTAINED_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_CopyEnginePoisonContainedError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_CopyEnginePoisonContainedError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_copyenginepoisoncontainederrConstruct(pEvent, pEventBus, nv2080EngineType);
+    if (status != NV_OK) goto __nvoc_ctor_CopyEnginePoisonContainedError_fail__init;
+    goto __nvoc_ctor_CopyEnginePoisonContainedError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_CopyEnginePoisonContainedError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_CopyEnginePoisonContainedError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_CopyEnginePoisonContainedError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_CopyEnginePoisonContainedError_1(CopyEnginePoisonContainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_CopyEnginePoisonContainedError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_CopyEnginePoisonContainedError(CopyEnginePoisonContainedError *pThis) {
+    __nvoc_init_funcTable_CopyEnginePoisonContainedError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__CopyEnginePoisonContainedError(CopyEnginePoisonContainedError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_CopyEnginePoisonContainedError = pThis;    // (copyenginepoisoncontainederr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonContainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonContainedError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonContainedError;    // (copyenginepoisoncontainederr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_CopyEnginePoisonContainedError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_CopyEnginePoisonContainedError(CopyEnginePoisonContainedError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 nv2080EngineType)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    CopyEnginePoisonContainedError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(CopyEnginePoisonContainedError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(CopyEnginePoisonContainedError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__CopyEnginePoisonContainedError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_CopyEnginePoisonContainedError(__nvoc_pThis, pEventBus, nv2080EngineType);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_CopyEnginePoisonContainedError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_CopyEnginePoisonContainedError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(CopyEnginePoisonContainedError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_CopyEnginePoisonContainedError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 nv2080EngineType = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_CopyEnginePoisonContainedError((CopyEnginePoisonContainedError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__cd5e25 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_CopyEnginePoisonUncontainedError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for CopyEnginePoisonUncontainedError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__CopyEnginePoisonUncontainedError(CopyEnginePoisonUncontainedError*);
+void __nvoc_init_funcTable_CopyEnginePoisonUncontainedError(CopyEnginePoisonUncontainedError*);
+NV_STATUS __nvoc_ctor_CopyEnginePoisonUncontainedError(CopyEnginePoisonUncontainedError*, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+void __nvoc_init_dataField_CopyEnginePoisonUncontainedError(CopyEnginePoisonUncontainedError*);
+void __nvoc_dtor_CopyEnginePoisonUncontainedError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__CopyEnginePoisonUncontainedError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__CopyEnginePoisonUncontainedError;
+
+// Down-thunk(s) to bridge CopyEnginePoisonUncontainedError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge CopyEnginePoisonUncontainedError methods to ancestors (if any)
+
+// Class-specific details for CopyEnginePoisonUncontainedError
+const struct NVOC_CLASS_DEF __nvoc_class_def_CopyEnginePoisonUncontainedError = 
+{
+    .classInfo.size =               sizeof(CopyEnginePoisonUncontainedError),
+    .classInfo.classId =            classId(CopyEnginePoisonUncontainedError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "CopyEnginePoisonUncontainedError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_CopyEnginePoisonUncontainedError,
+    .pCastInfo =          &__nvoc_castinfo__CopyEnginePoisonUncontainedError,
+    .pExportInfo =        &__nvoc_export_info__CopyEnginePoisonUncontainedError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__CopyEnginePoisonUncontainedError __nvoc_metadata__CopyEnginePoisonUncontainedError = {
+    .rtti.pClassDef = &__nvoc_class_def_CopyEnginePoisonUncontainedError,    // (copyenginepoisonuncontainederr) this
+    .rtti.dtor      = &__nvoc_dtor_CopyEnginePoisonUncontainedError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(CopyEnginePoisonUncontainedError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(CopyEnginePoisonUncontainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(CopyEnginePoisonUncontainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(CopyEnginePoisonUncontainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(CopyEnginePoisonUncontainedError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__CopyEnginePoisonUncontainedError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__CopyEnginePoisonUncontainedError.rtti,    // [0]: (copyenginepoisonuncontainederr) this
+        &__nvoc_metadata__CopyEnginePoisonUncontainedError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__CopyEnginePoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__CopyEnginePoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__CopyEnginePoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__CopyEnginePoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__CopyEnginePoisonUncontainedError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct CopyEnginePoisonUncontainedError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_CopyEnginePoisonUncontainedError(Dynamic* pThis) {
+
+    CopyEnginePoisonUncontainedError *__nvoc_this = (CopyEnginePoisonUncontainedError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_CopyEnginePoisonUncontainedError(CopyEnginePoisonUncontainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct CopyEnginePoisonUncontainedError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_CopyEnginePoisonUncontainedError(CopyEnginePoisonUncontainedError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_COPY_ENGINE_POISON_UNCONTAINED_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)) | (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 0 : 0)) % 32) + ((((0 != 0) ? 0 : 0)) % 32)))) << ((((0 != 0) ? 0 : 0)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_CopyEnginePoisonUncontainedError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_CopyEnginePoisonUncontainedError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_copyenginepoisonuncontainederrConstruct(pEvent, pEventBus, nv2080EngineType);
+    if (status != NV_OK) goto __nvoc_ctor_CopyEnginePoisonUncontainedError_fail__init;
+    goto __nvoc_ctor_CopyEnginePoisonUncontainedError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_CopyEnginePoisonUncontainedError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_CopyEnginePoisonUncontainedError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_CopyEnginePoisonUncontainedError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_CopyEnginePoisonUncontainedError_1(CopyEnginePoisonUncontainedError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_CopyEnginePoisonUncontainedError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_CopyEnginePoisonUncontainedError(CopyEnginePoisonUncontainedError *pThis) {
+    __nvoc_init_funcTable_CopyEnginePoisonUncontainedError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__CopyEnginePoisonUncontainedError(CopyEnginePoisonUncontainedError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_CopyEnginePoisonUncontainedError = pThis;    // (copyenginepoisonuncontainederr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonUncontainedError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonUncontainedError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__CopyEnginePoisonUncontainedError;    // (copyenginepoisonuncontainederr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_CopyEnginePoisonUncontainedError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_CopyEnginePoisonUncontainedError(CopyEnginePoisonUncontainedError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 nv2080EngineType)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    CopyEnginePoisonUncontainedError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(CopyEnginePoisonUncontainedError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(CopyEnginePoisonUncontainedError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__CopyEnginePoisonUncontainedError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_CopyEnginePoisonUncontainedError(__nvoc_pThis, pEventBus, nv2080EngineType);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_CopyEnginePoisonUncontainedError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_CopyEnginePoisonUncontainedError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(CopyEnginePoisonUncontainedError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_CopyEnginePoisonUncontainedError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 nv2080EngineType = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_CopyEnginePoisonUncontainedError((CopyEnginePoisonUncontainedError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__ec940d = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_SmPoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for SmPoisonError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__SmPoisonError(SmPoisonError*);
+void __nvoc_init_funcTable_SmPoisonError(SmPoisonError*);
+NV_STATUS __nvoc_ctor_SmPoisonError(SmPoisonError*, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+void __nvoc_init_dataField_SmPoisonError(SmPoisonError*);
+void __nvoc_dtor_SmPoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__SmPoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__SmPoisonError;
+
+// Down-thunk(s) to bridge SmPoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge SmPoisonError methods to ancestors (if any)
+
+// Class-specific details for SmPoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_SmPoisonError = 
+{
+    .classInfo.size =               sizeof(SmPoisonError),
+    .classInfo.classId =            classId(SmPoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "SmPoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_SmPoisonError,
+    .pCastInfo =          &__nvoc_castinfo__SmPoisonError,
+    .pExportInfo =        &__nvoc_export_info__SmPoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__SmPoisonError __nvoc_metadata__SmPoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_SmPoisonError,    // (smpoisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_SmPoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(SmPoisonError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(SmPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(SmPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(SmPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(SmPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__SmPoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__SmPoisonError.rtti,    // [0]: (smpoisonerr) this
+        &__nvoc_metadata__SmPoisonError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__SmPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__SmPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__SmPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__SmPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__SmPoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct SmPoisonError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_SmPoisonError(Dynamic* pThis) {
+
+    SmPoisonError *__nvoc_this = (SmPoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_SmPoisonError(SmPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct SmPoisonError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_SmPoisonError(SmPoisonError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_SM_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_SmPoisonError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_SmPoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_smpoisonerrConstruct(pEvent, pEventBus, nv2080EngineType);
+    if (status != NV_OK) goto __nvoc_ctor_SmPoisonError_fail__init;
+    goto __nvoc_ctor_SmPoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_SmPoisonError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_SmPoisonError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_SmPoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_SmPoisonError_1(SmPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_SmPoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_SmPoisonError(SmPoisonError *pThis) {
+    __nvoc_init_funcTable_SmPoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__SmPoisonError(SmPoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_SmPoisonError = pThis;    // (smpoisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__SmPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__SmPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__SmPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__SmPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__SmPoisonError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__SmPoisonError;    // (smpoisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_SmPoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_SmPoisonError(SmPoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 nv2080EngineType)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    SmPoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(SmPoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(SmPoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__SmPoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_SmPoisonError(__nvoc_pThis, pEventBus, nv2080EngineType);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_SmPoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_SmPoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(SmPoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_SmPoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 nv2080EngineType = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_SmPoisonError((SmPoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__055ca3 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GccPoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for GccPoisonError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__GccPoisonError(GccPoisonError*);
+void __nvoc_init_funcTable_GccPoisonError(GccPoisonError*);
+NV_STATUS __nvoc_ctor_GccPoisonError(GccPoisonError*, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+void __nvoc_init_dataField_GccPoisonError(GccPoisonError*);
+void __nvoc_dtor_GccPoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__GccPoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GccPoisonError;
+
+// Down-thunk(s) to bridge GccPoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge GccPoisonError methods to ancestors (if any)
+
+// Class-specific details for GccPoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_GccPoisonError = 
+{
+    .classInfo.size =               sizeof(GccPoisonError),
+    .classInfo.classId =            classId(GccPoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "GccPoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_GccPoisonError,
+    .pCastInfo =          &__nvoc_castinfo__GccPoisonError,
+    .pExportInfo =        &__nvoc_export_info__GccPoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__GccPoisonError __nvoc_metadata__GccPoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_GccPoisonError,    // (gccpoisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_GccPoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(GccPoisonError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(GccPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(GccPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(GccPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(GccPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__GccPoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__GccPoisonError.rtti,    // [0]: (gccpoisonerr) this
+        &__nvoc_metadata__GccPoisonError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__GccPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__GccPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__GccPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__GccPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__GccPoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct GccPoisonError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_GccPoisonError(Dynamic* pThis) {
+
+    GccPoisonError *__nvoc_this = (GccPoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_GccPoisonError(GccPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct GccPoisonError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_GccPoisonError(GccPoisonError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_GCC_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_GccPoisonError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_GccPoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_gccpoisonerrConstruct(pEvent, pEventBus, nv2080EngineType);
+    if (status != NV_OK) goto __nvoc_ctor_GccPoisonError_fail__init;
+    goto __nvoc_ctor_GccPoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_GccPoisonError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_GccPoisonError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_GccPoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_GccPoisonError_1(GccPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_GccPoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_GccPoisonError(GccPoisonError *pThis) {
+    __nvoc_init_funcTable_GccPoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__GccPoisonError(GccPoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_GccPoisonError = pThis;    // (gccpoisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__GccPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__GccPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GccPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GccPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__GccPoisonError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__GccPoisonError;    // (gccpoisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_GccPoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_GccPoisonError(GccPoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 nv2080EngineType)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    GccPoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(GccPoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(GccPoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__GccPoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_GccPoisonError(__nvoc_pThis, pEventBus, nv2080EngineType);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_GccPoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_GccPoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(GccPoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_GccPoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 nv2080EngineType = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_GccPoisonError((GccPoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__8f50d0 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_ContextSwitchPoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for ContextSwitchPoisonError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__ContextSwitchPoisonError(ContextSwitchPoisonError*);
+void __nvoc_init_funcTable_ContextSwitchPoisonError(ContextSwitchPoisonError*);
+NV_STATUS __nvoc_ctor_ContextSwitchPoisonError(ContextSwitchPoisonError*, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+void __nvoc_init_dataField_ContextSwitchPoisonError(ContextSwitchPoisonError*);
+void __nvoc_dtor_ContextSwitchPoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__ContextSwitchPoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__ContextSwitchPoisonError;
+
+// Down-thunk(s) to bridge ContextSwitchPoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge ContextSwitchPoisonError methods to ancestors (if any)
+
+// Class-specific details for ContextSwitchPoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_ContextSwitchPoisonError = 
+{
+    .classInfo.size =               sizeof(ContextSwitchPoisonError),
+    .classInfo.classId =            classId(ContextSwitchPoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "ContextSwitchPoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_ContextSwitchPoisonError,
+    .pCastInfo =          &__nvoc_castinfo__ContextSwitchPoisonError,
+    .pExportInfo =        &__nvoc_export_info__ContextSwitchPoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__ContextSwitchPoisonError __nvoc_metadata__ContextSwitchPoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_ContextSwitchPoisonError,    // (ctxswpoisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_ContextSwitchPoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(ContextSwitchPoisonError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(ContextSwitchPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(ContextSwitchPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(ContextSwitchPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(ContextSwitchPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__ContextSwitchPoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__ContextSwitchPoisonError.rtti,    // [0]: (ctxswpoisonerr) this
+        &__nvoc_metadata__ContextSwitchPoisonError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__ContextSwitchPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__ContextSwitchPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__ContextSwitchPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__ContextSwitchPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__ContextSwitchPoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct ContextSwitchPoisonError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_ContextSwitchPoisonError(Dynamic* pThis) {
+
+    ContextSwitchPoisonError *__nvoc_this = (ContextSwitchPoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_ContextSwitchPoisonError(ContextSwitchPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct ContextSwitchPoisonError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_ContextSwitchPoisonError(ContextSwitchPoisonError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_CONTEXT_SWITCH_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_ContextSwitchPoisonError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_ContextSwitchPoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_ctxswpoisonerrConstruct(pEvent, pEventBus, nv2080EngineType);
+    if (status != NV_OK) goto __nvoc_ctor_ContextSwitchPoisonError_fail__init;
+    goto __nvoc_ctor_ContextSwitchPoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_ContextSwitchPoisonError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_ContextSwitchPoisonError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_ContextSwitchPoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_ContextSwitchPoisonError_1(ContextSwitchPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_ContextSwitchPoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_ContextSwitchPoisonError(ContextSwitchPoisonError *pThis) {
+    __nvoc_init_funcTable_ContextSwitchPoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__ContextSwitchPoisonError(ContextSwitchPoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_ContextSwitchPoisonError = pThis;    // (ctxswpoisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchPoisonError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchPoisonError;    // (ctxswpoisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_ContextSwitchPoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_ContextSwitchPoisonError(ContextSwitchPoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 nv2080EngineType)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    ContextSwitchPoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(ContextSwitchPoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(ContextSwitchPoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__ContextSwitchPoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_ContextSwitchPoisonError(__nvoc_pThis, pEventBus, nv2080EngineType);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_ContextSwitchPoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_ContextSwitchPoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(ContextSwitchPoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_ContextSwitchPoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 nv2080EngineType = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_ContextSwitchPoisonError((ContextSwitchPoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__9ef007 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_MmuPoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for MmuPoisonError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__MmuPoisonError(MmuPoisonError*);
+void __nvoc_init_funcTable_MmuPoisonError(MmuPoisonError*);
+NV_STATUS __nvoc_ctor_MmuPoisonError(MmuPoisonError*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_MmuPoisonError(MmuPoisonError*);
+void __nvoc_dtor_MmuPoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__MmuPoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__MmuPoisonError;
+
+// Down-thunk(s) to bridge MmuPoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge MmuPoisonError methods to ancestors (if any)
+
+// Class-specific details for MmuPoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_MmuPoisonError = 
+{
+    .classInfo.size =               sizeof(MmuPoisonError),
+    .classInfo.classId =            classId(MmuPoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "MmuPoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_MmuPoisonError,
+    .pCastInfo =          &__nvoc_castinfo__MmuPoisonError,
+    .pExportInfo =        &__nvoc_export_info__MmuPoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__MmuPoisonError __nvoc_metadata__MmuPoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_MmuPoisonError,    // (mmupoisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_MmuPoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(MmuPoisonError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(MmuPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(MmuPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(MmuPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(MmuPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__MmuPoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__MmuPoisonError.rtti,    // [0]: (mmupoisonerr) this
+        &__nvoc_metadata__MmuPoisonError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__MmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__MmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__MmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__MmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__MmuPoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct MmuPoisonError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_MmuPoisonError(Dynamic* pThis) {
+
+    MmuPoisonError *__nvoc_this = (MmuPoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_MmuPoisonError(MmuPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct MmuPoisonError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_MmuPoisonError(MmuPoisonError *pEvent, struct EventBus *pEventBus) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_MMU_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_MmuPoisonError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_MmuPoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_mmupoisonerrConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_MmuPoisonError_fail__init;
+    goto __nvoc_ctor_MmuPoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_MmuPoisonError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_MmuPoisonError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_MmuPoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_MmuPoisonError_1(MmuPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_MmuPoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_MmuPoisonError(MmuPoisonError *pThis) {
+    __nvoc_init_funcTable_MmuPoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__MmuPoisonError(MmuPoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_MmuPoisonError = pThis;    // (mmupoisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__MmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__MmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__MmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__MmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__MmuPoisonError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__MmuPoisonError;    // (mmupoisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_MmuPoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_MmuPoisonError(MmuPoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    MmuPoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(MmuPoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(MmuPoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__MmuPoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_MmuPoisonError(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_MmuPoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_MmuPoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(MmuPoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_MmuPoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+
+    return __nvoc_objCreate_MmuPoisonError((MmuPoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__2e9cc4 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_FbHubFatalPoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for FbHubFatalPoisonError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__FbHubFatalPoisonError(FbHubFatalPoisonError*);
+void __nvoc_init_funcTable_FbHubFatalPoisonError(FbHubFatalPoisonError*);
+NV_STATUS __nvoc_ctor_FbHubFatalPoisonError(FbHubFatalPoisonError*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_FbHubFatalPoisonError(FbHubFatalPoisonError*);
+void __nvoc_dtor_FbHubFatalPoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__FbHubFatalPoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__FbHubFatalPoisonError;
+
+// Down-thunk(s) to bridge FbHubFatalPoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge FbHubFatalPoisonError methods to ancestors (if any)
+
+// Class-specific details for FbHubFatalPoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_FbHubFatalPoisonError = 
+{
+    .classInfo.size =               sizeof(FbHubFatalPoisonError),
+    .classInfo.classId =            classId(FbHubFatalPoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "FbHubFatalPoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_FbHubFatalPoisonError,
+    .pCastInfo =          &__nvoc_castinfo__FbHubFatalPoisonError,
+    .pExportInfo =        &__nvoc_export_info__FbHubFatalPoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__FbHubFatalPoisonError __nvoc_metadata__FbHubFatalPoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_FbHubFatalPoisonError,    // (fbhubfatalpoisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_FbHubFatalPoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(FbHubFatalPoisonError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(FbHubFatalPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(FbHubFatalPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(FbHubFatalPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(FbHubFatalPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__FbHubFatalPoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__FbHubFatalPoisonError.rtti,    // [0]: (fbhubfatalpoisonerr) this
+        &__nvoc_metadata__FbHubFatalPoisonError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__FbHubFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__FbHubFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__FbHubFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__FbHubFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__FbHubFatalPoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct FbHubFatalPoisonError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_FbHubFatalPoisonError(Dynamic* pThis) {
+
+    FbHubFatalPoisonError *__nvoc_this = (FbHubFatalPoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_FbHubFatalPoisonError(FbHubFatalPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct FbHubFatalPoisonError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_FbHubFatalPoisonError(FbHubFatalPoisonError *pEvent, struct EventBus *pEventBus) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_FBHUB_FATAL_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)) | (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 0 : 0)) % 32) + ((((0 != 0) ? 0 : 0)) % 32)))) << ((((0 != 0) ? 0 : 0)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_FbHubFatalPoisonError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_FbHubFatalPoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_fbhubfatalpoisonerrConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_FbHubFatalPoisonError_fail__init;
+    goto __nvoc_ctor_FbHubFatalPoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_FbHubFatalPoisonError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_FbHubFatalPoisonError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_FbHubFatalPoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_FbHubFatalPoisonError_1(FbHubFatalPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_FbHubFatalPoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_FbHubFatalPoisonError(FbHubFatalPoisonError *pThis) {
+    __nvoc_init_funcTable_FbHubFatalPoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__FbHubFatalPoisonError(FbHubFatalPoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_FbHubFatalPoisonError = pThis;    // (fbhubfatalpoisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__FbHubFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__FbHubFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__FbHubFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__FbHubFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__FbHubFatalPoisonError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__FbHubFatalPoisonError;    // (fbhubfatalpoisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_FbHubFatalPoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_FbHubFatalPoisonError(FbHubFatalPoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    FbHubFatalPoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(FbHubFatalPoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(FbHubFatalPoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__FbHubFatalPoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_FbHubFatalPoisonError(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_FbHubFatalPoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_FbHubFatalPoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(FbHubFatalPoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_FbHubFatalPoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+
+    return __nvoc_objCreate_FbHubFatalPoisonError((FbHubFatalPoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__148a19 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_FbHubNonFatalPoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for FbHubNonFatalPoisonError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__FbHubNonFatalPoisonError(FbHubNonFatalPoisonError*);
+void __nvoc_init_funcTable_FbHubNonFatalPoisonError(FbHubNonFatalPoisonError*);
+NV_STATUS __nvoc_ctor_FbHubNonFatalPoisonError(FbHubNonFatalPoisonError*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_FbHubNonFatalPoisonError(FbHubNonFatalPoisonError*);
+void __nvoc_dtor_FbHubNonFatalPoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__FbHubNonFatalPoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__FbHubNonFatalPoisonError;
+
+// Down-thunk(s) to bridge FbHubNonFatalPoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge FbHubNonFatalPoisonError methods to ancestors (if any)
+
+// Class-specific details for FbHubNonFatalPoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_FbHubNonFatalPoisonError = 
+{
+    .classInfo.size =               sizeof(FbHubNonFatalPoisonError),
+    .classInfo.classId =            classId(FbHubNonFatalPoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "FbHubNonFatalPoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_FbHubNonFatalPoisonError,
+    .pCastInfo =          &__nvoc_castinfo__FbHubNonFatalPoisonError,
+    .pExportInfo =        &__nvoc_export_info__FbHubNonFatalPoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__FbHubNonFatalPoisonError __nvoc_metadata__FbHubNonFatalPoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_FbHubNonFatalPoisonError,    // (fbhubnonfatalpoisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_FbHubNonFatalPoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(FbHubNonFatalPoisonError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(FbHubNonFatalPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(FbHubNonFatalPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(FbHubNonFatalPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(FbHubNonFatalPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__FbHubNonFatalPoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__FbHubNonFatalPoisonError.rtti,    // [0]: (fbhubnonfatalpoisonerr) this
+        &__nvoc_metadata__FbHubNonFatalPoisonError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__FbHubNonFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__FbHubNonFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__FbHubNonFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__FbHubNonFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__FbHubNonFatalPoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct FbHubNonFatalPoisonError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_FbHubNonFatalPoisonError(Dynamic* pThis) {
+
+    FbHubNonFatalPoisonError *__nvoc_this = (FbHubNonFatalPoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_FbHubNonFatalPoisonError(FbHubNonFatalPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct FbHubNonFatalPoisonError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_FbHubNonFatalPoisonError(FbHubNonFatalPoisonError *pEvent, struct EventBus *pEventBus) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_FBHUB_NON_FATAL_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)) | (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 0 : 0)) % 32) + ((((0 != 0) ? 0 : 0)) % 32)))) << ((((0 != 0) ? 0 : 0)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_FbHubNonFatalPoisonError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_FbHubNonFatalPoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_fbhubnonfatalpoisonerrConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_FbHubNonFatalPoisonError_fail__init;
+    goto __nvoc_ctor_FbHubNonFatalPoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_FbHubNonFatalPoisonError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_FbHubNonFatalPoisonError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_FbHubNonFatalPoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_FbHubNonFatalPoisonError_1(FbHubNonFatalPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_FbHubNonFatalPoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_FbHubNonFatalPoisonError(FbHubNonFatalPoisonError *pThis) {
+    __nvoc_init_funcTable_FbHubNonFatalPoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__FbHubNonFatalPoisonError(FbHubNonFatalPoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_FbHubNonFatalPoisonError = pThis;    // (fbhubnonfatalpoisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__FbHubNonFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__FbHubNonFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__FbHubNonFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__FbHubNonFatalPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__FbHubNonFatalPoisonError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__FbHubNonFatalPoisonError;    // (fbhubnonfatalpoisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_FbHubNonFatalPoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_FbHubNonFatalPoisonError(FbHubNonFatalPoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    FbHubNonFatalPoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(FbHubNonFatalPoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(FbHubNonFatalPoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__FbHubNonFatalPoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_FbHubNonFatalPoisonError(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_FbHubNonFatalPoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_FbHubNonFatalPoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(FbHubNonFatalPoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_FbHubNonFatalPoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+
+    return __nvoc_objCreate_FbHubNonFatalPoisonError((FbHubNonFatalPoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__690d4b = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GspPoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for GspPoisonError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__GspPoisonError(GspPoisonError*);
+void __nvoc_init_funcTable_GspPoisonError(GspPoisonError*);
+NV_STATUS __nvoc_ctor_GspPoisonError(GspPoisonError*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_GspPoisonError(GspPoisonError*);
+void __nvoc_dtor_GspPoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__GspPoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GspPoisonError;
+
+// Down-thunk(s) to bridge GspPoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge GspPoisonError methods to ancestors (if any)
+
+// Class-specific details for GspPoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_GspPoisonError = 
+{
+    .classInfo.size =               sizeof(GspPoisonError),
+    .classInfo.classId =            classId(GspPoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "GspPoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_GspPoisonError,
+    .pCastInfo =          &__nvoc_castinfo__GspPoisonError,
+    .pExportInfo =        &__nvoc_export_info__GspPoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__GspPoisonError __nvoc_metadata__GspPoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_GspPoisonError,    // (gsppoisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_GspPoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(GspPoisonError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(GspPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(GspPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(GspPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(GspPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__GspPoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__GspPoisonError.rtti,    // [0]: (gsppoisonerr) this
+        &__nvoc_metadata__GspPoisonError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__GspPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__GspPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__GspPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__GspPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__GspPoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct GspPoisonError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_GspPoisonError(Dynamic* pThis) {
+
+    GspPoisonError *__nvoc_this = (GspPoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_GspPoisonError(GspPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct GspPoisonError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_GspPoisonError(GspPoisonError *pEvent, struct EventBus *pEventBus) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_GSP_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_GspPoisonError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_GspPoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_gsppoisonerrConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_GspPoisonError_fail__init;
+    goto __nvoc_ctor_GspPoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_GspPoisonError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_GspPoisonError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_GspPoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_GspPoisonError_1(GspPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_GspPoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_GspPoisonError(GspPoisonError *pThis) {
+    __nvoc_init_funcTable_GspPoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__GspPoisonError(GspPoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_GspPoisonError = pThis;    // (gsppoisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__GspPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__GspPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GspPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GspPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__GspPoisonError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__GspPoisonError;    // (gsppoisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_GspPoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_GspPoisonError(GspPoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    GspPoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(GspPoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(GspPoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__GspPoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_GspPoisonError(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_GspPoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_GspPoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(GspPoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_GspPoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+
+    return __nvoc_objCreate_GspPoisonError((GspPoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__f3d5df = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PmuPoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for PmuPoisonError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__PmuPoisonError(PmuPoisonError*);
+void __nvoc_init_funcTable_PmuPoisonError(PmuPoisonError*);
+NV_STATUS __nvoc_ctor_PmuPoisonError(PmuPoisonError*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_PmuPoisonError(PmuPoisonError*);
+void __nvoc_dtor_PmuPoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__PmuPoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__PmuPoisonError;
+
+// Down-thunk(s) to bridge PmuPoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge PmuPoisonError methods to ancestors (if any)
+
+// Class-specific details for PmuPoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_PmuPoisonError = 
+{
+    .classInfo.size =               sizeof(PmuPoisonError),
+    .classInfo.classId =            classId(PmuPoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "PmuPoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_PmuPoisonError,
+    .pCastInfo =          &__nvoc_castinfo__PmuPoisonError,
+    .pExportInfo =        &__nvoc_export_info__PmuPoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__PmuPoisonError __nvoc_metadata__PmuPoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_PmuPoisonError,    // (pmupoisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_PmuPoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(PmuPoisonError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(PmuPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(PmuPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(PmuPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(PmuPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__PmuPoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__PmuPoisonError.rtti,    // [0]: (pmupoisonerr) this
+        &__nvoc_metadata__PmuPoisonError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__PmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__PmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__PmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__PmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__PmuPoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct PmuPoisonError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_PmuPoisonError(Dynamic* pThis) {
+
+    PmuPoisonError *__nvoc_this = (PmuPoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_PmuPoisonError(PmuPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct PmuPoisonError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_PmuPoisonError(PmuPoisonError *pEvent, struct EventBus *pEventBus) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_PMU_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_PmuPoisonError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_PmuPoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_pmupoisonerrConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_PmuPoisonError_fail__init;
+    goto __nvoc_ctor_PmuPoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_PmuPoisonError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_PmuPoisonError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_PmuPoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_PmuPoisonError_1(PmuPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_PmuPoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_PmuPoisonError(PmuPoisonError *pThis) {
+    __nvoc_init_funcTable_PmuPoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__PmuPoisonError(PmuPoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_PmuPoisonError = pThis;    // (pmupoisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__PmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__PmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PmuPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__PmuPoisonError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__PmuPoisonError;    // (pmupoisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_PmuPoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_PmuPoisonError(PmuPoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    PmuPoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(PmuPoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(PmuPoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__PmuPoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_PmuPoisonError(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_PmuPoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_PmuPoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(PmuPoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_PmuPoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+
+    return __nvoc_objCreate_PmuPoisonError((PmuPoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__b507fb = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2PoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for Sec2PoisonError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__Sec2PoisonError(Sec2PoisonError*);
+void __nvoc_init_funcTable_Sec2PoisonError(Sec2PoisonError*);
+NV_STATUS __nvoc_ctor_Sec2PoisonError(Sec2PoisonError*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_Sec2PoisonError(Sec2PoisonError*);
+void __nvoc_dtor_Sec2PoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__Sec2PoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__Sec2PoisonError;
+
+// Down-thunk(s) to bridge Sec2PoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge Sec2PoisonError methods to ancestors (if any)
+
+// Class-specific details for Sec2PoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2PoisonError = 
+{
+    .classInfo.size =               sizeof(Sec2PoisonError),
+    .classInfo.classId =            classId(Sec2PoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "Sec2PoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_Sec2PoisonError,
+    .pCastInfo =          &__nvoc_castinfo__Sec2PoisonError,
+    .pExportInfo =        &__nvoc_export_info__Sec2PoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__Sec2PoisonError __nvoc_metadata__Sec2PoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_Sec2PoisonError,    // (sec2poisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_Sec2PoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(Sec2PoisonError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(Sec2PoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(Sec2PoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(Sec2PoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(Sec2PoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__Sec2PoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__Sec2PoisonError.rtti,    // [0]: (sec2poisonerr) this
+        &__nvoc_metadata__Sec2PoisonError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__Sec2PoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__Sec2PoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__Sec2PoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__Sec2PoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__Sec2PoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct Sec2PoisonError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_Sec2PoisonError(Dynamic* pThis) {
+
+    Sec2PoisonError *__nvoc_this = (Sec2PoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_Sec2PoisonError(Sec2PoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct Sec2PoisonError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_Sec2PoisonError(Sec2PoisonError *pEvent, struct EventBus *pEventBus) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_SEC2_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_Sec2PoisonError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_Sec2PoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_sec2poisonerrConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_Sec2PoisonError_fail__init;
+    goto __nvoc_ctor_Sec2PoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_Sec2PoisonError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_Sec2PoisonError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_Sec2PoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_Sec2PoisonError_1(Sec2PoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_Sec2PoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_Sec2PoisonError(Sec2PoisonError *pThis) {
+    __nvoc_init_funcTable_Sec2PoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__Sec2PoisonError(Sec2PoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_Sec2PoisonError = pThis;    // (sec2poisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__Sec2PoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__Sec2PoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__Sec2PoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__Sec2PoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__Sec2PoisonError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__Sec2PoisonError;    // (sec2poisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_Sec2PoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_Sec2PoisonError(Sec2PoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    Sec2PoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(Sec2PoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(Sec2PoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__Sec2PoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_Sec2PoisonError(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_Sec2PoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_Sec2PoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(Sec2PoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_Sec2PoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+
+    return __nvoc_objCreate_Sec2PoisonError((Sec2PoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__04f443 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_FbFalconPoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for FbFalconPoisonError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__FbFalconPoisonError(FbFalconPoisonError*);
+void __nvoc_init_funcTable_FbFalconPoisonError(FbFalconPoisonError*);
+NV_STATUS __nvoc_ctor_FbFalconPoisonError(FbFalconPoisonError*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_FbFalconPoisonError(FbFalconPoisonError*);
+void __nvoc_dtor_FbFalconPoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__FbFalconPoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__FbFalconPoisonError;
+
+// Down-thunk(s) to bridge FbFalconPoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge FbFalconPoisonError methods to ancestors (if any)
+
+// Class-specific details for FbFalconPoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_FbFalconPoisonError = 
+{
+    .classInfo.size =               sizeof(FbFalconPoisonError),
+    .classInfo.classId =            classId(FbFalconPoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "FbFalconPoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_FbFalconPoisonError,
+    .pCastInfo =          &__nvoc_castinfo__FbFalconPoisonError,
+    .pExportInfo =        &__nvoc_export_info__FbFalconPoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__FbFalconPoisonError __nvoc_metadata__FbFalconPoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_FbFalconPoisonError,    // (fbfalconpoisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_FbFalconPoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(FbFalconPoisonError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(FbFalconPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(FbFalconPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(FbFalconPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(FbFalconPoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__FbFalconPoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__FbFalconPoisonError.rtti,    // [0]: (fbfalconpoisonerr) this
+        &__nvoc_metadata__FbFalconPoisonError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__FbFalconPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__FbFalconPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__FbFalconPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__FbFalconPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__FbFalconPoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct FbFalconPoisonError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_FbFalconPoisonError(Dynamic* pThis) {
+
+    FbFalconPoisonError *__nvoc_this = (FbFalconPoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_FbFalconPoisonError(FbFalconPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct FbFalconPoisonError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_FbFalconPoisonError(FbFalconPoisonError *pEvent, struct EventBus *pEventBus) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_FBFALCON_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_FbFalconPoisonError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_FbFalconPoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_fbfalconpoisonerrConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_FbFalconPoisonError_fail__init;
+    goto __nvoc_ctor_FbFalconPoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_FbFalconPoisonError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_FbFalconPoisonError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_FbFalconPoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_FbFalconPoisonError_1(FbFalconPoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_FbFalconPoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_FbFalconPoisonError(FbFalconPoisonError *pThis) {
+    __nvoc_init_funcTable_FbFalconPoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__FbFalconPoisonError(FbFalconPoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_FbFalconPoisonError = pThis;    // (fbfalconpoisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__FbFalconPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__FbFalconPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__FbFalconPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__FbFalconPoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__FbFalconPoisonError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__FbFalconPoisonError;    // (fbfalconpoisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_FbFalconPoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_FbFalconPoisonError(FbFalconPoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    FbFalconPoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(FbFalconPoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(FbFalconPoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__FbFalconPoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_FbFalconPoisonError(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_FbFalconPoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_FbFalconPoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(FbFalconPoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_FbFalconPoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+
+    return __nvoc_objCreate_FbFalconPoisonError((FbFalconPoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__0e1cb3 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_VideoEnginePoisonError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for VideoEnginePoisonError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__VideoEnginePoisonError(VideoEnginePoisonError*);
+void __nvoc_init_funcTable_VideoEnginePoisonError(VideoEnginePoisonError*);
+NV_STATUS __nvoc_ctor_VideoEnginePoisonError(VideoEnginePoisonError*, struct EventBus *pEventBus, NvU32 nv2080EngineType);
+void __nvoc_init_dataField_VideoEnginePoisonError(VideoEnginePoisonError*);
+void __nvoc_dtor_VideoEnginePoisonError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__VideoEnginePoisonError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__VideoEnginePoisonError;
+
+// Down-thunk(s) to bridge VideoEnginePoisonError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge VideoEnginePoisonError methods to ancestors (if any)
+
+// Class-specific details for VideoEnginePoisonError
+const struct NVOC_CLASS_DEF __nvoc_class_def_VideoEnginePoisonError = 
+{
+    .classInfo.size =               sizeof(VideoEnginePoisonError),
+    .classInfo.classId =            classId(VideoEnginePoisonError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "VideoEnginePoisonError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_VideoEnginePoisonError,
+    .pCastInfo =          &__nvoc_castinfo__VideoEnginePoisonError,
+    .pExportInfo =        &__nvoc_export_info__VideoEnginePoisonError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__VideoEnginePoisonError __nvoc_metadata__VideoEnginePoisonError = {
+    .rtti.pClassDef = &__nvoc_class_def_VideoEnginePoisonError,    // (videoenginepoisonerr) this
+    .rtti.dtor      = &__nvoc_dtor_VideoEnginePoisonError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(VideoEnginePoisonError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(VideoEnginePoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(VideoEnginePoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(VideoEnginePoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(VideoEnginePoisonError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__VideoEnginePoisonError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__VideoEnginePoisonError.rtti,    // [0]: (videoenginepoisonerr) this
+        &__nvoc_metadata__VideoEnginePoisonError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__VideoEnginePoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__VideoEnginePoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__VideoEnginePoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__VideoEnginePoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__VideoEnginePoisonError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct VideoEnginePoisonError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_VideoEnginePoisonError(Dynamic* pThis) {
+
+    VideoEnginePoisonError *__nvoc_this = (VideoEnginePoisonError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_VideoEnginePoisonError(VideoEnginePoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct VideoEnginePoisonError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_VideoEnginePoisonError(VideoEnginePoisonError *pEvent, struct EventBus *pEventBus, NvU32 nv2080EngineType) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_VIDEO_ENGINE_POISON_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 2 : 2)) % 32) + ((((0 != 0) ? 2 : 2)) % 32)))) << ((((0 != 0) ? 2 : 2)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_VideoEnginePoisonError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_VideoEnginePoisonError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_videoenginepoisonerrConstruct(pEvent, pEventBus, nv2080EngineType);
+    if (status != NV_OK) goto __nvoc_ctor_VideoEnginePoisonError_fail__init;
+    goto __nvoc_ctor_VideoEnginePoisonError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_VideoEnginePoisonError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_VideoEnginePoisonError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_VideoEnginePoisonError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_VideoEnginePoisonError_1(VideoEnginePoisonError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_VideoEnginePoisonError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_VideoEnginePoisonError(VideoEnginePoisonError *pThis) {
+    __nvoc_init_funcTable_VideoEnginePoisonError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__VideoEnginePoisonError(VideoEnginePoisonError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_VideoEnginePoisonError = pThis;    // (videoenginepoisonerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__VideoEnginePoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__VideoEnginePoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__VideoEnginePoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__VideoEnginePoisonError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__VideoEnginePoisonError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__VideoEnginePoisonError;    // (videoenginepoisonerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_VideoEnginePoisonError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_VideoEnginePoisonError(VideoEnginePoisonError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 nv2080EngineType)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    VideoEnginePoisonError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(VideoEnginePoisonError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(VideoEnginePoisonError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__VideoEnginePoisonError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_VideoEnginePoisonError(__nvoc_pThis, pEventBus, nv2080EngineType);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_VideoEnginePoisonError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_VideoEnginePoisonError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(VideoEnginePoisonError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_VideoEnginePoisonError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 nv2080EngineType = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_VideoEnginePoisonError((VideoEnginePoisonError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080EngineType);
 }
 
 
@@ -5328,5 +11107,3145 @@ NV_STATUS __nvoc_objCreateDynamic_EccResidualUncorrectableError(Dynamic **__nvoc
     NvU32 pcieCount = va_arg(__nvoc_args, NvU32);
 
     return __nvoc_objCreate_EccResidualUncorrectableError((EccResidualUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, severity, dramCount, ltcCount, mmuCount, pcieCount);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__52be0a = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PcieUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuInterconnectError;
+
+// Forward declarations for PcieUncorrectableError
+void __nvoc_init__GpuInterconnectError(GpuInterconnectError*);
+void __nvoc_init__PcieUncorrectableError(PcieUncorrectableError*);
+void __nvoc_init_funcTable_PcieUncorrectableError(PcieUncorrectableError*);
+NV_STATUS __nvoc_ctor_PcieUncorrectableError(PcieUncorrectableError*, struct EventBus *pEventBus, NvU32 unit);
+void __nvoc_init_dataField_PcieUncorrectableError(PcieUncorrectableError*);
+void __nvoc_dtor_PcieUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__PcieUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__PcieUncorrectableError;
+
+// Down-thunk(s) to bridge PcieUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge PcieUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for PcieUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_PcieUncorrectableError = 
+{
+    .classInfo.size =               sizeof(PcieUncorrectableError),
+    .classInfo.classId =            classId(PcieUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "PcieUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_PcieUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__PcieUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__PcieUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__PcieUncorrectableError __nvoc_metadata__PcieUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_PcieUncorrectableError,    // (pcieuceerr) this
+    .rtti.dtor      = &__nvoc_dtor_PcieUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuInterconnectError.rtti.pClassDef = &__nvoc_class_def_GpuInterconnectError,    // (gpuinterconnecterr) super
+    .metadata__GpuInterconnectError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.rtti.offset    = NV_OFFSETOF(PcieUncorrectableError, __nvoc_base_GpuInterconnectError),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(PcieUncorrectableError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(PcieUncorrectableError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(PcieUncorrectableError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(PcieUncorrectableError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__PcieUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__PcieUncorrectableError.rtti,    // [0]: (pcieuceerr) this
+        &__nvoc_metadata__PcieUncorrectableError.metadata__GpuInterconnectError.rtti,    // [1]: (gpuinterconnecterr) super
+        &__nvoc_metadata__PcieUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__PcieUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__PcieUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__PcieUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__PcieUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct PcieUncorrectableError object.
+void __nvoc_dtor_GpuInterconnectError(Dynamic*);
+void __nvoc_dtor_PcieUncorrectableError(Dynamic* pThis) {
+
+    PcieUncorrectableError *__nvoc_this = (PcieUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuInterconnectError((Dynamic *) &__nvoc_this->__nvoc_base_GpuInterconnectError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_PcieUncorrectableError(PcieUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct PcieUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuInterconnectError(GpuInterconnectError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_PcieUncorrectableError(PcieUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 unit) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuInterconnectError(&pEvent->__nvoc_base_GpuInterconnectError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_PCIE_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_PcieUncorrectableError_fail_GpuInterconnectError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_PcieUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_pcieuceerrConstruct(pEvent, pEventBus, unit);
+    if (status != NV_OK) goto __nvoc_ctor_PcieUncorrectableError_fail__init;
+    goto __nvoc_ctor_PcieUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_PcieUncorrectableError_fail__init:
+    __nvoc_dtor_GpuInterconnectError((Dynamic *)&pEvent->__nvoc_base_GpuInterconnectError);
+__nvoc_ctor_PcieUncorrectableError_fail_GpuInterconnectError:
+__nvoc_ctor_PcieUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_PcieUncorrectableError_1(PcieUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_PcieUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_PcieUncorrectableError(PcieUncorrectableError *pThis) {
+    __nvoc_init_funcTable_PcieUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__PcieUncorrectableError(PcieUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuInterconnectError = &pThis->__nvoc_base_GpuInterconnectError;    // (gpuinterconnecterr) super
+    pThis->__nvoc_pbase_PcieUncorrectableError = pThis;    // (pcieuceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuInterconnectError(&pThis->__nvoc_base_GpuInterconnectError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__PcieUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__PcieUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PcieUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PcieUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_metadata_ptr = &__nvoc_metadata__PcieUncorrectableError.metadata__GpuInterconnectError;    // (gpuinterconnecterr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__PcieUncorrectableError;    // (pcieuceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_PcieUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_PcieUncorrectableError(PcieUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 unit)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    PcieUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(PcieUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(PcieUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__PcieUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_PcieUncorrectableError(__nvoc_pThis, pEventBus, unit);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_PcieUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_PcieUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(PcieUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_PcieUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 unit = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_PcieUncorrectableError((PcieUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, unit);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__973621 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_CopyEngineUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for CopyEngineUncorrectableError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__CopyEngineUncorrectableError(CopyEngineUncorrectableError*);
+void __nvoc_init_funcTable_CopyEngineUncorrectableError(CopyEngineUncorrectableError*);
+NV_STATUS __nvoc_ctor_CopyEngineUncorrectableError(CopyEngineUncorrectableError*, struct EventBus *pEventBus, NvU32 dieletType, NvU32 dieletId, NvU32 pce);
+void __nvoc_init_dataField_CopyEngineUncorrectableError(CopyEngineUncorrectableError*);
+void __nvoc_dtor_CopyEngineUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__CopyEngineUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__CopyEngineUncorrectableError;
+
+// Down-thunk(s) to bridge CopyEngineUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge CopyEngineUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for CopyEngineUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_CopyEngineUncorrectableError = 
+{
+    .classInfo.size =               sizeof(CopyEngineUncorrectableError),
+    .classInfo.classId =            classId(CopyEngineUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "CopyEngineUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_CopyEngineUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__CopyEngineUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__CopyEngineUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__CopyEngineUncorrectableError __nvoc_metadata__CopyEngineUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_CopyEngineUncorrectableError,    // (copyengineuce) this
+    .rtti.dtor      = &__nvoc_dtor_CopyEngineUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(CopyEngineUncorrectableError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(CopyEngineUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(CopyEngineUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(CopyEngineUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(CopyEngineUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__CopyEngineUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__CopyEngineUncorrectableError.rtti,    // [0]: (copyengineuce) this
+        &__nvoc_metadata__CopyEngineUncorrectableError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__CopyEngineUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__CopyEngineUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__CopyEngineUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__CopyEngineUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__CopyEngineUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct CopyEngineUncorrectableError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_CopyEngineUncorrectableError(Dynamic* pThis) {
+
+    CopyEngineUncorrectableError *__nvoc_this = (CopyEngineUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_CopyEngineUncorrectableError(CopyEngineUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct CopyEngineUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_CopyEngineUncorrectableError(CopyEngineUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 dieletType, NvU32 dieletId, NvU32 pce) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_COPY_ENGINE_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_CopyEngineUncorrectableError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_CopyEngineUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_copyengineuceConstruct(pEvent, pEventBus, dieletType, dieletId, pce);
+    if (status != NV_OK) goto __nvoc_ctor_CopyEngineUncorrectableError_fail__init;
+    goto __nvoc_ctor_CopyEngineUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_CopyEngineUncorrectableError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_CopyEngineUncorrectableError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_CopyEngineUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_CopyEngineUncorrectableError_1(CopyEngineUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_CopyEngineUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_CopyEngineUncorrectableError(CopyEngineUncorrectableError *pThis) {
+    __nvoc_init_funcTable_CopyEngineUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__CopyEngineUncorrectableError(CopyEngineUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_CopyEngineUncorrectableError = pThis;    // (copyengineuce) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEngineUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEngineUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEngineUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEngineUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__CopyEngineUncorrectableError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__CopyEngineUncorrectableError;    // (copyengineuce) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_CopyEngineUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_CopyEngineUncorrectableError(CopyEngineUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 dieletType, NvU32 dieletId, NvU32 pce)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    CopyEngineUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(CopyEngineUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(CopyEngineUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__CopyEngineUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_CopyEngineUncorrectableError(__nvoc_pThis, pEventBus, dieletType, dieletId, pce);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_CopyEngineUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_CopyEngineUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(CopyEngineUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_CopyEngineUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 dieletType = va_arg(__nvoc_args, NvU32);
+    NvU32 dieletId = va_arg(__nvoc_args, NvU32);
+    NvU32 pce = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_CopyEngineUncorrectableError((CopyEngineUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, dieletType, dieletId, pce);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__7346b4 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_MmuUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for MmuUncorrectableError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__MmuUncorrectableError(MmuUncorrectableError*);
+void __nvoc_init_funcTable_MmuUncorrectableError(MmuUncorrectableError*);
+NV_STATUS __nvoc_ctor_MmuUncorrectableError(MmuUncorrectableError*, struct EventBus *pEventBus, NvU32 unit);
+void __nvoc_init_dataField_MmuUncorrectableError(MmuUncorrectableError*);
+void __nvoc_dtor_MmuUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__MmuUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__MmuUncorrectableError;
+
+// Down-thunk(s) to bridge MmuUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge MmuUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for MmuUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_MmuUncorrectableError = 
+{
+    .classInfo.size =               sizeof(MmuUncorrectableError),
+    .classInfo.classId =            classId(MmuUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "MmuUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_MmuUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__MmuUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__MmuUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__MmuUncorrectableError __nvoc_metadata__MmuUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_MmuUncorrectableError,    // (mmuuceerr) this
+    .rtti.dtor      = &__nvoc_dtor_MmuUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(MmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(MmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(MmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(MmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(MmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__MmuUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__MmuUncorrectableError.rtti,    // [0]: (mmuuceerr) this
+        &__nvoc_metadata__MmuUncorrectableError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__MmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__MmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__MmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__MmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__MmuUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct MmuUncorrectableError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_MmuUncorrectableError(Dynamic* pThis) {
+
+    MmuUncorrectableError *__nvoc_this = (MmuUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_MmuUncorrectableError(MmuUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct MmuUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_MmuUncorrectableError(MmuUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 unit) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_MMU_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_MmuUncorrectableError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_MmuUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_mmuuceerrConstruct(pEvent, pEventBus, unit);
+    if (status != NV_OK) goto __nvoc_ctor_MmuUncorrectableError_fail__init;
+    goto __nvoc_ctor_MmuUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_MmuUncorrectableError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_MmuUncorrectableError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_MmuUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_MmuUncorrectableError_1(MmuUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_MmuUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_MmuUncorrectableError(MmuUncorrectableError *pThis) {
+    __nvoc_init_funcTable_MmuUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__MmuUncorrectableError(MmuUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_MmuUncorrectableError = pThis;    // (mmuuceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__MmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__MmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__MmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__MmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__MmuUncorrectableError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__MmuUncorrectableError;    // (mmuuceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_MmuUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_MmuUncorrectableError(MmuUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 unit)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    MmuUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(MmuUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(MmuUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__MmuUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_MmuUncorrectableError(__nvoc_pThis, pEventBus, unit);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_MmuUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_MmuUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(MmuUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_MmuUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 unit = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_MmuUncorrectableError((MmuUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, unit);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__de7383 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_FecsUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for FecsUncorrectableError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__FecsUncorrectableError(FecsUncorrectableError*);
+void __nvoc_init_funcTable_FecsUncorrectableError(FecsUncorrectableError*);
+NV_STATUS __nvoc_ctor_FecsUncorrectableError(FecsUncorrectableError*, struct EventBus *pEventBus);
+void __nvoc_init_dataField_FecsUncorrectableError(FecsUncorrectableError*);
+void __nvoc_dtor_FecsUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__FecsUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__FecsUncorrectableError;
+
+// Down-thunk(s) to bridge FecsUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge FecsUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for FecsUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_FecsUncorrectableError = 
+{
+    .classInfo.size =               sizeof(FecsUncorrectableError),
+    .classInfo.classId =            classId(FecsUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "FecsUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_FecsUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__FecsUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__FecsUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__FecsUncorrectableError __nvoc_metadata__FecsUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_FecsUncorrectableError,    // (fecsuceerr) this
+    .rtti.dtor      = &__nvoc_dtor_FecsUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(FecsUncorrectableError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(FecsUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(FecsUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(FecsUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(FecsUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__FecsUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__FecsUncorrectableError.rtti,    // [0]: (fecsuceerr) this
+        &__nvoc_metadata__FecsUncorrectableError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__FecsUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__FecsUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__FecsUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__FecsUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__FecsUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct FecsUncorrectableError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_FecsUncorrectableError(Dynamic* pThis) {
+
+    FecsUncorrectableError *__nvoc_this = (FecsUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_FecsUncorrectableError(FecsUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct FecsUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_FecsUncorrectableError(FecsUncorrectableError *pEvent, struct EventBus *pEventBus) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_FECS_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_FecsUncorrectableError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_FecsUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_fecsuceerrConstruct(pEvent, pEventBus);
+    if (status != NV_OK) goto __nvoc_ctor_FecsUncorrectableError_fail__init;
+    goto __nvoc_ctor_FecsUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_FecsUncorrectableError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_FecsUncorrectableError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_FecsUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_FecsUncorrectableError_1(FecsUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_FecsUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_FecsUncorrectableError(FecsUncorrectableError *pThis) {
+    __nvoc_init_funcTable_FecsUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__FecsUncorrectableError(FecsUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_FecsUncorrectableError = pThis;    // (fecsuceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__FecsUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__FecsUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__FecsUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__FecsUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__FecsUncorrectableError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__FecsUncorrectableError;    // (fecsuceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_FecsUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_FecsUncorrectableError(FecsUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    FecsUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(FecsUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(FecsUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__FecsUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_FecsUncorrectableError(__nvoc_pThis, pEventBus);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_FecsUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_FecsUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(FecsUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_FecsUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+
+    return __nvoc_objCreate_FecsUncorrectableError((FecsUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__66dff4 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_SmUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for SmUncorrectableError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__SmUncorrectableError(SmUncorrectableError*);
+void __nvoc_init_funcTable_SmUncorrectableError(SmUncorrectableError*);
+NV_STATUS __nvoc_ctor_SmUncorrectableError(SmUncorrectableError*, struct EventBus *pEventBus, NvU32 unit, NvU32 gpc, NvU32 tpc);
+void __nvoc_init_dataField_SmUncorrectableError(SmUncorrectableError*);
+void __nvoc_dtor_SmUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__SmUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__SmUncorrectableError;
+
+// Down-thunk(s) to bridge SmUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge SmUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for SmUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_SmUncorrectableError = 
+{
+    .classInfo.size =               sizeof(SmUncorrectableError),
+    .classInfo.classId =            classId(SmUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "SmUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_SmUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__SmUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__SmUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__SmUncorrectableError __nvoc_metadata__SmUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_SmUncorrectableError,    // (smuceerr) this
+    .rtti.dtor      = &__nvoc_dtor_SmUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(SmUncorrectableError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(SmUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(SmUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(SmUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(SmUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__SmUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__SmUncorrectableError.rtti,    // [0]: (smuceerr) this
+        &__nvoc_metadata__SmUncorrectableError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__SmUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__SmUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__SmUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__SmUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__SmUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct SmUncorrectableError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_SmUncorrectableError(Dynamic* pThis) {
+
+    SmUncorrectableError *__nvoc_this = (SmUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_SmUncorrectableError(SmUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct SmUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_SmUncorrectableError(SmUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 unit, NvU32 gpc, NvU32 tpc) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_SM_CONTAINED_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_SmUncorrectableError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_SmUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_smuceerrConstruct(pEvent, pEventBus, unit, gpc, tpc);
+    if (status != NV_OK) goto __nvoc_ctor_SmUncorrectableError_fail__init;
+    goto __nvoc_ctor_SmUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_SmUncorrectableError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_SmUncorrectableError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_SmUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_SmUncorrectableError_1(SmUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_SmUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_SmUncorrectableError(SmUncorrectableError *pThis) {
+    __nvoc_init_funcTable_SmUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__SmUncorrectableError(SmUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_SmUncorrectableError = pThis;    // (smuceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__SmUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__SmUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__SmUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__SmUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__SmUncorrectableError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__SmUncorrectableError;    // (smuceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_SmUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_SmUncorrectableError(SmUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 unit, NvU32 gpc, NvU32 tpc)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    SmUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(SmUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(SmUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__SmUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_SmUncorrectableError(__nvoc_pThis, pEventBus, unit, gpc, tpc);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_SmUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_SmUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(SmUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_SmUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 unit = va_arg(__nvoc_args, NvU32);
+    NvU32 gpc = va_arg(__nvoc_args, NvU32);
+    NvU32 tpc = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_SmUncorrectableError((SmUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, unit, gpc, tpc);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__46e41f = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GccUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for GccUncorrectableError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__GccUncorrectableError(GccUncorrectableError*);
+void __nvoc_init_funcTable_GccUncorrectableError(GccUncorrectableError*);
+NV_STATUS __nvoc_ctor_GccUncorrectableError(GccUncorrectableError*, struct EventBus *pEventBus, NvU32 gpc);
+void __nvoc_init_dataField_GccUncorrectableError(GccUncorrectableError*);
+void __nvoc_dtor_GccUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__GccUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GccUncorrectableError;
+
+// Down-thunk(s) to bridge GccUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge GccUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for GccUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_GccUncorrectableError = 
+{
+    .classInfo.size =               sizeof(GccUncorrectableError),
+    .classInfo.classId =            classId(GccUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "GccUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_GccUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__GccUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__GccUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__GccUncorrectableError __nvoc_metadata__GccUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_GccUncorrectableError,    // (gccuceerr) this
+    .rtti.dtor      = &__nvoc_dtor_GccUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(GccUncorrectableError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(GccUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(GccUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(GccUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(GccUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__GccUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__GccUncorrectableError.rtti,    // [0]: (gccuceerr) this
+        &__nvoc_metadata__GccUncorrectableError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__GccUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__GccUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__GccUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__GccUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__GccUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct GccUncorrectableError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_GccUncorrectableError(Dynamic* pThis) {
+
+    GccUncorrectableError *__nvoc_this = (GccUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_GccUncorrectableError(GccUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct GccUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_GccUncorrectableError(GccUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 gpc) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_GCC_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_GccUncorrectableError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_GccUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_gccuceerrConstruct(pEvent, pEventBus, gpc);
+    if (status != NV_OK) goto __nvoc_ctor_GccUncorrectableError_fail__init;
+    goto __nvoc_ctor_GccUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_GccUncorrectableError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_GccUncorrectableError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_GccUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_GccUncorrectableError_1(GccUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_GccUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_GccUncorrectableError(GccUncorrectableError *pThis) {
+    __nvoc_init_funcTable_GccUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__GccUncorrectableError(GccUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_GccUncorrectableError = pThis;    // (gccuceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__GccUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__GccUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GccUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GccUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__GccUncorrectableError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__GccUncorrectableError;    // (gccuceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_GccUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_GccUncorrectableError(GccUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 gpc)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    GccUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(GccUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(GccUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__GccUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_GccUncorrectableError(__nvoc_pThis, pEventBus, gpc);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_GccUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_GccUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(GccUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_GccUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 gpc = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_GccUncorrectableError((GccUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, gpc);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__e36111 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_ContextSwitchUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for ContextSwitchUncorrectableError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__ContextSwitchUncorrectableError(ContextSwitchUncorrectableError*);
+void __nvoc_init_funcTable_ContextSwitchUncorrectableError(ContextSwitchUncorrectableError*);
+NV_STATUS __nvoc_ctor_ContextSwitchUncorrectableError(ContextSwitchUncorrectableError*, struct EventBus *pEventBus, NvU32 gpc);
+void __nvoc_init_dataField_ContextSwitchUncorrectableError(ContextSwitchUncorrectableError*);
+void __nvoc_dtor_ContextSwitchUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__ContextSwitchUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__ContextSwitchUncorrectableError;
+
+// Down-thunk(s) to bridge ContextSwitchUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge ContextSwitchUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for ContextSwitchUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_ContextSwitchUncorrectableError = 
+{
+    .classInfo.size =               sizeof(ContextSwitchUncorrectableError),
+    .classInfo.classId =            classId(ContextSwitchUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "ContextSwitchUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_ContextSwitchUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__ContextSwitchUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__ContextSwitchUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__ContextSwitchUncorrectableError __nvoc_metadata__ContextSwitchUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_ContextSwitchUncorrectableError,    // (ctxswuceerr) this
+    .rtti.dtor      = &__nvoc_dtor_ContextSwitchUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(ContextSwitchUncorrectableError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(ContextSwitchUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(ContextSwitchUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(ContextSwitchUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(ContextSwitchUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__ContextSwitchUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__ContextSwitchUncorrectableError.rtti,    // [0]: (ctxswuceerr) this
+        &__nvoc_metadata__ContextSwitchUncorrectableError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__ContextSwitchUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__ContextSwitchUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__ContextSwitchUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__ContextSwitchUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__ContextSwitchUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct ContextSwitchUncorrectableError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_ContextSwitchUncorrectableError(Dynamic* pThis) {
+
+    ContextSwitchUncorrectableError *__nvoc_this = (ContextSwitchUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_ContextSwitchUncorrectableError(ContextSwitchUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct ContextSwitchUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_ContextSwitchUncorrectableError(ContextSwitchUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 gpc) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_CONTEXT_SWITCH_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_RECOVERABLE, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_ContextSwitchUncorrectableError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_ContextSwitchUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_ctxswuceerrConstruct(pEvent, pEventBus, gpc);
+    if (status != NV_OK) goto __nvoc_ctor_ContextSwitchUncorrectableError_fail__init;
+    goto __nvoc_ctor_ContextSwitchUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_ContextSwitchUncorrectableError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_ContextSwitchUncorrectableError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_ContextSwitchUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_ContextSwitchUncorrectableError_1(ContextSwitchUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_ContextSwitchUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_ContextSwitchUncorrectableError(ContextSwitchUncorrectableError *pThis) {
+    __nvoc_init_funcTable_ContextSwitchUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__ContextSwitchUncorrectableError(ContextSwitchUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_ContextSwitchUncorrectableError = pThis;    // (ctxswuceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchUncorrectableError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__ContextSwitchUncorrectableError;    // (ctxswuceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_ContextSwitchUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_ContextSwitchUncorrectableError(ContextSwitchUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 gpc)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    ContextSwitchUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(ContextSwitchUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(ContextSwitchUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__ContextSwitchUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_ContextSwitchUncorrectableError(__nvoc_pThis, pEventBus, gpc);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_ContextSwitchUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_ContextSwitchUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(ContextSwitchUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_ContextSwitchUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 gpc = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_ContextSwitchUncorrectableError((ContextSwitchUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, gpc);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__f31a41 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpcMmuUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for GpcMmuUncorrectableError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__GpcMmuUncorrectableError(GpcMmuUncorrectableError*);
+void __nvoc_init_funcTable_GpcMmuUncorrectableError(GpcMmuUncorrectableError*);
+NV_STATUS __nvoc_ctor_GpcMmuUncorrectableError(GpcMmuUncorrectableError*, struct EventBus *pEventBus, NvU32 gpc);
+void __nvoc_init_dataField_GpcMmuUncorrectableError(GpcMmuUncorrectableError*);
+void __nvoc_dtor_GpcMmuUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__GpcMmuUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GpcMmuUncorrectableError;
+
+// Down-thunk(s) to bridge GpcMmuUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge GpcMmuUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for GpcMmuUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_GpcMmuUncorrectableError = 
+{
+    .classInfo.size =               sizeof(GpcMmuUncorrectableError),
+    .classInfo.classId =            classId(GpcMmuUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "GpcMmuUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_GpcMmuUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__GpcMmuUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__GpcMmuUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__GpcMmuUncorrectableError __nvoc_metadata__GpcMmuUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_GpcMmuUncorrectableError,    // (gpcmmuuceerr) this
+    .rtti.dtor      = &__nvoc_dtor_GpcMmuUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(GpcMmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(GpcMmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(GpcMmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(GpcMmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(GpcMmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__GpcMmuUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__GpcMmuUncorrectableError.rtti,    // [0]: (gpcmmuuceerr) this
+        &__nvoc_metadata__GpcMmuUncorrectableError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__GpcMmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__GpcMmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__GpcMmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__GpcMmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__GpcMmuUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct GpcMmuUncorrectableError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_GpcMmuUncorrectableError(Dynamic* pThis) {
+
+    GpcMmuUncorrectableError *__nvoc_this = (GpcMmuUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_GpcMmuUncorrectableError(GpcMmuUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct GpcMmuUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_GpcMmuUncorrectableError(GpcMmuUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 gpc) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_GPCMMU_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_ENGINE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_GpcMmuUncorrectableError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_GpcMmuUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_gpcmmuuceerrConstruct(pEvent, pEventBus, gpc);
+    if (status != NV_OK) goto __nvoc_ctor_GpcMmuUncorrectableError_fail__init;
+    goto __nvoc_ctor_GpcMmuUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_GpcMmuUncorrectableError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_GpcMmuUncorrectableError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_GpcMmuUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_GpcMmuUncorrectableError_1(GpcMmuUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_GpcMmuUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_GpcMmuUncorrectableError(GpcMmuUncorrectableError *pThis) {
+    __nvoc_init_funcTable_GpcMmuUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__GpcMmuUncorrectableError(GpcMmuUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_GpcMmuUncorrectableError = pThis;    // (gpcmmuuceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__GpcMmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__GpcMmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GpcMmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GpcMmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__GpcMmuUncorrectableError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__GpcMmuUncorrectableError;    // (gpcmmuuceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_GpcMmuUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_GpcMmuUncorrectableError(GpcMmuUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 gpc)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    GpcMmuUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(GpcMmuUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(GpcMmuUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__GpcMmuUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_GpcMmuUncorrectableError(__nvoc_pThis, pEventBus, gpc);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_GpcMmuUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_GpcMmuUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(GpcMmuUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_GpcMmuUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 gpc = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_GpcMmuUncorrectableError((GpcMmuUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, gpc);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__b8abcb = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GspUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for GspUncorrectableError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__GspUncorrectableError(GspUncorrectableError*);
+void __nvoc_init_funcTable_GspUncorrectableError(GspUncorrectableError*);
+NV_STATUS __nvoc_ctor_GspUncorrectableError(GspUncorrectableError*, struct EventBus *pEventBus, NvBool bHasLocation, NvU32 location);
+void __nvoc_init_dataField_GspUncorrectableError(GspUncorrectableError*);
+void __nvoc_dtor_GspUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__GspUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__GspUncorrectableError;
+
+// Down-thunk(s) to bridge GspUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge GspUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for GspUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_GspUncorrectableError = 
+{
+    .classInfo.size =               sizeof(GspUncorrectableError),
+    .classInfo.classId =            classId(GspUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "GspUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_GspUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__GspUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__GspUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__GspUncorrectableError __nvoc_metadata__GspUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_GspUncorrectableError,    // (gspuceerr) this
+    .rtti.dtor      = &__nvoc_dtor_GspUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(GspUncorrectableError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(GspUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(GspUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(GspUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(GspUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__GspUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__GspUncorrectableError.rtti,    // [0]: (gspuceerr) this
+        &__nvoc_metadata__GspUncorrectableError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__GspUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__GspUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__GspUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__GspUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__GspUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct GspUncorrectableError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_GspUncorrectableError(Dynamic* pThis) {
+
+    GspUncorrectableError *__nvoc_this = (GspUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_GspUncorrectableError(GspUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct GspUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_GspUncorrectableError(GspUncorrectableError *pEvent, struct EventBus *pEventBus, NvBool bHasLocation, NvU32 location) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_GSP_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_GspUncorrectableError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_GspUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_gspuceerrConstruct(pEvent, pEventBus, bHasLocation, location);
+    if (status != NV_OK) goto __nvoc_ctor_GspUncorrectableError_fail__init;
+    goto __nvoc_ctor_GspUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_GspUncorrectableError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_GspUncorrectableError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_GspUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_GspUncorrectableError_1(GspUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_GspUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_GspUncorrectableError(GspUncorrectableError *pThis) {
+    __nvoc_init_funcTable_GspUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__GspUncorrectableError(GspUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_GspUncorrectableError = pThis;    // (gspuceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__GspUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__GspUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GspUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__GspUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__GspUncorrectableError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__GspUncorrectableError;    // (gspuceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_GspUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_GspUncorrectableError(GspUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvBool bHasLocation, NvU32 location)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    GspUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(GspUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(GspUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__GspUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_GspUncorrectableError(__nvoc_pThis, pEventBus, bHasLocation, location);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_GspUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_GspUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(GspUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_GspUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvBool bHasLocation = (NvBool) va_arg(__nvoc_args, NvU32);
+    NvU32 location = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_GspUncorrectableError((GspUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, bHasLocation, location);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__6a47f6 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_LpsecUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for LpsecUncorrectableError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__LpsecUncorrectableError(LpsecUncorrectableError*);
+void __nvoc_init_funcTable_LpsecUncorrectableError(LpsecUncorrectableError*);
+NV_STATUS __nvoc_ctor_LpsecUncorrectableError(LpsecUncorrectableError*, struct EventBus *pEventBus, NvU32 sequencer);
+void __nvoc_init_dataField_LpsecUncorrectableError(LpsecUncorrectableError*);
+void __nvoc_dtor_LpsecUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__LpsecUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__LpsecUncorrectableError;
+
+// Down-thunk(s) to bridge LpsecUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge LpsecUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for LpsecUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_LpsecUncorrectableError = 
+{
+    .classInfo.size =               sizeof(LpsecUncorrectableError),
+    .classInfo.classId =            classId(LpsecUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "LpsecUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_LpsecUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__LpsecUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__LpsecUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__LpsecUncorrectableError __nvoc_metadata__LpsecUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_LpsecUncorrectableError,    // (lpsecuceerr) this
+    .rtti.dtor      = &__nvoc_dtor_LpsecUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(LpsecUncorrectableError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(LpsecUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(LpsecUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(LpsecUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(LpsecUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__LpsecUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__LpsecUncorrectableError.rtti,    // [0]: (lpsecuceerr) this
+        &__nvoc_metadata__LpsecUncorrectableError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__LpsecUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__LpsecUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__LpsecUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__LpsecUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__LpsecUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct LpsecUncorrectableError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_LpsecUncorrectableError(Dynamic* pThis) {
+
+    LpsecUncorrectableError *__nvoc_this = (LpsecUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_LpsecUncorrectableError(LpsecUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct LpsecUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_LpsecUncorrectableError(LpsecUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 sequencer) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_LPSEC_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_LpsecUncorrectableError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_LpsecUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_lpsecuceerrConstruct(pEvent, pEventBus, sequencer);
+    if (status != NV_OK) goto __nvoc_ctor_LpsecUncorrectableError_fail__init;
+    goto __nvoc_ctor_LpsecUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_LpsecUncorrectableError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_LpsecUncorrectableError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_LpsecUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_LpsecUncorrectableError_1(LpsecUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_LpsecUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_LpsecUncorrectableError(LpsecUncorrectableError *pThis) {
+    __nvoc_init_funcTable_LpsecUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__LpsecUncorrectableError(LpsecUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_LpsecUncorrectableError = pThis;    // (lpsecuceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__LpsecUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__LpsecUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LpsecUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__LpsecUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__LpsecUncorrectableError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__LpsecUncorrectableError;    // (lpsecuceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_LpsecUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_LpsecUncorrectableError(LpsecUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 sequencer)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    LpsecUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(LpsecUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(LpsecUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__LpsecUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_LpsecUncorrectableError(__nvoc_pThis, pEventBus, sequencer);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_LpsecUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_LpsecUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(LpsecUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_LpsecUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 sequencer = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_LpsecUncorrectableError((LpsecUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, sequencer);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__b35a90 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvlinkUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuInterconnectError;
+
+// Forward declarations for NvlinkUncorrectableError
+void __nvoc_init__GpuInterconnectError(GpuInterconnectError*);
+void __nvoc_init__NvlinkUncorrectableError(NvlinkUncorrectableError*);
+void __nvoc_init_funcTable_NvlinkUncorrectableError(NvlinkUncorrectableError*);
+NV_STATUS __nvoc_ctor_NvlinkUncorrectableError(NvlinkUncorrectableError*, struct EventBus *pEventBus, NvU32 nv2080GpuEccUnit);
+void __nvoc_init_dataField_NvlinkUncorrectableError(NvlinkUncorrectableError*);
+void __nvoc_dtor_NvlinkUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__NvlinkUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__NvlinkUncorrectableError;
+
+// Down-thunk(s) to bridge NvlinkUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge NvlinkUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for NvlinkUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_NvlinkUncorrectableError = 
+{
+    .classInfo.size =               sizeof(NvlinkUncorrectableError),
+    .classInfo.classId =            classId(NvlinkUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "NvlinkUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_NvlinkUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__NvlinkUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__NvlinkUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__NvlinkUncorrectableError __nvoc_metadata__NvlinkUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_NvlinkUncorrectableError,    // (nvlinkuceerr) this
+    .rtti.dtor      = &__nvoc_dtor_NvlinkUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuInterconnectError.rtti.pClassDef = &__nvoc_class_def_GpuInterconnectError,    // (gpuinterconnecterr) super
+    .metadata__GpuInterconnectError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.rtti.offset    = NV_OFFSETOF(NvlinkUncorrectableError, __nvoc_base_GpuInterconnectError),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(NvlinkUncorrectableError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(NvlinkUncorrectableError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(NvlinkUncorrectableError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(NvlinkUncorrectableError, __nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__NvlinkUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__NvlinkUncorrectableError.rtti,    // [0]: (nvlinkuceerr) this
+        &__nvoc_metadata__NvlinkUncorrectableError.metadata__GpuInterconnectError.rtti,    // [1]: (gpuinterconnecterr) super
+        &__nvoc_metadata__NvlinkUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__NvlinkUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__NvlinkUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__NvlinkUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__NvlinkUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct NvlinkUncorrectableError object.
+void __nvoc_dtor_GpuInterconnectError(Dynamic*);
+void __nvoc_dtor_NvlinkUncorrectableError(Dynamic* pThis) {
+
+    NvlinkUncorrectableError *__nvoc_this = (NvlinkUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuInterconnectError((Dynamic *) &__nvoc_this->__nvoc_base_GpuInterconnectError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_NvlinkUncorrectableError(NvlinkUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct NvlinkUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuInterconnectError(GpuInterconnectError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_NvlinkUncorrectableError(NvlinkUncorrectableError *pEvent, struct EventBus *pEventBus, NvU32 nv2080GpuEccUnit) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuInterconnectError(&pEvent->__nvoc_base_GpuInterconnectError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_NVLINK_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_NvlinkUncorrectableError_fail_GpuInterconnectError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_NvlinkUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_nvlinkuceerrConstruct(pEvent, pEventBus, nv2080GpuEccUnit);
+    if (status != NV_OK) goto __nvoc_ctor_NvlinkUncorrectableError_fail__init;
+    goto __nvoc_ctor_NvlinkUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_NvlinkUncorrectableError_fail__init:
+    __nvoc_dtor_GpuInterconnectError((Dynamic *)&pEvent->__nvoc_base_GpuInterconnectError);
+__nvoc_ctor_NvlinkUncorrectableError_fail_GpuInterconnectError:
+__nvoc_ctor_NvlinkUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_NvlinkUncorrectableError_1(NvlinkUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_NvlinkUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_NvlinkUncorrectableError(NvlinkUncorrectableError *pThis) {
+    __nvoc_init_funcTable_NvlinkUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__NvlinkUncorrectableError(NvlinkUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuInterconnectError = &pThis->__nvoc_base_GpuInterconnectError;    // (gpuinterconnecterr) super
+    pThis->__nvoc_pbase_NvlinkUncorrectableError = pThis;    // (nvlinkuceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuInterconnectError(&pThis->__nvoc_base_GpuInterconnectError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__NvlinkUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__NvlinkUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__NvlinkUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__NvlinkUncorrectableError.metadata__GpuInterconnectError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuInterconnectError.__nvoc_metadata_ptr = &__nvoc_metadata__NvlinkUncorrectableError.metadata__GpuInterconnectError;    // (gpuinterconnecterr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__NvlinkUncorrectableError;    // (nvlinkuceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_NvlinkUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_NvlinkUncorrectableError(NvlinkUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvU32 nv2080GpuEccUnit)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    NvlinkUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(NvlinkUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(NvlinkUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__NvlinkUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_NvlinkUncorrectableError(__nvoc_pThis, pEventBus, nv2080GpuEccUnit);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_NvlinkUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_NvlinkUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuInterconnectError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(NvlinkUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_NvlinkUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvU32 nv2080GpuEccUnit = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_NvlinkUncorrectableError((NvlinkUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, nv2080GpuEccUnit);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__c6a5e0 = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_PmuUncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for PmuUncorrectableError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__PmuUncorrectableError(PmuUncorrectableError*);
+void __nvoc_init_funcTable_PmuUncorrectableError(PmuUncorrectableError*);
+NV_STATUS __nvoc_ctor_PmuUncorrectableError(PmuUncorrectableError*, struct EventBus *pEventBus, NvBool bIsFalcon, NvBool bHasLocation, NvU32 location);
+void __nvoc_init_dataField_PmuUncorrectableError(PmuUncorrectableError*);
+void __nvoc_dtor_PmuUncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__PmuUncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__PmuUncorrectableError;
+
+// Down-thunk(s) to bridge PmuUncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge PmuUncorrectableError methods to ancestors (if any)
+
+// Class-specific details for PmuUncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_PmuUncorrectableError = 
+{
+    .classInfo.size =               sizeof(PmuUncorrectableError),
+    .classInfo.classId =            classId(PmuUncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "PmuUncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_PmuUncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__PmuUncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__PmuUncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__PmuUncorrectableError __nvoc_metadata__PmuUncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_PmuUncorrectableError,    // (pmuuceerr) this
+    .rtti.dtor      = &__nvoc_dtor_PmuUncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(PmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(PmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(PmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(PmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(PmuUncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__PmuUncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__PmuUncorrectableError.rtti,    // [0]: (pmuuceerr) this
+        &__nvoc_metadata__PmuUncorrectableError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__PmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__PmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__PmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__PmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__PmuUncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct PmuUncorrectableError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_PmuUncorrectableError(Dynamic* pThis) {
+
+    PmuUncorrectableError *__nvoc_this = (PmuUncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_PmuUncorrectableError(PmuUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct PmuUncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_PmuUncorrectableError(PmuUncorrectableError *pEvent, struct EventBus *pEventBus, NvBool bIsFalcon, NvBool bHasLocation, NvU32 location) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_PMU_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_PmuUncorrectableError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_PmuUncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_pmuuceerrConstruct(pEvent, pEventBus, bIsFalcon, bHasLocation, location);
+    if (status != NV_OK) goto __nvoc_ctor_PmuUncorrectableError_fail__init;
+    goto __nvoc_ctor_PmuUncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_PmuUncorrectableError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_PmuUncorrectableError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_PmuUncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_PmuUncorrectableError_1(PmuUncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_PmuUncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_PmuUncorrectableError(PmuUncorrectableError *pThis) {
+    __nvoc_init_funcTable_PmuUncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__PmuUncorrectableError(PmuUncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_PmuUncorrectableError = pThis;    // (pmuuceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__PmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__PmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__PmuUncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__PmuUncorrectableError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__PmuUncorrectableError;    // (pmuuceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_PmuUncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_PmuUncorrectableError(PmuUncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvBool bIsFalcon, NvBool bHasLocation, NvU32 location)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    PmuUncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(PmuUncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(PmuUncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__PmuUncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_PmuUncorrectableError(__nvoc_pThis, pEventBus, bIsFalcon, bHasLocation, location);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_PmuUncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_PmuUncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(PmuUncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_PmuUncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvBool bIsFalcon = (NvBool) va_arg(__nvoc_args, NvU32);
+    NvBool bHasLocation = (NvBool) va_arg(__nvoc_args, NvU32);
+    NvU32 location = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_PmuUncorrectableError((PmuUncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, bIsFalcon, bHasLocation, location);
+}
+
+
+#ifdef DEBUG
+char __nvoc_class_id_uniqueness_check__260c4b = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2UncorrectableError;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Event;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_OperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuOperationalEvent;
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuMemoryIntegrityError;
+
+// Forward declarations for Sec2UncorrectableError
+void __nvoc_init__GpuMemoryIntegrityError(GpuMemoryIntegrityError*);
+void __nvoc_init__Sec2UncorrectableError(Sec2UncorrectableError*);
+void __nvoc_init_funcTable_Sec2UncorrectableError(Sec2UncorrectableError*);
+NV_STATUS __nvoc_ctor_Sec2UncorrectableError(Sec2UncorrectableError*, struct EventBus *pEventBus, NvBool bHasLocation, NvU32 location);
+void __nvoc_init_dataField_Sec2UncorrectableError(Sec2UncorrectableError*);
+void __nvoc_dtor_Sec2UncorrectableError(Dynamic*);
+
+// Structures used within RTTI (run-time type information)
+extern const struct NVOC_CASTINFO __nvoc_castinfo__Sec2UncorrectableError;
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info__Sec2UncorrectableError;
+
+// Down-thunk(s) to bridge Sec2UncorrectableError methods from ancestors (if any)
+
+// Up-thunk(s) to bridge Sec2UncorrectableError methods to ancestors (if any)
+
+// Class-specific details for Sec2UncorrectableError
+const struct NVOC_CLASS_DEF __nvoc_class_def_Sec2UncorrectableError = 
+{
+    .classInfo.size =               sizeof(Sec2UncorrectableError),
+    .classInfo.classId =            classId(Sec2UncorrectableError),
+    .classInfo.visibility =         NVOC_EVENT_VISIBILITY_EXPORT,
+    .classInfo.providerId =         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+    .classInfo.name =               "Sec2UncorrectableError",
+#endif
+    .objCreatefn =        &__nvoc_objCreateDynamic_Sec2UncorrectableError,
+    .pCastInfo =          &__nvoc_castinfo__Sec2UncorrectableError,
+    .pExportInfo =        &__nvoc_export_info__Sec2UncorrectableError
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+static const struct NVOC_METADATA__Sec2UncorrectableError __nvoc_metadata__Sec2UncorrectableError = {
+    .rtti.pClassDef = &__nvoc_class_def_Sec2UncorrectableError,    // (sec2uceerr) this
+    .rtti.dtor      = &__nvoc_dtor_Sec2UncorrectableError,
+    .rtti.offset    = 0,
+    .metadata__GpuMemoryIntegrityError.rtti.pClassDef = &__nvoc_class_def_GpuMemoryIntegrityError,    // (gpumemintegrityerr) super
+    .metadata__GpuMemoryIntegrityError.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.rtti.offset    = NV_OFFSETOF(Sec2UncorrectableError, __nvoc_base_GpuMemoryIntegrityError),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.pClassDef = &__nvoc_class_def_GpuOperationalEvent,    // (gpuopevt) super^2
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti.offset    = NV_OFFSETOF(Sec2UncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.pClassDef = &__nvoc_class_def_OperationalEvent,    // (opevt) super^3
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti.offset    = NV_OFFSETOF(Sec2UncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.pClassDef = &__nvoc_class_def_Event,    // (event) super^4
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti.offset    = NV_OFFSETOF(Sec2UncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event),
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.pClassDef = &__nvoc_class_def_Object,    // (obj) super^5
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
+    .metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti.offset    = NV_OFFSETOF(Sec2UncorrectableError, __nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object),
+};
+
+
+// Dynamic down-casting information
+const struct NVOC_CASTINFO __nvoc_castinfo__Sec2UncorrectableError = {
+    .numRelatives = 6,
+    .relatives = {
+        &__nvoc_metadata__Sec2UncorrectableError.rtti,    // [0]: (sec2uceerr) this
+        &__nvoc_metadata__Sec2UncorrectableError.metadata__GpuMemoryIntegrityError.rtti,    // [1]: (gpumemintegrityerr) super
+        &__nvoc_metadata__Sec2UncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.rtti,    // [2]: (gpuopevt) super^2
+        &__nvoc_metadata__Sec2UncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.rtti,    // [3]: (opevt) super^3
+        &__nvoc_metadata__Sec2UncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.rtti,    // [4]: (event) super^4
+        &__nvoc_metadata__Sec2UncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object.rtti,    // [5]: (obj) super^5
+    }
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info__Sec2UncorrectableError = 
+{
+    .numEntries=     0,
+    .pExportEntries= 0
+};
+
+
+// Destruct Sec2UncorrectableError object.
+void __nvoc_dtor_GpuMemoryIntegrityError(Dynamic*);
+void __nvoc_dtor_Sec2UncorrectableError(Dynamic* pThis) {
+
+    Sec2UncorrectableError *__nvoc_this = (Sec2UncorrectableError *) pThis;
+
+// Recurse to superclass destructors.
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *) &__nvoc_this->__nvoc_base_GpuMemoryIntegrityError);
+
+    PORT_UNREFERENCED_VARIABLE(__nvoc_this);
+}
+void __nvoc_init_dataField_Sec2UncorrectableError(Sec2UncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+
+// Construct Sec2UncorrectableError object.
+NV_STATUS __nvoc_ctor_GpuMemoryIntegrityError(GpuMemoryIntegrityError *pEvent, struct EventBus *pEventBus, const char *pModuleSignature, NvU32 eventCode, NvU32 severity, NvU32 attributes, NvU32 scope, NvU32 reportingSource, NvU32 logLevel);    // inline
+NV_STATUS __nvoc_ctor_Sec2UncorrectableError(Sec2UncorrectableError *pEvent, struct EventBus *pEventBus, NvBool bHasLocation, NvU32 location) {    // inline
+    NV_STATUS status = NV_OK;
+
+    // Recurse to ancestor constructor(s).
+    status = __nvoc_ctor_GpuMemoryIntegrityError(&pEvent->__nvoc_base_GpuMemoryIntegrityError, pEventBus, "GPU-RAS", RAS_OP_EVENT_CODE_SEC2_UNCORRECTABLE_ERROR, OPERATIONAL_EVENT_SEVERITY_FATAL, (((1U) & (4294967295U >> (31 - ((((1 != 0) ? 5 : 5)) % 32) + ((((0 != 0) ? 5 : 5)) % 32)))) << ((((0 != 0) ? 5 : 5)) % 32)), GPU_OPERATIONAL_EVENT_SCOPE_DEVICE, GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_INTERRUPT, GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+    if (status != NV_OK) goto __nvoc_ctor_Sec2UncorrectableError_fail_GpuMemoryIntegrityError;
+
+    // Initialize data fields.
+    __nvoc_init_dataField_Sec2UncorrectableError(pEvent);
+
+    // Call the constructor for this class.
+    status = __nvoc_sec2uceerrConstruct(pEvent, pEventBus, bHasLocation, location);
+    if (status != NV_OK) goto __nvoc_ctor_Sec2UncorrectableError_fail__init;
+    goto __nvoc_ctor_Sec2UncorrectableError_exit; // Success
+
+    // Unwind on error.
+__nvoc_ctor_Sec2UncorrectableError_fail__init:
+    __nvoc_dtor_GpuMemoryIntegrityError((Dynamic *)&pEvent->__nvoc_base_GpuMemoryIntegrityError);
+__nvoc_ctor_Sec2UncorrectableError_fail_GpuMemoryIntegrityError:
+__nvoc_ctor_Sec2UncorrectableError_exit:
+    return status;
+}
+
+// Vtable initialization
+static void __nvoc_init_funcTable_Sec2UncorrectableError_1(Sec2UncorrectableError *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+} // End __nvoc_init_funcTable_Sec2UncorrectableError_1
+
+
+// Initialize vtable(s): Nothing to do for empty vtables
+void __nvoc_init_funcTable_Sec2UncorrectableError(Sec2UncorrectableError *pThis) {
+    __nvoc_init_funcTable_Sec2UncorrectableError_1(pThis);
+}
+
+// Initialize newly constructed object.
+void __nvoc_init__Sec2UncorrectableError(Sec2UncorrectableError *pThis) {
+
+    // Initialize pointers to inherited data.
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object;    // (obj) super^5
+    pThis->__nvoc_pbase_Event = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event;    // (event) super^4
+    pThis->__nvoc_pbase_OperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_pbase_GpuOperationalEvent = &pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_pbase_GpuMemoryIntegrityError = &pThis->__nvoc_base_GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_pbase_Sec2UncorrectableError = pThis;    // (sec2uceerr) this
+
+    // Recurse to superclass initialization function(s).
+    __nvoc_init__GpuMemoryIntegrityError(&pThis->__nvoc_base_GpuMemoryIntegrityError);
+
+    // Pointer(s) to metadata structures(s)
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.__nvoc_metadata_ptr = &__nvoc_metadata__Sec2UncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event.metadata__Object;    // (obj) super^5
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_metadata_ptr = &__nvoc_metadata__Sec2UncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent.metadata__Event;    // (event) super^4
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__Sec2UncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent.metadata__OperationalEvent;    // (opevt) super^3
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_metadata_ptr = &__nvoc_metadata__Sec2UncorrectableError.metadata__GpuMemoryIntegrityError.metadata__GpuOperationalEvent;    // (gpuopevt) super^2
+    pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_metadata_ptr = &__nvoc_metadata__Sec2UncorrectableError.metadata__GpuMemoryIntegrityError;    // (gpumemintegrityerr) super
+    pThis->__nvoc_metadata_ptr = &__nvoc_metadata__Sec2UncorrectableError;    // (sec2uceerr) this
+
+    // Initialize per-object vtables.
+    __nvoc_init_funcTable_Sec2UncorrectableError(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_Sec2UncorrectableError(Sec2UncorrectableError **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, struct EventBus *pEventBus, NvBool bHasLocation, NvU32 location)
+{
+    NV_STATUS __nvoc_status;
+    Object *__nvoc_pParentObj = NULL;
+    Sec2UncorrectableError *__nvoc_pThis;
+
+    // Don't allocate memory if the caller has already done so.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_ppThis != NULL && *__nvoc_ppThis != NULL, NV_ERR_INVALID_PARAMETER);
+        __nvoc_pThis = *__nvoc_ppThis;
+    }
+
+    // Allocate memory
+    else
+    {
+        __nvoc_pThis = portMemAllocNonPaged(sizeof(Sec2UncorrectableError));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, __nvoc_pThis != NULL, NV_ERR_NO_MEMORY);
+    }
+
+    // Zero is the initial value for everything.
+    portMemSet(__nvoc_pThis, 0, sizeof(Sec2UncorrectableError));
+
+    __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.createFlags = __nvoc_createFlags;
+
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (__nvoc_pParent != NULL && !(__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        __nvoc_pParentObj = dynamicCast(__nvoc_pParent, Object);
+        objAddChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+    }
+    else
+    {
+        __nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object.pParent = NULL;
+    }
+
+    // Initialize vtable, RTTI, etc., then call constructor.
+    __nvoc_init__Sec2UncorrectableError(__nvoc_pThis);
+    __nvoc_status = __nvoc_ctor_Sec2UncorrectableError(__nvoc_pThis, pEventBus, bHasLocation, location);
+    if (__nvoc_status != NV_OK) goto __nvoc_objCreate_Sec2UncorrectableError_cleanup;
+
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
+    *__nvoc_ppThis = __nvoc_pThis;
+
+    // Success
+    return NV_OK;
+
+    // Do not call destructors here since the constructor already called them.
+__nvoc_objCreate_Sec2UncorrectableError_cleanup:
+
+    // Unlink the child from the parent if it was linked above.
+    if (__nvoc_pParentObj != NULL)
+        objRemoveChild(__nvoc_pParentObj, &__nvoc_pThis->__nvoc_base_GpuMemoryIntegrityError.__nvoc_base_GpuOperationalEvent.__nvoc_base_OperationalEvent.__nvoc_base_Event.__nvoc_base_Object);
+
+    // Zero out memory that was allocated by caller.
+    if (__nvoc_createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(__nvoc_pThis, 0, sizeof(Sec2UncorrectableError));
+
+    // Free memory allocated by `__nvoc_handleObjCreateMemAlloc`.
+    else
+    {
+        portMemFree(__nvoc_pThis);
+        *__nvoc_ppThis = NULL;
+    }
+
+    // Failure
+    return __nvoc_status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_Sec2UncorrectableError(Dynamic **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags, va_list __nvoc_args) {
+    struct EventBus *pEventBus = va_arg(__nvoc_args, struct EventBus *);
+    NvBool bHasLocation = (NvBool) va_arg(__nvoc_args, NvU32);
+    NvU32 location = va_arg(__nvoc_args, NvU32);
+
+    return __nvoc_objCreate_Sec2UncorrectableError((Sec2UncorrectableError **) __nvoc_ppThis, __nvoc_pParent, __nvoc_createFlags, pEventBus, bHasLocation, location);
 }
 

@@ -37,6 +37,7 @@ static void       initPublicObjectFunctionPointers_EHeap(OBJEHEAP *pHeap);
 static NV_STATUS  eheapInit(OBJEHEAP *, NvU64, NvU64, NvU32, NvU32);
 static NV_STATUS  eheapDestruct(OBJEHEAP *);
 static NV_STATUS  eheapAlloc(OBJEHEAP *, NvU32, NvU32 *, NvU64 *, NvU64 *,NvU64, NvU64, EMEMBLOCK **, void*, EHeapOwnershipComparator*);
+static NV_STATUS  eheapAllocInRange(OBJEHEAP *, NvU32, NvU32 *, NvU64 *, NvU64 *,NvU64, NvU64, NvU64, NvU64, EMEMBLOCK **, void*, EHeapOwnershipComparator*);
 static NV_STATUS  eheapFree(OBJEHEAP *, NvU64);
 static void       eheapInfo(OBJEHEAP *, NvU64 *, NvU64 *, NvU64 *,  NvU64 *, NvU32 *, NvU64 *);
 static void       eheapInfoForRange(OBJEHEAP *, NV_RANGE, NvU64 *,  NvU64 *, NvU32 *, NvU64 *);
@@ -64,6 +65,7 @@ initPublicObjectFunctionPointers_EHeap(OBJEHEAP *pHeap)
 {
     pHeap->eheapDestruct              = eheapDestruct;
     pHeap->eheapAlloc                 = eheapAlloc;
+    pHeap->eheapAllocInRange          = eheapAllocInRange;
     pHeap->eheapFree                  = eheapFree;
     pHeap->eheapInfo                  = eheapInfo;
     pHeap->eheapInfoForRange          = eheapInfoForRange;
@@ -300,6 +302,27 @@ eheapAlloc
     NvU64 *size,
     NvU64 offsetAlign,
     NvU64 sizeAlign,
+    EMEMBLOCK **ppMemBlock,
+    void *pIsolationID,
+    EHeapOwnershipComparator *checker
+)
+{
+    return eheapAllocInRange(pHeap, owner, flags, offset, size, offsetAlign, sizeAlign,
+                             pHeap->rangeLo, pHeap->rangeHi, ppMemBlock, pIsolationID, checker);
+}
+
+static NV_STATUS
+eheapAllocInRange
+(
+    OBJEHEAP *pHeap,
+    NvU32 owner,
+    NvU32 *flags,
+    NvU64 *offset,
+    NvU64 *size,
+    NvU64 offsetAlign,
+    NvU64 sizeAlign,
+    NvU64 rangeLo,
+    NvU64 rangeHi,
     EMEMBLOCK **ppMemBlock, // not generally useful over e.g. a split!
     void *pIsolationID,
     EHeapOwnershipComparator *checker
@@ -310,7 +333,6 @@ eheapAlloc
     EMEMBLOCK *blockNew = NULL, *blockSplit = NULL;
     NvU64      desiredOffset;
     NvU64      allocSize;
-    NvU64      rangeLo, rangeHi;
 
     if ((*flags & NVOS32_ALLOC_FLAGS_FORCE_INTERNAL_INDEX) &&
         (*flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE))
@@ -336,9 +358,6 @@ eheapAlloc
     //
     // Range-limited the request.
     //
-    rangeLo = pHeap->rangeLo;
-    rangeHi = pHeap->rangeHi;
-
     if (rangeLo == 0 && rangeHi == 0) {
         rangeLo = pHeap->base;
         rangeHi = pHeap->base + pHeap->total - 1;

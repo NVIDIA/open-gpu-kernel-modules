@@ -47,6 +47,8 @@ NvU8 nv_find_pci_capability(struct pci_dev *, NvU8);
 int nvidia_dev_get_pci_info(const NvU8 *, struct pci_dev **, NvU64 *, NvU64 *);
 NvBool nv_pci_is_valid_topology_for_direct_pci(nv_state_t *, struct pci_dev *);
 NvBool nv_pci_has_common_pci_switch(nv_state_t *nv, struct pci_dev *);
+NV_STATUS nv_pci_find_nvidia_dvsec_capability(struct pci_dev *, NvU16,
+                                              NvU32 *, NvU32 *);
 void nv_pci_tegra_boost_clocks(struct device *dev);
 
 #define NV_PCI_EXT_CAP_START_OFFSET         0x100

@@ -31,6 +31,22 @@
 #include "gpu/uvm/access_cntr_buffer.h"
 
 NV_STATUS
+subdeviceCtrlCmdInternalUvmGetAccessCntrBufferEnabled_IMPL
+(
+    Subdevice                                                    *pSubdevice,
+    NV2080_CTRL_INTERNAL_UVM_GET_ACCESS_CNTR_BUFFER_ENABLED_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    OBJUVM *pUvm = GPU_GET_UVM(pGpu);
+
+    pParams->bFbhubAccessCntrRegisterAccessEnabled =
+        uvmIsFbhubAccessCntrAccessEnabled_HAL(pGpu, pUvm);
+
+    return NV_OK;
+}
+
+NV_STATUS
 accesscntrCtrlCmdAccessCntrBufferReadGet_IMPL
 (
     AccessCounterBuffer *pAccessCounterBuffer,

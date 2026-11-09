@@ -126,10 +126,9 @@ typedef struct {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelOob;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__KernelOob;
 
 
 struct KernelOob {
@@ -161,6 +160,7 @@ struct KernelOob {
 //  NvBool PDB_PROP_KOOB_IS_MISSING inherited from OBJENGSTATE
 
     // Data members
+    NvBool bLoaded;
     NvU32 registryOverride;
     NvBool bSupported;
     struct IoAperture mboxAperture;
@@ -175,27 +175,10 @@ struct KernelOob {
 };
 
 
-// Vtable with 12 per-class function pointers
-struct NVOC_VTABLE__KernelOob {
-    NV_STATUS (*__koobConstructEngine__)(struct OBJGPU *, struct KernelOob * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    void (*__koobInitMissing__)(struct OBJGPU *, struct KernelOob * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__koobStatePreInitLocked__)(struct OBJGPU *, struct KernelOob * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__koobStatePreInitUnlocked__)(struct OBJGPU *, struct KernelOob * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__koobStateInitLocked__)(struct OBJGPU *, struct KernelOob * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__koobStateInitUnlocked__)(struct OBJGPU *, struct KernelOob * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__koobStatePreLoad__)(struct OBJGPU *, struct KernelOob * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__koobStatePostLoad__)(struct OBJGPU *, struct KernelOob * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__koobStatePreUnload__)(struct OBJGPU *, struct KernelOob * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__koobStatePostUnload__)(struct OBJGPU *, struct KernelOob * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__koobStateDestroy__)(struct OBJGPU *, struct KernelOob * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__koobIsPresent__)(struct OBJGPU *, struct KernelOob * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelOob {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__KernelOob vtable;
 };
 
 #ifndef __nvoc_class_id_KernelOob
@@ -299,7 +282,7 @@ static inline NvU64 koobGetTimestampEpochNs(struct OBJGPU *pGpu, struct KernelOo
 
 
 // Wrapper macros for halified functions
-#define koobConstructEngine_FNPTR(pKernelOob) pKernelOob->__nvoc_metadata_ptr->vtable.__koobConstructEngine__
+#define koobConstructEngine_FNPTR(pKernelOob) pKernelOob->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define koobConstructEngine(pGpu, pKernelOob, arg3) koobConstructEngine_DISPATCH(pGpu, pKernelOob, arg3)
 #define koobStateLoad_FNPTR(pKernelOob) pKernelOob->__koobStateLoad__
 #define koobStateLoad(pGpu, pKernelOob, flags) koobStateLoad_DISPATCH(pGpu, pKernelOob, flags)
@@ -322,6 +305,10 @@ static inline NvU64 koobGetTimestampEpochNs(struct OBJGPU *pGpu, struct KernelOo
 #define koobMnocMboxSend_FNPTR(pKernelOob) pKernelOob->__koobMnocMboxSend__
 #define koobMnocMboxSend(pGpu, pKernelOob, bToWorkItem, pParams) koobMnocMboxSend_DISPATCH(pGpu, pKernelOob, bToWorkItem, pParams)
 #define koobMnocMboxSend_HAL(pGpu, pKernelOob, bToWorkItem, pParams) koobMnocMboxSend_DISPATCH(pGpu, pKernelOob, bToWorkItem, pParams)
+#define koobConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define koobConstructApertures(pGpu, pEngstate) koobConstructApertures_DISPATCH(pGpu, pEngstate)
+#define koobDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define koobDestructApertures(pGpu, pEngstate) koobDestructApertures_DISPATCH(pGpu, pEngstate)
 #define koobInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define koobInitMissing(pGpu, pEngstate) koobInitMissing_DISPATCH(pGpu, pEngstate)
 #define koobStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -347,7 +334,7 @@ static inline NvU64 koobGetTimestampEpochNs(struct OBJGPU *pGpu, struct KernelOo
 
 // Dispatch functions
 static inline NV_STATUS koobConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pKernelOob, ENGDESCRIPTOR arg3) {
-    return pKernelOob->__nvoc_metadata_ptr->vtable.__koobConstructEngine__(pGpu, pKernelOob, arg3);
+    return pKernelOob->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(pGpu, staticCast(pKernelOob, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS koobStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pKernelOob, NvU32 flags) {
@@ -378,48 +365,56 @@ static inline NV_STATUS koobMnocMboxSend_DISPATCH(struct OBJGPU *pGpu, struct Ke
     return pKernelOob->__koobMnocMboxSend__(pGpu, pKernelOob, bToWorkItem, pParams);
 }
 
+static inline NV_STATUS koobConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
+static inline void koobDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
 static inline void koobInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__koobInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS koobStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__koobStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS koobStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__koobStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS koobStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__koobStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS koobStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__koobStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS koobStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__koobStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS koobStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__koobStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS koobStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__koobStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS koobStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__koobStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline void koobStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__koobStateDestroy__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NvBool koobIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__koobIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions

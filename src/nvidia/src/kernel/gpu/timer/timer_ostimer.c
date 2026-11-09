@@ -150,8 +150,14 @@ NV_STATUS tmrEventServiceOSTimerCallback_OSTIMER
 
     if (pEvent && (pEvent->super.pTimeProc != NULL))
     {
-        pEvent->super.pTimeProc(pGpu, pTmr, (TMR_EVENT *)pEvent);
+        //
+        // Becuase RM pass event pointer with call-by-val method,
+        // this means even callback destroy itself timerEvent pointer, it still doesn't clear *pEvent here.
+        // But this will make *pEvent as dangling pointer and point to unsafe memory address.
+        // So we need to clear event flag before executing callback.
+        //
         pEvent->super.flags &= ~TMR_FLAG_OS_TIMER_QUEUED;
+        pEvent->super.pTimeProc(pGpu, pTmr, (TMR_EVENT *)pEvent);
     }
     else
     {

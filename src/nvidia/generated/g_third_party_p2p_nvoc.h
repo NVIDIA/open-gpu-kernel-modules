@@ -302,10 +302,9 @@ void shrp2pDestruct_IMPL(struct P2PTokenShare *pP2PTokenShare);
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__ThirdPartyP2P;
 struct NVOC_METADATA__GpuResource;
-struct NVOC_VTABLE__ThirdPartyP2P;
 
 
 struct ThirdPartyP2P {
@@ -346,40 +345,10 @@ struct ThirdPartyP2P {
 };
 
 
-// Vtable with 25 per-class function pointers
-struct NVOC_VTABLE__ThirdPartyP2P {
-    NV_STATUS (*__thirdpartyp2pControl__)(struct ThirdPartyP2P * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__thirdpartyp2pMap__)(struct ThirdPartyP2P * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__thirdpartyp2pUnmap__)(struct ThirdPartyP2P * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__thirdpartyp2pShareCallback__)(struct ThirdPartyP2P * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__thirdpartyp2pGetRegBaseOffsetAndSize__)(struct ThirdPartyP2P * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__thirdpartyp2pGetMapAddrSpace__)(struct ThirdPartyP2P * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__thirdpartyp2pInternalControlForward__)(struct ThirdPartyP2P * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__thirdpartyp2pGetInternalObjectHandle__)(struct ThirdPartyP2P * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__thirdpartyp2pAccessCallback__)(struct ThirdPartyP2P * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__thirdpartyp2pGetMemInterMapParams__)(struct ThirdPartyP2P * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__thirdpartyp2pCheckMemInterUnmap__)(struct ThirdPartyP2P * /*this*/, NvBool);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__thirdpartyp2pGetMemoryMappingDescriptor__)(struct ThirdPartyP2P * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__thirdpartyp2pControlSerialization_Prologue__)(struct ThirdPartyP2P * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__thirdpartyp2pControlSerialization_Epilogue__)(struct ThirdPartyP2P * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__thirdpartyp2pControl_Prologue__)(struct ThirdPartyP2P * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__thirdpartyp2pControl_Epilogue__)(struct ThirdPartyP2P * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NvBool (*__thirdpartyp2pCanCopy__)(struct ThirdPartyP2P * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__thirdpartyp2pIsDuplicate__)(struct ThirdPartyP2P * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__thirdpartyp2pPreDestruct__)(struct ThirdPartyP2P * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__thirdpartyp2pControlFilter__)(struct ThirdPartyP2P * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (gpures)
-    NvBool (*__thirdpartyp2pIsPartialUnmapSupported__)(struct ThirdPartyP2P * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__thirdpartyp2pMapTo__)(struct ThirdPartyP2P * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__thirdpartyp2pUnmapFrom__)(struct ThirdPartyP2P * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__thirdpartyp2pGetRefCount__)(struct ThirdPartyP2P * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__thirdpartyp2pAddAdditionalDependants__)(struct RsClient *, struct ThirdPartyP2P * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__ThirdPartyP2P {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResource metadata__GpuResource;
-    const struct NVOC_VTABLE__ThirdPartyP2P vtable;
 };
 
 #ifndef __nvoc_class_id_ThirdPartyP2P
@@ -516,13 +485,13 @@ static inline NV_STATUS thirdpartyp2pCtrlCmdRegisterPid(struct ThirdPartyP2P *pT
 
 
 // Wrapper macros for halified functions
-#define thirdpartyp2pControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define thirdpartyp2pControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define thirdpartyp2pControl(pGpuResource, pCallContext, pParams) thirdpartyp2pControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define thirdpartyp2pMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresMap__
+#define thirdpartyp2pMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define thirdpartyp2pMap(pGpuResource, pCallContext, pParams, pCpuMapping) thirdpartyp2pMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define thirdpartyp2pUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresUnmap__
+#define thirdpartyp2pUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define thirdpartyp2pUnmap(pGpuResource, pCallContext, pCpuMapping) thirdpartyp2pUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define thirdpartyp2pShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define thirdpartyp2pShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define thirdpartyp2pShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) thirdpartyp2pShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define thirdpartyp2pGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define thirdpartyp2pGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) thirdpartyp2pGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -532,7 +501,7 @@ static inline NV_STATUS thirdpartyp2pCtrlCmdRegisterPid(struct ThirdPartyP2P *pT
 #define thirdpartyp2pInternalControlForward(pGpuResource, command, pParams, size) thirdpartyp2pInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define thirdpartyp2pGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define thirdpartyp2pGetInternalObjectHandle(pGpuResource) thirdpartyp2pGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define thirdpartyp2pAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define thirdpartyp2pAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define thirdpartyp2pAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) thirdpartyp2pAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define thirdpartyp2pGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define thirdpartyp2pGetMemInterMapParams(pRmResource, pParams) thirdpartyp2pGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -540,13 +509,13 @@ static inline NV_STATUS thirdpartyp2pCtrlCmdRegisterPid(struct ThirdPartyP2P *pT
 #define thirdpartyp2pCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) thirdpartyp2pCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define thirdpartyp2pGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define thirdpartyp2pGetMemoryMappingDescriptor(pRmResource, ppMemDesc) thirdpartyp2pGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define thirdpartyp2pControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define thirdpartyp2pControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define thirdpartyp2pControlSerialization_Prologue(pResource, pCallContext, pParams) thirdpartyp2pControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define thirdpartyp2pControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define thirdpartyp2pControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define thirdpartyp2pControlSerialization_Epilogue(pResource, pCallContext, pParams) thirdpartyp2pControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define thirdpartyp2pControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define thirdpartyp2pControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define thirdpartyp2pControl_Prologue(pResource, pCallContext, pParams) thirdpartyp2pControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define thirdpartyp2pControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define thirdpartyp2pControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define thirdpartyp2pControl_Epilogue(pResource, pCallContext, pParams) thirdpartyp2pControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define thirdpartyp2pCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define thirdpartyp2pCanCopy(pResource) thirdpartyp2pCanCopy_DISPATCH(pResource)
@@ -569,103 +538,103 @@ static inline NV_STATUS thirdpartyp2pCtrlCmdRegisterPid(struct ThirdPartyP2P *pT
 
 // Dispatch functions
 static inline NV_STATUS thirdpartyp2pControl_DISPATCH(struct ThirdPartyP2P *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS thirdpartyp2pMap_DISPATCH(struct ThirdPartyP2P *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pGpuResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS thirdpartyp2pUnmap_DISPATCH(struct ThirdPartyP2P *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pGpuResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool thirdpartyp2pShareCallback_DISPATCH(struct ThirdPartyP2P *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS thirdpartyp2pGetRegBaseOffsetAndSize_DISPATCH(struct ThirdPartyP2P *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS thirdpartyp2pGetMapAddrSpace_DISPATCH(struct ThirdPartyP2P *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pGpuResource, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS thirdpartyp2pInternalControlForward_DISPATCH(struct ThirdPartyP2P *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle thirdpartyp2pGetInternalObjectHandle_DISPATCH(struct ThirdPartyP2P *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool thirdpartyp2pAccessCallback_DISPATCH(struct ThirdPartyP2P *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS thirdpartyp2pGetMemInterMapParams_DISPATCH(struct ThirdPartyP2P *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS thirdpartyp2pCheckMemInterUnmap_DISPATCH(struct ThirdPartyP2P *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS thirdpartyp2pGetMemoryMappingDescriptor_DISPATCH(struct ThirdPartyP2P *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS thirdpartyp2pControlSerialization_Prologue_DISPATCH(struct ThirdPartyP2P *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void thirdpartyp2pControlSerialization_Epilogue_DISPATCH(struct ThirdPartyP2P *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS thirdpartyp2pControl_Prologue_DISPATCH(struct ThirdPartyP2P *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void thirdpartyp2pControl_Epilogue_DISPATCH(struct ThirdPartyP2P *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool thirdpartyp2pCanCopy_DISPATCH(struct ThirdPartyP2P *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pCanCopy__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS thirdpartyp2pIsDuplicate_DISPATCH(struct ThirdPartyP2P *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void thirdpartyp2pPreDestruct_DISPATCH(struct ThirdPartyP2P *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pPreDestruct__(pResource);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS thirdpartyp2pControlFilter_DISPATCH(struct ThirdPartyP2P *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool thirdpartyp2pIsPartialUnmapSupported_DISPATCH(struct ThirdPartyP2P *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS thirdpartyp2pMapTo_DISPATCH(struct ThirdPartyP2P *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS thirdpartyp2pUnmapFrom_DISPATCH(struct ThirdPartyP2P *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 thirdpartyp2pGetRefCount_DISPATCH(struct ThirdPartyP2P *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pGetRefCount__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void thirdpartyp2pAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ThirdPartyP2P *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__thirdpartyp2pAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

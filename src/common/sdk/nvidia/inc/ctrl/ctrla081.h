@@ -210,6 +210,8 @@ typedef struct NVA081_CTRL_VGPU_CONFIG_INFO_PARAMS {
  *  License expiry time in seconds since UNIX epoch
  * licenseExpiryStatus [OUT]
  *  License expiry status
+ * licenseExpiryStr [OUT]
+ *  License expiry string
  * guestDriverVersion [OUT]
  *  This param specifies the driver version of the driver installed on the VM
  * guestDriverBranch [OUT]
@@ -232,6 +234,7 @@ typedef struct NVA081_GUEST_VM_INFO {
     NvU32               licenseExpiryTimestamp;
     NvU8                licenseExpiryStatus;
     NV_DECLARE_ALIGNED(VM_ID guestVmId, 8);
+    char                licenseExpiryStr[NVA081_VGPU_SIGNATURE_SIZE];
     NvU8                guestDriverVersion[NVA081_VGPU_STRING_BUFFER_SIZE];
     NvU8                guestDriverBranch[NVA081_VGPU_STRING_BUFFER_SIZE];
     NvU8                vmName[NVA081_VM_NAME_SIZE];
@@ -878,6 +881,7 @@ typedef struct NVA081_CTRL_PGPU_GET_VGPU_STREAMING_CAPABILITY_PARAMS {
 #define NVA081_CTRL_VGPU_CAPABILITY_MIG_TIMESLICING_MODE_ENABLED     11
 
 
+#define NVA081_CTRL_VGPU_CAPABILITY_UVM_STUN                         12
 
 /*
  * NVA081_CTRL_CMD_VGPU_SET_CAPABILITY

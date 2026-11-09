@@ -40,6 +40,10 @@
 *
 ****************************************************************************/
 
+#include <cpuopsys.h>
+
+#if NVCPU_IS_X86_64
+
 #include "x86emu/x86emu.h"
 #include "x86emu/x86emui.h"
 #include "x86emu/regs.h"
@@ -661,3 +665,5 @@ void X86EMU_prepareForInt(
     M.x86.R_IP = mem_access_word(num * 4);
         M.x86.intr = 0;
 }
+
+#endif /* NVCPU_IS_X86_64 */

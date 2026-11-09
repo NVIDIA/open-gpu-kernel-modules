@@ -47,6 +47,7 @@
 #include "ctrl/ctrlc637.h"
 #include "core/locks.h"
 #include "rmapi/rs_utils.h"
+#include "rmapi/resource_fwd_decls.h"
 #include "gpu/gpu_uuid.h"
 #include "vgpu/rpc.h"
 #include "rmapi/control.h"
@@ -1067,6 +1068,12 @@ gisubscriptionShouldClassBeFreedOnUnsubscribe_IMPL
         case (classId(GPUInstanceSubscription)):
             // fall-through
         case (classId(ComputeInstanceSubscription)):
+            // fall-through
+        case (classId(ProfilerDeviceEvent)):
+            // fall-through
+        case (classId(ProfilerContextEvent)):
+            // fall-through
+        case (classId(TraceDeviceEvent)):
             bShouldFree = NV_FALSE;
             break;
         default:

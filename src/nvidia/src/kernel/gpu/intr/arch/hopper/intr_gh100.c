@@ -112,7 +112,7 @@ intrGetIntrTopNonStallMask_GH100
     Intr   *pIntr
 )
 {
-    // TODO Bug 3823562 Remove all these asserts
+    // TODO Bug 3823562: Remove all these asserts
     // Compile-time assert against the highest set bit that will be returned
     #define NV_CPU_INTR_NOSTALL_SUBTREE_HIGHEST NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(5)
 
@@ -120,6 +120,8 @@ intrGetIntrTopNonStallMask_GH100
     ct_assert(NV_CPU_INTR_NOSTALL_SUBTREE_HIGHEST < NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_SET__SIZE_1);
     ct_assert(NV_CPU_INTR_NOSTALL_SUBTREE_HIGHEST < NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR__SIZE_1);
 
+    // Guarantee that there is only one INTR_TOP for intrGetPendingNonStall_TU102
+    ct_assert(NV_CPU_INTR_NOSTALL_SUBTREE_HIGHEST < 32);
 
     NvU64 mask = 0;
     mask |= intrGetIntrTopCategoryMask(pIntr,

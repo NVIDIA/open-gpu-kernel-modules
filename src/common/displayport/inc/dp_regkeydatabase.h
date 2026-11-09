@@ -102,6 +102,10 @@
 // Bug 4949066 : Disable pclk WAR applied for LG monitors
 #define NV_DP_REGKEY_DISABLE_4949066_PCLK_WAR       "DP_DISABLE_4949066_PCLK_WAR"
 
+// Bug 5339220 : When the link config cannot be restored after an IRQ, force the original
+// config (previous behaviour) instead of first training the max link config.
+#define NV_DP_REGKEY_DISABLE_5339220_IRQ_MAX_LC_RECOVERY    "DP_DISABLE_5339220_IRQ_MAX_LC_RECOVERY"
+
 // Bug 4793112 : On eDP panel, do not cache source OUI if it reads zero
 #define NV_DP_REGKEY_SKIP_ZERO_OUI_CACHE            "DP_SKIP_ZERO_OUI_CACHE"
 
@@ -128,26 +132,43 @@
 
 #define NV_DP_REGKEY_DISABLE_NATIVE_DISPLAYID2X_SUPPORT    "DISABLE_NATIVE_DISPLAYID2X_SUPPORT"
 
+//
+// Read the Native DisplayID structure at I2C 0xA4/0xA5 even when the Receiver
+// reports LOCAL_NATIVE_DISPLAYID_PRESENT (DPCD 00008h[0] / 02208h[0]) as 0.
+// The capability itself is always read; this only overrides the decision made
+// from it. For bring up / compliance with sinks that implement the Native
+// DisplayID interface but do not yet advertise the new capability bit.
+//
+#define NV_DP_REGKEY_FORCE_NATIVE_DISPLAYID2X_READ         "FORCE_NATIVE_DISPLAYID2X_READ"
+
 // Disable NO_VCPF WAR for DP_MST Tunneling
 #define NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_NO_VCPF_WAR     "DISABLE_DP_MST_TUNNELING_NO_VCPF_WAR"
-
 
 // Disable FEC for DP_MST Tunneling
 #define NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_FEC             "DISABLE_DP_MST_TUNNELING_FEC"
 
+// Disable FEC on eDP via regkey by overriding FEC caps
+#define NV_DP_REGKEY_DISABLE_FEC_ON_EDP    "DISABLE_FEC_ON_EDP"
+
+#define NV_DP_REGKEY_DISABLE_DEFERRED_SBM_CALLBACKS    "DP_DISABLE_DEFERRED_SBM_CALLBACKS"
 //
 // Disable chunked LTTPR caps read on internal DP tunneling links.
 // This regkey is also used in RM. Both must be kept in sync.
 //
 #define NV_DP_REGKEY_DISABLE_DP_TUN_LTTPR_CAPS_CHUNK_READ_WAR   "DISABLE_DP_TUN_LTTPR_CAPS_CHUNK_READ_WAR"
 
-#define NV_DP_REGKEY_ENABLE_SST_EDID_RECOVERY_FIX             "DP_ENABLE_SST_EDID_RECOVERY_FIX"
+//
+// Widen the DP tunneling DIA SW auto-read WAR to sinks of any OUI.
+// This does not bypass the DP tunneling and RM capability checks.
+//
+#define NV_DP_REGKEY_ENABLE_DP_TUN_SW_AUTO_READ_WAR_ALL_SINKS "ENABLE_DP_TUN_SW_AUTO_READ_WAR_ALL_SINKS"
 
-// Disable FEC on eDP via regkey by overriding FEC caps
-#define NV_DP_REGKEY_DISABLE_FEC_ON_EDP    "DISABLE_FEC_ON_EDP"
+// Disable FEC for DP_MST Tunneling
+#define NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_FEC             "DISABLE_DP_MST_TUNNELING_FEC"
 
-// Enable per-device caching of panel FW checksum (DPCD 0x040A/0x040B) via regkey
-#define NV_DP_REGKEY_ENABLE_PANEL_FW_REVISION_CACHE  "DP_ENABLE_PANEL_FW_REVISION_CACHE"
+// Disable adopting the DIA aggregated downstream DPCD rev as the policy rev on
+// internal DP tunneling links.
+#define NV_DP_REGKEY_DISABLE_DP_TUN_DIA_DPCD_REV_WAR "DISABLE_DP_TUN_DIA_DPCD_REV_WAR"
 
 //
 // Data Base used to store all the regkey values.
@@ -200,14 +221,17 @@ struct DP_REGKEY_DATABASE
     bool  bIgnoreCapsAndForceHighestLc;
     bool  bEnable128b132bDSCLnkCfgReduction;
     bool  bDisableNativeDisplayId2xSupport;
+    bool  bForceNativeDisplayId2xRead;
     bool  bUseMaxDSCCompressionMST;
     bool  bDisable4949066PclkWar;
+    bool  bDisable5339220IrqMaxLcRecovery;
+    bool  bDisableFecOnEdp;
+    bool  bDisableDeferredSBMCallbacks;
+    bool  bEnableDpTunSwAutoReadWarAllSinks;
     bool  bDisableDpMstTunnelingNoVcpfWar;
     bool  bDisableDpMstTunnelingFec;
-    bool  bEnableSstEdidRecoveryFix;
     bool  bDisableDpTunLttprCapsChunkRead;
-    bool  bDisableFecOnEdp;
-    bool  bEnablePanelFwRevisionCache;
+    bool  bDisableDpTunDiaDpcdRevWar;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;

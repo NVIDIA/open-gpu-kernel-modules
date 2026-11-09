@@ -392,10 +392,13 @@ kmemsysRemoveAllAtsPeers_GV100
     KernelMemorySystem *pKernelMemorySystem
 )
 {
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
     NvU32 gpuAttachCnt, gpuAttachMask, gpuInstance = 0;
 
     NV_STATUS status     = NV_OK;
     OBJGPU   *pRemoteGpu = NULL;
+
+    NV_CHECK_OR_RETURN_VOID(LEVEL_WARNING, pKernelNvlink != NULL);
 
     // loop over all possible GPU pairs and remove the ATS config
     gpumgrGetGpuAttachInfo(&gpuAttachCnt, &gpuAttachMask);
@@ -408,6 +411,9 @@ kmemsysRemoveAllAtsPeers_GV100
             continue;
 
         if (GPU_GET_KERNEL_MEMORY_SYSTEM(pRemoteGpu) == NULL)
+            continue;
+
+        if (!knvlinkIsNvlinkP2pSupported(pGpu, pKernelNvlink, pRemoteGpu))
             continue;
 
         status = _kmemsysRemoveAtsPeers(pGpu, pKernelMemorySystem, pRemoteGpu);

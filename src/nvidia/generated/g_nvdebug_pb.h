@@ -36,14 +36,21 @@ extern const PRB_MSG_DESC prb_messages_nvdebug[];
 #define NVDEBUG_SYSTEMINFO_ERRORSTATE (&prb_messages_nvdebug[10])
 #define NVDEBUG_SYSTEMINFO_TIMEINFO (&prb_messages_nvdebug[11])
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER (&prb_messages_nvdebug[12])
-#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO (&prb_messages_nvdebug[13])
-#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION (&prb_messages_nvdebug[14])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT (&prb_messages_nvdebug[13])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO (&prb_messages_nvdebug[14])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASSHISTENTRY (&prb_messages_nvdebug[15])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY (&prb_messages_nvdebug[16])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION (&prb_messages_nvdebug[17])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS (&prb_messages_nvdebug[18])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS (&prb_messages_nvdebug[19])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS (&prb_messages_nvdebug[20])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS (&prb_messages_nvdebug[21])
 
 // Message maximum lengths
 // Does not include repeated fields, strings and byte arrays.
-#define NVDEBUG_SYSTEMINFO_LEN 354
-#define NVDEBUG_GPUINFO_LEN 391
-#define NVDEBUG_NVDUMP_LEN 3520
+#define NVDEBUG_SYSTEMINFO_LEN 661
+#define NVDEBUG_GPUINFO_LEN 589
+#define NVDEBUG_NVDUMP_LEN 4954
 #define NVDEBUG_SYSTEMINFO_NORTHBRIDGEINFO_LEN 12
 #define NVDEBUG_SYSTEMINFO_SOCINFO_LEN 12
 #define NVDEBUG_SYSTEMINFO_CPUINFO_LEN 24
@@ -53,9 +60,16 @@ extern const PRB_MSG_DESC prb_messages_nvdebug[];
 #define NVDEBUG_SYSTEMINFO_CONFIG_LEN 12
 #define NVDEBUG_SYSTEMINFO_ERRORSTATE_LEN 14
 #define NVDEBUG_SYSTEMINFO_TIMEINFO_LEN 45
-#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_LEN 75
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_LEN 113
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LEN 265
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_LEN 54
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASSHISTENTRY_LEN 12
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY_LEN 18
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_LEN 24
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_LEN 168
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_LEN 40
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_LEN 72
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_LEN 39
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo[];
 
@@ -73,6 +87,7 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo[];
 #define NVDEBUG_SYSTEMINFO_TIME_INFO (&prb_fields_nvdebug_systeminfo[10])
 #define NVDEBUG_SYSTEMINFO_BUGCHECK_COUNT (&prb_fields_nvdebug_systeminfo[11])
 #define NVDEBUG_SYSTEMINFO_RESSERV_INFO (&prb_fields_nvdebug_systeminfo[12])
+#define NVDEBUG_SYSTEMINFO_OOM_REPORT (&prb_fields_nvdebug_systeminfo[13])
 
 // 'SystemInfo' field lengths
 #define NVDEBUG_SYSTEMINFO_TIMESTAMP_LEN 10
@@ -87,7 +102,8 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo[];
 #define NVDEBUG_SYSTEMINFO_TIME_SINCE_BOOT_LEN 5
 #define NVDEBUG_SYSTEMINFO_TIME_INFO_LEN 48
 #define NVDEBUG_SYSTEMINFO_BUGCHECK_COUNT_LEN 5
-#define NVDEBUG_SYSTEMINFO_RESSERV_INFO_LEN 78
+#define NVDEBUG_SYSTEMINFO_RESSERV_INFO_LEN 116
+#define NVDEBUG_SYSTEMINFO_OOM_REPORT_LEN 268
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_gpuinfo[];
 
@@ -97,13 +113,17 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_gpuinfo[];
 #define NVDEBUG_GPUINFO_ENG_NVD (&prb_fields_nvdebug_gpuinfo[2])
 #define NVDEBUG_GPUINFO_ENG_KGSP (&prb_fields_nvdebug_gpuinfo[3])
 #define NVDEBUG_GPUINFO_ENG_KERNEL_NVLINK (&prb_fields_nvdebug_gpuinfo[4])
+#define NVDEBUG_GPUINFO_ENG_HANG_DEBUG (&prb_fields_nvdebug_gpuinfo[5])
+#define NVDEBUG_GPUINFO_ENG_NVLINK_REMAP_TABLE (&prb_fields_nvdebug_gpuinfo[6])
 
 // 'GpuInfo' field lengths
-#define NVDEBUG_GPUINFO_ENG_GPU_LEN 65
+#define NVDEBUG_GPUINFO_ENG_GPU_LEN 67
 #define NVDEBUG_GPUINFO_ENG_MC_LEN 75
 #define NVDEBUG_GPUINFO_ENG_NVD_LEN 33
-#define NVDEBUG_GPUINFO_ENG_KGSP_LEN 103
+#define NVDEBUG_GPUINFO_ENG_KGSP_LEN 216
 #define NVDEBUG_GPUINFO_ENG_KERNEL_NVLINK_LEN 110
+#define NVDEBUG_GPUINFO_ENG_HANG_DEBUG_LEN 75
+#define NVDEBUG_GPUINFO_ENG_NVLINK_REMAP_TABLE_LEN 6
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_nvdump[];
 
@@ -115,11 +135,11 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_nvdump[];
 #define NVDEBUG_NVDUMP_SYSTEM_INFO_GSPRM (&prb_fields_nvdebug_nvdump[4])
 
 // 'NvDump' field lengths
-#define NVDEBUG_NVDUMP_SYSTEM_INFO_LEN 357
-#define NVDEBUG_NVDUMP_DCL_MSG_LEN 2397
-#define NVDEBUG_NVDUMP_GPU_INFO_LEN 394
+#define NVDEBUG_NVDUMP_SYSTEM_INFO_LEN 664
+#define NVDEBUG_NVDUMP_DCL_MSG_LEN 3019
+#define NVDEBUG_NVDUMP_GPU_INFO_LEN 592
 #define NVDEBUG_NVDUMP_EXCEPTION_ADDRESS_LEN 10
-#define NVDEBUG_NVDUMP_SYSTEM_INFO_GSPRM_LEN 357
+#define NVDEBUG_NVDUMP_SYSTEM_INFO_GSPRM_LEN 664
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_northbridgeinfo[];
 
@@ -261,11 +281,29 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver[];
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_CLIENTS (&prb_fields_nvdebug_systeminfo_resourceserver[0])
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_RESOURCES (&prb_fields_nvdebug_systeminfo_resourceserver[1])
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENT_INFO (&prb_fields_nvdebug_systeminfo_resourceserver[2])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASS_HISTOGRAM (&prb_fields_nvdebug_systeminfo_resourceserver[3])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_PID_SUMMARY (&prb_fields_nvdebug_systeminfo_resourceserver[4])
 
 // 'ResourceServer' field lengths
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_CLIENTS_LEN 5
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_RESOURCES_LEN 10
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENT_INFO_LEN 57
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASS_HISTOGRAM_LEN 15
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_PID_SUMMARY_LEN 21
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_oomreport[];
+
+// 'OomReport' field descriptor pointers
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_OOM_COUNT (&prb_fields_nvdebug_systeminfo_oomreport[0])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_OOM_REQUESTED_SIZE (&prb_fields_nvdebug_systeminfo_oomreport[1])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOC_HEAP (&prb_fields_nvdebug_systeminfo_oomreport[2])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOS_HEAP (&prb_fields_nvdebug_systeminfo_oomreport[3])
+
+// 'OomReport' field lengths
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_OOM_COUNT_LEN 5
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_OOM_REQUESTED_SIZE_LEN 10
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOC_HEAP_LEN 171
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOS_HEAP_LEN 75
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_clientinfo[];
 
@@ -285,6 +323,28 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_clienti
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_PRIV_LEVEL_LEN 5
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_ALLOCATIONS_LEN 27
 
+extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_classhistentry[];
+
+// 'ClassHistEntry' field descriptor pointers
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASSHISTENTRY_CLASS_ID (&prb_fields_nvdebug_systeminfo_resourceserver_classhistentry[0])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASSHISTENTRY_COUNT (&prb_fields_nvdebug_systeminfo_resourceserver_classhistentry[1])
+
+// 'ClassHistEntry' field lengths
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASSHISTENTRY_CLASS_ID_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASSHISTENTRY_COUNT_LEN 5
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_pidsummaryentry[];
+
+// 'PidSummaryEntry' field descriptor pointers
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY_PID (&prb_fields_nvdebug_systeminfo_resourceserver_pidsummaryentry[0])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY_CLIENTS (&prb_fields_nvdebug_systeminfo_resourceserver_pidsummaryentry[1])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY_RESOURCES (&prb_fields_nvdebug_systeminfo_resourceserver_pidsummaryentry[2])
+
+// 'PidSummaryEntry' field lengths
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY_PID_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY_CLIENTS_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY_RESOURCES_LEN 5
+
 extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_clientinfo_clientallocation[];
 
 // 'ClientAllocation' field descriptor pointers
@@ -298,6 +358,70 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_clienti
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_OBJECT_CLASS_ID_LEN 5
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_PARENT_HANDLE_LEN 5
 #define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_GPU_INSTANCE_LEN 5
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats[];
+
+// 'MallocHeapStats' field descriptor pointers
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_HEAP_SIZE (&prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats[0])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_FREE_SIZE (&prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats[1])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_LARGEST_FREE_CHUNK (&prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats[2])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_FRAG_PCT (&prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats[3])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ACTIVE (&prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats[4])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_TOTAL (&prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats[5])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_PEAK (&prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats[6])
+
+// 'MallocHeapStats' field lengths
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_HEAP_SIZE_LEN 10
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_FREE_SIZE_LEN 10
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_LARGEST_FREE_CHUNK_LEN 10
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_FRAG_PCT_LEN 5
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ACTIVE_LEN 42
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_TOTAL_LEN 42
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_PEAK_LEN 42
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_oomreport_libospoolstats[];
+
+// 'LibosPoolStats' field descriptor pointers
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_POOL_INDEX (&prb_fields_nvdebug_systeminfo_oomreport_libospoolstats[0])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_ALLOCATIONS (&prb_fields_nvdebug_systeminfo_oomreport_libospoolstats[1])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_PEAK_ALLOCATIONS (&prb_fields_nvdebug_systeminfo_oomreport_libospoolstats[2])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_OBJECT_SIZE (&prb_fields_nvdebug_systeminfo_oomreport_libospoolstats[3])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_USED_BYTES (&prb_fields_nvdebug_systeminfo_oomreport_libospoolstats[4])
+
+// 'LibosPoolStats' field lengths
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_POOL_INDEX_LEN 5
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_ALLOCATIONS_LEN 5
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_PEAK_ALLOCATIONS_LEN 5
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_OBJECT_SIZE_LEN 10
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS_USED_BYTES_LEN 10
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_oomreport_libosheapstats[];
+
+// 'LibosHeapStats' field descriptor pointers
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_TOTAL_SIZE (&prb_fields_nvdebug_systeminfo_oomreport_libosheapstats[0])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_POOL_COUNT (&prb_fields_nvdebug_systeminfo_oomreport_libosheapstats[1])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_POOL (&prb_fields_nvdebug_systeminfo_oomreport_libosheapstats[2])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_TOTAL_POOL_USED (&prb_fields_nvdebug_systeminfo_oomreport_libosheapstats[3])
+
+// 'LibosHeapStats' field lengths
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_TOTAL_SIZE_LEN 10
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_POOL_COUNT_LEN 5
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_POOL_LEN 43
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS_TOTAL_POOL_USED_LEN 10
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats_allocatorstats[];
+
+// 'AllocatorStats' field descriptor pointers
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_NUM_ALLOCATIONS (&prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats_allocatorstats[0])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_ALLOCATED_SIZE (&prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats_allocatorstats[1])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_USEFUL_SIZE (&prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats_allocatorstats[2])
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_META_SIZE (&prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats_allocatorstats[3])
+
+// 'AllocatorStats' field lengths
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_NUM_ALLOCATIONS_LEN 5
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_ALLOCATED_SIZE_LEN 10
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_USEFUL_SIZE_LEN 10
+#define NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS_META_SIZE_LEN 10
 
 extern const PRB_SERVICE_DESC prb_services_nvdebug[];
 

@@ -2319,6 +2319,12 @@ kgmmuServicePriFaults_GV100
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kgmmuServiceUnboundInstBlockFault_HAL(pGpu, pKernelGmmu, NV_PTR_TO_NvP64(&parsedFaultEntry),
                                                                                      &mmuExceptionData));
         }
+        else if (kgmmuIsFaultEngineIdFla_HAL(pKernelGmmu, parsedFaultEntry.mmuFaultEngineId))
+        {
+            kgmmuPrintFaultInfo_HAL(pGpu, pKernelGmmu, parsedFaultEntry.mmuFaultEngineId, &mmuExceptionData);
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kgmmuServiceMmuFault_HAL(pGpu, pKernelGmmu, NV_PTR_TO_NvP64(&parsedFaultEntry),
+                                                                        &mmuExceptionData));
+        }
         else
         {
             //

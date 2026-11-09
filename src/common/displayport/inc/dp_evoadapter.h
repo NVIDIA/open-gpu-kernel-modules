@@ -130,6 +130,8 @@ namespace DisplayPort
             return gpuSupportedDpVersions;
         }
 
+        virtual NvU32 getDpTunnelingDownstreamDpcdRev();
+
         virtual void setDevicePlugged(bool);
         virtual bool isDevicePlugged()
         {
@@ -299,7 +301,7 @@ namespace DisplayPort
         {
             return _bPollingEnabledForDpMstDetection && !_bPollingDpMstDisabledByRegkey;
         }
-        
+
         virtual bool isDpTunnelingHwBugWarEnabled()
         {
             return _bIsDpTunnelingHwBugWarEnabled;

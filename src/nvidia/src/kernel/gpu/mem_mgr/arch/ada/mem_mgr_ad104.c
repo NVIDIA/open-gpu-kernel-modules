@@ -24,7 +24,6 @@
 #include "core/core.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
-#include "gpu/mem_sys/kern_mem_sys.h"
 
 /*!
  *  Returns the max context size
@@ -38,11 +37,11 @@ memmgrGetMaxContextSize_AD104
     MemoryManager *pMemoryManager
 )
 {
-    NvU64 fbSize = 0;
-    NvU64  size = memmgrGetMaxContextSize_GA100(pGpu, pMemoryManager);
-    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    NvU64 fbSize = pMemoryManager->Ram.fbUsableMemSize;
+    NvU64 size = memmgrGetMaxContextSize_GA100(pGpu, pMemoryManager);
 
-    NV_ASSERT_OK(kmemsysGetUsableFbSize_HAL(pGpu, pKernelMemorySystem, &fbSize));
+    NV_ASSERT(fbSize != 0);
+
     const NvU32 fbSizeGB = (NvU32)(NV_ALIGN_UP64(fbSize, 1 << 30) >> 30);
 
     //

@@ -133,7 +133,7 @@ intrServiceStall_IMPL(OBJGPU *pGpu, Intr *pIntr)
         // GPU is recovered.
         //
 
-        NvU32 regReadValue = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+        NvU32 regReadValue = GPU_REG_RD32(pGpu, gpuGetPmcBoot0Addr_HAL(pGpu));
 
         if (regReadValue == GPU_REG_VALUE_INVALID)
         {
@@ -280,7 +280,7 @@ subdeviceCtrlCmdMcServiceInterrupts_IMPL
     }
 
     intrServiceStallList_HAL(pGpu, pIntr, &engines, NV_TRUE);
-    
+
     return NV_OK;
 }
 
@@ -322,6 +322,11 @@ intrGetGmmuInterrupts_IMPL
 void
 intrSetIntrEn_IMPL(Intr *pIntr, NvU32 intrEn0)
 {
+    if (pIntr == NULL)
+    {
+        return;
+    }
+
     if ( pIntr->halIntrEnabled == NV_FALSE )
     {
         // Interrupts cannot be enabled as long as the freeze is true
@@ -337,6 +342,11 @@ intrSetIntrEn_IMPL(Intr *pIntr, NvU32 intrEn0)
 NvU32
 intrGetIntrEn_IMPL(Intr *pIntr)
 {
+    if (pIntr == NULL)
+    {
+        return INTERRUPT_TYPE_DISABLED;
+    }
+
     if ( pIntr->halIntrEnabled == NV_FALSE )
     {
         NV_PRINTF(LEVEL_INFO,
@@ -817,6 +827,7 @@ intrStatePreInitLocked_IMPL
     }
 
     NV_ASSERT_OK_OR_GOTO(status, intrInitInterruptTable_HAL(pGpu, pIntr), exit);
+
     _intrInitServiceTable(pGpu, pIntr);
 
 exit:
@@ -1015,6 +1026,66 @@ intrSaveIntrEn0FromHw_IMPL
     pIntr->saveIntrEn0 = intrGetIntrEnFromHw_HAL(pGpu, pIntr, NULL /* threadState */);
 }
 
+/*!
+ * @brief Validate a GSP-provided interrupt category-to-subtree mapping.
+ *
+ * Each interrupt subtree maps to two leaf registers. This function derives
+ * the number of complete subtrees from the total CPU interrupt leaf capacity
+ * and rejects any category mask that would select an unimplemented leaf.
+ *
+ * @param[in] pGpu         GPU object pointer.
+ * @param[in] pIntr        Interrupt object pointer.
+ * @param[in] pSubtreeMap  Category-to-subtree mapping received from GSP-RM.
+ *
+ * @return NV_OK if every subtree mask is within the supported range.
+ * @return NV_ERR_OUT_OF_RANGE if the leaf count or any subtree mask is invalid.
+ */
+static NV_STATUS
+_intrValidateKernelSubtreeMap
+(
+    OBJGPU                                 *pGpu,
+    Intr                                   *pIntr,
+    const NV2080_INTR_CATEGORY_SUBTREE_MAP *pSubtreeMap
+)
+{
+    NvU32 numLeavesCapacity = intrGetLeafSize_HAL(pGpu, pIntr);
+    NvU32 numIntrLeaves     = intrGetNumLeaves_HAL(pGpu, pIntr);
+    NvU32 numSubtrees;
+    NvU64 validSubtreeMask;
+    NvU32 category;
+
+    NV_ASSERT_OR_RETURN(
+        (numLeavesCapacity != 0) && (numIntrLeaves != 0) &&
+        (numIntrLeaves <= numLeavesCapacity) && (numLeavesCapacity <= NV_MAX_INTR_LEAVES),
+        NV_ERR_OUT_OF_RANGE);
+
+    //
+    // Each complete subtree maps to two leaf registers. Do not accept a
+    // subtree unless both of its leaves fit in the CPU-side destination.
+    //
+    numSubtrees = NV_CTRL_INTR_LEAF_IDX_TO_SUBTREE(numLeavesCapacity);
+
+    validSubtreeMask = NVBIT64(numSubtrees) - 1U;
+
+    for (category = 0;
+         category < NV2080_INTR_CATEGORY_ENUM_COUNT;
+         category++)
+    {
+        NvU64 subtreeMask = pSubtreeMap[category].subtreeMask;
+
+        if ((subtreeMask & ~validSubtreeMask) != 0U)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Invalid interrupt subtree map: category %u, "
+                      "mask 0x%llx, valid mask 0x%llx\n",
+                      category, subtreeMask, validSubtreeMask);
+            return NV_ERR_OUT_OF_RANGE;
+        }
+    }
+
+    return NV_OK;
+}
+
 NV_STATUS
 intrInitInterruptTable_KERNEL
 (
@@ -1052,6 +1123,10 @@ intrInitInterruptTable_KERNEL
                            exit);
 
     NV_ASSERT_OK_OR_GOTO(status,
+        _intrValidateKernelSubtreeMap(pGpu, pIntr, pParams->subtreeMap),
+        exit);
+
+    NV_ASSERT_OK_OR_GOTO(status,
                          vectReserve(&pIntr->intrTable, pParams->tableLen),
                          exit);
     for (i = 0; i < pParams->tableLen; ++i)
@@ -1070,6 +1145,8 @@ intrInitInterruptTable_KERNEL
 
     portMemCopy(pIntr->subtreeMap,   sizeof pIntr->subtreeMap,
                 pParams->subtreeMap, sizeof pParams->subtreeMap);
+
+    pIntr->disabledGinMessage = pParams->disabledGinMessage;
 
 exit:
     portMemFree(pParams);
@@ -1131,9 +1208,9 @@ NvU32 intrServiceInterruptRecords_IMPL
     {
         osGetPerformanceCounter(&intrTiming);
 
-        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_START, pGpu, (NvU32) engineIdx);
+        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_START, (NvU32) engineIdx, 0);
         ret = intrservServiceInterrupt(pGpu, pIntrService, &serviceParams);
-        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_END, pGpu, (NvU32) engineIdx);
+        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_END, (NvU32) engineIdx, 0);
 
         osGetPerformanceCounter(&intrTiming2);
         intrTiming = intrTiming2 - intrTiming;
@@ -1319,7 +1396,7 @@ void intrProcessDPCQueue_IMPL
 
     do
     {
-        NvU64 startTime, endTime; 
+        NvU64 startTime, endTime;
         osGetPerformanceCounter(&startTime);
         bitVectorClrAll(&pendingEngines);
         if (!intrIsDpcQueueEmpty(pGpu, pIntr, pDPCQueue))
@@ -1559,7 +1636,7 @@ _intrServiceStallCommonCheckBegin
         // GPU is recovered.
         //
 
-        NvU32 regReadValue = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+        NvU32 regReadValue = GPU_REG_RD32(pGpu, gpuGetPmcBoot0Addr_HAL(pGpu));
 
         if (regReadValue == GPU_REG_VALUE_INVALID)
         {

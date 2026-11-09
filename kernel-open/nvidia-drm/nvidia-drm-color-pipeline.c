@@ -612,10 +612,20 @@ int nv_drm_plane_process_color_mgmt_state(struct drm_plane *plane,
         drm_property_blob_put(nv_plane_state->tmo_lut);
         nv_plane_state->tmo_lut = NULL;
         nv_plane_state->tmo_changed = true;
+        nv_plane_state->tmo_sat_corr_enable = NV_DRM_TMO_SAT_CORR_ENABLE_DEFAULT;
     }
 
     /* If color pipeline is active, translate colorop state to nv_plane_state */
     if (plane_state->color_pipeline && plane_state->state->plane_color_pipeline) {
+        /*
+         * SAT_CORR has no colorop equivalent today. Force vendor SAT_CORR state
+         * to default so stale vendor state cannot leak into upstream mode.
+         */
+        if (nv_plane_state->tmo_sat_corr_enable != NV_DRM_TMO_SAT_CORR_ENABLE_DEFAULT) {
+            nv_plane_state->tmo_sat_corr_enable = NV_DRM_TMO_SAT_CORR_ENABLE_DEFAULT;
+            nv_plane_state->tmo_changed = true;
+        }
+
         /*
          * To prevent NVKMS from implicitly configuring CSC matrices in ways the
          * client may not expect, force all CTMs to default to the identity if

@@ -287,6 +287,10 @@ typedef struct NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_PARAMS {
  *   smErrorState.hwwWarpEsrPc64 (output)
  *     Value of the 64b Warp Error Status Register Program Counter.
  *
+ *   smErrorState.hwwEsrInfo (output)
+ *     Value of NV_PGRAPH_PRI_GPCS_TPCS_SMS_HWW_ESR_INFO. Bits [5:0] contain
+ *     the VEID of the first non-ignored error encountered by the SM.
+ *
  * Possible return values:
  *   NV_OK
  *   NV_ERR_NOT_SUPPORTED
@@ -303,6 +307,7 @@ typedef struct NV83DE_SM_ERROR_STATE_REGISTERS {
     NvU32 hwwWarpEsrPc;
     NvU32 hwwGlobalEsrReportMask;
     NvU32 hwwWarpEsrReportMask;
+    NvU32 hwwEsrInfo;
     NV_DECLARE_ALIGNED(NvU64 hwwEsrAddr, 8);
     NV_DECLARE_ALIGNED(NvU64 hwwWarpEsrPc64, 8);
     NvU32 hwwCgaEsr;

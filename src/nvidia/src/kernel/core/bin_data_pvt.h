@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -74,7 +74,18 @@ typedef struct
 //
 #define BINDATA_IS_MUTABLE RMCFG_FEATURE_PLATFORM_GSP
 #if BINDATA_IS_MUTABLE
-#define BINDATA_CONST __attribute__((section(".bindata")))
+// SANITIZER_INTERFACE_AWARE (expands to no_sanitize("hwaddress") when HWASAN
+// is enabled, empty otherwise): stops -hwasan-all-globals from baking tagged
+// pointers into code that references BINDATA_CONST objects.
+//
+// .bindata is reclaimed to the malloc heap post-init (rmgsp.c
+// _reclaimBindataMemory).  Once donated, the allocator per-chunk-tags user
+// data; any global-init tag baked at compile time would be invalidated by
+// the allocator (or by our __hwasan_init filter which skips .bindata).
+// Leaving compile-time tags on the pointers produces a shadow=0 or shadow=
+// <alloc-tag> mismatch on every subsequent BINDATA_CONST access.  Marking
+// no_sanitize here strips the tagging and instrumentation at the source.
+#define BINDATA_CONST __attribute__((section(".bindata"))) SANITIZER_INTERFACE_AWARE
 #else
 #define BINDATA_CONST const
 #endif

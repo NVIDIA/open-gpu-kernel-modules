@@ -43,6 +43,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GR102[] =
     GPU_CHILD_PRESENT(OBJTMR, 1),
     GPU_CHILD_PRESENT(KernelMIGManager, 1),
     GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelVbios, 1),
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
@@ -71,6 +72,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GR102[] =
     GPU_CHILD_PRESENT(Spdm, 1),
     GPU_CHILD_PRESENT(ConfidentialCompute, 1),
     GPU_CHILD_PRESENT(KernelCcu, 1),
+    GPU_CHILD_PRESENT(TdispMgr, 1),
     GPU_CHILD_PRESENT(KernelOob, 1),
 };
 

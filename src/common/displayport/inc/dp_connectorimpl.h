@@ -124,7 +124,9 @@ namespace DisplayPort
         bool    isDP12AuthCap;                  // To tell whether this DP1.2 connector/ upmost device has the authentication Cap.
         bool    isHDCPAuthOn;                   // To tell whether this connector has the authentication on.
         bool    isHDCPReAuthPending;            // To tell whether HDCP Auth is pending (at every stream addition and cleared at handler).
-        bool    isHDCPAuthTriggered;            // To tell whether HDCP Auth is triggered and only cleared at unplug/device detach for MST.
+        bool    isHDCPAuthTriggered;            // To tell whether HDCP Auth is triggered. Only cleared at last-group detach (activeGroups
+                                                 // isEmpty()); deliberately NOT cleared at HPD high/low or in cancelHdcpCallbacks(), so it
+                                                 // is kept true as long as possible to avoid racing a real in-flight reAuth's CP_IRQ.
         bool    isHopLimitExceeded;             // To tell the current topology is over limitation.
         bool    bIsDiscoveryDetectActive;       // To tell device discovery is active ( isDiscoveryDetectComplete is also used as DD notify and not want to impacts that. )
         bool    bNotifyDetectCompletePending;   // To tell if we are pending to notify detect complete to client.
@@ -384,15 +386,16 @@ namespace DisplayPort
         // On eDP, do not cache the source OUI if it reads 0. See bug 4793112
         bool        bSkipZeroOuiCache;
 
-        // Cache panel FW checksum per device when regkey is set.
-        bool        bEnablePanelFwRevisionCache;
-
         bool        bForceHeadShutdownFromRegkey;
 
         bool        bForceHeadShutdownPerMonitor;
 
         // Bug 4949066: Disable pclk WAR applied for LG monitors when regkey is set
         bool        bDisable4949066PclkWar;
+
+        // Bug 5339220: Force the original link config after a failed post-IRQ restore
+        // instead of trying the max link config first, when regkey is set
+        bool        bDisable5339220IrqMaxLcRecovery;
 
         // When true, DP2.x falls back to the legacy >= head-shutdown policy (regkey-driven, see dp_regkeydatabase.h).
         bool        bUseLegacyHeadShutdownPolicy;
@@ -411,14 +414,14 @@ namespace DisplayPort
         // Set to true when a DSC mode is requested.
         bool bFECEnable;
 
+        // Disable FEC for eDP
+        bool bDisableFecOnEdp;
+
         // Disable NO_VCPF WAR for DP_MST Tunneling via regkey
         bool bDisableDpMstTunnelingNoVcpfWar;
 
         // Disable FEC for DP_MST Tunneling via regkey
         bool bDisableDpMstTunnelingFec;
-
-        // Disable FEC for eDP
-        bool bDisableFecOnEdp;
 
         // Save link config before entering PSR.
         LinkConfiguration psrLinkConfig;
@@ -470,6 +473,12 @@ namespace DisplayPort
         void setDisplayId2MSTPolicy(DISPLAYID2_MST_POLICY policy) { return; };
         virtual void discoveryNewDevice(const DiscoveryManager::Device &device);
         bool bDisableNativeDisplayId2xSupport;
+
+        //
+        // Read Native DisplayID at I2C 0xA4/0xA5 even when the Receiver reports
+        // LOCAL_NATIVE_DISPLAYID_PRESENT as 0 (pre-SCR probing behavior).
+        //
+        bool bForceNativeDisplayId2xRead;
 
         void discoveryDetectComplete();
         void discoveryLostDevice(const Address &address);
@@ -642,8 +651,7 @@ namespace DisplayPort
             unsigned headIndex,
             ModesetInfo modesetInfo);
 
-        virtual bool avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc,
-                                                    bool bSameTimings);
+        virtual bool avoidHeadShutdownForLinkConfig(const LinkConfiguration &targetLc);
 
         virtual bool isLinkTrainingNeededForModeset(ModesetInfo modesetInfo);
 
@@ -784,6 +792,9 @@ namespace DisplayPort
         virtual DeviceImpl* findDeviceInList(const Address &address);
         virtual void disconnectDeviceList();
         void notifyLongPulseInternal(bool statusConnected);
+        void notifyLongPulseHotplugMST();
+        void notifyLongPulseHotplugSST();
+        void notifyLongPulseUnplug();
         virtual void notifyLongPulse(bool status);
         virtual void setClientForcedConnected(bool enabled);
         virtual void notifyShortPulse();

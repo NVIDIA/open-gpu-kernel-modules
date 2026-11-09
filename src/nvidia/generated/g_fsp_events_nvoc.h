@@ -244,6 +244,15 @@ NV_STATUS fspfuseerrConstruct_IMPL(struct FspFuseError *pEvent, struct EventBus 
 #undef PRIVATE_FIELD
 
 
+NV_STATUS fspboottoDeserialize(struct OBJGPU *pGpu,
+                               const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+                               const NvU8 *pContextData,
+                               NvU32 contextDataSize);
+NV_STATUS fspfuseerrDeserialize(struct OBJGPU *pGpu,
+                                const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+                                const NvU8 *pContextData,
+                                NvU32 contextDataSize);
+
 #endif // _FSP_EVENTS_H_
 
 #ifdef __cplusplus

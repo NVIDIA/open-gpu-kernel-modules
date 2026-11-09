@@ -26,6 +26,7 @@
 #include "os/os.h"
 #include "gpu/gpu.h"
 #include "class/cl0080.h"
+#include "ctrl/ctrla080.h"
 #include "vgpu/vgpu_util.h"
 
 /*!
@@ -335,4 +336,20 @@ gpuValidateMIGSupport_VF
     VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
 
     return pVSI->gpuPartitionInfo.swizzId != KMIGMGR_SWIZZID_INVALID;
+}
+
+NvBool
+gpuIsPowerManagementUnsupported_VF
+(
+    OBJGPU *pGpu
+)
+{
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pVSI != NULL, NV_TRUE);
+
+    return !FLD_TEST_DRF(A080, _CTRL_CMD_VGPU_GET_CONFIG,
+                         _PARAMS_VGPU_DEV_CAPS_GUEST_HIBERNATION_ENABLED,
+                         _TRUE,
+                         pVSI->vgpuConfig.vgpuDeviceCapsBits);
 }

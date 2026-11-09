@@ -453,8 +453,10 @@ typedef struct NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS {
     NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_LINK_MASK enabledLinks, 8);
     NvBool bSublinkStateInst; // whether instantaneous sublink state is needed
     NvBool bNvleModeEnabled; // whether Nvlink Encryption is enabled or not
+    NvBool bNvleSelectiveEncryptionEnabled; // whether Nvlink Encryption Enable is selective or not
     NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_LINK_STATUS_INFO linkInfo[NV2080_CTRL_NVLINK_MAX_ARR_SIZE], 8);
     NV_DECLARE_ALIGNED(NvU64 enabledNvlpwMask, 8);
+    NvBool bNvleModeReady; // whether Nvlink Encryption is ready for use
 } NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS;
 
 /*
@@ -464,10 +466,14 @@ typedef struct NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS {
  *     This field specifies the mask of available links on this subdevice.
  *   bNvleModeEnabled
  *     This field indicates if Nvlink Encryption is enabled or not.
+ *   bNvleSelectiveEncryptionEnabled
+ *     This field indicates if Nvlink Encryption Enable is selective or not
  *   linkInfo
  *     This structure stores the per-link status of different NVLink parameters. The link is identified using an index.
  *   enabledNvlpwMask
  *     This field specifics mask of Nvlpw indices available
+ *   bNvleModeReady
+ *     This field indicates whether Nvlink Encryption is ready for use after initial setup.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -2327,11 +2333,11 @@ typedef struct NV2080_CTRL_NVLINK_GET_SET_NVSWITCH_FLA_ADDR_PARAMS {
  * [out] vbiosDisabledLinks
  *      Mask of links disabled in the VBIOS
  *
- * [out] initializedLinks (This field will be deprecated in the future, please use initializedLinkMask)
+ * [out] initializedLinks
  *      Mask of initialized links
  *
- * [out] initializedLinkMask
- *      Mask of initialized links
+ * [out] initializedLinkMasks
+ *      Mask of initialized links (duplicate, kept for backward compatibility)
  *
  * [out] bEnableTrainingAtLoad
  *      Whether the links should be trained to active during driver load
@@ -2355,8 +2361,8 @@ typedef struct NV2080_CTRL_NVLINK_SYNC_LINK_MASKS_AND_VBIOS_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_LINK_MASK initDisabledLinks, 8);
     NV_DECLARE_ALIGNED(NvU64 vbiosDisabledLinkMask, 8);
     NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_LINK_MASK vbiosDisabledLinks, 8);
-    NvU32  initializedLinks;
-    NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_LINK_MASK initializedLinkMasks, 8);
+    NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_LINK_MASK initializedLinks, 8);
+    NvU32  initializedLinkMasks;
     NvBool bEnableTrainingAtLoad;
     NvBool bEnableSafeModeAtLoad;
 } NV2080_CTRL_NVLINK_SYNC_LINK_MASKS_AND_VBIOS_INFO_PARAMS;
@@ -2582,12 +2588,16 @@ typedef struct NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS {
 *
 *   time
 *       Platform time (nsec) when event occurred
+*
+*   timeToLinkUpMs - NVL6+
+*       Time it look for link to train to up in ms
 */
 typedef struct NV2080_CTRL_NVLINK_PORT_EVENT {
     NvU32 portEventType;
     NvU32 gpuId;
     NvU32 linkId;
     NV_DECLARE_ALIGNED(NvU64 time, 8);
+    NvU32 timeToLinkUpMs;
 } NV2080_CTRL_NVLINK_PORT_EVENT;
 
 /*
@@ -2597,28 +2607,43 @@ typedef struct NV2080_CTRL_NVLINK_PORT_EVENT {
 *
 * Parameters:
 *
-*   portEventIndex [IN/OUT]
+*   portEventIndex [IN/OUT] - deprecated for NVL6+
 *      On input: The index of the first port event at which to start reading out of the driver.
 *
 *      On output: The index of the first port event that wasn't reported through the 'port event' array
 *                 in this call to NV2080_CTRL_CMD_NVLINK_GET_PORT_EVENTS.
 *
-*   nextPortEventIndex[OUT]
+*   nextPortEventIndex[OUT] - deprecated for NVL6+
 *      The index that will be assigned to the next port event that occurs.
 *      Users of the GET_PORT_EVENTS control call may set 'portEventIndex' to this field on initialization
 *      to bypass port events that have already occurred without making multiple control calls.
 *
 *   portEventCount [OUT]
-*      Number of port events returned by the call. Currently, portEventCount is limited
-*      by NV2080_CTRL_NVLINK_PORT_EVENT_COUNT_SIZE. In order to query all the port events, a
-*      client needs to keep calling the control till portEventCount is zero.
+*     NVL5 and earlier
+*           Number of port events returned by the call. Currently, portEventCount is limited
+*           by NV2080_CTRL_NVLINK_PORT_EVENT_COUNT_SIZE. In order to query all the port events, a
+*           client needs to keep calling the control till portEventCount is zero.
+*     NVL6+
+*           Total number of port events recorded. Note that RM stores the last 16 port events per a link,
+*           so once the max number of port events is reached, this value will not change. 
+*           Max number port events = 16 * (max number of enabled links)
 *
-*   bOverflow [OUT]
+*   bOverflow [OUT] - deprecated for NVL6+
 *       True when the port event log is overflowed and no longer contains all the port
 *       events that have occurred, false otherwise.
 *
 *   portEvent [OUT]
-*      The port event entires.
+*       NVL5 and earlier
+*           The port event entires.
+*       NVL6+
+*           Array of port events for the given linkId
+*
+*   linkPortEventCount [OUT] NVL6+ only
+*       The number of port events in portEvent array
+*
+*   linkId NVL6+ only
+*       link id to designate the port event log user is requesting
+*
 */
 #define NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS_MESSAGE_ID (0x44U)
 
@@ -2628,6 +2653,8 @@ typedef struct NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS {
     NvU32  portEventCount;
     NvBool bOverflow;
     NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_PORT_EVENT portEvent[NV2080_CTRL_NVLINK_PORT_EVENT_COUNT_SIZE], 8);
+    NvU8   linkPortEventCount;
+    NvU32  linkId;
 } NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS;
 
 #define NV2080_CTRL_CMD_NVLINK_GET_PORT_EVENTS (0x20803044U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS_MESSAGE_ID" */
@@ -2734,6 +2761,7 @@ typedef struct NV2080_CTRL_NVLINK_GET_PLATFORM_INFO_PARAMS {
     NvU8 moduleId;
     NvU8 nvlinkSignalingProtocol;
     NvU8 linksPerSpigot;
+    NvU8 flags;
 } NV2080_CTRL_NVLINK_GET_PLATFORM_INFO_PARAMS;
 
 /*
@@ -3171,6 +3199,8 @@ typedef struct NV2080_CTRL_NVLINK_GET_L1_TOGGLE_PARAMS {
  *      Boolean that shows if ENCRYPTION_ENABLED bit in MMU is enabled or not.
  *  [out] bNvlinkTlwEncryptEn
  *      Boolean that shows if ENCRYPT_EN bit in NVLPLW TLW is enabled or not.
+ *  [out] bNvlinkTlwSelectiveEncryptionEn
+ *      Boolean that shows if ENCRYPT_EN_MODE bit in NVLPLW TLW is set to SELECTIVE_ENCRYPTED.
  */
 
 #define NV2080_CTRL_CMD_NVLINK_GET_NVLE_ENCRYPT_EN_INFO (0x2080308bU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_NVLE_ENCRYPT_EN_INFO_PARAMS_MESSAGE_ID" */
@@ -3180,6 +3210,7 @@ typedef struct NV2080_CTRL_NVLINK_GET_L1_TOGGLE_PARAMS {
 typedef struct NV2080_CTRL_NVLINK_GET_NVLE_ENCRYPT_EN_INFO_PARAMS {
     NvBool bMmuNvlinkEncryptEn;
     NvBool bNvlinkTlwEncryptEn;
+    NvBool bNvlinkTlwSelectiveEncryptionEn;
 } NV2080_CTRL_NVLINK_GET_NVLE_ENCRYPT_EN_INFO_PARAMS;
 
 /*
@@ -3545,10 +3576,29 @@ typedef struct NV2080_CTRL_NVLINK_SETUP_NVLE_ENCRYPTION_KEY_PARAMS {
 #define NV2080_CTRL_CMD_NVLINK_SETUP_NVLE_ENCRYPTION_KEY (0x208030a0) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_SETUP_NVLE_ENCRYPTION_KEY_PARAMS_MESSAGE_ID" */
 
 /*
+ * NV2080_CTRL_CMD_NVLINK_SET_NVLE_READY
+ *
+ * Sets NVLE ready state for the GPU.
+ *
+ *  [in] bNvleReady
+ *      NV_TRUE marks NVLE setup complete for the GPU.
+ *      NV_FALSE clears the NVLE ready state.
+ */
+#define NV2080_CTRL_NVLINK_SET_NVLE_READY_PARAMS_MESSAGE_ID (0xA5U)
+
+typedef struct NV2080_CTRL_NVLINK_SET_NVLE_READY_PARAMS {
+    NvBool bNvleReady;
+} NV2080_CTRL_NVLINK_SET_NVLE_READY_PARAMS;
+
+#define NV2080_CTRL_CMD_NVLINK_SET_NVLE_READY (0x208030a5U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_SET_NVLE_READY_PARAMS_MESSAGE_ID" */
+
+/*
  * NV2080_CTRL_CMD_NVLINK_GET_REMAP_TABLE_INFO_V2
  *
  * Return the remap table addrs for a given set of entries in the FLA and SPA/GPA rempa tables
  *
+ *  [out] alid
+ *      ALID of the given GPU
  *  [out] flaRemapTabAddr
  *      FLA remap table addrs for the given set of remap table entries
  *  [out] gpaRemapTabAddr
@@ -3563,6 +3613,7 @@ typedef struct NV2080_CTRL_NVLINK_SETUP_NVLE_ENCRYPTION_KEY_PARAMS {
 #define NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS_MESSAGE_ID (0xA2U)
 
 typedef struct NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS {
+    NvU32 alid;
     NvU32 flaRemapTabAddr[NV2080_CTRL_NVLINK_REMAP_TABLE_ENTRIES_CHUNK];
     NvU32 gpaRemapTabAddr[NV2080_CTRL_NVLINK_REMAP_TABLE_ENTRIES_CHUNK];
     NvU32 remapTabSize;
@@ -3570,7 +3621,39 @@ typedef struct NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS {
     NvU32 remapEntryEnd;
 } NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS;
 
-#define NV2080_CTRL_CMD_NVLINK_GET_REMAP_TABLE_INFO_V2 (0x208030a2) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_NVLINK_GET_REMAP_TABLE_INFO_V2           (0x208030a2) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV2080_CTRL_CMD_NVLINK_LOCK_REMAP_TABLE_AND_MSE_PHYSICAL
+ *
+ * Physical RM half of NV2080_CTRL_CMD_NVLINK_LOCK_REMAP_TABLE_AND_MSE. Kernel RM
+ * owns the public command so that it can validate the caller's
+ * NV_RM_CAP_SYS_MNCC_MGMT capability, then issues this command to physical RM,
+ * which does the actual work.
+ *
+ * The parameters are identical to those of the public command.
+ */
+#define NV2080_CTRL_CMD_NVLINK_LOCK_REMAP_TABLE_AND_MSE_PHYSICAL (0x208030a6) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_LOCK_REMAP_TABLE_AND_MSE_PHYSICAL_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_NVLINK_LOCK_REMAP_TABLE_AND_MSE_PHYSICAL_PARAMS_MESSAGE_ID (0xa6U)
+
+typedef NV2080_CTRL_NVLINK_LOCK_REMAP_TABLE_AND_MSE_PARAMS NV2080_CTRL_NVLINK_LOCK_REMAP_TABLE_AND_MSE_PHYSICAL_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_NVLINK_GET_REMAP_TABLE_INFO_V2_PHYSICAL
+ *
+ * Physical RM half of NV2080_CTRL_CMD_NVLINK_GET_REMAP_TABLE_INFO_V2. Kernel RM
+ * owns the public command so that it can validate the caller's
+ * NV_RM_CAP_SYS_MNCC_MGMT capability, then issues this command to physical RM,
+ * which does the actual work.
+ *
+ * The parameters are identical to those of the public command.
+ */
+#define NV2080_CTRL_CMD_NVLINK_GET_REMAP_TABLE_INFO_V2_PHYSICAL (0x208030a7) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PHYSICAL_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PHYSICAL_PARAMS_MESSAGE_ID (0xa7U)
+
+typedef NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PHYSICAL_PARAMS;
 
 /*
  * NV2080_CTRL_NVLINK_GET_UPDATE_NVLE_LIDS_V2

@@ -833,12 +833,21 @@ bitVectorToRaw_IMPL
 )
 {
     const NvLength byteSize = NV_BITVECTOR_BYTE_SIZE(bitVectorLast);
+    const NvLength copySize = NV_MIN(rawMaskSize, byteSize);
 
     NV_ASSERT_OR_RETURN(NULL != pBitVector, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(NULL != pRawMask, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(rawMaskSize >= byteSize, NV_ERR_BUFFER_TOO_SMALL);
+    NV_ASSERT_OR_RETURN(rawMaskSize > 0, NV_ERR_BUFFER_TOO_SMALL);
 
-    portMemCopy(pRawMask, byteSize, &pBitVector->qword, byteSize);
+    // Copy the minimum of what fits in the buffer and the bitvector size
+    portMemCopy(pRawMask, copySize, &pBitVector->qword, copySize);
+    
+    // Zero out any remaining bytes in the buffer if it's larger than the bitvector
+    if (rawMaskSize > byteSize)
+    {
+        portMemSet((NvU8 *)pRawMask + byteSize, 0, rawMaskSize - byteSize);
+    }
+    
     return NV_OK;
 }
 
@@ -855,12 +864,18 @@ bitVectorFromRaw_IMPL
 )
 {
     const NvLength byteSize = NV_BITVECTOR_BYTE_SIZE(bitVectorLast);
+    const NvLength copySize = NV_MIN(rawMaskSize, byteSize);
 
     NV_ASSERT_OR_RETURN(NULL != pBitVector, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(NULL != pRawMask, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(rawMaskSize >= byteSize, NV_ERR_BUFFER_TOO_SMALL);
-
-    portMemCopy(&pBitVector->qword, byteSize, pRawMask, byteSize);
+    NV_ASSERT_OR_RETURN(rawMaskSize > 0, NV_ERR_BUFFER_TOO_SMALL);
+ 
+    // Zero the bitvector first
+    portMemSet(&pBitVector->qword, 0, byteSize);
+    
+    // Copy the available data from the raw mask (zero-extend if smaller)
+    portMemCopy(&pBitVector->qword, copySize, pRawMask, copySize);
+    
     return NV_OK;
 }
 

@@ -55,6 +55,18 @@
 #include "events/gpu/mem_sys/mem_sys_events.h"
 #include "nvoc/event_bus.h"
 
+//
+// The two enumerators in each pair come from distinct anonymous enum types, so
+// compare them as integers -- GCC's -Wenum-compare rejects a bare cross-enum
+// comparison regardless of the values.
+//
+ct_assert((NvU32)MEM_SYS_MAINT_OP_ERROR_TLBI_WITHOUT_MEMBAR_FAILED ==
+          (NvU32)MEM_SUBSYS_ERROR_TYPE_TLBI_WITHOUT_MEMBAR_FAILED);
+ct_assert((NvU32)MEM_SYS_MAINT_OP_ERROR_UFLUSH_FAILED ==
+          (NvU32)MEM_SUBSYS_ERROR_TYPE_UFLUSH_FAILED);
+ct_assert((NvU32)MEM_SYS_MAINT_OP_ERROR_TLBI_WITH_MEMBAR_FAILED ==
+          (NvU32)MEM_SUBSYS_ERROR_TYPE_TLBI_WITH_MEMBAR_FAILED);
+
 #include "kernel/gpu/conf_compute/ccsl.h"
 #include "gpu/conf_compute/conf_compute.h"
 
@@ -762,19 +774,6 @@ kgmmuFmtGet_IMPL(KernelGmmu *pKernelGmmu, NvU32 version, NvU64 bigPageSize)
 }
 
 /*!
- * Check if a big page size is supported.
- */
-NvBool
-kgmmuFmtIsBigPageSizeSupported_IMPL(KernelGmmu *pKernelGmmu, NvU64 bigPageSize)
-{
-    if (kgmmuIsPerVaspaceBigPageEn(pKernelGmmu))
-    {
-        return NV_TRUE;
-    }
-    return kgmmuGetBigPageSize_HAL(pKernelGmmu) == bigPageSize;
-}
-
-/*!
  * @bried Returns the latest supported MMU fmt.
  *
  * @param[in]  pGpu          OBJGPU pointer
@@ -1113,8 +1112,7 @@ kgmmuFaultBufferCreateMemDesc_IMPL
     // is set to UNCACHED as having a vol bit set in PTEs will ensure HUB uses L2Bypass mode and it will
     // save extra cycles to cache in L2 while MMU will write fault packets.
     //
-    if (faultBufferAddrSpace == ADDR_SYSMEM &&
-        pKernelGmmu->getProperty(pKernelGmmu, PDB_PROP_KGMMU_SYSMEM_FAULT_BUFFER_GPU_UNCACHED))
+    if (faultBufferAddrSpace == ADDR_SYSMEM)
     {
         memdescSetGpuCacheAttrib(pMemDesc, NV_MEMORY_UNCACHED);
     }
@@ -2372,10 +2370,6 @@ kgmmuServiceInterrupt_IMPL
 
     switch (pParams->engineIdx)
     {
-        case MC_ENGINE_IDX_GMMU:
-        {
-            return kgmmuService_HAL(pGpu, pKernelGmmu);
-        }
         case MC_ENGINE_IDX_NON_REPLAYABLE_FAULT:
         {
 
@@ -2574,15 +2568,15 @@ kgmmuExtractPteInfo_IMPL
                 pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
                     _PARAMS_FLAGS_READ_ONLY, _TRUE, pPteInfo->pteFlags);
             }
-            if (ptePcfSw & (1 << SW_MMU_PCF_NOATOMIC_IDX))
+            if (!(ptePcfSw & (1 << SW_MMU_PCF_NOATOMIC_IDX)))
             {
                 pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                    _PARAMS_FLAGS_ATOMIC, _DISABLE, pPteInfo->pteFlags);
+                    _PARAMS_FLAGS_ATOMIC, _ENABLE, pPteInfo->pteFlags);
             }
-            if (ptePcfSw & (1 << SW_MMU_PCF_REGULAR_IDX))
+            if (!(ptePcfSw & (1 << SW_MMU_PCF_REGULAR_IDX)))
             {
                 pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
-                    _PARAMS_FLAGS_PRIVILEGED, _FALSE, pPteInfo->pteFlags);
+                    _PARAMS_FLAGS_PRIVILEGED, _TRUE, pPteInfo->pteFlags);
             }
             if (ptePcfSw & (1 << SW_MMU_PCF_ACE_IDX))
             {
@@ -2631,6 +2625,9 @@ kgmmuExtractPteInfo_IMPL
     {
         pPteInfo->pteFlags = FLD_SET_DRF_NUM(0080_CTRL, _DMA_PTE_INFO, _PARAMS_FLAGS_GPU_CACHED,
             !nvFieldGetBool(&pFmtPte->fldVolatile, pPte->v8), pPteInfo->pteFlags);
+
+        pPteInfo->pteFlags = FLD_SET_DRF_NUM(0080_CTRL, _DMA_PTE_INFO, _PARAMS_FLAGS_ATOMIC,
+            !nvFieldGetBool(&pFmtPte->fldAtomicDisable, pPte->v8), pPteInfo->pteFlags);
 
         if (nvFieldIsValid32(&pFmtPte->fldReadDisable.desc) &&
             nvFieldIsValid32(&pFmtPte->fldWriteDisable.desc))
@@ -3057,7 +3054,6 @@ kgmmuServiceMmuFault_VF
 
     if (!bIsMmuDebugModeEnabled)
     {
-        RmCtrlParams rmCtrlParams = {0};
         NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS resetChannelParams = {0};
         RsClient *pClient = RES_GET_CLIENT(pKernelChannel);
         Device *pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
@@ -3071,12 +3067,6 @@ kgmmuServiceMmuFault_VF
             return rmStatus;
 
         GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
-
-        rmCtrlParams.hClient    = RES_GET_CLIENT_HANDLE(pKernelChannel);
-        rmCtrlParams.hObject    = RES_GET_HANDLE(pKernelChannel);
-        rmCtrlParams.cmd        = NV906F_CTRL_CMD_RESET_CHANNEL;
-        rmCtrlParams.pParams    = &resetChannelParams;
-        rmCtrlParams.paramsSize = sizeof(NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS);
 
         if (kfifoIsMmuFaultEngineIdPbdma(pGpu, pKernelFifo, pParsedFaultEntry->mmuFaultEngineId))
         {
@@ -3108,24 +3098,11 @@ kgmmuServiceMmuFault_VF
             DBG_BREAKPOINT();
         }
 
-        //
-        // Reset rmStatus before calling reset channel RPC as we should return
-        // status of this RPC which actually performs channel reset.
-        //
-        rmStatus = NV_OK;
-
-        NV_RM_RPC_CONTROL(pGpu,
-                          rmCtrlParams.hClient,
-                          rmCtrlParams.hObject,
-                          rmCtrlParams.cmd,
-                          rmCtrlParams.pParams,
-                          rmCtrlParams.paramsSize,
-                          rmStatus
-                          );
+        rmStatus = kfifoGuestRcRecoverChannel(pGpu, pKernelFifo, pKernelChannel, &resetChannelParams, pMmuExceptionData);
         if (rmStatus != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                      "RM control call to reset channel failed, rmStatus 0x%x\n",
+                      "Guest MMU-fault channel RC failed, rmStatus 0x%x\n",
                       rmStatus);
             DBG_BREAKPOINT();
         }
@@ -3418,6 +3395,14 @@ kgmmuCheckMemSubsysError_IMPL
     //
     status = kgmmuInvalidateTlb_HAL(pGpu, pKernelGmmu, NULL, VASPACE_FLAGS_NONE,
                                     PTE_DOWNGRADE, GPU_GFID_PF, NV_GMMU_INVAL_SCOPE_ALL_TLBS, NV_FALSE);
+#if defined(DEBUG) || defined(DEVELOP) || defined(NV_VERIF_FEATURES)
+    if (pKernelGmmu->bInjectMemSubsysErrorTimeout)
+    {
+        pKernelGmmu->bInjectMemSubsysErrorTimeout = NV_FALSE;
+        status = NV_ERR_TIMEOUT;
+    }
+#endif // defined(DEBUG) || defined(DEVELOP) || defined(NV_VERIF_FEATURES)
+
     if (status == NV_ERR_TIMEOUT)
     {
         NV_PRINTF(LEVEL_ERROR, "Memory Subsystem Error detected. kgmmuInvalidateTlb failed.\n");

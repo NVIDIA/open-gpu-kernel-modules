@@ -36,7 +36,7 @@
  *       ct_assert(sizeof(struct xy) % 64 == 0);
  *
  * When available, standard C or C++ language constructs are used:
- * - ISO C++11 defines the static_assert keyword
+ * - ISO C++11 and ISO C23 define the static_assert keyword
  * - ISO C11 defines the _Static_assert keyword
  *
  * Note that recent versions of Clang support _Static_assert in all compiler modes
@@ -139,14 +139,18 @@
 // Adding this macro to fix MISRA 2012 rule 20.12
 #define NV_CTASSERT_STRINGIFY_MACRO(b) #b
 
-#if (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201103L)
- // ISO C++11 defines the static_assert keyword
+#if (defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201103L) || \
+    (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L)
+ // ISO C++11 and ISO C23 define the static_assert keyword
 # define ct_assert(b)  static_assert((b), "Compile time assertion failed: " NV_CTASSERT_STRINGIFY_MACRO(b))
 # define ct_assert_i(b,line)  static_assert((b), "Compile time assertion failed: " NV_CTASSERT_STRINGIFY_MACRO(b)NV_CTASSERT_STRINGIFY_MACRO(line))
 #elif !defined(NVOC) && ((defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L) || CLANG_C_STATIC_ASSERT)
  // ISO C11 defines the _Static_assert keyword
 # define ct_assert(b)  _Static_assert((b), "Compile time assertion failed: " NV_CTASSERT_STRINGIFY_MACRO(b))
 # define ct_assert_i(b,line)  _Static_assert((b), "Compile time assertion failed: " NV_CTASSERT_STRINGIFY_MACRO(b)NV_CTASSERT_STRINGIFY_MACRO(line))
+# ifndef static_assert
+#  define static_assert(b, msg) _Static_assert((b), msg)
+# endif
 #else
  // For compilers which don't support ISO C11 or C++11, we fall back to an
  // array (type) declaration
@@ -183,6 +187,9 @@
 #  else
 #   define ct_assert_ii(b,line) void compile_time_assertion_failed_in_line_##line(int _compile_time_assertion_failed_in_line_##line[(b) ? 1 : -1])
 #  endif
+# endif
+# ifndef static_assert
+#  define static_assert(b, msg) ct_assert(b)
 # endif
 #endif
 

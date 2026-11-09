@@ -208,8 +208,19 @@ kmigmgrIsGPUInstanceFlagValid_GB10B
             {
                 return NV_FALSE;
             }
+
+            if (computeSizeFlag != NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_FULL &&
+                computeSizeFlag != NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_HALF)
+            {
+                return NV_FALSE;
+            }
             break;
         case NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_NONE:
+            if (computeSizeFlag != NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_FULL &&
+                computeSizeFlag != NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_HALF)
+            {
+                return NV_FALSE;
+            }
             break;
         default:
             return NV_FALSE;

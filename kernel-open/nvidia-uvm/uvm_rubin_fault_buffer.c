@@ -33,17 +33,15 @@ void uvm_hal_rubin_fault_buffer_write_get(uvm_parent_gpu_t *parent_gpu, NvU32 in
 
     UVM_ASSERT(index < parent_gpu->fault_buffer.replayable.max_faults);
 
-    // Clearing GETPTR_CORRUPTED and OVERFLOW is not needed when GSP-RM owns
-    // the HW replayable fault buffer, because UVM does not write to the actual
-    // GET register; GSP-RM is responsible for clearing the bits in the real
-    // GET register.
-    if (g_uvm_global.conf_computing_enabled)
-        return;
-
     get = HWVALUE(_PFB_PRI_MMU, FAULT_BUFFER_GET, PTR, index);
 
-    // Clear the GETPTR_CORRUPTED and OVERFLOW bits.
-    get |= HWCONST(_PFB_PRI_MMU, FAULT_BUFFER_GET, GETPTR_CORRUPTED, CLEAR) |
-           HWCONST(_PFB_PRI_MMU, FAULT_BUFFER_GET, OVERFLOW, CLEAR);
+    // When GSP-RM owns the HW replayable fault buffer, UVM only advances the
+    // GET pointer in the UVM-visible shadow buffer. GSP-RM is responsible for
+    // clearing GETPTR_CORRUPTED and OVERFLOW in the real GET register.
+    if (!g_uvm_global.conf_computing_enabled) {
+        get |= HWCONST(_PFB_PRI_MMU, FAULT_BUFFER_GET, GETPTR_CORRUPTED, CLEAR) |
+               HWCONST(_PFB_PRI_MMU, FAULT_BUFFER_GET, OVERFLOW, CLEAR);
+    }
+
     UVM_GPU_WRITE_ONCE(*parent_gpu->fault_buffer.rm_info.replayable.pFaultBufferGet, get);
 }

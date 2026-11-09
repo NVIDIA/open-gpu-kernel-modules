@@ -25,10 +25,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
 // Forward declarations for KernelRc
 void __nvoc_init__OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_init__KernelRc(KernelRc*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_funcTable_KernelRc(KernelRc*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
-NV_STATUS __nvoc_ctor_KernelRc(KernelRc*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
-void __nvoc_init_dataField_KernelRc(KernelRc*, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init__KernelRc(KernelRc*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_funcTable_KernelRc(KernelRc*, RmHalspecOwner *pRmhalspecowner);
+NV_STATUS __nvoc_ctor_KernelRc(KernelRc*, RmHalspecOwner *pRmhalspecowner);
+void __nvoc_init_dataField_KernelRc(KernelRc*, RmHalspecOwner *pRmhalspecowner);
 void __nvoc_dtor_KernelRc(Dynamic*);
 
 // Structures used within RTTI (run-time type information)
@@ -40,18 +40,6 @@ NV_STATUS __nvoc_down_thunk_KernelRc_engstateConstructEngine(struct OBJGPU *pGpu
 void __nvoc_down_thunk_KernelRc_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelRc);    // this
 
 // Up-thunk(s) to bridge KernelRc methods to ancestors (if any)
-void __nvoc_up_thunk_OBJENGSTATE_krcInitMissing(struct OBJGPU *pGpu, struct KernelRc *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreInitLocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateInitLocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateInitUnlocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreLoad(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateLoad(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePostLoad(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePostUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3);    // this
-NvBool __nvoc_up_thunk_OBJENGSTATE_krcIsPresent(struct OBJGPU *pGpu, struct KernelRc *pEngstate);    // this
 
 // Class-specific details for KernelRc
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelRc = 
@@ -69,7 +57,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelRc =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__KernelRc __nvoc_metadata__KernelRc = {
     .rtti.pClassDef = &__nvoc_class_def_KernelRc,    // (krc) this
     .rtti.dtor      = &__nvoc_dtor_KernelRc,
@@ -81,33 +69,21 @@ static const struct NVOC_METADATA__KernelRc __nvoc_metadata__KernelRc = {
     .metadata__OBJENGSTATE.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__OBJENGSTATE.metadata__Object.rtti.offset    = NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
 
-    .vtable.__krcConstructEngine__ = &krcConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelRc_engstateConstructEngine,    // virtual
-    .vtable.__krcStateDestroy__ = &krcStateDestroy_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &__nvoc_down_thunk_KernelRc_engstateStateDestroy,    // virtual
-    .vtable.__krcInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_krcInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-    .vtable.__krcStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_krcStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-    .vtable.__krcStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_krcStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .vtable.__krcStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_krcStateInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
-    .vtable.__krcStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_krcStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-    .vtable.__krcStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_krcStatePreLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-    .vtable.__krcStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_krcStateLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
-    .vtable.__krcStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_krcStatePostLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-    .vtable.__krcStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_krcStatePreUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-    .vtable.__krcStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_krcStateUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
-    .vtable.__krcStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_krcStatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__krcIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_krcIsPresent,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
 };
 
@@ -126,75 +102,12 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelRc = {
 
 // krcConstructEngine: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelRc_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelRc, ENGDESCRIPTOR engDescriptor) {
-    return krcConstructEngine(pGpu, (struct KernelRc *)(((unsigned char *) pKernelRc) - NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)), engDescriptor);
+    return krcConstructEngine_IMPL(pGpu, (struct KernelRc *)(((unsigned char *) pKernelRc) - NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)), engDescriptor);
 }
 
 // krcStateDestroy: virtual override (engstate) base (engstate)
 void __nvoc_down_thunk_KernelRc_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelRc) {
-    krcStateDestroy(pGpu, (struct KernelRc *)(((unsigned char *) pKernelRc) - NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)));
-}
-
-
-// 12 up-thunk(s) defined to bridge methods in KernelRc to superclasses
-
-// krcInitMissing: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_krcInitMissing(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)));
-}
-
-// krcStatePreInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreInitLocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)));
-}
-
-// krcStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)));
-}
-
-// krcStateInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateInitLocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)));
-}
-
-// krcStateInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateInitUnlocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)));
-}
-
-// krcStatePreLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreLoad(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// krcStateLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateLoad(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// krcStatePostLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePostLoad(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// krcStatePreUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// krcStateUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// krcStatePostUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePostUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// krcIsPresent: virtual inherited (engstate) base (engstate)
-NvBool __nvoc_up_thunk_OBJENGSTATE_krcIsPresent(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)));
+    krcStateDestroy_IMPL(pGpu, (struct KernelRc *)(((unsigned char *) pKernelRc) - NV_OFFSETOF(KernelRc, __nvoc_base_OBJENGSTATE)));
 }
 
 
@@ -216,35 +129,19 @@ void __nvoc_dtor_KernelRc(Dynamic* pThis) {
 
     PORT_UNREFERENCED_VARIABLE(__nvoc_this);
 }
-void __nvoc_init_dataField_KernelRc(KernelRc *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
-    const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
+void __nvoc_init_dataField_KernelRc(KernelRc *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
-    PORT_UNREFERENCED_VARIABLE(chipHal);
-    PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
-
-    // NVOC Property Hal field -- PDB_PROP_KRC_IS_MISSING
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
-    {
-        pThis->setProperty(pThis, PDB_PROP_KRC_IS_MISSING, NV_TRUE);
-    }
-    // default
-    else
-    {
-        pThis->setProperty(pThis, PDB_PROP_KRC_IS_MISSING, NV_FALSE);
-    }
 }
 
 
 // Construct KernelRc object.
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE *);
-NV_STATUS __nvoc_ctor_KernelRc(KernelRc *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+NV_STATUS __nvoc_ctor_KernelRc(KernelRc *pThis, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
 
     // Recurse to ancestor constructor(s).
@@ -252,7 +149,7 @@ NV_STATUS __nvoc_ctor_KernelRc(KernelRc *pThis, GpuHalspecOwner *pGpuhalspecowne
     if (status != NV_OK) goto __nvoc_ctor_KernelRc_fail_OBJENGSTATE;
 
     // Initialize data fields.
-    __nvoc_init_dataField_KernelRc(pThis, pGpuhalspecowner, pRmhalspecowner);
+    __nvoc_init_dataField_KernelRc(pThis, pRmhalspecowner);
     goto __nvoc_ctor_KernelRc_exit; // Success
 
     // Unwind on error.
@@ -262,70 +159,35 @@ __nvoc_ctor_KernelRc_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_KernelRc_1(KernelRc *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
-    ChipHal *chipHal = &pGpuhalspecowner->chipHal;
-    const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
+static void __nvoc_init_funcTable_KernelRc_1(KernelRc *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pGpuhalspecowner);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
-    PORT_UNREFERENCED_VARIABLE(chipHal);
-    PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    // krcWatchdogInit -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
-    {
-        pThis->__krcWatchdogInit__ = &krcWatchdogInit_395e98;
-    }
-    else
-    {
-        pThis->__krcWatchdogInit__ = &krcWatchdogInit_IMPL;
-    }
-
-    // krcWatchdogInitPushbuffer -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
-    {
-        pThis->__krcWatchdogInitPushbuffer__ = &krcWatchdogInitPushbuffer_d44104;
-    }
-    else
-    {
-        pThis->__krcWatchdogInitPushbuffer__ = &krcWatchdogInitPushbuffer_IMPL;
-    }
-
-    // krcWatchdog -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
-    {
-        pThis->__krcWatchdog__ = &krcWatchdog_d44104;
-    }
-    else
-    {
-        pThis->__krcWatchdog__ = &krcWatchdog_IMPL;
-    }
-
-    // krcWatchdogRecovery -- halified (2 hals) body
+    // krcGetChannelInError -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__krcWatchdogRecovery__ = &krcWatchdogRecovery_f2d351;
+        pThis->__krcGetChannelInError__ = &krcGetChannelInError_9e2234;
     }
     else
     {
-        pThis->__krcWatchdogRecovery__ = &krcWatchdogRecovery_KERNEL;
+        pThis->__krcGetChannelInError__ = &krcGetChannelInError_FWCLIENT;
     }
-} // End __nvoc_init_funcTable_KernelRc_1 with approximately 8 basic block(s).
+} // End __nvoc_init_funcTable_KernelRc_1 with approximately 2 basic block(s).
 
 
-// Initialize vtable(s) for 18 virtual method(s).
-void __nvoc_init_funcTable_KernelRc(KernelRc *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+// Initialize vtable(s) for 1 virtual method(s).
+void __nvoc_init_funcTable_KernelRc(KernelRc *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 4 per-object function pointer(s).
-    __nvoc_init_funcTable_KernelRc_1(pThis, pGpuhalspecowner, pRmhalspecowner);
+    // Initialize vtable(s) with 1 per-object function pointer(s).
+    __nvoc_init_funcTable_KernelRc_1(pThis, pRmhalspecowner);
 }
 
 // Initialize newly constructed object.
-void __nvoc_init__KernelRc(KernelRc *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init__KernelRc(KernelRc *pThis, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize pointers to inherited data.
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;    // (obj) super^2
@@ -341,7 +203,7 @@ void __nvoc_init__KernelRc(KernelRc *pThis, GpuHalspecOwner *pGpuhalspecowner, R
     pThis->__nvoc_metadata_ptr = &__nvoc_metadata__KernelRc;    // (krc) this
 
     // Initialize per-object vtables.
-    __nvoc_init_funcTable_KernelRc(pThis, pGpuhalspecowner, pRmhalspecowner);
+    __nvoc_init_funcTable_KernelRc(pThis, pRmhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_KernelRc(KernelRc **__nvoc_ppThis, Dynamic *__nvoc_pParent, NvU32 __nvoc_createFlags)
@@ -349,7 +211,6 @@ NV_STATUS __nvoc_objCreate_KernelRc(KernelRc **__nvoc_ppThis, Dynamic *__nvoc_pP
     NV_STATUS __nvoc_status;
     Object *__nvoc_pParentObj = NULL;
     KernelRc *__nvoc_pThis;
-    GpuHalspecOwner *pGpuhalspecowner;
     RmHalspecOwner *pRmhalspecowner;
 
     // Don't allocate memory if the caller has already done so.
@@ -386,16 +247,13 @@ NV_STATUS __nvoc_objCreate_KernelRc(KernelRc **__nvoc_ppThis, Dynamic *__nvoc_pP
     }
 
     // HALs are defined by the parent or the first super class.
-    if ((pGpuhalspecowner = dynamicCast(__nvoc_pParent, GpuHalspecOwner)) == NULL)
-        pGpuhalspecowner = objFindAncestorOfType(GpuHalspecOwner, __nvoc_pParent);
-    NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pGpuhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelRc_cleanup);
     if ((pRmhalspecowner = dynamicCast(__nvoc_pParent, RmHalspecOwner)) == NULL)
         pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, __nvoc_pParent);
     NV_CHECK_TRUE_OR_GOTO(__nvoc_status, LEVEL_ERROR, pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT, __nvoc_objCreate_KernelRc_cleanup);
 
     // Initialize vtable, RTTI, etc., then call constructor.
-    __nvoc_init__KernelRc(__nvoc_pThis, pGpuhalspecowner, pRmhalspecowner);
-    __nvoc_status = __nvoc_ctor_KernelRc(__nvoc_pThis, pGpuhalspecowner, pRmhalspecowner);
+    __nvoc_init__KernelRc(__nvoc_pThis, pRmhalspecowner);
+    __nvoc_status = __nvoc_ctor_KernelRc(__nvoc_pThis, pRmhalspecowner);
     if (__nvoc_status != NV_OK) goto __nvoc_objCreate_KernelRc_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

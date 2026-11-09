@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,47 +22,18 @@
  */
 
 #include "core/core.h"
+#include "core/system.h"
 #include "gpu/gpu.h"
+#include "gpu/mem_mgr/carveout_mgr.h"
+#include "os/os.h"
 #include "os/nv_memory_type.h"
 #include "mem_mgr/system_mem.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 
-#include "containers/eheap_old.h"
-
-static NV_STATUS _memmgrSocGetScanoutCarveout
-(
-    OBJGPU *pGpu,
-    NvU64  *pBase,
-    NvU64  *pSize
-)
+static CarveoutMgr *
+_memmgrGetCarveoutMgr(void)
 {
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NV_STATUS status;
-    NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS params;
-    NvU32 i;
-
-    portMemSet(&params, 0x0, sizeof(params));
-    status = memmgrGetCarveoutRegionInfo(pGpu, pMemoryManager, &params);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    *pBase = *pSize = 0;
-
-    for (i = 0; i < params.numCarveoutRegions; i++)
-    {
-        // On Linux, the complete display FRM will be managed by RM carveout code.
-        if (params.carveoutRegion[i].carveoutType ==
-                NV2080_CTRL_FB_GET_CARVEOUT_REGION_CARVEOUT_TYPE_DISPLAY_FRM)
-        {
-            *pBase = params.carveoutRegion[i].base;
-            *pSize = params.carveoutRegion[i].size;
-            break;
-        }
-    }
-
-    return NV_OK;
+    return SYS_GET_CARVEOUT_MGR(SYS_GET_INSTANCE());
 }
 
 /**
@@ -127,20 +98,63 @@ memmgrCreateScanoutCarveoutHeap_GB10B
     MemoryManager *pMemoryManager
 )
 {
-    NvU64 base, size;
+    CarveoutMgr *pCarveoutMgr = _memmgrGetCarveoutMgr();
+    NV2080_CTRL_FB_GET_CARVEOUT_REGION_INFO_PARAMS params;
+    NvU64 base = 0;
+    NvU64 size = 0;
+    NvU32 i;
+    NV_STATUS status;
 
-    if (_memmgrSocGetScanoutCarveout(pGpu, &base, &size) != NV_OK) {
-        pGpu->setProperty(pGpu, PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT, NV_FALSE);
-        return NV_OK;
-    }
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pCarveoutMgr != NULL, NV_ERR_INVALID_STATE);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pMemoryManager != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    pMemoryManager->pScanoutHeap = (OBJEHEAP*)portMemAllocNonPaged(sizeof(OBJEHEAP));
-    if (pMemoryManager->pScanoutHeap == NULL)
+    status = osGetCarveoutInfo(&base, &size);
+
+    // If DT carveout information is not present, fall back to FRM.
+    if (status == NV_ERR_NOT_SUPPORTED)
     {
-        return NV_ERR_NO_MEMORY;
+        portMemSet(&params, 0x0, sizeof(params));
+        status = memmgrGetCarveoutRegionInfo(pGpu, pMemoryManager, &params);
+        if (status == NV_OK)
+        {
+            for (i = 0; i < params.numCarveoutRegions; i++)
+            {
+                if (params.carveoutRegion[i].carveoutType ==
+                    NV2080_CTRL_FB_GET_CARVEOUT_REGION_CARVEOUT_TYPE_DISPLAY_FRM)
+                {
+                    base = params.carveoutRegion[i].base;
+                    size = params.carveoutRegion[i].size;
+                    break;
+                }
+            }
+        }
+
+        if ((status != NV_OK) || (size == 0))
+        {
+            NV_PRINTF(LEVEL_INFO,
+                      "did not get scanout carveout info for GPU instance %u\n",
+                      gpuGetInstance(pGpu));
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT, NV_FALSE);
+            return NV_OK;
+        }
+    }
+    else if (status != NV_OK || size == 0)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to get scanout carveout info from device tree for "
+                  "GPU instance %u, status=0x%x, size=0x%llx\n",
+                  gpuGetInstance(pGpu), status, size);
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_ALLOC_ISO_SYS_MEM_FROM_CARVEOUT, NV_FALSE);
+        return status == NV_OK ? NV_ERR_INVALID_DATA : status;
     }
 
-    constructObjEHeap(pMemoryManager->pScanoutHeap, base, base + size, 0, 0);
+    status = carveoutmgrAcquireHeap(pCarveoutMgr, pGpu, base, size);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to acquire shared scanout carveout heap.\n");
+        return status;
+    }
 
     NV_PRINTF(LEVEL_INFO, "Created scanout carveout heap with base address=0x%llx and size=%llx\n", base, size);
 
@@ -154,13 +168,13 @@ memmgrDestroyScanoutCarveoutHeap_GB10B
     MemoryManager *pMemoryManager
 )
 {
+    CarveoutMgr *pCarveoutMgr = _memmgrGetCarveoutMgr();
 
-    if (pMemoryManager->pScanoutHeap)
-    {
-        pMemoryManager->pScanoutHeap->eheapDestruct(pMemoryManager->pScanoutHeap);
-        portMemFree(pMemoryManager->pScanoutHeap);
-        pMemoryManager->pScanoutHeap = NULL;
-    }
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pCarveoutMgr != NULL, NV_ERR_INVALID_STATE);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pMemoryManager != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    carveoutmgrReleaseHeap(pCarveoutMgr, pGpu);
 
     return NV_OK;
 }
@@ -185,19 +199,45 @@ memmgrAllocScanoutCarveoutRegionResources_GB10B
     MEMORY_DESCRIPTOR *pMemDesc
 )
 {
-    OBJEHEAP *pHeap = pMemoryManager->pScanoutHeap;
-    NvU64 alignment = pAllocData->alignment;
-    NvU64 offset = pAllocData->offset;
-    NvU64 size = pMemDesc->Size;
+    CarveoutMgr *pCarveoutMgr = _memmgrGetCarveoutMgr();
+    OBJGPU *pGpu;
+    NvU64 alignment;
+    NvU64 offset;
+    NvU64 size;
+    NvU64 carveoutBase;
+    NvU64 carveoutSize;
+    NvU64 rangeLo;
+    NvU64 rangeHi;
     NV_STATUS status = NV_OK;
 
-    NV_CHECK_OR_RETURN(LEVEL_INFO, pHeap != NULL, NV_ERR_INVALID_STATE);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pCarveoutMgr != NULL, NV_ERR_INVALID_STATE);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pMemoryManager != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pAllocData != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pHeapFlag != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pGpu = ENG_GET_GPU(pMemoryManager);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pGpu != NULL, NV_ERR_INVALID_STATE);
 
     NV_ASSERT(memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT));
 
-    status = pHeap->eheapAlloc(pHeap, heapOwner, pHeapFlag,
-                               &offset, &size, alignment, alignment,
-                               NULL, NULL, NULL);
+    alignment = pAllocData->alignment ? pAllocData->alignment : RM_PAGE_SIZE;
+    offset = pAllocData->offset;
+    size = pMemDesc->Size;
+
+    status = carveoutmgrGetHeapInfo(pCarveoutMgr, &carveoutBase, &carveoutSize);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                       (carveoutSize != 0) &&
+                       (carveoutBase <= (NV_U64_MAX - (carveoutSize - 1))),
+                       NV_ERR_INVALID_STATE);
+
+    rangeLo = carveoutBase;
+    rangeHi = carveoutBase + carveoutSize - 1;
+
+    status = carveoutmgrAllocHeapBlock(pCarveoutMgr, pGpu, heapOwner,
+                                       pHeapFlag, &offset, &size, alignment,
+                                       rangeLo, rangeHi);
     if (status != NV_OK) {
         NV_PRINTF(LEVEL_ERROR, "EheapAlloc returns error 0x%08x\n", status);
         return status;
@@ -223,7 +263,7 @@ memmgrAllocScanoutCarveoutRegionResources_GB10B
 NV_STATUS
 memmgrAllocFromScanoutCarveoutRegion_GB10B
 (
-    POBJGPU pGpu,
+    OBJGPU *pGpu,
     MemoryManager *pMemoryManager,
     NvU32 owner,
     NV_MEMORY_ALLOCATION_PARAMS *pVidHeapAlloc,
@@ -231,18 +271,21 @@ memmgrAllocFromScanoutCarveoutRegion_GB10B
     PMEMORY_DESCRIPTOR *ppMemDesc
 )
 {
-    MemorySystem        *pMemorySystem = GPU_GET_MEMORY_SYSTEM(pGpu);
+    MemorySystem        *pMemorySystem;
     MEMORY_DESCRIPTOR   *pMemDesc = NULL;
-    OBJEHEAP            *pHeap = pMemoryManager->pScanoutHeap;
-    NvU64                offset = pVidHeapAlloc->offset;
-    NvU64                size = pVidHeapAlloc->size;
+    NvU64                allocatedOffset;
+    NvU64                size;
     NV_STATUS            status;
 
-    NV_CHECK_OR_RETURN(LEVEL_INFO, pMemorySystem != NULL, NV_ERR_INVALID_STATE);
-
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_CHECK_OR_RETURN(LEVEL_INFO, pVidHeapAlloc != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_CHECK_OR_RETURN(LEVEL_INFO, pHeapFlag != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_CHECK_OR_RETURN(LEVEL_INFO, ppMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pMemorySystem = GPU_GET_MEMORY_SYSTEM(pGpu);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pMemorySystem != NULL, NV_ERR_INVALID_STATE);
+
+    size = pVidHeapAlloc->size;
 
     status = memdescCreate(&pMemDesc, pGpu, size, 0, NV_MEMORY_CONTIGUOUS,
                            ADDR_SYSMEM, NV_MEMORY_UNCACHED,
@@ -251,7 +294,6 @@ memmgrAllocFromScanoutCarveoutRegion_GB10B
     {
         NV_PRINTF(LEVEL_ERROR, "memdescCreate returns error 0x%08x\n", status);
         DBG_BREAKPOINT();
-        pHeap->eheapFree(pHeap, offset);
         return status;
     }
 
@@ -268,19 +310,29 @@ memmgrAllocFromScanoutCarveoutRegion_GB10B
         return status;
     }
 
+    // Save the heap-assigned address before memdescAlloc can alter PTE state.
+    allocatedOffset = memdescGetPte(pMemDesc, AT_CPU, 0);
     status = memdescAlloc(pMemDesc);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "memdescAlloc returns error 0x%08x\n", status);
         DBG_BREAKPOINT();
+
+        //
+        // This descriptor is not yet visible to callers and has one reference.
+        // Its destruction also releases any partially allocated backing and
+        // IOMMU mappings. Keep the eheap range reserved until that teardown is
+        // complete.
+        //
         memdescDestroy(pMemDesc);
-        memmgrFreeScanoutCarveoutRegionResources(pMemoryManager, offset);
+        memmgrFreeScanoutCarveoutRegionResources(pMemoryManager, allocatedOffset);
         return status;
     }
 
     *ppMemDesc = pMemDesc;
     pVidHeapAlloc->offset = memdescGetPte(pMemDesc, AT_CPU, 0);
     pVidHeapAlloc->size = pMemDesc->Size;
+    memdescSetCustomHeap(pMemDesc, MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT);
 
     return NV_OK;
 }
@@ -291,6 +343,10 @@ memmgrAllocFromScanoutCarveoutRegion_GB10B
  * This function performs free operation for the memory allocated at given base
  * offset from scanout carveout region.
  *
+ * This rollback helper is used before a memdesc association is published.
+ * Published associations must use memmgrFreeFromScanoutCarveoutRegion so the
+ * eheap and memdesc references are released together.
+ *
  * @returns void
  */
 void
@@ -300,24 +356,20 @@ memmgrFreeScanoutCarveoutRegionResources_GB10B
     NvU64 base
 )
 {
-    OBJEHEAP *pHeap = pMemoryManager->pScanoutHeap;
+    CarveoutMgr *pCarveoutMgr = _memmgrGetCarveoutMgr();
     NV_STATUS status;
-    EMEMBLOCK *pBlock;
 
-    NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, pHeap != NULL);
+    NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, pCarveoutMgr != NULL);
+    NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, pMemoryManager != NULL);
 
-    pBlock = (EMEMBLOCK *)pHeap->eheapGetBlock(pHeap, base, 0);
-
-    if (pBlock == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Not found allocation in carveout region");
-        return;
-    }
-
-    status = pHeap->eheapFree(pHeap, base);
+    status = carveoutmgrFreeHeapBlock(pCarveoutMgr, base);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Error in freeing eheap 0x%08x\n", status);
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to release scanout carveout rollback block at "
+                  "0x%llx, status=0x%x\n",
+                  base, status);
+        NV_ASSERT(status == NV_OK);
     }
 }
 
@@ -325,44 +377,36 @@ memmgrFreeScanoutCarveoutRegionResources_GB10B
  * @brief Frees memory from scanout carveout region
  *
  * This function performs free operation for the memory allocated from scanout
- * carveout region.
+ * carveout region. The system-level manager owns the association release, so
+ * the originating GPU may already be detached when cleanup reaches it.
  *
  * @returns void
  */
 void
 memmgrFreeFromScanoutCarveoutRegion_GB10B
 (
-    POBJGPU pGpu,
-    MemoryManager *pMemoryManager,
+    OBJGPU             *pGpu,
+    MemoryManager      *pMemoryManager,
     PMEMORY_DESCRIPTOR pMemDesc
 )
 {
-    OBJEHEAP    *pEHeap = pMemoryManager->pScanoutHeap;
-    NvU64        base;
-    EMEMBLOCK   *pBlock;
+    CarveoutMgr *pCarveoutMgr = _memmgrGetCarveoutMgr();
 
     NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, pMemDesc != NULL);
-    NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, pEHeap != NULL);
-
-    base = memdescGetPte(pMemDesc, AT_CPU, 0);
-    pBlock = (EMEMBLOCK *)pEHeap->eheapGetBlock(pEHeap, base, 0);
-    NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, pBlock != NULL);
-
-    //
-    // If reference count is zero then free the memory descriptor; otherwise
-    // decrease the reference count (increased by memCopyConstruct_IMPL()).
-    //
-    if (pBlock->refCount == 0)
+    if (pCarveoutMgr == NULL)
     {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Missing carveout manager while freeing scanout memory\n");
+        NV_ASSERT(pCarveoutMgr != NULL);
+        pMemDesc->pHeap = NULL;
         memdescFree(pMemDesc);
         memdescDestroy(pMemDesc);
-    }
-    else
-    {
-        memdescRemoveRef(pMemDesc);
+        return;
     }
 
-    memmgrFreeScanoutCarveoutRegionResources(pMemoryManager, base);
+    (void)pGpu;
+    (void)pMemoryManager;
+    carveoutmgrReleaseMemDesc(pCarveoutMgr, pMemDesc);
 }
 
 /**
@@ -376,24 +420,19 @@ memmgrFreeFromScanoutCarveoutRegion_GB10B
 NV_STATUS
 memmgrDuplicateFromScanoutCarveoutRegion_GB10B
 (
-    POBJGPU pGpu,
-    MemoryManager *pMemoryManager,
+    OBJGPU             *pGpu,
+    MemoryManager      *pMemoryManager,
     PMEMORY_DESCRIPTOR pMemDesc
 )
 {
-    OBJEHEAP    *pEHeap = pMemoryManager->pScanoutHeap;
-    NvU64        base;
-    EMEMBLOCK   *pBlock;
+    CarveoutMgr *pCarveoutMgr = _memmgrGetCarveoutMgr();
+    NvU64 base;
 
     NV_CHECK_OR_RETURN(LEVEL_INFO, pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_CHECK_OR_RETURN(LEVEL_INFO, pEHeap != NULL, NV_ERR_INVALID_STATE);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pCarveoutMgr != NULL, NV_ERR_INVALID_STATE);
 
     base = memdescGetPte(pMemDesc, AT_CPU, 0);
-    pBlock = (EMEMBLOCK *)pEHeap->eheapGetBlock(pEHeap, base, 0);
-    NV_CHECK_OR_RETURN(LEVEL_INFO, pBlock != NULL, NV_ERR_INVALID_STATE);
-
-    pBlock->refCount++;
-    return NV_OK;
+    return carveoutmgrDuplicateHeapBlock(pCarveoutMgr, pGpu, base);
 }
 
 /**
@@ -483,4 +522,3 @@ memmgrAllocateConsoleRegion_GB10B
 
     return NV_OK;
 }
-

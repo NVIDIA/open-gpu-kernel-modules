@@ -23,6 +23,7 @@
 
 #define NVOC_KERNEL_CHANNEL_H_PRIVATE_ACCESS_ALLOWED
 
+
 #include "kernel/gpu/fifo/kernel_channel.h"
 
 #include "kernel/core/locks.h"
@@ -37,6 +38,7 @@
 #include "kernel/gpu/mem_mgr/heap.h"
 #include "gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
+#include "kernel/mem_mgr/os_desc_mem.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "kernel/mem_mgr/ctx_buf_pool.h"
@@ -203,6 +205,14 @@ kchannelConstruct_IMPL
     // We only support physical channels.
     NV_ASSERT_OR_RETURN(FLD_TEST_DRF(OS04, _FLAGS, _CHANNEL_TYPE, _PHYSICAL, flags),
         NV_ERR_NOT_SUPPORTED);
+
+    // Block new channel creation in vGPU guest after host signaled reset required.
+    if (IS_VIRTUAL(pGpu) && pGpu->getProperty(pGpu, PDB_PROP_GPU_VGPU_RESET_REQUIRED))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "vGPU guest: GPU reset pending; blocking new channel creation.\n");
+        return NV_ERR_RESET_REQUIRED;
+    }
 
     pKernelChannel->refCount = 1;
     pKernelChannel->bIsContextBound = NV_FALSE;
@@ -440,6 +450,7 @@ kchannelConstruct_IMPL
             status = NV_ERR_INVALID_ARGUMENT;
             NV_ASSERT_OR_GOTO(status == NV_OK, cleanup);
         }
+
     }
     pKernelChannel->pKernelChannelGroupApi = pKernelChannelGroupApi;
     pKernelChannel->pKernelChannelGroup    = pKernelChannelGroup;
@@ -790,61 +801,68 @@ kchannelConstruct_IMPL
 
     pKernelChannel->bCCSecureChannel = FLD_TEST_DRF(OS04, _FLAGS, _CC_SECURE, _TRUE, flags);
     pKernelChannel->bUseScrubKey = FLD_TEST_DRF(OS04, _FLAGS, _CHANNEL_SKIP_SCRUBBER, _TRUE, pChannelGpfifoParams->flags);
-    if (pKernelChannel->bCCSecureChannel)
     {
         ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+        NvBool bReadyCheckNeeded = pKernelChannel->bCCSecureChannel;
+        bReadyCheckNeeded = pKernelChannel->bCCSecureChannel || gpuIsTdispFeatureEnabled(pGpu);
+        // Gate on the VR-BM licensing bit.
+        bReadyCheckNeeded = bReadyCheckNeeded ||
+                            ((pConfCompute != NULL) && gpuIsSelfHosted(pGpu) &&
+                             gpuIsBmLicenseEnabledInHw_HAL(pGpu));
 
-        // return early if gpu is not ready to accept work
-        if ((pConfCompute != NULL) && kchannelCheckIsUserMode(pKernelChannel)
-            && !confComputeAcceptClientRequest(pGpu, pConfCompute))
+        // For CC/TDISP/VR-BM, Block channel creation until GPU ready state is SET.
+        if (bReadyCheckNeeded && (pConfCompute != NULL) && kchannelCheckIsUserMode(pKernelChannel)
+                && !confComputeAcceptClientRequest(pGpu, pConfCompute))
         {
             status = NV_ERR_NOT_READY;
             goto cleanup;
         }
-
-        if ((pConfCompute != NULL) && pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))
+        if (pKernelChannel->bCCSecureChannel)
         {
-            KEY_ROTATION_STATUS state;
-            NvU32 h2dKey;
-            NV_ASSERT_OK_OR_GOTO(status,
-                                 confComputeGetKeyPairByChannel(pGpu, pConfCompute, pKernelChannel, &h2dKey, NULL),
-                                 cleanup);
-            NV_ASSERT_OK_OR_GOTO(status,
-                                 confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state),
-                                 cleanup);
-            if (state != KEY_ROTATION_STATUS_IDLE)
+            if ((pConfCompute != NULL) && pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))
             {
-                status = NV_ERR_KEY_ROTATION_IN_PROGRESS;
-                goto cleanup;
+                KEY_ROTATION_STATUS state;
+                NvU32 h2dKey;
+                NV_ASSERT_OK_OR_GOTO(status,
+                                     confComputeGetKeyPairByChannel(pGpu, pConfCompute, pKernelChannel, &h2dKey, NULL),
+                                     cleanup);
+                NV_ASSERT_OK_OR_GOTO(status,
+                                     confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state),
+                                     cleanup);
+                if (state != KEY_ROTATION_STATUS_IDLE)
+                {
+                    status = NV_ERR_KEY_ROTATION_IN_PROGRESS;
+                    goto cleanup;
+                }
             }
+
+            //
+            // Retrieve IV from keystore as it needs to be transmitted to GPU.
+            // On Hopper this will also retrieve the key and IV mask.
+            // On Blackwell and later the key and IV mask are retrieved after a successful control
+            // call to GSP-RM to ensure that the keystore and keymanager keyseeds stay in sync.
+            //
+            NV_ASSERT_OK_OR_GOTO(status,
+                                 confComputeKeyStoreRetrieveViaChannel_HAL(pConfCompute, pKernelChannel, ROTATE_IV_ALL_VALID,
+                                                                           CHANNEL_IV_OPERATION_INCLUDE_ONLY,
+                                                                           &pKernelChannel->clientKmb),
+                                 cleanup);
+
+            portMemCopy(pChannelGpfifoParams->encryptIv,
+                        sizeof(pChannelGpfifoParams->encryptIv),
+                        pKernelChannel->clientKmb.encryptBundle.iv,
+                        sizeof(pKernelChannel->clientKmb.encryptBundle.iv));
+
+            portMemCopy(pChannelGpfifoParams->decryptIv,
+                        sizeof(pChannelGpfifoParams->decryptIv),
+                        pKernelChannel->clientKmb.decryptBundle.iv,
+                        sizeof(pKernelChannel->clientKmb.decryptBundle.iv));
+
+            portMemCopy(pChannelGpfifoParams->hmacNonce,
+                        sizeof(pChannelGpfifoParams->hmacNonce),
+                        pKernelChannel->clientKmb.hmacBundle.nonce,
+                        sizeof(pKernelChannel->clientKmb.hmacBundle.nonce));
         }
-
-        //
-        // Retrieve IV from keystore as it needs to be transmitted to GPU.
-        // On Hopper this will also retrieve the key and IV mask.
-        // On Blackwell and later the key and IV mask are retrieved after a successful control
-        // call to GSP-RM to ensure that the keystore and keymanager keyseeds stay in sync.
-        //
-        NV_ASSERT_OK_OR_GOTO(status,
-                             confComputeKeyStoreRetrieveViaChannel_HAL(pConfCompute, pKernelChannel, ROTATE_IV_ALL_VALID,
-                                                                       CHANNEL_IV_OPERATION_INCLUDE_ONLY,
-                                                                       &pKernelChannel->clientKmb),
-                             cleanup);
-
-        portMemCopy(pChannelGpfifoParams->encryptIv,
-                    sizeof(pChannelGpfifoParams->encryptIv),
-                    pKernelChannel->clientKmb.encryptBundle.iv,
-                    sizeof(pKernelChannel->clientKmb.encryptBundle.iv));
-
-        portMemCopy(pChannelGpfifoParams->decryptIv,
-                    sizeof(pChannelGpfifoParams->decryptIv),
-                    pKernelChannel->clientKmb.decryptBundle.iv,
-                    sizeof(pKernelChannel->clientKmb.decryptBundle.iv));
-
-        portMemCopy(pChannelGpfifoParams->hmacNonce,
-                    sizeof(pChannelGpfifoParams->hmacNonce),
-                    pKernelChannel->clientKmb.hmacBundle.nonce,
-                    sizeof(pKernelChannel->clientKmb.hmacBundle.nonce));
     }
 
     // Set TLS state and BAR0 window if we are working with Gr
@@ -1202,6 +1220,9 @@ kchannelDestruct_IMPL
     OBJGPU                      *pGpu   = GPU_RES_GET_GPU(pKernelChannel);
     NV_STATUS                    status = NV_OK;
     KernelChannelGroup          *pKernelChannelGroup = NULL;
+    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+
+    NV_ASSERT(pKernelFifo != NULL);
 
     NV_ASSERT(pKernelChannel->pKernelChannelGroupApi != NULL);
     pKernelChannelGroup = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup;
@@ -1966,13 +1987,8 @@ kchannelGetNotifierInfo
     {
         if (memdescGetAddressSpace(pMemory->pMemDesc) == ADDR_VIRTUAL)
         {
-            //
-            // GPUVA case: Get the underlying DMA mapping in this case. In GSP
-            // client mode + SLI, GSP won't be able to write to notifiers on
-            // other GPUs.
-            //
+            // GPUVA case: Get the underlying DMA mapping in this case.
             NvU64 offset;
-            NvU32 subdeviceInstance;
             NvU64 notifyGpuVA = memdescGetPhysAddr(pMemory->pMemDesc,
                                                    AT_GPU_VA, 0);
             CLI_DMA_MAPPING_INFO *pDmaMappingInfo;
@@ -1983,7 +1999,6 @@ kchannelGetNotifierInfo
                 RES_GET_HANDLE(pDevice),
                 RES_GET_HANDLE(pMemory),
                 notifyGpuVA,
-                gpumgrGetDeviceGpuMask(pGpu->deviceInstance),
                 &pDmaMappingInfo);
 
             if (!bFound)
@@ -2001,17 +2016,7 @@ kchannelGetNotifierInfo
                 return NV_ERR_INVALID_STATE;
             }
 
-            subdeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(
-                gpumgrGetParentGPU(pGpu));
-            SLI_LOOP_START(SLI_LOOP_FLAGS_NONE)
-            if (IsSLIEnabled(pGpu) && IS_GSP_CLIENT(pGpu))
-            {
-                NV_PRINTF(LEVEL_ERROR, "GSP does not support SLI\n");
-                return NV_ERR_NOT_SUPPORTED;
-            }
-            SLI_LOOP_END
-
-            if (!pDmaMappingInfo->KernelVAddr[subdeviceInstance])
+            if (!pDmaMappingInfo->KernelVAddr)
             {
                 NV_PRINTF(LEVEL_ERROR,
                           "Kernel VA addr mapping not present for notifier\n");
@@ -2438,8 +2443,10 @@ _kchannelDescribeMemDescsFromParams
     else if (pKernelChannelGroupApi->pKernelChannelGroup
                  ->pMthdBuffers[runqueue].pMemDesc == NULL)
     {
-        NV_ASSERT(pChannelGpfifoParams->mthdbufMem.size > 0);
-        NV_ASSERT(pChannelGpfifoParams->mthdbufMem.base != 0);
+        NV_ASSERT_OR_ELSE(pChannelGpfifoParams->mthdbufMem.size > 0,
+                          SLI_LOOP_RETURN(NV_ERR_INVALID_ARGUMENT););
+        NV_ASSERT_OR_ELSE(pChannelGpfifoParams->mthdbufMem.base != 0,
+                          SLI_LOOP_RETURN(NV_ERR_INVALID_ARGUMENT););
         status = memdescCreate(&pKernelChannelGroupApi->pKernelChannelGroup
                                     ->pMthdBuffers[runqueue].pMemDesc,
                                pGpu,
@@ -2798,6 +2805,15 @@ _kchannelSendChannelAllocRpc
                     pRpcParams->internalFlags);
             }
         }
+
+        /* Pack privilegeLevel into internalFlags for full SR-IOV so host plugin can use*/
+        if (bFullSriov)
+        {
+            pRpcParams->internalFlags =
+                FLD_SET_DRF_NUM(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _PRIVILEGE,
+                                pKernelChannel->privilegeLevel,
+                                pRpcParams->internalFlags);
+        }
     }
 
     NV_RM_RPC_ALLOC_CHANNEL(pGpu,
@@ -3040,11 +3056,12 @@ kchannelCtrlCmdResetChannel_IMPL
     pResetChannelParams->bIsRcPending =
         pKernelChannel->bIsRcPending[gpumgrGetSubDeviceInstanceFromGpu(pGpu)];
 
-    //
-    // All real hardware management is done in the host.
-    // Do an RPC to the host to do the hardware update and return.
-    //
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    if (IS_VIRTUAL(pGpu))
+    {
+        return kfifoGuestRcRecoverChannel(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
+                                          pKernelChannel, pResetChannelParams, NULL);
+    }
+    else if (IS_GSP_CLIENT(pGpu))
     {
         NV_RM_RPC_CONTROL(pGpu,
                           pRmCtrlParams->hClient,
@@ -3221,6 +3238,13 @@ kchannelCtrlCmdSetInterleaveLevel_IMPL
     OBJGPU          *pGpu         = GPU_RES_GET_GPU(pKernelChannel);
     NV_STATUS        status       = NV_OK;
 
+    status = kfifoValidateInterleaveLevelAccess(pGpu,
+                                                pParams->channelInterleaveLevel);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
         CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
@@ -3233,7 +3257,7 @@ kchannelCtrlCmdSetInterleaveLevel_IMPL
                           pRmCtrlParams->pParams,
                           pRmCtrlParams->paramsSize,
                           status);
-        NV_CHECK_OR_RETURN(LEVEL_INFO, status == NV_OK, NV_ERR_NOT_SUPPORTED);
+        NV_CHECK_OK_OR_RETURN(LEVEL_INFO, status);
     }
 
     status = kchangrpSetInterleaveLevel(pGpu, pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup, pParams->channelInterleaveLevel);
@@ -3731,7 +3755,7 @@ kchannelCommitEngineContext_IMPL
         // For virtual context, UMD has already alloced/mapped the engine context.
         // So simply get the vaddr
         //
-        if (memdescGetAddressSpace(memdescGetMemDescFromGpu(pTempMemDesc, pGpu)) == ADDR_VIRTUAL)
+        if (memdescGetAddressSpace(pTempMemDesc) == ADDR_VIRTUAL)
         {
             //
             // No need to track the VA for virtual context.
@@ -3797,6 +3821,33 @@ kchannelCommitEngineContext_IMPL
             goto fail;
         }
 
+        if (IS_GR(engine))
+        {
+            KernelGraphicsContext *pKernelGraphicsContext;
+
+            NV_ASSERT_OK_OR_GOTO(status,
+                kgrctxFromKernelChannel(pKernelChannel, &pKernelGraphicsContext),
+                fail);
+
+            NV_PRINTF(LEVEL_INFO,
+                "Context Buffer VA for GPU 0x%x " FMT_CHANNEL_DEBUG_TAG " is vaddr_hi: 0x%x vaddr_lo: 0x%x\n",
+                pGpu->gpuInstance,
+                kchannelGetDebugTag(pKernelChannel),
+                NvU64_HI32(addr),
+                NvU64_LO32(addr));
+
+            NV_ASSERT_OK_OR_GOTO(status,
+                kgrctxGetSubctxHeaderVa(pGpu, pKernelGraphicsContext, pKernelChannel,
+                                       pKernelChannel->pVAS, pKernelChannel->subctxId, &addr),
+                fail);
+
+            NV_PRINTF(LEVEL_INFO,
+                "Context Header VA for GPU 0x%x " FMT_CHANNEL_DEBUG_TAG " vaddr_hi: 0x%x vaddr_lo: 0x%x\n",
+                pGpu->gpuInstance,
+                kchannelGetDebugTag(pKernelChannel),
+                NvU64_HI32(addr),
+                NvU64_LO32(addr));
+        }
     }
     else
     {
@@ -3898,8 +3949,6 @@ kchannelSetEngineContextMemDesc_IMPL
     if (pMemDesc != NULL)
     {
         // We are setting a memdesc
-        if (pMemDesc->Allocated > 0)
-            pMemDesc->Allocated++;
         memdescAddRef(pMemDesc);
 
         if (memdescGetAddressSpace(pMemDesc) == ADDR_VIRTUAL)
@@ -4180,7 +4229,6 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
                                          RES_GET_HANDLE(pDevice),
                                          RES_GET_HANDLE(pMemory),
                                          physAddr,
-                                         gpumgrGetDeviceGpuMask(pGpu->deviceInstance),
                                          &pDmaMappingInfo),
                     NV_ERR_GENERIC);
 

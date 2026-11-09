@@ -1158,8 +1158,11 @@ static void internal_channel_submit_work_wlc(uvm_push_t *push)
     // Make sure all encrypted data is observable before ringing the doorbell.
     wmb();
 
-    // Ring the WLC doorbell to start processing the above push
-    UVM_GPU_WRITE_ONCE(*wlc_channel->channel_info.workSubmissionOffset, wlc_channel->channel_info.workSubmissionToken);
+    // Ring the WLC doorbell to start processing the above push.
+    // Read the live token from the notifier-page slot rather than the
+    // cached NvU32 snapshot, so post-migration token updates are picked up.
+    UVM_GPU_WRITE_ONCE(*wlc_channel->channel_info.workSubmissionOffset,
+                        uvm_channel_read_work_submit_token(&wlc_channel->channel_info));
 }
 
 static void internal_channel_submit_work_indirect_wlc(uvm_push_t *push, NvU32 old_cpu_put, NvU32 new_gpu_put)
@@ -1232,7 +1235,7 @@ static void internal_channel_submit_work_indirect_wlc(uvm_push_t *push, NvU32 ol
     uvm_push_set_flag(&indirect_push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
     do_semaphore_release(&indirect_push,
                          push->channel->channel_info.workSubmissionOffsetGpuVa,
-                         push->channel->channel_info.workSubmissionToken);
+                         uvm_channel_read_work_submit_token(&push->channel->channel_info));
 
     // Ignore return value of push_wait. It can only fail with channel error
     // which will be detected when waiting for the primary push.
@@ -1422,7 +1425,7 @@ static NV_STATUS internal_channel_submit_work_indirect_sec2(uvm_push_t *push, Nv
     uvm_push_set_flag(&indirect_push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
     do_semaphore_release(&indirect_push,
                          push->channel->channel_info.workSubmissionOffsetGpuVa,
-                         push->channel->channel_info.workSubmissionToken);
+                         uvm_channel_read_work_submit_token(&push->channel->channel_info));
 
     status = uvm_push_end_and_wait(&indirect_push);
     if (status != NV_OK)
@@ -1522,7 +1525,7 @@ void uvm_channel_end_push(uvm_push_t *push)
         uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
         do_semaphore_release(push,
                              paired_lcic->channel_info.workSubmissionOffsetGpuVa,
-                             paired_lcic->channel_info.workSubmissionToken);
+                             uvm_channel_read_work_submit_token(&paired_lcic->channel_info));
 
         if (uvm_push_get_size(push) < UVM_MAX_WLC_PUSH_SIZE) {
             // The UVM_MAX_WLC_PUSH_SIZE is set to fit indirect work launch
@@ -1677,7 +1680,7 @@ static NV_STATUS submit_ctrl_gpfifo_indirect(uvm_channel_t *channel,
     uvm_push_set_flag(&indirect_push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
     do_semaphore_release(&indirect_push,
                          channel->channel_info.workSubmissionOffsetGpuVa,
-                         channel->channel_info.workSubmissionToken);
+                         uvm_channel_read_work_submit_token(&channel->channel_info));
 
     status = uvm_push_end_and_wait(&indirect_push);
     if (status != NV_OK)

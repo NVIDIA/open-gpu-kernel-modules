@@ -29,7 +29,11 @@ NV_STATUS impevtgrpConstruct_IMPL(ImportEventGroup *pGroup, EventBus *pEventBus)
 {
     NV_ASSERT_OR_RETURN(pGroup != NULL, NV_ERR_INVALID_POINTER);
 
-    pGroup->cursor = 0;
+    pGroup->cursor             = 0;
+    pGroup->producerGroupSize  = 0;
+    pGroup->producerEventCount = 0;
+    portMemSet(pGroup->producerGroupIndices, 0,
+               sizeof(pGroup->producerGroupIndices));
     return NV_OK;
 }
 

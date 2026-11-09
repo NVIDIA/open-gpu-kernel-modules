@@ -24,6 +24,7 @@
 #include "uvm_api.h"
 #include "uvm_ats.h"
 #include "uvm_global.h"
+#include "uvm_conf_computing.h"
 #include "uvm_gpu_replayable_faults.h"
 #include "uvm_mem.h"
 #include "uvm_perf_events.h"
@@ -54,9 +55,6 @@ static struct UvmEventsLinux g_exported_uvm_events =
 };
 
 static bool g_ops_registered = false;
-
-unsigned uvm_force_conf_computing = 0;
-module_param(uvm_force_conf_computing, uint, S_IRUGO);
 
 static NV_STATUS uvm_register_callbacks(void)
 {
@@ -129,9 +127,12 @@ NV_STATUS uvm_global_init(void)
 
     g_uvm_global.num_simulated_devices = 0;
 
-    g_uvm_global.hw_conf_computing_enabled = platform_info.confComputingEnabled;
-    g_uvm_global.conf_computing_enabled = g_uvm_global.hw_conf_computing_enabled ||
-                                          uvm_force_conf_computing;
+    status = uvm_conf_computing_init(&platform_info);
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("uvm_conf_computing_init() failed: %s\n", nvstatusToString(status));
+        goto error;
+    }
+
     g_uvm_global.have_non_ats_devices = platform_info.nonAtsDevicePresent;
 
     status = uvm_processor_mask_cache_init();

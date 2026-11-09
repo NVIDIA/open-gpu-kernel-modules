@@ -55,6 +55,11 @@ typedef struct NV_ABI_STABLE GSP_FMC_INIT_PARAMS
 } GSP_FMC_INIT_PARAMS;
 
 /*!
+ * GSP_ACR_BOOT_GSP_RM_PARAMS::flags values.
+ */
+#define GSP_ACR_BOOT_GSP_RM_FLAGS_SEC2_UCODE_SIDE_LOAD  (1U << 0)
+
+/*!
  * @brief GSP-ACR BOOT_GSP_RM Command Parameters
  *
  * The wprCarveout fields have no effect in environments where the WPR can be allocated
@@ -82,6 +87,9 @@ typedef struct NV_ABI_STABLE GSP_ACR_BOOT_GSP_RM_PARAMS
     // Whether GSP ACR should scrub CBC SR during boot.
     // NV_TRUE on coldboot / FLR / driver reload; NV_FALSE on D3 exit (warmboot).
     NvBool         bScrubCbcSr;
+    // Additional BOOT_GSP_RM flags; keep existing bool fields byte-compatible.
+    NvU32          flags;
+    NvU32          reserved;
 } GSP_ACR_BOOT_GSP_RM_PARAMS;
 
 /*!
@@ -121,6 +129,11 @@ typedef struct NV_ABI_STABLE GSP_RM_MEM_PARAMS
     NvU32 flushSysmemAddrValHi;
 } GSP_RM_MEM_PARAMS;
 
+typedef struct GSP_TDISP_PARAMS
+{
+    NvBool bTdispEnabled;
+} GSP_TDISP_PARAMS;
+
 /*!
  * @brief GSP-CC Microcode Parameters for Boot Partitions
  */
@@ -136,7 +149,7 @@ typedef struct NV_ABI_STABLE GSP_FMC_BOOT_PARAMS
     NvU64                       reserved2[3];
 
     GSP_ACR_BOOT_GSP_RM_PARAMS  bootGspRmParams;
-    NvU64                       reserved3[4];
+    NvU64                       reserved3[3];
 
     GSP_RM_PARAMS               gspRmParams;
     NvU64                       reserved4[2];
@@ -145,7 +158,8 @@ typedef struct NV_ABI_STABLE GSP_FMC_BOOT_PARAMS
     NvU64                       reserved5[2];
 
     GSP_RM_MEM_PARAMS           gspRmMemParams;
-    NvU64                       reserved6[7];
+    NvU64                       reserved6[6];
+    GSP_TDISP_PARAMS            gspTdispParams;
 } GSP_FMC_BOOT_PARAMS;
 
 /*!

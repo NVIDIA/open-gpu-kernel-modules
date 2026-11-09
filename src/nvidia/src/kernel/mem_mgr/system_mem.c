@@ -25,6 +25,7 @@
 #include "vgpu/rpc.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "core/locks.h"
 #include "os/os.h"
 #include "rmapi/client.h"
@@ -32,6 +33,9 @@
 #include "gpu/mem_mgr/mem_utils.h"
 #include "core/system.h"
 #include "ctrl/ctrl0000/ctrl0000gpu.h"
+#include "gpu/device/device.h"
+
+#include "gpu/mem_mgr/carveout_mgr.h"
 
 #include "gpu/mem_mgr/sysmem_scrub.h"
 
@@ -40,6 +44,35 @@
 #include "kernel/gpu/rc/kernel_rc.h"
 
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
+
+static NV_STATUS
+_sysmemScrubScanoutCarveout
+(
+    MEMORY_DESCRIPTOR *pMemDesc
+)
+{
+    void *pMap;
+
+    NV_ASSERT_OR_RETURN(memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT),
+                        NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(memdescGetContiguity(pMemDesc, AT_CPU), NV_ERR_INVALID_STATE);
+
+    pMap = osMapKernelSpace(memdescGetPhysAddr(pMemDesc, AT_CPU, 0),
+                            pMemDesc->Size,
+                            memdescGetCpuCacheAttrib(pMemDesc),
+                            NV_PROTECT_READ_WRITE);
+    if (pMap == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to map scanout carveout allocation for CPU scrub\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
+    portMemSet(pMap, 0, pMemDesc->Size);
+    osUnmapKernelSpace(pMap, pMemDesc->Size);
+
+    return NV_OK;
+}
 
 static NvU64
 _sysmemGetNextSmallestPageSize
@@ -117,6 +150,53 @@ _sysmemGetNextSmallestPageSize
     return nextPageSize;
 }
 
+static NvBool
+_sysmemIsGpuFbNumaNode
+(
+    NvS32 numaNode
+)
+{
+    NvU32 gpuCount = 0;
+    NvU32 gpuMask = 0;
+    NvU32 gpuIndex = 0;
+    OBJGPU *pPeerGpu;
+
+    if (numaNode == NV0000_CTRL_NO_NUMA_NODE)
+        return NV_FALSE;
+
+    if (gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask) != NV_OK)
+        return NV_FALSE;
+
+    if (gpuCount == 0)
+        return NV_FALSE;
+
+    while ((pPeerGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex)) != NULL)
+    {
+        if (pPeerGpu->numaNodeId == numaNode)
+            return NV_TRUE;
+
+        KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pPeerGpu);
+        if ((pKernelMemorySystem != NULL) &&
+            (pKernelMemorySystem->memPartitionNumaInfo != NULL))
+        {
+            NvU32 swizzId;
+            for (swizzId = 0; swizzId < KMIGMGR_MAX_GPU_SWIZZID; swizzId++)
+            {
+                MEM_PARTITION_NUMA_INFO *pNumaInfo =
+                    &pKernelMemorySystem->memPartitionNumaInfo[swizzId];
+
+                if (pNumaInfo->bInUse &&
+                    ((NvS32)pNumaInfo->numaNodeId == numaNode))
+                {
+                    return NV_TRUE;
+                }
+            }
+        }
+    }
+
+    return NV_FALSE;
+}
+
 /*!
  * sysmemConstruct
  *
@@ -159,12 +239,14 @@ sysmemConstruct_IMPL
     NvHandle hParent = pCallContext->pResourceRef->pParentRef->hResource;
     NvU64 sizeOut;
     NvU64 offsetOut;
-    MEMORY_DESCRIPTOR *pMemDesc;
+    MEMORY_DESCRIPTOR *pMemDesc = NULL;
     NvU32 flags;
     RM_ATTR_PAGE_SIZE pageSizeAttr;
     NvBool bRetry = NV_FALSE;
     NvBool bLockAcquired = NV_FALSE;
     NvBool bPrevSkipIommuMapping = NV_FALSE;
+    NvU64  scanoutCarveoutBase = 0;
+    NvBool bScanoutCarveoutAllocated = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
 
@@ -181,7 +263,7 @@ sysmemConstruct_IMPL
         MEMORY_DESCRIPTOR *pMemDesc     = pMemorySrc->pMemDesc;
         NV_STATUS          status       = NV_ERR_INVALID_ARGUMENT;
 
-        if (memdescGetCustomHeap(pMemDesc) == MEMDESC_CUSTOM_HEAP_SCANOUT_CARVEOUT) {
+        if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT)) {
             // For MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT acquire lock before doing anything
             if (RMCFG_FEATURE_RM_BASIC_LOCK_MODEL)
             {
@@ -238,16 +320,22 @@ sysmemConstruct_IMPL
     sizeOut = pAllocData->size;
 
     {
-        //
-        // If using thwap to generate an allocation failure here, fail the
-        // alloc right away.
-        //
-        KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
-        if (pKernelRc != NULL &&
-            !krcTestAllowAlloc(pGpu, pKernelRc,
-                               NV_ROBUST_CHANNEL_ALLOCFAIL_HEAP))
+        RsClient *pRsClient = pCallContext->pClient;
+        Device *pDevice;
+
+        if (deviceGetByHandle(pRsClient, hParent, &pDevice) == NV_OK)
         {
-            return NV_ERR_INSUFFICIENT_RESOURCES;
+            //
+            // If using thwap to generate an allocation failure here, fail the
+            // alloc right away.
+            //
+            KernelWatchdog *pKernelWatchdog = gpuGetKernelWatchdogFromDevice(pGpu, pDevice);
+            if (pKernelWatchdog != NULL &&
+                !kwdtTestAllowAlloc(pGpu, pKernelWatchdog,
+                                NV_ROBUST_CHANNEL_ALLOCFAIL_HEAP))
+            {
+                return NV_ERR_INSUFFICIENT_RESOURCES;
+            }
         }
     }
 
@@ -265,11 +353,17 @@ sysmemConstruct_IMPL
     do
     {
 
-        NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
-            sysmemInitAllocRequest(pGpu, pSystemMemory, pAllocRequest));
+        NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_INFO,
+            sysmemInitAllocRequest(pGpu, pSystemMemory, pAllocRequest),
+            failed_free_memdesc);
 
         // Memdesc should be allocated by now.
-        NV_ASSERT_OR_RETURN(pAllocRequest->pMemDesc, NV_ERR_INVALID_STATE);
+        if (pAllocRequest->pMemDesc == NULL)
+        {
+            NV_ASSERT(pAllocRequest->pMemDesc != NULL);
+            rmStatus = NV_ERR_INVALID_STATE;
+            goto failed_free_memdesc;
+        }
         pMemDesc = pAllocRequest->pMemDesc;
 
         // Copy final heap size back to client struct
@@ -279,8 +373,9 @@ sysmemConstruct_IMPL
         memSetSysmemCacheAttrib(pGpu, pAllocData, pMemDesc);
 
         // GPU cache snooping is a property of fully coherent platforms.
-        NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
-            memSetGpuCacheSnoop(pGpu, pAllocData->attr, pMemDesc));
+        NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_INFO,
+            memSetGpuCacheSnoop(pGpu, pAllocData->attr, pMemDesc),
+            failed_free_memdesc);
 
         ct_assert(NVOS32_ATTR_COHERENCY_UNCACHED      == NVOS02_FLAGS_COHERENCY_UNCACHED);
         ct_assert(NVOS32_ATTR_COHERENCY_CACHED        == NVOS02_FLAGS_COHERENCY_CACHED);
@@ -308,6 +403,7 @@ sysmemConstruct_IMPL
 
         if ((sysGetStaticConfig(SYS_GET_INSTANCE()))->bOsCCEnabled &&
             gpuIsCCFeatureEnabled(pGpu) 
+            && (!gpuIsTdispFeatureEnabled(pGpu))
             && FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED,
                         pAllocData->attr2))
             {
@@ -325,11 +421,33 @@ sysmemConstruct_IMPL
                 goto failed_destroy_memdesc;
             }
 
+            //
+            // Cross-node SYSMEM allocation (requesting a NUMA node different from
+            // the GPU's local CPU node) is only permitted when EGM is disabled.
+            // When EGM is enabled, SYSMEM must be allocated on the GPU's local
+            // CPU node to avoid conflicts with EGM peer-aperture mappings.
+            //
             if ((pGpu->cpuNumaNodeId != NV0000_CTRL_NO_NUMA_NODE) &&
-                (pAllocData->numaNode != pGpu->cpuNumaNodeId))
+                (pAllocData->numaNode != pGpu->cpuNumaNodeId) &&
+                memmgrIsLocalEgmEnabled(GPU_GET_MEMORY_MANAGER(pGpu)))
             {
                 NV_PRINTF(LEVEL_ERROR, "NUMA node mismatch. Requested node: %u CPU node: %u\n",
                         pAllocData->numaNode, pGpu->cpuNumaNodeId);
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                goto failed_destroy_memdesc;
+            }
+
+            //
+            // Reject SYSMEM allocations targeting any GPU FB NUMA node. When
+            // GPU FB is onlined as a NUMA node, that memory is vidmem and must
+            // not be used for SYSMEM allocations.
+            //
+            if (osNumaOnliningEnabled(pGpu->pOsGpuInfo) &&
+                _sysmemIsGpuFbNumaNode(pAllocData->numaNode))
+            {
+                NV_PRINTF(LEVEL_ERROR,
+                        "Cannot allocate SYSMEM on GPU FB NUMA node. Requested node: %u\n",
+                        pAllocData->numaNode);
                 rmStatus = NV_ERR_INVALID_ARGUMENT;
                 goto failed_destroy_memdesc;
             }
@@ -385,10 +503,17 @@ sysmemConstruct_IMPL
         {
             // UNLOCK: release GPUs lock on failure
             rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+            bLockAcquired = NV_FALSE;
         }
 
         NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_destroy_memdesc);
 
+        // Preserve the eheap-assigned base across memdesc allocation/teardown.
+        scanoutCarveoutBase = memdescGetPte(pMemDesc, AT_CPU, 0);
+        bScanoutCarveoutAllocated = NV_TRUE;
+
+        rmStatus = _sysmemScrubScanoutCarveout(pMemDesc);
+        NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_free_memdesc);
         sizeOut = pMemDesc->Size;
         pAllocData->limit = sizeOut - 1;
     }
@@ -400,20 +525,34 @@ sysmemConstruct_IMPL
             {
                 NvU64 pageSize;
                 pageSize = _sysmemGetNextSmallestPageSize(pGpu, &pAllocData->attr, &pAllocData->attr2);
-                if (pageSize == 0)
-                {
-                    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_destroy_memdesc);
-                }
-                NV_PRINTF(LEVEL_INFO, "Sysmem alloc failed, retrying with page size 0x%llx.\n", pageSize);
 
-                // Freeing memdescs to avoid leaks on retry.
+                //
+                // Tear down descriptor/OS state before making the carveout
+                // range reusable. Keep the carveout flag set through destroy
+                // so the OS applies the correct backing and IOMMU semantics.
+                //
                 memdescFree(pMemDesc);
                 memdescDestroy(pMemDesc);
                 pAllocRequest->pMemDesc = pMemDesc = NULL;
+
+                if (bScanoutCarveoutAllocated)
+                {
+                    memmgrFreeScanoutCarveoutRegionResources(
+                        GPU_GET_MEMORY_MANAGER(pGpu), scanoutCarveoutBase);
+                    bScanoutCarveoutAllocated = NV_FALSE;
+                    bRetry = NV_FALSE;
+                    goto failed_free_memdesc;
+                }
+
+                if (pageSize == 0)
+                {
+                    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_free_memdesc);
+                }
+                NV_PRINTF(LEVEL_INFO, "Sysmem alloc failed, retrying with page size 0x%llx.\n", pageSize);
             }
             else
             {
-                NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_free_scanout_carveout);
+                NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR, rmStatus, failed_free_memdesc);
             }
         }
         else
@@ -533,7 +672,7 @@ sysmemConstruct_IMPL
             failed_destruct_common);
     }
 
-    if (IS_VIRTUAL(pGpu))
+    if (memNeedRpcAlloc(pMemory))
     {
         NvU32 os02Flags;
         NvU32 os32Flags = pAllocData->flags;
@@ -584,28 +723,33 @@ sysmemConstruct_IMPL
     {
         // UNLOCK: release GPUs lock
         rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+        bLockAcquired = NV_FALSE;
     }
 
     return rmStatus;
 
 // Resource cleanup on failure
 failed_destruct_common:
-    memDestructCommon(pMemory);
 failed_free_memdesc:
+failed_destroy_memdesc:
     if (bLockAcquired)
     {
         // UNLOCK: release GPUs lock
         rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+        bLockAcquired = NV_FALSE;
     }
 
-    memdescFree(pMemDesc);
-failed_free_scanout_carveout:
-    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT)) {
-        memmgrFreeScanoutCarveoutRegionResources(GPU_GET_MEMORY_MANAGER(pGpu),
-                                                 memdescGetPte(pMemDesc, AT_CPU, 0));
+    if (pMemDesc != NULL)
+    {
+        memdescFree(pMemDesc);
+        if (!pMemory->bConstructed)
+            memdescDestroy(pMemDesc);
     }
-failed_destroy_memdesc:
-    memdescDestroy(pMemDesc);
+    if (bScanoutCarveoutAllocated)
+    {
+        memmgrFreeScanoutCarveoutRegionResources(GPU_GET_MEMORY_MANAGER(pGpu),
+                                                 scanoutCarveoutBase);
+    }
 
     return rmStatus;
 }
@@ -703,9 +847,15 @@ sysmemInitAllocRequest_SOC
     // Allocate a memory descriptor if needed.
     if (pAllocRequest->pMemDesc == NULL)
     {
+        NvU64 memDescFlags = MEMDESC_FLAGS_SKIP_RESOURCE_COMPUTE;
+
+        if (memUtilsShouldUseScanoutCarveout(pGpu, pAllocParams->attr2))
+        {
+            memDescFlags |= MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT;
+        }
         NV_ASSERT_OK_OR_GOTO(status,
             memdescCreate(&pAllocRequest->pMemDesc, pGpu, pAllocParams->size, 0,
-                bContig, ADDR_SYSMEM, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_SKIP_RESOURCE_COMPUTE),
+                bContig, ADDR_SYSMEM, NV_MEMORY_UNCACHED, memDescFlags),
             failed);
         bAllocedMemDesc = NV_TRUE;
     }
@@ -917,18 +1067,41 @@ failed:
 
 void sysmemDestruct_IMPL(SystemMemory *pSystemMemory)
 {
-    Memory             *pMemory        = staticCast(pSystemMemory, Memory);
-    MEMORY_DESCRIPTOR  *pMemDesc       = pMemory->pMemDesc;
-    OBJGPU             *pGpu           = pMemory->pMemDesc->pGpu;
-    MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    Memory            *pMemory  = staticCast(pSystemMemory, Memory);
+    MEMORY_DESCRIPTOR *pMemDesc = pMemory->pMemDesc;
+    OBJGPU             *pGpu;
+    MemoryManager      *pMemoryManager;
 
-    // TODO: fix broken dup behavior
     if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT))
     {
-        memmgrFreeScanoutCarveoutRegionResources(GPU_GET_MEMORY_MANAGER(pGpu),
-                                                 memdescGetPte(pMemDesc, AT_CPU, 0));
+        CarveoutMgr *pCarveoutMgr =
+            SYS_GET_CARVEOUT_MGR(SYS_GET_INSTANCE());
+
+        //
+        // Keep all three association counts in sync. memDestructCommon drops
+        // one DupCount and clears bConstructed so the base Memory destructor
+        // does not run the generic cleanup again. carveoutmgrReleaseMemDesc
+        // then drops one eheap block reference and one memdesc RefCount. This
+        // path intentionally does not depend on GPU or MemoryManager lifetime.
+        //
+        memDestructCommon(pMemory);
+        if (pCarveoutMgr != NULL)
+        {
+            carveoutmgrReleaseMemDesc(pCarveoutMgr, pMemDesc);
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Missing carveout manager while destroying sysmem\n");
+            NV_ASSERT(pCarveoutMgr != NULL);
+            pMemDesc->pHeap = NULL;
+            memdescDestroy(pMemDesc);
+        }
         return;
     }
+
+    pGpu = pMemDesc->pGpu;
+    pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     if (pMemDesc->DupCount > 1)
         return;

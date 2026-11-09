@@ -65,17 +65,23 @@ intrGetPendingDispLowLatencyAndStaticReg_GB202
     }
 
     val = intrReadRegLeaf_HAL(pGpu, pIntr, 4, pThreadState);
-    *pStaticRegVal = val;
 
     if (pIntr->displayLowLatencyIntrVector == NV_INTR_VECTOR_INVALID)
     {
+        *pStaticRegVal = val;
         return NV_OK;
     }
 
     bit = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(pIntr->displayLowLatencyIntrVector);
 
-    if (val & NVBIT(bit))
+    if (val & NVBIT32(bit))
         bitVectorSet(pEngines, MC_ENGINE_IDX_DISP_LOW);
+
+    //
+    // Clear the value since it is already evaluated into the pEngines and we don't
+    // want to re-evaluate it from the static reg later
+    //
+    *pStaticRegVal = (val &~ NVBIT32(bit));
 
     return NV_OK;
 }

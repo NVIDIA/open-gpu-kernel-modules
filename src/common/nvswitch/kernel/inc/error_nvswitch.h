@@ -137,7 +137,7 @@ typedef struct
         NVSWITCH_ERROR_SEVERITY_FATAL,                                                  \
         _errresolved,                                                                   \
         NULL, 0,                                                                        \
-        __LINE__, "")
+        __LINE__, "\"\"")
 
 #define NVSWITCH_LOG_FATAL_DATA(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved, _errdata, ...)   \
     nvswitch_record_error(                                                              \
@@ -161,7 +161,7 @@ typedef struct
         NVSWITCH_ERROR_SEVERITY_NONFATAL,                                               \
         _errresolved,                                                                   \
         NULL, 0,                                                                        \
-        __LINE__, "")
+        __LINE__, "\"\"")
 
 #define NVSWITCH_LOG_NONFATAL_DATA(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved, _errdata, ...)   \
     nvswitch_record_error(                                                              \

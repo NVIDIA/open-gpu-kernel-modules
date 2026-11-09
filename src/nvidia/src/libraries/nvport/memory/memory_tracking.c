@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,6 +33,10 @@
 
 #if NVOS_IS_LIBOS && defined(DEBUG)
 #include "gsp_error_injection.h"
+#endif
+
+#if NVOS_IS_LIBOS && !defined(GSP_PLUGIN_BUILD)
+#include "kernel/gpu/gsp/gsp_trace_rats_macro.h"
 #endif
 
 #if !PORT_IS_MODULE_SUPPORTED(debug)
@@ -181,7 +185,10 @@ static struct PORT_MEM_GLOBALS
     PORT_MEM_ALLOCATOR_TRACKING *pGfidTracking[PORT_MEM_LIMIT_MAX_GFID];
 #endif
     PORT_MEM_OOM_REPORT_CB pOomReportCb;
-    PORT_ATOMIC NvU32 oomCount;
+    PORT_ATOMIC NvU32 bFirstOomSnapshotCaptured;
+    PORT_ATOMIC NvU32 oomReasonCount[PORT_MEM_OOM_REASON_COUNT];
+
+    PORT_MEM_OOM_SNAPSHOT firstOomSnapshot;
 } portMemGlobals;
 
 #define PORT_MEM_OOM_REPORT_INTERVAL 10U
@@ -209,7 +216,11 @@ _portMemExTrackingSetOrGetAllocUsableSize
 )
 {
 #if PORT_MEM_HEADER_HAS_BLOCK_SIZE
+#if PORT_MEM_HEADER_USE_COMPACT_LIMIT_FIELDS
+    PORT_MEM_SUB_HEADER_PTR(pMem)->blockSize = (NvU32)*pSize;
+#else
     PORT_MEM_SUB_HEADER_PTR(pMem)->blockSize = *pSize;
+#endif
 #else
     *pSize = _portMemExTrackingGetAllocUsableSizeWrapper(pMem);
 #endif
@@ -1228,7 +1239,7 @@ _portMemAllocatorAlloc
     // Check if per-process memory limit will be exhausted by this allocation
     if (PORT_MEM_LIMIT_EXCEEDED(gfid, length))
     {
-        portMemReportOom(length);
+        portMemReportOom(length, PORT_MEM_OOM_REASON_GSP_RM_HEAP_OOM);
         return NULL;
     }
 
@@ -1245,6 +1256,14 @@ _portMemAllocatorAlloc
             }
         }
 #endif
+#if PORT_MEM_HEADER_USE_COMPACT_LIMIT_FIELDS
+        // Compact headers cannot track sizes larger than NvU32.
+        if (length > NV_U32_MAX)
+        {
+            portMemReportOom(length, PORT_MEM_OOM_REASON_GSP_RM_HEAP_OOM);
+            return NULL;
+        }
+#endif
         if (!portSafeAddLength(length, PORT_MEM_STAGING_SIZE, &paddedLength))
         {
             return NULL;
@@ -1253,10 +1272,14 @@ _portMemAllocatorAlloc
     }
     if (pMem == NULL && length > 0)
     {
-        portMemReportOom(length);
+        portMemReportOom(length, PORT_MEM_OOM_REASON_GSP_RM_HEAP_OOM);
     }
     if (pMem != NULL)
     {
+#if NVOS_IS_LIBOS && !defined(GSP_PLUGIN_BUILD)
+        GSP_TRACE_RATS_ADD_RECORD_WITH_BACKTRACE(NV_RATS_GSP_TRACE_TYPE_PORT_MEM_ALLOC,
+                                                 (NvU64)pMem, (NvU32)length);
+#endif
         pMem = PORT_MEM_ADD_HEADER_PTR(pMem);
         _portMemTrackAlloc(_portMemGetTracking(pAlloc), pMem, length, gfid
                            PORT_MEM_CALLERINFO_COMMA_PARAM);
@@ -1280,6 +1303,10 @@ _portMemAllocatorFree
         if (_portMemTrackFree(_portMemGetTracking(pAlloc), pMem))
         {
             pMem = PORT_MEM_SUB_HEADER_PTR(pMem);
+#if NVOS_IS_LIBOS && !defined(GSP_PLUGIN_BUILD)
+            GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_PORT_MEM_FREE,
+                                      (NvU64)pMem, (NvU32)0);
+#endif
             pAlloc->_portFree(pAlloc, pMem);
         }
     }
@@ -1476,22 +1503,13 @@ portMemRegisterOomReportCb(PORT_MEM_OOM_REPORT_CB pReportCb)
 }
 
 void
-portMemReportOom(NvLength requestedSize)
+portMemGetMallocHeapStats(PORT_MEM_HEAP_SNAPSHOT *pOut)
 {
-    NvU32 oomCount;
-
-    if (portMemGlobals.pOomReportCb == NULL)
+    if (pOut == NULL)
         return;
 
-    oomCount = PORT_MEM_ATOMIC_INC_U32(&portMemGlobals.oomCount);
+    portMemSet(pOut, 0, sizeof(*pOut));
 
-    if (oomCount != 1U && (oomCount % PORT_MEM_OOM_REPORT_INTERVAL) != 0U)
-        return;
-
-    portDbgPrintf("[NvPort] ===== OOM REPORT #%u (requested %"NvUPtr_fmtu" bytes) =====\n",
-                  oomCount, requestedSize);
-
-    portDbgPrintf("  --- GSP-RM Malloc Heap ---\n");
 #if PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetHeapSize)
     {
         PORT_MEM_COUNTER *pCounter = &portMemGlobals.mainTracking.counter;
@@ -1501,57 +1519,182 @@ portMemReportOom(NvLength requestedSize)
         NvLength freeSize = (heapSize > allocatedSize)
                             ? (heapSize - allocatedSize) : 0U;
 
-        portDbgPrintf("  FREE:   %"NvUPtr_fmtu" bytes of %"NvUPtr_fmtu" bytes heap\n",
-                    freeSize, heapSize);
+        pOut->heapSize = heapSize;
+        pOut->freeSize = freeSize;
 
 #if PORT_IS_FUNC_SUPPORTED(portMemGetLargestFreeChunkSize)
         {
             NvLength largestFreeChunk = portMemGetLargestFreeChunkSize();
-            NvLength fragPct = 0U;
+            NvU32    fragPct = 0U;
 
             // Clamp the ratio to 100 to avoid an unsigned underflow in the subtraction below.
             if (freeSize > 0U && largestFreeChunk <= freeSize)
             {
-                fragPct = 100U - ((100U * largestFreeChunk) / freeSize);
+                fragPct = (NvU32)(100U - ((100U * largestFreeChunk) / freeSize));
             }
 
-            portDbgPrintf("  FRAG:   %"NvUPtr_fmtu"%% fragmentation,"
-                        " largest free chunk %"NvUPtr_fmtu" bytes\n",
-                        fragPct, largestFreeChunk);
+            pOut->largestFreeChunk = largestFreeChunk;
+            pOut->fragPct          = fragPct;
         }
 #endif
     }
+#endif
+
+#if PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetActiveStats)
+    {
+        PORT_MEM_TRACK_ALLOCATOR_STATS stats;
+
+        portMemSet(&stats, 0, sizeof(stats));
+        if (portMemExTrackingGetActiveStats(NULL, &stats) == NV_OK)
+        {
+            pOut->active.numAllocations = stats.numAllocations;
+            pOut->active.allocatedSize  = stats.allocatedSize;
+            pOut->active.usefulSize     = stats.usefulSize;
+            pOut->active.metaSize       = stats.metaSize;
+        }
+    }
+#endif
+
+#if PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetTotalStats)
+    {
+        PORT_MEM_TRACK_ALLOCATOR_STATS stats;
+
+        portMemSet(&stats, 0, sizeof(stats));
+        if (portMemExTrackingGetTotalStats(NULL, &stats) == NV_OK)
+        {
+            pOut->total.numAllocations = stats.numAllocations;
+            pOut->total.allocatedSize  = stats.allocatedSize;
+            pOut->total.usefulSize     = stats.usefulSize;
+            pOut->total.metaSize       = stats.metaSize;
+        }
+    }
+#endif
+
+#if PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetPeakStats)
+    {
+        PORT_MEM_TRACK_ALLOCATOR_STATS stats;
+
+        portMemSet(&stats, 0, sizeof(stats));
+        if (portMemExTrackingGetPeakStats(NULL, &stats) == NV_OK)
+        {
+            pOut->peak.numAllocations = stats.numAllocations;
+            pOut->peak.allocatedSize  = stats.allocatedSize;
+            pOut->peak.usefulSize     = stats.usefulSize;
+            pOut->peak.metaSize       = stats.metaSize;
+        }
+    }
+#endif
+}
+
+void
+portMemGetOomSnapshot(PORT_MEM_OOM_SNAPSHOT *pOut)
+{
+    if (pOut == NULL)
+        return;
+
+    *pOut = portMemGlobals.firstOomSnapshot;
+}
+
+static NvU32
+_portMemIncrementOomReasonCount(PORT_MEM_OOM_REASON reason)
+{
+    if ((reason <= PORT_MEM_OOM_REASON_UNKNOWN) ||
+        (reason >= PORT_MEM_OOM_REASON_COUNT))
+    {
+        reason = PORT_MEM_OOM_REASON_UNKNOWN;
+    }
+
+    return PORT_MEM_ATOMIC_INC_U32(&portMemGlobals.oomReasonCount[reason]);
+}
+
+void
+portMemReportOom
+(
+    NvLength            requestedSize,
+    PORT_MEM_OOM_REASON reason
+)
+{
+    NvU32 oomReasonCount;
+#if PORT_MEM_TRACK_USE_LIMIT
+    NvU32 gfidIdx;
+#endif
+    PORT_MEM_HEAP_SNAPSHOT heapSnap;
+    PORT_MEM_OOM_SNAPSHOT oomSnap;
+
+    oomReasonCount = _portMemIncrementOomReasonCount(reason);
+
+    // Capture before callback/rate-limit gates so NvDump sees the root OOM.
+    if (PORT_MEM_ATOMIC_CAS_U32(&portMemGlobals.bFirstOomSnapshotCaptured,
+                                1U,
+                                0U))
+    {
+        PORT_MEM_OOM_SNAPSHOT *pSnap = &portMemGlobals.firstOomSnapshot;
+
+        portMemSet(pSnap, 0, sizeof(*pSnap));
+        pSnap->oomCount      = oomReasonCount;
+        pSnap->reason        = reason;
+        pSnap->requestedSize = requestedSize;
+        portMemGetMallocHeapStats(&pSnap->heap);
+
+        pSnap->bValid = NV_TRUE;
+    }
+
+    if (portMemGlobals.pOomReportCb == NULL)
+        return;
+
+    if (oomReasonCount != 1U &&
+        (oomReasonCount % PORT_MEM_OOM_REPORT_INTERVAL) != 0U)
+    {
+        return;
+    }
+
+    portDbgPrintf("[NvPort] ===== OOM REPORT #%u (requested %"NvUPtr_fmtu" bytes) =====\n",
+                  oomReasonCount, requestedSize);
+
+    portDbgPrintf("  --- GSP-RM Malloc Heap ---\n");
+    portMemGetMallocHeapStats(&heapSnap);
+#if PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetHeapSize)
+    portDbgPrintf("  FREE:   %"NvUPtr_fmtu" bytes of %"NvUPtr_fmtu" bytes heap\n",
+                  heapSnap.freeSize, heapSnap.heapSize);
+#if PORT_IS_FUNC_SUPPORTED(portMemGetLargestFreeChunkSize)
+    portDbgPrintf("  FRAG:   %u%% fragmentation,"
+                  " largest free chunk %"NvUPtr_fmtu" bytes\n",
+                  heapSnap.fragPct, heapSnap.largestFreeChunk);
+#endif
 #endif
 
     portMemPrintAllTrackingInfo(NV_FALSE);
 
 #if PORT_MEM_TRACK_USE_LIMIT
+    for (gfidIdx = 0U; gfidIdx < PORT_MEM_LIMIT_MAX_GFID; ++gfidIdx)
     {
-        NvU32 gfidIdx;
+        PORT_MEM_ALLOCATOR_TRACKING *pGfidTracking =
+            portMemGlobals.pGfidTracking[gfidIdx];
 
-        for (gfidIdx = 0U; gfidIdx < PORT_MEM_LIMIT_MAX_GFID; ++gfidIdx)
-        {
-            PORT_MEM_ALLOCATOR_TRACKING *pGfidTracking =
-                portMemGlobals.pGfidTracking[gfidIdx];
+        if (pGfidTracking == NULL)
+            continue;
 
-            if (pGfidTracking == NULL)
-                continue;
-
-            portDbgPrintf("  GFID %u: %"NvUPtr_fmtu" / %"NvUPtr_fmtu" bytes RM",
-                          gfidIdx + 1U,
-                          pGfidTracking->counterGfid,
-                          pGfidTracking->limitGfid);
-            portDbgPrintf(", %"NvUPtr_fmtu" / %"NvUPtr_fmtu" bytes LibOS",
-                          pGfidTracking->counterLibosGfid,
-                          pGfidTracking->limitLibosGfid);
-            portDbgPrintf("\n");
-        }
+        portDbgPrintf("  GFID %u: %"NvUPtr_fmtu" / %"NvUPtr_fmtu" bytes RM",
+                      gfidIdx + 1U,
+                      pGfidTracking->counterGfid,
+                      pGfidTracking->limitGfid);
+        portDbgPrintf(", %"NvUPtr_fmtu" / %"NvUPtr_fmtu" bytes LibOS",
+                      pGfidTracking->counterLibosGfid,
+                      pGfidTracking->limitLibosGfid);
+        portDbgPrintf("\n");
     }
 #endif
 
+    portMemSet(&oomSnap, 0, sizeof(oomSnap));
+    oomSnap.bValid        = NV_TRUE;
+    oomSnap.oomCount      = oomReasonCount;
+    oomSnap.reason        = reason;
+    oomSnap.requestedSize = requestedSize;
+    oomSnap.heap          = heapSnap;
+
     if (portMemGlobals.pOomReportCb != NULL)
     {
-        portMemGlobals.pOomReportCb();
+        portMemGlobals.pOomReportCb(&oomSnap);
     }
 
     portDbgPrintf("[NvPort] ===== END OOM REPORT =====\n");

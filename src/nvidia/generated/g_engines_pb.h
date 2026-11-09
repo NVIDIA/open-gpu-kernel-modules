@@ -4,6 +4,7 @@
 #define G_ENGINES_PB_H__
 
 #include "g_regs_pb.h"
+#include "g_gsp_pb.h"
 
 extern const PRB_MSG_DESC prb_messages_nvdebug_eng[];
 
@@ -13,22 +14,30 @@ extern const PRB_MSG_DESC prb_messages_nvdebug_eng[];
 #define NVDEBUG_ENG_NVD (&prb_messages_nvdebug_eng[2])
 #define NVDEBUG_ENG_KGSP (&prb_messages_nvdebug_eng[3])
 #define NVDEBUG_ENG_KERNELNVLINK (&prb_messages_nvdebug_eng[4])
-#define NVDEBUG_ENG_MC_RMDATA (&prb_messages_nvdebug_eng[5])
-#define NVDEBUG_ENG_MC_PCIBARINFO (&prb_messages_nvdebug_eng[6])
-#define NVDEBUG_ENG_KGSP_RPCINFO (&prb_messages_nvdebug_eng[7])
-#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG (&prb_messages_nvdebug_eng[8])
+#define NVDEBUG_ENG_HANGDEBUG (&prb_messages_nvdebug_eng[5])
+#define NVDEBUG_ENG_NVLINKREMAPTABLE (&prb_messages_nvdebug_eng[6])
+#define NVDEBUG_ENG_MC_RMDATA (&prb_messages_nvdebug_eng[7])
+#define NVDEBUG_ENG_MC_PCIBARINFO (&prb_messages_nvdebug_eng[8])
+#define NVDEBUG_ENG_KGSP_RPCINFO (&prb_messages_nvdebug_eng[9])
+#define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG (&prb_messages_nvdebug_eng[10])
+#define NVDEBUG_ENG_HANGDEBUG_BLOCK (&prb_messages_nvdebug_eng[11])
+#define NVDEBUG_ENG_HANGDEBUG_TRIGGERINFO (&prb_messages_nvdebug_eng[12])
 
 // Message maximum lengths
 // Does not include repeated fields, strings and byte arrays.
 #define NVDEBUG_ENG_MC_LEN 72
-#define NVDEBUG_ENG_GPU_LEN 62
+#define NVDEBUG_ENG_GPU_LEN 64
 #define NVDEBUG_ENG_NVD_LEN 30
-#define NVDEBUG_ENG_KGSP_LEN 100
+#define NVDEBUG_ENG_KGSP_LEN 213
 #define NVDEBUG_ENG_KERNELNVLINK_LEN 107
+#define NVDEBUG_ENG_HANGDEBUG_LEN 72
+#define NVDEBUG_ENG_NVLINKREMAPTABLE_LEN 3
 #define NVDEBUG_ENG_MC_RMDATA_LEN 12
 #define NVDEBUG_ENG_MC_PCIBARINFO_LEN 22
 #define NVDEBUG_ENG_KGSP_RPCINFO_LEN 46
 #define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_LEN 75
+#define NVDEBUG_ENG_HANGDEBUG_BLOCK_LEN 41
+#define NVDEBUG_ENG_HANGDEBUG_TRIGGERINFO_LEN 23
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc[];
 
@@ -58,6 +67,7 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_gpu[];
 #define NVDEBUG_ENG_GPU_IS_ACCESSIBLE (&prb_fields_nvdebug_eng_gpu[10])
 #define NVDEBUG_ENG_GPU_REGS (&prb_fields_nvdebug_eng_gpu[11])
 #define NVDEBUG_ENG_GPU_RUSD_MASK (&prb_fields_nvdebug_eng_gpu[12])
+#define NVDEBUG_ENG_GPU_IS_MARKED_FOR_RESET (&prb_fields_nvdebug_eng_gpu[13])
 
 // 'Gpu' field lengths
 #define NVDEBUG_ENG_GPU_GPU_ID_LEN 5
@@ -73,6 +83,7 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_gpu[];
 #define NVDEBUG_ENG_GPU_IS_ACCESSIBLE_LEN 1
 #define NVDEBUG_ENG_GPU_REGS_LEN 29
 #define NVDEBUG_ENG_GPU_RUSD_MASK_LEN 5
+#define NVDEBUG_ENG_GPU_IS_MARKED_FOR_RESET_LEN 1
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_nvd[];
 
@@ -87,10 +98,16 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_kgsp[];
 // 'KGsp' field descriptor pointers
 #define NVDEBUG_ENG_KGSP_RPC_HISTORY (&prb_fields_nvdebug_eng_kgsp[0])
 #define NVDEBUG_ENG_KGSP_EVENT_HISTORY (&prb_fields_nvdebug_eng_kgsp[1])
+#define NVDEBUG_ENG_KGSP_PERSISTENT_RATS (&prb_fields_nvdebug_eng_kgsp[2])
+#define NVDEBUG_ENG_KGSP_HEARTBEAT (&prb_fields_nvdebug_eng_kgsp[3])
+#define NVDEBUG_ENG_KGSP_MAILBOX (&prb_fields_nvdebug_eng_kgsp[4])
 
 // 'KGsp' field lengths
 #define NVDEBUG_ENG_KGSP_RPC_HISTORY_LEN 49
 #define NVDEBUG_ENG_KGSP_EVENT_HISTORY_LEN 49
+#define NVDEBUG_ENG_KGSP_PERSISTENT_RATS_LEN 55
+#define NVDEBUG_ENG_KGSP_HEARTBEAT_LEN 40
+#define NVDEBUG_ENG_KGSP_MAILBOX_LEN 15
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_kernelnvlink[];
 
@@ -105,6 +122,24 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_kernelnvlink[];
 #define NVDEBUG_ENG_KERNELNVLINK_TRAFFIC_QUIESCE_ABORT_TIMEOUT_NS_LEN 10
 #define NVDEBUG_ENG_KERNELNVLINK_RESILIENCY_TIMING_LOG_LEN 78
 #define NVDEBUG_ENG_KERNELNVLINK_RESILIENCY_TIMING_LOG_DROPS_LEN 5
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_hangdebug[];
+
+// 'HangDebug' field descriptor pointers
+#define NVDEBUG_ENG_HANGDEBUG_BLOCKS (&prb_fields_nvdebug_eng_hangdebug[0])
+#define NVDEBUG_ENG_HANGDEBUG_TRIGGER (&prb_fields_nvdebug_eng_hangdebug[1])
+
+// 'HangDebug' field lengths
+#define NVDEBUG_ENG_HANGDEBUG_BLOCKS_LEN 44
+#define NVDEBUG_ENG_HANGDEBUG_TRIGGER_LEN 26
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_nvlinkremaptable[];
+
+// 'NvlinkRemapTable' field descriptor pointers
+#define NVDEBUG_ENG_NVLINKREMAPTABLE_REMAP_TABLE (&prb_fields_nvdebug_eng_nvlinkremaptable[0])
+
+// 'NvlinkRemapTable' field lengths
+#define NVDEBUG_ENG_NVLINKREMAPTABLE_REMAP_TABLE_LEN 2
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc_rmdata[];
 
@@ -169,6 +204,28 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_kernelnvlink_resiliencytiming
 #define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_QUIESCE_STATE_LEN 5
 #define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_UVM_IDLE_LEN 5
 #define NVDEBUG_ENG_KERNELNVLINK_RESILIENCYTIMINGLOG_FLAGS_LEN 5
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_hangdebug_block[];
+
+// 'Block' field descriptor pointers
+#define NVDEBUG_ENG_HANGDEBUG_BLOCK_DEVICE_PRI_BASE (&prb_fields_nvdebug_eng_hangdebug_block[0])
+#define NVDEBUG_ENG_HANGDEBUG_BLOCK_REGS (&prb_fields_nvdebug_eng_hangdebug_block[1])
+
+// 'Block' field lengths
+#define NVDEBUG_ENG_HANGDEBUG_BLOCK_DEVICE_PRI_BASE_LEN 10
+#define NVDEBUG_ENG_HANGDEBUG_BLOCK_REGS_LEN 29
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_eng_hangdebug_triggerinfo[];
+
+// 'TriggerInfo' field descriptor pointers
+#define NVDEBUG_ENG_HANGDEBUG_TRIGGERINFO_XID (&prb_fields_nvdebug_eng_hangdebug_triggerinfo[0])
+#define NVDEBUG_ENG_HANGDEBUG_TRIGGERINFO_CTXSW_TIMEOUT_INFO (&prb_fields_nvdebug_eng_hangdebug_triggerinfo[1])
+#define NVDEBUG_ENG_HANGDEBUG_TRIGGERINFO_TIMESTAMP_NS (&prb_fields_nvdebug_eng_hangdebug_triggerinfo[2])
+
+// 'TriggerInfo' field lengths
+#define NVDEBUG_ENG_HANGDEBUG_TRIGGERINFO_XID_LEN 5
+#define NVDEBUG_ENG_HANGDEBUG_TRIGGERINFO_CTXSW_TIMEOUT_INFO_LEN 5
+#define NVDEBUG_ENG_HANGDEBUG_TRIGGERINFO_TIMESTAMP_NS_LEN 10
 
 extern const PRB_SERVICE_DESC prb_services_nvdebug_eng[];
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,9 +32,15 @@
 #include "virtualization/hypervisor/hypervisor.h"
 #include "rmapi/rmapi.h"
 #include "rmapi/rmapi_utils.h"
+#include "rmapi/rs_utils.h"
+#include "rmapi/client.h"
+#include "gpu/device/device.h"
+#include "mem_mgr/video_mem.h"
 
 static NV_STATUS gpuacctInitState(GpuAccounting *);
 static NvU64 gpuacctGetCurrTime(void);
+static void _gpuacctSeedFbUsageForPid(OBJGPU *, GpuAccounting *, NvU32, NvU32, NvU32);
+static NV_STATUS _gpuacctLookupLiveProcEntry(GpuAccounting *, NvU32, NvU32, NvU32, GPUACCT_PROC_ENTRY **);
 static NV_STATUS gpuacctAddProcEntry(GPU_ACCT_PROC_DATA_STORE *, GPUACCT_PROC_ENTRY *, NvBool);
 static NV_STATUS gpuacctRemoveProcEntry(GPU_ACCT_PROC_DATA_STORE *, GPUACCT_PROC_ENTRY *);
 static NV_STATUS gpuacctLookupProcEntry(GPU_ACCT_PROC_DATA_STORE *, NvU32, GPUACCT_PROC_ENTRY **);
@@ -626,6 +632,87 @@ gpuacctProcessGpuUtil
 }
 
 /*!
+ * Seeds curFbUsage for a process at accounting session start, stamping each
+ * pre-existing VideoMemory object with the session ID so vidmemDestruct_IMPL
+ * decrements curFbUsage symmetrically when the object is freed.
+ *
+ * @param[in]  pGpu       GPU whose FB allocations are examined
+ * @param[in]  pGpuAcct   GpuAccounting object
+ * @param[in]  pid        Process ID
+ * @param[in]  subPid     Sub-process ID (VM guest PID, or NV_INVALID_VM_PID)
+ * @param[in]  sessionId  Session ID assigned to the new proc entry
+ */
+static void
+_gpuacctSeedFbUsageForPid
+(
+    OBJGPU        *pGpu,
+    GpuAccounting *pGpuAcct,
+    NvU32          pid,
+    NvU32          subPid,
+    NvU32          sessionId
+)
+{
+    RmClient **ppClient;
+
+    for (ppClient = serverutilGetFirstClientUnderLock();
+         ppClient != NULL;
+         ppClient = serverutilGetNextClientUnderLock(ppClient))
+    {
+        RmClient      *pClient   = *ppClient;
+        RsClient      *pRsClient = staticCast(pClient, RsClient);
+        RS_ITERATOR    iter;
+        RS_PRIV_LEVEL  privLevel = rmclientGetCachedPrivilege(pClient);
+        Device        *pDevice;
+
+        if (pClient->ProcID != pid)
+            continue;
+        if (IS_VALID_SUBPID(subPid) && pClient->SubProcessID != subPid)
+            continue;
+        if (privLevel >= RS_PRIV_LEVEL_KERNEL)
+            continue;
+        if (deviceGetByGpu(pRsClient, pGpu, NV_TRUE, &pDevice) != NV_OK)
+            continue;
+
+        iter = serverutilRefIter(pRsClient->hClient, NV01_NULL_OBJECT,
+                                 0, RS_ITERATE_DESCENDANTS, NV_TRUE);
+
+        while (clientRefIterNext(pRsClient, &iter))
+        {
+            RsResourceRef *pRef    = iter.pResourceRef;
+            VideoMemory   *pVidMem = dynamicCast(pRef->pResource, VideoMemory);
+            Memory        *pMemory;
+            NvU64          retSessionId = 0U;
+
+            if (pVidMem == NULL)
+                continue;
+
+            pMemory = staticCast(pVidMem, Memory);
+
+            if (pMemory->pGpu != pGpu)
+                continue;
+            if (pMemory->pSubDevice != NULL)
+                continue;
+
+            // Skip objects already stamped for this session (allocated after accounting started)
+            if (pMemory->gpuAcctSessionId == sessionId)
+                continue;
+
+            // For duplicated allocations, only count the owner to avoid
+            // charging the same physical pages more than once.
+            if (pMemory->pMemDesc->DupCount > 1U && !pMemory->isMemDescOwner)
+                continue;
+
+            if (gpuacctIncrementProcFbUsage(pGpuAcct, pGpu->gpuInstance,
+                    pClient->ProcID, pClient->SubProcessID,
+                    pMemory->Length, &retSessionId) == NV_OK)
+            {
+                pMemory->gpuAcctSessionId = retSessionId;
+            }
+        }
+    }
+}
+
+/*!
  * Starts gpu accounting for the process.
  *
  * @note This functions schedules a 1 second self scheduling timer callback
@@ -718,6 +805,26 @@ gpuacctStartGpuAccounting_IMPL
     pEntry->startTime = gpuacctGetCurrTime();
 
     pEntry->startSampleCount = gpuInstanceInfo->totalSampleCount;
+
+    // Assign a new session ID; 0 is reserved as "no session" so the counter
+    // starts at 1 and wraps safely (a wrap would require 2^32 sessions).
+    pEntry->sessionId = ++gpuInstanceInfo->nextSessionId;
+
+    //
+    // Seed curFbUsage with whatever FB usage this pid already has at the
+    // moment accounting starts for it.
+    //
+    // Each pre-existing VideoMemory object is stamped with pEntry->sessionId
+    // so that vidmemDestruct_IMPL can detect stale decrements from a prior
+    // session and silently no-op them.
+    //
+    // This walk runs once per accounting session start for a pid, not per allocation.
+    //
+    // Accounting mode and MIG are mutually exclusive (see the
+    // IS_MIG_ENABLED() check in gpuacctEnableAccounting_IMPL), so there
+    // is never a MIG partition to scope this to -- always global.
+    //
+    _gpuacctSeedFbUsageForPid(pGpu, pGpuAcct, pid, subPid, pEntry->sessionId);
 
     NV_PRINTF(LEVEL_INFO, "pid=%d startSampleCount=%u\n",
               searchPid, pEntry->startSampleCount);
@@ -889,36 +996,28 @@ gpuacctStopGpuAccounting_IMPL
 }
 
 /*!
- * Updates peak (high-water mark) FB utilization of the process.
- *
- * @param[in]  pGpuAcct    GPUACCT object pointer
- * @param[in]  gpuInstance gpu instance.
- * @param[in]  pid         PID of the process.
- * @param[in]  subPid      PID of the process running on guest VM.
- * @param[in]  fbUsage     Current FB usage of the process.
- *
- * @return  NV_OK
- * @return  NV_ERR_INVALID_STATE
- * @return  Other
- *     Bubbles up errors from:
- *         * gpuacctLookupProcEntry
+ * Looks up the live process data store and proc entry for the given pid/subPid.
+ * Used by both gpuacctIncrementProcFbUsage_IMPL and gpuacctDecrementProcFbUsage_IMPL.
  */
-NV_STATUS
-gpuacctUpdateProcPeakFbUsage_IMPL
+static NV_STATUS
+_gpuacctLookupLiveProcEntry
 (
-    GpuAccounting *pGpuAcct,
-    NvU32 gpuInstance,
-    NvU32 pid,
-    NvU32 subPid,
-    NvU64 fbUsage
+    GpuAccounting       *pGpuAcct,
+    NvU32                gpuInstance,
+    NvU32                pid,
+    NvU32                subPid,
+    GPUACCT_PROC_ENTRY **ppEntry
 )
 {
-    GPUACCT_PROC_ENTRY *pEntry;
     GPU_ACCT_PROC_DATA_STORE *pDS = NULL;
-    NV_STATUS status;
+    NvBool bVgpuOnGspEnabled;
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
 
-    // Find live process data store for the VM if subpid was passed.
-    if (hypervisorIsVgxHyper() && IS_VALID_SUBPID(subPid))
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_STATE);
+
+    bVgpuOnGspEnabled = IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && RMCFG_FEATURE_PLATFORM_GSP;
+
+    if ((hypervisorIsVgxHyper() || bVgpuOnGspEnabled) && IS_VALID_SUBPID(subPid))
     {
         NvU32 vmIndex;
 
@@ -938,33 +1037,108 @@ gpuacctUpdateProcPeakFbUsage_IMPL
 
     NV_ASSERT_OR_RETURN(pDS != NULL, NV_ERR_INVALID_STATE);
 
-    if (hypervisorIsVgxHyper() && IS_VALID_SUBPID(subPid))
+    if ((hypervisorIsVgxHyper() || bVgpuOnGspEnabled) && IS_VALID_SUBPID(subPid))
     {
-        status = gpuacctLookupProcEntry(pDS, subPid, &pEntry);
+        return gpuacctLookupProcEntry(pDS, subPid, ppEntry);
     }
     else
     {
-        status = gpuacctLookupProcEntry(pDS, pid, &pEntry);
+        return gpuacctLookupProcEntry(pDS, pid, ppEntry);
     }
+}
 
+/*!
+ * Increments the process's current FB usage by the allocation size and updates
+ * the peak (high-water mark). Returns the session ID of the proc entry so the
+ * caller can stamp it on the allocation for symmetric decrement on free.
+ *
+ * @param[in]  pGpuAcct     GPUACCT object pointer
+ * @param[in]  gpuInstance  GPU instance.
+ * @param[in]  pid          PID of the process.
+ * @param[in]  subPid       PID of the process running on guest VM.
+ * @param[in]  length       Allocation size in bytes.
+ * @param[out] pSessionId   Receives the session ID of the proc entry.
+ *
+ * @return  NV_OK
+ * @return  NV_ERR_INVALID_STATE
+ * @return  Other
+ *     Bubbles up errors from:
+ *         * _gpuacctLookupLiveProcEntry
+ */
+NV_STATUS
+gpuacctIncrementProcFbUsage_IMPL
+(
+    GpuAccounting *pGpuAcct,
+    NvU32 gpuInstance,
+    NvU32 pid,
+    NvU32 subPid,
+    NvU64 length,
+    NvU64 *pSessionId
+)
+{
+    GPUACCT_PROC_ENTRY *pEntry = NULL;
+    NV_STATUS status;
+
+    status = _gpuacctLookupLiveProcEntry(pGpuAcct, gpuInstance, pid, subPid, &pEntry);
     if (status != NV_OK)
-    {
         return status;
-    }
 
     if (pEntry == NULL)
-    {
         return NV_ERR_INVALID_STATE;
-    }
 
-    pEntry->procType = NV_GPUACCT_PROC_TYPE_GPU;
+    pEntry->procType   = NV_GPUACCT_PROC_TYPE_GPU;
+    pEntry->curFbUsage += length;
 
-    if (fbUsage > pEntry->maxFbUsage)
-    {
-        pEntry->maxFbUsage = fbUsage;
-    }
+    if (pEntry->curFbUsage > pEntry->maxFbUsage)
+        pEntry->maxFbUsage = pEntry->curFbUsage;
 
-    return status;
+    *pSessionId = pEntry->sessionId;
+    return NV_OK;
+}
+
+/*!
+ * Decrements the process's current FB usage by the allocation size. Silently
+ * returns NV_OK without modifying curFbUsage if sessionId does not match the
+ * live proc entry, which means the decrement belongs to a prior accounting
+ * session whose entry has already been torn down.
+ *
+ * @param[in]  pGpuAcct     GPUACCT object pointer
+ * @param[in]  gpuInstance  GPU instance.
+ * @param[in]  pid          PID of the process.
+ * @param[in]  subPid       PID of the process running on guest VM.
+ * @param[in]  length       Allocation size in bytes.
+ * @param[in]  sessionId    Session ID stamped on the allocation at increment time.
+ *
+ * @return  NV_OK
+ * @return  NV_ERR_INVALID_STATE
+ * @return  Other
+ *     Bubbles up errors from:
+ *         * _gpuacctLookupLiveProcEntry
+ */
+NV_STATUS
+gpuacctDecrementProcFbUsage_IMPL
+(
+    GpuAccounting *pGpuAcct,
+    NvU32 gpuInstance,
+    NvU32 pid,
+    NvU32 subPid,
+    NvU64 length,
+    NvU64 sessionId
+)
+{
+    GPUACCT_PROC_ENTRY *pEntry = NULL;
+    NV_STATUS status;
+
+    status = _gpuacctLookupLiveProcEntry(pGpuAcct, gpuInstance, pid, subPid, &pEntry);
+    if (status != NV_OK)
+        return status;
+
+    // No live entry or session mismatch: allocation belonged to a prior session; ignore.
+    if (pEntry == NULL || pEntry->sessionId != sessionId)
+        return NV_OK;
+
+    pEntry->curFbUsage = (length > pEntry->curFbUsage) ? 0 : (pEntry->curFbUsage - length);
+    return NV_OK;
 }
 
 /*!

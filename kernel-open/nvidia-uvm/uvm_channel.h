@@ -773,4 +773,22 @@ uvm_channel_pool_t *uvm_channel_pool_next(uvm_channel_manager_t *manager,
 
 #define uvm_for_each_pool(pool, manager) uvm_for_each_pool_of_type(pool, manager, UVM_CHANNEL_POOL_TYPE_MASK)
 
+// Read the current work-submit token for a channel.
+//
+// The RM-provided UvmGpuChannelInfo carries two token representations:
+//   - workSubmissionToken (NvU32): snapshot captured at channel allocation.
+//   - pWorkSubmissionToken (volatile NvU32 *): live location in the
+//     channel's notifier page.  RM updates this whenever the token is
+//     regenerated (runlist rebind, SR-IOV vChId remap, live migration).
+//
+// Per the contract in nv_uvm_types.h the token must be read from the
+// live location before every doorbell write. Falls back to the cached
+// snapshot when the pointer is not set.
+static inline NvU32 uvm_channel_read_work_submit_token(const UvmGpuChannelInfo *info)
+{
+    if (info->pWorkSubmissionToken)
+        return READ_ONCE(*info->pWorkSubmissionToken);
+    return info->workSubmissionToken;
+}
+
 #endif // __UVM_CHANNEL_H__

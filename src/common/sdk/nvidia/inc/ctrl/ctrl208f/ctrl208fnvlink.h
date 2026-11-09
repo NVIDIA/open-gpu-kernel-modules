@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,8 @@
 //
 
 #include "ctrl/ctrl208f/ctrl208fbase.h"
+
+
 #include "ctrl/ctrl2080/ctrl2080nvlink_common.h"
 
 /*
@@ -81,9 +83,9 @@ typedef struct NV208F_CTRL_NVLINK_ECC_INJECT_ERROR_PARAMS {
  *      Boolean value that shows if uncorrecatable errors can be injected.
  *
  * Return values:
- *      NV_OK on success
- *      NV_ERR_INSUFFICIENT_PERMISSIONS if priv write not enabled.
- *      NV_ERR_NOT_SUPPORTED otherwise
+ *      NV_OK
+ *      NV_ERR_INSUFFICIENT_PERMISSIONS if PRIV write not enabled.
+ *      NV_ERR_NOT_SUPPORTED
  */
 #define NV208F_CTRL_CMD_NVLINK_ECC_INJECTION_SUPPORTED (0x208f1a02) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_NVLINK_INTERFACE_ID << 8) | NV208F_CTRL_NVLINK_ECC_INJECTION_SUPPORTED_PARAMS_MESSAGE_ID" */
 

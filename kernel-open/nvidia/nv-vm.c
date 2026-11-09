@@ -28,130 +28,37 @@
 
 extern NvU32 NVreg_EnableSystemMemoryPools;
 
-static inline void nv_set_contig_memory_uc(nvidia_pte_t *page_ptr, NvU32 num_pages)
-{
-#if defined(NV_SET_MEMORY_UC_PRESENT)
-    struct page *page = NV_GET_PAGE_STRUCT(page_ptr->phys_addr);
-    unsigned long addr = (unsigned long)page_address(page);
-    set_memory_uc(addr, num_pages);
-#elif defined(NV_SET_PAGES_UC_PRESENT)
-    struct page *page = NV_GET_PAGE_STRUCT(page_ptr->phys_addr);
-    set_pages_uc(page, num_pages);
-#endif
-}
-
-static inline void nv_set_contig_memory_wb(nvidia_pte_t *page_ptr, NvU32 num_pages)
-{
-#if defined(NV_SET_MEMORY_UC_PRESENT)
-    struct page *page = NV_GET_PAGE_STRUCT(page_ptr->phys_addr);
-    unsigned long addr = (unsigned long)page_address(page);
-    set_memory_wb(addr, num_pages);
-#elif defined(NV_SET_PAGES_UC_PRESENT)
-    struct page *page = NV_GET_PAGE_STRUCT(page_ptr->phys_addr);
-    set_pages_wb(page, num_pages);
-#endif
-}
-
-static inline int nv_set_memory_array_type_present(NvU32 type)
-{
-    switch (type)
-    {
-#if defined(NV_SET_MEMORY_ARRAY_UC_PRESENT)
-        case NV_MEMORY_UNCACHED:
-            return 1;
-        case NV_MEMORY_WRITEBACK:
-            return 1;
-#endif
-        default:
-            return 0;
-    }
-}
-
-static inline int nv_set_pages_array_type_present(NvU32 type)
-{
-    switch (type)
-    {
-#if defined(NV_SET_PAGES_ARRAY_UC_PRESENT)
-        case NV_MEMORY_UNCACHED:
-            return 1;
-        case NV_MEMORY_WRITEBACK:
-            return 1;
-#endif
-        default:
-            return 0;
-    }
-}
-
-static inline void nv_set_memory_array_type(
-    unsigned long *pages,
-    NvU32 num_pages,
-    NvU32 type
-)
-{
-    switch (type)
-    {
-#if defined(NV_SET_MEMORY_ARRAY_UC_PRESENT)
-        case NV_MEMORY_UNCACHED:
-            set_memory_array_uc(pages, num_pages);
-            break;
-        case NV_MEMORY_WRITEBACK:
-            set_memory_array_wb(pages, num_pages);
-            break;
-#endif
-        default:
-            nv_printf(NV_DBG_ERRORS,
-                "NVRM: %s(): type %d unimplemented\n",
-                __FUNCTION__, type);
-            break;
-    }
-}
-
-static inline void nv_set_pages_array_type(
-    struct page **pages,
-    NvU32 num_pages,
-    NvU32 type
-)
-{
-    switch (type)
-    {
-#if defined(NV_SET_PAGES_ARRAY_UC_PRESENT)
-        case NV_MEMORY_UNCACHED:
-            set_pages_array_uc(pages, num_pages);
-            break;
-        case NV_MEMORY_WRITEBACK:
-            set_pages_array_wb(pages, num_pages);
-            break;
-#endif
-        default:
-            nv_printf(NV_DBG_ERRORS,
-                "NVRM: %s(): type %d unimplemented\n",
-                __FUNCTION__, type);
-            break;
-    }
-}
-
 static inline void nv_set_contig_memory_type(
     nvidia_pte_t *page_ptr,
     NvU32 num_pages,
-    NvU32 type
+    NvBool bCached
 )
 {
-    switch (type)
+#if defined(NV_SET_MEMORY_UC_PRESENT)
+    struct page *page = NV_GET_PAGE_STRUCT(page_ptr->phys_addr);
+    unsigned long addr = (unsigned long)page_address(page);
+    if (bCached)
     {
-        case NV_MEMORY_UNCACHED:
-            nv_set_contig_memory_uc(page_ptr, num_pages);
-            break;
-        case NV_MEMORY_WRITEBACK:
-            nv_set_contig_memory_wb(page_ptr, num_pages);
-            break;
-        default:
-            nv_printf(NV_DBG_ERRORS,
-                "NVRM: %s(): type %d unimplemented\n",
-                __FUNCTION__, type);
+        set_memory_wb(addr, num_pages);
     }
+    else
+    {
+        set_memory_uc(addr, num_pages);
+    }
+#elif defined(NV_SET_PAGES_UC_PRESENT)
+    struct page *page = NV_GET_PAGE_STRUCT(page_ptr->phys_addr);
+    if (bCached)
+    {
+        set_pages_wb(page, num_pages);
+    }
+    else
+    {
+        set_pages_uc(page, num_pages);
+    }
+#endif
 }
 
-static inline void nv_set_memory_type(nv_alloc_t *at, NvU32 type)
+static inline void nv_set_memory_type(nv_alloc_t *at, NvBool bCached)
 {
     NvU32 i;
     NV_STATUS status = NV_OK;
@@ -168,21 +75,12 @@ static inline void nv_set_memory_type(nv_alloc_t *at, NvU32 type)
 
     if (at->flags.contig)
     {
-        nv_set_contig_memory_type(&at->page_table[0], at->num_pages, type);
+        nv_set_contig_memory_type(&at->page_table[0], at->num_pages, bCached);
         return;
     }
 
-    if (nv_set_memory_array_type_present(type))
-    {
-        status = os_alloc_mem((void **)&pages,
-                at->num_pages * sizeof(unsigned long));
-
-    }
-    else if (nv_set_pages_array_type_present(type))
-    {
-        status = os_alloc_mem((void **)&pages,
-                at->num_pages * sizeof(struct page*));
-    }
+    status = os_alloc_mem((void **)&pages,
+                at->num_pages * sizeof(pages[0]));
 
     if (status != NV_OK)
         pages = NULL;
@@ -205,9 +103,23 @@ static inline void nv_set_memory_type(nv_alloc_t *at, NvU32 type)
 #endif
         }
 #if defined(NV_SET_MEMORY_ARRAY_UC_PRESENT)
-        nv_set_memory_array_type(pages, at->num_pages, type);
+        if (bCached)
+        {
+            set_memory_array_wb(pages, at->num_pages);
+        }
+        else
+        {
+            set_memory_array_uc(pages, at->num_pages);
+        }
 #elif defined(NV_SET_PAGES_ARRAY_UC_PRESENT)
-        nv_set_pages_array_type(pages, at->num_pages, type);
+        if (bCached)
+        {
+            set_pages_array_wb(pages, at->num_pages);
+        }
+        else
+        {
+            set_pages_array_uc(pages, at->num_pages);
+        }
 #endif
         os_free_mem(pages);
     }
@@ -220,7 +132,7 @@ static inline void nv_set_memory_type(nv_alloc_t *at, NvU32 type)
     else
     {
         for (i = 0; i < at->num_pages; i++)
-            nv_set_contig_memory_type(&at->page_table[i], 1, type);
+            nv_set_contig_memory_type(&at->page_table[i], 1, bCached);
     }
 }
 
@@ -384,7 +296,7 @@ static NV_STATUS nv_alloc_coherent_pages(
 
     if (at->cache_type != NV_MEMORY_CACHED)
     {
-        nv_set_memory_type(at, NV_MEMORY_UNCACHED);
+        nv_set_memory_type(at, NV_FALSE);
     }
 
     at->flags.coherent = NV_TRUE;
@@ -402,7 +314,7 @@ static void nv_free_coherent_pages(
 
     if (at->cache_type != NV_MEMORY_CACHED)
     {
-        nv_set_memory_type(at, NV_MEMORY_WRITEBACK);
+        nv_set_memory_type(at, NV_TRUE);
     }
 
     dma_free_coherent(dev, at->num_pages * PAGE_SIZE,
@@ -902,7 +814,7 @@ int nv_init_page_pools(void)
     int node_id;
     unsigned int order;
 
-    for_each_node(node_id)
+    for_each_node_state(node_id, N_MEMORY)
     {
         for (order = 0; order <= NV_MAX_PAGE_ORDER; order++)
         {
@@ -928,7 +840,7 @@ void nv_destroy_page_pools(void)
     int node_id;
     unsigned int order;
 
-    for_each_node(node_id)
+    for_each_node_state(node_id, N_MEMORY)
     {
         for (order = 0; order <= NV_MAX_PAGE_ORDER; order++)
         {
@@ -1029,7 +941,7 @@ nv_free_system_pages
 
     if (at->cache_type != NV_MEMORY_CACHED)
     {
-        nv_set_memory_type(at, NV_MEMORY_WRITEBACK);
+        nv_set_memory_type(at, NV_TRUE);
     }
 
     for (i = 0; i < num_pages; i++)
@@ -1143,7 +1055,7 @@ nv_alloc_system_pages
 
     if (at->cache_type != NV_MEMORY_CACHED)
     {
-        nv_set_memory_type(at, NV_MEMORY_UNCACHED);
+        nv_set_memory_type(at, NV_FALSE);
     }
 
     return NV_OK;
@@ -1222,11 +1134,11 @@ static NvUPtr nv_vmap(struct page **pages, NvU32 page_count,
     if (unencrypted)
     {
         prot = cached ? nv_adjust_pgprot(PAGE_KERNEL) :
-                        nv_adjust_pgprot(NV_PGPROT_UNCACHED(PAGE_KERNEL));
+                        nv_adjust_pgprot(pgprot_noncached(PAGE_KERNEL));
     }
     else
     {
-        prot = cached ? PAGE_KERNEL : NV_PGPROT_UNCACHED(PAGE_KERNEL);
+        prot = cached ? PAGE_KERNEL : pgprot_noncached(PAGE_KERNEL);
     }
 #endif
     ptr = vmap(pages, page_count, VM_MAP, prot);
@@ -1240,8 +1152,8 @@ NvU64 nv_get_reclaimable_memory_usage(void)
     int node_id;
     unsigned int order;
     NvU64 reclaimable_memory_bytes = 0;
-    
-    for_each_node(node_id)
+
+    for_each_node_state(node_id, N_MEMORY)
     {
         for (order = 0; order <= NV_MAX_PAGE_ORDER; order++)
         {

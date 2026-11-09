@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,7 @@ enum NVPreallocType {
     PREALLOC_TYPE_FLIP_WORK_AREA,
     PREALLOC_TYPE_PROPOSED_MODESET_HW_STATE,
     PREALLOC_TYPE_HS_PATCHED_MODESET_REQUEST,
+    PREALLOC_TYPE_HS_DOWNGRADE_ONE_HEAD_MODESET_REQUEST,
     PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS,
     PREALLOC_TYPE_VALIDATE_PROPOSED_MODESET_HW_STATE,
     PREALLOC_TYPE_VALIDATE_MODE_HW_MODE_TIMINGS,

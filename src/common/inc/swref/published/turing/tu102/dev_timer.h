@@ -27,4 +27,8 @@
 #define NV_PTIMER_INTR_EN_0                              0x00009140 /* RW-4R */
 #define NV_PTIMER_VF_TIMER(i)                    (0x00009800+(i)*4) /* RW-4A */
 #define NV_PTIMER_VF_TIMER_NSEC                                31:0 /*       */
+#define NV_PTIMER_TIME_0                                 0x00009400 /* RW-4R */
+#define NV_PTIMER_TIME_0_NSEC                                  31:5 /* RWXUF */
+#define NV_PTIMER_TIME_1                                 0x00009410 /* RW-4R */
+#define NV_PTIMER_TIME_1_NSEC                                  28:0 /* RWXUF */
 #endif // __tu102_dev_timer_h__

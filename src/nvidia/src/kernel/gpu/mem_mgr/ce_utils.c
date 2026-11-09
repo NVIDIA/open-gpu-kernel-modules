@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,14 +47,14 @@
 #include "gpu/mem_mgr/heap.h"
 
 NV_STATUS
-ceutilsGetFirstAsyncCe_IMPL
+ceutilsGetFirstCe_IMPL
 (
-    CeUtils  *pCeUtils,
     OBJGPU   *pGpu,
     RsClient *pClient,
     NvHandle  hDevice,
     NvU32    *pCeInstance,
-    NvBool    forceSkipMIG
+    NvBool    forceSkipMIG,
+    NvBool    bAsync
 )
 {
     if (IS_MIG_IN_USE(pGpu) && !forceSkipMIG)
@@ -75,7 +75,7 @@ ceutilsGetFirstAsyncCe_IMPL
 
         KCE_ITER_ALL_BEGIN(pGpu, pKCe, 0)
             if (gpuCheckEngine_HAL(pGpu, ENG_CE(pKCe->publicID)) &&
-               !ceIsCeGrce(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID)) &&
+               (!bAsync || !ceIsCeGrce(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID))) &&
                gpuCheckEngineTable(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID)))
             {
                 *pCeInstance = pKCe->publicID;
@@ -362,9 +362,8 @@ ceutilsConstruct_IMPL
     }
     else
     {
-        NV_ASSERT_OK_OR_GOTO(status,
-            ceutilsGetFirstAsyncCe(pCeUtils, pGpu, pChannel->pRsClient, pChannel->deviceId, &pChannel->ceId, NV_FALSE),
-            free_client);
+        status = ceutilsGetFirstCe(pGpu, pChannel->pRsClient, pChannel->deviceId, &pChannel->ceId, NV_FALSE, NV_TRUE);
+        NV_ASSERT_OK_OR_GOTO(status, status, free_client);
     }
 
     NvBool bFixedChId = FLD_TEST_DRF(0050_CEUTILS, _FLAGS, _FIXED_CH_ID, _TRUE, allocFlags);
@@ -995,7 +994,7 @@ ceutilsUsesPreferredCe_IMPL
     }
 
     NV_ASSERT_OR_RETURN(
-        ceutilsGetFirstAsyncCe(pCeUtils, pGpu, pChannel->pRsClient, pChannel->deviceId, &ceId, NV_FALSE) == NV_OK,
+        ceutilsGetFirstCe(pGpu, pChannel->pRsClient, pChannel->deviceId, &ceId, NV_FALSE, NV_TRUE) == NV_OK,
         NV_FALSE);
 
     return (ceId == pChannel->ceId);

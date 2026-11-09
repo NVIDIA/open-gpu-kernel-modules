@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -828,7 +828,7 @@ initializeHdmiPktInterface9171(NVHDMIPKT_CLASS* pClass)
     pClass->hdmiSetFRLConfig            = hdmiSetFRLConfigDummy;
     pClass->hdmiClearFRLConfig          = hdmiClearFRLConfigDummy;
 
-    // T239+
+    // display class C8+
     pClass->hdmiPacketRead              = hdmiPacketReadDummy;
     pClass->programAdvancedInfoframe    = programAdvancedInfoframeDummy;
 }

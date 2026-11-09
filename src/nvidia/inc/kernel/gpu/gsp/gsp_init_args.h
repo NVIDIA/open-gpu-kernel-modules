@@ -107,6 +107,12 @@ typedef struct NV_ABI_STABLE GSP_ARGUMENTS_CACHED
         NvU64                         size;
     } vbiosOverrideArgs;
 
+    struct
+    {
+        NvU64                         radix3;
+        NvU64                         size;
+    } ctxswDumpArgs;
+
     //
     // Other data can be added here, so long as the whole structure is <=4kb
     //

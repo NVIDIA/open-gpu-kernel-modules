@@ -541,6 +541,10 @@ void rcdbCleanupNocatGpuCache_IMPL(struct OBJGPU *pGpu);
 NV_STATUS rcdbAddRmDclMsg(void* msg, NvU16 size, const PRB_FIELD_DESC *fieldDesc);
 NV_STATUS rcdbAddRmEngDump(struct OBJGPU *pGpu, NvU32 component);
 NV_STATUS rcdbAddRmGpuDump(struct OBJGPU *pGpu);
+
+// Append a protobuf dump to pSysErrorInfo->pErrorList.
+NV_STATUS rcdbAddProtobufDump(struct OBJGPU *pGpu, NvU8 *pBuf, NvU32 bufLen);
+
 void rcdbSetCommonJournalRecord(struct OBJGPU *pGpu, PRmRCCommonJournal_RECORD pRec);
 void rcdbAddCrashedFalcon(struct Falcon *pFlcn);
 

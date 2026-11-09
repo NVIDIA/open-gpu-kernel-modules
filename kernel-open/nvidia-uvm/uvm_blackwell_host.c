@@ -25,6 +25,9 @@
 #include "uvm_push.h"
 #include "uvm_push_macros.h"
 #include "clc96f.h"
+#include "uvm_global.h"
+#include "uvm_user_channel.h"
+#include "hwref/blackwell/gb100/dev_runlist.h"
 
 // TODO: Bug 3210931: Rename HOST references and files to ESCHED.
 
@@ -382,4 +385,54 @@ void uvm_hal_blackwell_host_l2_invalidate(uvm_push_t *push, uvm_aperture_t apert
 
     // Final sysmembar
     uvm_hal_membar(gpu, push, UVM_MEMBAR_SYS);
+}
+
+// Blackwell+ virtualizes the runlist ID, and therefore the token never changes.
+
+void uvm_hal_blackwell_host_clear_faulted_channel_register(uvm_user_channel_t *user_channel,
+                                                        const uvm_fault_buffer_entry_t *fault)
+{
+    uvm_spin_loop_t spin;
+    NvU32 channel_faulted_mask = 0;
+    NvU32 clear_type_value = 0;
+
+    UVM_ASSERT(!user_channel->gpu->parent->has_clear_faulted_channel_method);
+
+    if (fault->fault_source.mmu_engine_type == UVM_MMU_ENGINE_TYPE_HOST) {
+        clear_type_value = NV_CHRAM_CHANNEL_UPDATE_RESET_PBDMA_FAULTED;
+        channel_faulted_mask = HWCONST(_CHRAM, CHANNEL, PBDMA_FAULTED, TRUE);
+    }
+    else if (fault->fault_source.mmu_engine_type == UVM_MMU_ENGINE_TYPE_CE) {
+        clear_type_value = NV_CHRAM_CHANNEL_UPDATE_RESET_ENG_FAULTED;
+        channel_faulted_mask = HWCONST(_CHRAM, CHANNEL, ENG_FAULTED, TRUE);
+    }
+    else {
+        UVM_ASSERT_MSG(false, "Unsupported MMU engine type %s\n",
+                       uvm_mmu_engine_type_string(fault->fault_source.mmu_engine_type));
+    }
+
+    // Wait for the channel to have the FAULTED bit set as this can race with
+    // interrupt notification
+    UVM_SPIN_WHILE(!(UVM_GPU_READ_ONCE(*user_channel->chram_channel_register) & channel_faulted_mask), &spin);
+
+    UVM_GPU_WRITE_ONCE(*user_channel->chram_channel_register, clear_type_value);
+    wmb();
+
+    UVM_GPU_WRITE_ONCE(*user_channel->work_submission_offset, user_channel->work_submission_token);
+}
+
+void uvm_hal_blackwell_host_write_gpu_put(uvm_channel_t *channel, NvU32 gpu_put)
+{
+    // We need to add a BAR1 read if GPPut is located in sysmem. This
+    // guarantees that any in-flight BAR1 writes from the CPU will have reached
+    // the GPU by the time the GPU reads the updated GPPut. Read the provided
+    // BAR1 mapping in channel_info.
+    if (channel->channel_info.dummyBar1Mapping)
+        UVM_GPU_READ_ONCE(*channel->channel_info.dummyBar1Mapping);
+
+    UVM_GPU_WRITE_ONCE(*channel->channel_info.gpPut, gpu_put);
+
+    wmb();
+
+    UVM_GPU_WRITE_ONCE(*channel->channel_info.workSubmissionOffset, channel->channel_info.workSubmissionToken);
 }

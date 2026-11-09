@@ -1700,7 +1700,7 @@ typedef struct NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS {
  *   bAvoidHBR3
  *     Returns NV_TRUE if we need to avoid HBR3 as much as possible
  *   bPollingEnabledForDpMstDetection
- *     Returns NV_TRUE if polling is enabled for DP MST Detection
+ *     Returns NV_TRUE if polling is enabled for DP MST Detection.
  *        - The Post-based approach introduced a delay in processing LAM and EDID events
  *        - This never introduced any delay. There is some delay from an unknown source which needs to be debugged
  *   bIsDpTunnelingHwBugWarEnabled
@@ -3771,5 +3771,51 @@ typedef struct NV0073_CTRL_CMD_DP_SET_WAR_FLAGS_PARAMS {
 #define NV0073_CTRL_DP_WAR_SW_AUTO_READ_ENABLE 1U
 
 #define NV0073_CTRL_CMD_DP_SET_WAR_FLAGS       (0x731391U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_DP_SET_WAR_FLAGS_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV0073_CTRL_CMD_DP_GET_WAR_DATA
+ *
+ * This command lets dplib read a value that a DisplayPort software
+ * workaround needs, from the root-port displayId. Each value is identified
+ * by a simple enumerated warId; the command carries one enumerated WAR per
+ * call. The value is served from GPU state and issues no AUX traffic, so it
+ * is safe to call from the capability parsing path.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     Specifies the root port displayId the workaround applies to.
+ *   warId
+ *     Which workaround value to read. Valid values:
+ *       NV0073_CTRL_DP_WAR_DATA_DIA_DPCD_REV - aggregated downstream DPCD rev
+ *       from the DP IN adapter, that is min(downstream DPRX response,
+ *       DP_COMMON_CAP.Maximal DPCD Rev), in DPCD 00000h encoding
+ *       (0x11 = DP 1.1, 0x12 = DP 1.2, ...).
+ *   data
+ *     Value read for warId. Zero when the value could not be determined,
+ *     which includes a display that is not on a DP IN adapter.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ *
+ */
+#define NV0073_CTRL_CMD_DP_GET_WAR_DATA_PARAMS_MESSAGE_ID (0x92U)
+
+typedef struct NV0073_CTRL_CMD_DP_GET_WAR_DATA_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU32 warId;
+    NvU32 data;
+} NV0073_CTRL_CMD_DP_GET_WAR_DATA_PARAMS;
+
+#define NV0073_CTRL_DP_WAR_DATA_DIA_DPCD_REV 1U
+
+#define NV0073_CTRL_CMD_DP_GET_WAR_DATA      (0x731392U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_DP_GET_WAR_DATA_PARAMS_MESSAGE_ID" */
 
 /* _ctrl0073dp_h_ */

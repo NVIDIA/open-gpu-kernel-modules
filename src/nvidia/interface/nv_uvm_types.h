@@ -174,7 +174,7 @@ typedef enum
     UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2 = 3,
 } UVM_GPU_CHANNEL_ENGINE_TYPE;
 
-#define UVM_GPU_CHANNEL_MAX_RESOURCES   13
+#define UVM_GPU_CHANNEL_MAX_RESOURCES   14
 
 typedef struct UvmGpuChannelInstanceInfo_tag
 {
@@ -228,7 +228,14 @@ typedef struct UvmGpuChannelInstanceInfo_tag
     volatile NvU32 *workSubmissionOffset;
 
     // Out: channel handle required to ring the doorbell.
+    // Deprecated -- prefer reading from pWorkSubmissionToken below.
     NvU32 workSubmissionToken;
+
+    // Out: Live-updated location backed by the channel's notifier page.
+    // RM writes the current token here whenever it is regenerated (e.g.
+    // runlist rebind, live migration). Must be read before every
+    // doorbell write.
+    volatile NvU32 *pWorkSubmissionToken;
 
     // Out: SMC engine id to which the GR channel is bound, or zero if the GPU
     // does not support SMC or it is a CE channel
@@ -573,6 +580,10 @@ typedef struct UvmPlatformInfo_tag
     // enabled, or both disabled.
     NvBool confComputingEnabled;
 
+    // Out: True if GPU supports TDISP on a platform with
+    // AMD's SEV-TIO or Intel's TDX-Connect, or ARM's CCA.
+    NvBool tdispEnabled;
+
     // Out: True if Coherent Driver-based Memory Management (CDMM) is enabled on
     // the system. This implies that the per-GPU cdmmEnabled property will also
     // be true for every coherent GPU in the system.
@@ -595,6 +606,9 @@ typedef struct UvmGpuConfComputeCaps_tag
 
     // Out: true if key rotation is enabled (for UVM keys) on the GPU
     NvBool bKeyRotationEnabled;
+
+    // Out: true if Baremetal Secure AI mode is enabled on the GPU
+    NvBool bmsaiEnabled;
 } UvmGpuConfComputeCaps;
 
 #define UVM_GPU_NAME_LENGTH 0x40

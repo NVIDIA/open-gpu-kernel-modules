@@ -159,7 +159,6 @@ static void FlipBaseToNull(NVDevEvoPtr pDevEvo)
                 continue;
             }
 
-            pFlipApiHead[i].sd = sd;
             pFlipApiHead[i].head = apiHead;
             pRequestApiHead = &pFlipApiHead[i].flip;
             i++;

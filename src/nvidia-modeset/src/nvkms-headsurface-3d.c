@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -639,7 +639,8 @@ static ProgramName Hs3dGetFragmentProgram(
     const NvBool blend = pChannelConfig->pBlendTexSurface != NULL;
     const NvBool offset = pChannelConfig->pOffsetTexSurface != NULL;
     const NvBool blendAfterWarp = pChannelConfig->blendAfterWarp;
-    const NvBool yuv420 = pChannelConfig->yuv420;
+    const NvBool yuv420 =
+        (pChannelConfig->yuv420Mode == NV_YUV420_MODE_SW);
     const NvBool pixelShiftEnabled = pixelShift != NVKMS_PIXEL_SHIFT_NONE;
     const NvBool customSampling =
         HsIsCustomSampling(pChannelConfig->resamplingMethod);
@@ -678,7 +679,7 @@ static NvBool Hs3dGetSrcFiltering(
         return FALSE;
     }
 
-    if (pChannelConfig->yuv420) {
+    if (pChannelConfig->yuv420Mode == NV_YUV420_MODE_SW) {
         return FALSE;
     }
 
@@ -718,7 +719,6 @@ static void Hs3dSetup2d(NVHsChannelEvoPtr pHsChannel)
 {
     NvPushChannelPtr p = &pHsChannel->nvPush.channel;
 
-    nvAssert(!p->pDevice->clientSli || p->pDevice->numSubDevices == 1);
     nvPushSetObject(p, NVA06F_SUBCHANNEL_2D, pHsChannel->nv2d.handle);
 }
 
@@ -917,7 +917,7 @@ static void LoadFragmentProgramUniforms(
 
     const NvBool needsFragmentUniforms =
         pChannelConfig->blendAfterWarp ||
-        pChannelConfig->yuv420 ||
+        (pChannelConfig->yuv420Mode == NV_YUV420_MODE_SW) ||
         overlay ||
         pixelShiftEnabled ||
         customSampling;
@@ -970,7 +970,8 @@ static void LoadFragmentProgramUniforms(
     // The following uniforms are all necessary for the LUT and colorRange
     // to be applied in the headSurface shader for the overlay, YUV420, or
     // pixelshift mode.
-    if (pChannelConfig->yuv420 || overlay || pixelShiftEnabled) {
+    if ((pChannelConfig->yuv420Mode == NV_YUV420_MODE_SW) || overlay ||
+        pixelShiftEnabled) {
 
         const int nPaletteEntries = 0; /* XXX NVKMS HEADSURFACE TODO */
         const int depth = 24; /* XXX NVKMS HEADSURFACE TODO */
@@ -989,7 +990,7 @@ static void LoadFragmentProgramUniforms(
         }
     }
 
-    if (pChannelConfig->yuv420 || pixelShiftEnabled) {
+    if ((pChannelConfig->yuv420Mode == NV_YUV420_MODE_SW) || pixelShiftEnabled) {
         int i, j;
 
         // primaryTextureBias is used in the fragment shader as well in
@@ -1031,7 +1032,7 @@ static void LoadFragmentProgramUniforms(
         nvAssert(pixelShift == NVKMS_PIXEL_SHIFT_NONE);
     }
 
-    if (pChannelConfig->yuv420) {
+    if (pChannelConfig->yuv420Mode == NV_YUV420_MODE_SW) {
         // Since YUV 4:2:0 is only currently supported on 4K modes, hardcode
         // the ITU-R BT.709 colorspace conversion matrix.
         // The following 5 coefficients are copied from items 4.2 and 4.3 of
@@ -1964,7 +1965,8 @@ NvBool nvHs3dRenderFrame(
      * surface clip.
      */
     nvHs3dClearSurface(pHsChannel, workArea.threeD.dst.pHsSurface,
-                       destRect, pHsChannel->config.yuv420);
+                       destRect,
+                       pHsChannel->config.yuv420Mode == NV_YUV420_MODE_SW);
 
     HsSetWindowOffset(pHsChannel, destRect.x, destRect.y);
 

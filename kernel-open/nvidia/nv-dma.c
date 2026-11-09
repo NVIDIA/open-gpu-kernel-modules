@@ -39,6 +39,8 @@
 #include <drm/drm_gem.h>
 #endif /* IS_ENABLED(CONFIG_DRM) */
 
+#include <linux/mem_encrypt.h>
+
 #define NV_DMA_DEV_PRINTF(debuglevel, dma_dev, format, ... )                \
     nv_printf(debuglevel, "NVRM: %s: " format,                              \
               (((dma_dev) && ((dma_dev)->dev)) ? dev_name((dma_dev)->dev) : \
@@ -86,8 +88,9 @@ static NV_STATUS nv_dma_map_contig(
     *va = dma_map_page_attrs(dma_map->dev, dma_map->pages[0], 0,
                              dma_map->page_count * PAGE_SIZE,
                              direction,
-                             (dma_map->cache_type == NV_MEMORY_UNCACHED) ?
-                              DMA_ATTR_SKIP_CPU_SYNC : 0);
+                             dma_map->dma_attrs |
+                             ((dma_map->cache_type == NV_MEMORY_UNCACHED) ?
+                               DMA_ATTR_SKIP_CPU_SYNC : 0));
     if (dma_mapping_error(dma_map->dev, *va))
     {
         return NV_ERR_OPERATING_SYSTEM;
@@ -117,8 +120,9 @@ static void nv_dma_unmap_contig(nv_dma_map_t *dma_map)
     dma_unmap_page_attrs(dma_map->dev, dma_map->mapping.contig.dma_addr,
                          dma_map->page_count * PAGE_SIZE,
                          direction,
-                         (dma_map->cache_type == NV_MEMORY_UNCACHED) ?
-                          DMA_ATTR_SKIP_CPU_SYNC : 0);
+                         dma_map->dma_attrs |
+                         ((dma_map->cache_type == NV_MEMORY_UNCACHED) ?
+                           DMA_ATTR_SKIP_CPU_SYNC : 0));
 }
 
 static void nv_fill_scatterlist
@@ -257,10 +261,11 @@ NV_STATUS nv_map_dma_map_scatterlist(nv_dma_map_t *dma_map)
         /* Imported SGTs will have already been mapped by the exporter. */
         submap->sg_map_count = submap->imported ?
             submap->sgt.orig_nents :
-            dma_map_sg(dma_map->dev,
-                       submap->sgt.sgl,
-                       submap->sgt.orig_nents,
-                       direction);
+            dma_map_sg_attrs(dma_map->dev,
+                             submap->sgt.sgl,
+                             submap->sgt.orig_nents,
+                             direction,
+                             dma_map->dma_attrs);
         if (submap->sg_map_count == 0)
         {
             status = NV_ERR_OPERATING_SYSTEM;
@@ -295,9 +300,9 @@ void nv_unmap_dma_map_scatterlist(nv_dma_map_t *dma_map)
             continue;
         }
 
-        dma_unmap_sg(dma_map->dev, submap->sgt.sgl,
-                submap->sgt.orig_nents,
-                direction);
+        dma_unmap_sg_attrs(dma_map->dev, submap->sgt.sgl,
+                           submap->sgt.orig_nents,
+                           direction, dma_map->dma_attrs);
     }
 }
 
@@ -438,6 +443,7 @@ NV_STATUS NV_API_CALL nv_dma_map_sgt(
     dma_map->contiguous = NV_FALSE;
     dma_map->cache_type = cache_type;
     dma_map->bReadOnlyDeviceMap = bReadOnlyDeviceMap;
+    dma_map->dma_attrs = 0;
 
     dma_map->mapping.discontig.submap_count = 0;
     status = nv_dma_map_scatterlist(dma_dev, dma_map, va_array);
@@ -484,6 +490,7 @@ static NV_STATUS NV_API_CALL nv_dma_map_pages(
     NvBool           contig,
     NvU32            cache_type,
     NvBool           bReadOnlyDeviceMap,
+    unsigned long    dma_attrs,
     void           **priv
 )
 {
@@ -521,6 +528,7 @@ static NV_STATUS NV_API_CALL nv_dma_map_pages(
     dma_map->contiguous = contig;
     dma_map->cache_type = cache_type;
     dma_map->bReadOnlyDeviceMap = bReadOnlyDeviceMap;
+    dma_map->dma_attrs = dma_attrs;
 
     if (dma_map->page_count > 1 && !dma_map->contiguous)
     {
@@ -618,9 +626,50 @@ NV_STATUS NV_API_CALL nv_dma_map_alloc
     NV_STATUS status;
     NvU64 i;
     nv_alloc_t *at = *priv;
+    struct device *dev = (dma_dev != NULL) ? dma_dev->dev : NULL;
+    nv_linux_state_t *nvl = NULL;
     struct page **pages = NULL;
     NvU32 cache_type = NV_MEMORY_CACHED;
     NvU64 pages_size = sizeof(struct page *) * (contig ? 1 : page_count);
+    unsigned long dma_attrs = 0;
+
+    if ((dev != NULL) && dev_is_pci(dev))
+    {
+        nvl = pci_get_drvdata(to_pci_dev(dev));
+    }
+
+    if ((at != NULL) && (nvl != NULL) &&
+        nv_tdisp_is_tdi_not_in_run_state(nvl))
+    {
+        if (at->flags.unencrypted)
+        {
+#if defined(NV_DMA_ADDR_UNENCRYPTED_PRESENT)
+            for (i = 0; i < (contig ? 1 : page_count); i++)
+            {
+                va_array[i] = dma_addr_unencrypted(at->page_table[i].phys_addr);
+            }
+#else
+            return NV_ERR_NOT_SUPPORTED;
+#endif
+            *priv = NULL;
+            return NV_OK;
+        }
+    }
+
+    /*
+     * DMA_ATTR_REQUIRE_COHERENT is restricted to protected pinned-user
+     * mappings that require continuous CPU/device coherence.
+     */
+    if ((at != NULL) && (nvl != NULL) &&
+        os_tdisp_enabled &&
+        at->flags.user && !at->flags.unencrypted)
+    {
+#if defined(NV_DMA_ATTR_REQUIRE_COHERENT_PRESENT)
+        dma_attrs |= DMA_ATTR_REQUIRE_COHERENT;
+#else
+        return NV_ERR_NOT_SUPPORTED;
+#endif
+    }
 
     /* If we have an imported SGT, just use that directly. */
     if (at && at->import_sgt)
@@ -686,7 +735,7 @@ NV_STATUS NV_API_CALL nv_dma_map_alloc
 
     *priv = pages;
     status = nv_dma_map_pages(dma_dev, page_count, va_array, contig, cache_type,
-                              bReadOnlyDeviceMap, priv);
+                              bReadOnlyDeviceMap, dma_attrs, priv);
     if (status != NV_OK)
     {
         *priv = at;
@@ -742,7 +791,19 @@ static NvBool nv_dma_use_map_resource
     nv_dma_device_t *dma_dev
 )
 {
-    const struct dma_map_ops *ops = get_dma_ops(dma_dev->dev);
+    struct device *dev = dma_dev->dev;
+    nv_linux_state_t *nvl = NULL;
+    const struct dma_map_ops *ops = get_dma_ops(dev);
+
+    if ((dev != NULL) && dev_is_pci(dev))
+    {
+        nvl = pci_get_drvdata(to_pci_dev(dev));
+    }
+
+    if ((nvl != NULL) && nv_tdisp_is_tdi_not_in_run_state(nvl))
+    {
+        return NV_FALSE;
+    }
 
     if (nv_dma_remap_peer_mmio == NV_DMA_REMAP_PEER_MMIO_DISABLE)
     {
@@ -763,6 +824,19 @@ static NvBool nv_dma_use_map_resource
 #else
     return (ops->map_resource != NULL);
 #endif
+}
+
+NvBool NV_API_CALL nv_dma_is_map_resource_usable
+(
+    nv_dma_device_t *dma_dev
+)
+{
+    if ((dma_dev == NULL) || (dma_dev->dev == NULL))
+    {
+        return NV_FALSE;
+    }
+
+    return nv_dma_use_map_resource(dma_dev);
 }
 
 /* DMA-map a peer PCI device's BAR for peer access. */

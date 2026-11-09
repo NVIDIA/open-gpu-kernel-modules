@@ -42,11 +42,15 @@
 
 #include "gpu/mig_mgr/kernel_mig_manager.h"
 
+#include "gpu/tdisp/tdisp_mgr.h"
+
 static void _gpushareddataDestroyGsp(OBJGPU *pGpu);
 static NV_STATUS _gpushareddataSendDataPollRpc(OBJGPU *pGpu, NvU64 polledDataMask, NvU32 pollingIntervalMs);
 static inline void _gpushareddataUpdateSeqOpen(PORT_ATOMIC NvU64 *pSeq);
 static inline void _gpushareddataUpdateSeqClose(PORT_ATOMIC NvU64 *pSeq);
 static NV_STATUS _handlePollMaskHelper(OBJGPU *, NvBool, NvBool);
+static NV_STATUS _rusdListInsert(OBJGPU *pGpu, GpuUserSharedData *pData);
+static void _rusdListRemove(OBJGPU *pGpu, GpuUserSharedData *pData);
 
 //
 // A subtle difference between vGPU and MODS/CC is that we create RUSD memory for vGPU
@@ -61,10 +65,12 @@ _rusdSupported
     NvBool bCCFeatureEnabled = NV_FALSE;
     NvBool bTdispGpuTrusted = NV_FALSE;
 
-    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
-    if (pCC != NULL)
+    bCCFeatureEnabled = gpuIsCCFeatureEnabled(pGpu);
+
+    if (gpuIsTdispFeatureEnabled(pGpu))
     {
-        bCCFeatureEnabled = pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED);
+        TdispMgr *pTdispMgr = GPU_GET_TDISP_MGR(pGpu);
+        bTdispGpuTrusted = tdispmgrIsGpuTrusted_HAL(pGpu, pTdispMgr);
     }
 
     if (IS_VIRTUAL(pGpu))
@@ -114,6 +120,10 @@ gpushareddataConstruct_IMPL
     OBJGPU              *pGpu     = pMemory->pGpu; // pGpu is initialized in the Memory class constructor
     MEMORY_DESCRIPTOR  **ppMemDesc = &(pGpu->userSharedData.pMemDesc);
     NV00DE_ALLOC_PARAMETERS *pAllocParams = (NV00DE_ALLOC_PARAMETERS*)(pParams->pAllocParams);
+    NV_STATUS status;
+    NvU32 attr2 = 0;
+
+    attr2 = DRF_DEF(OS32, _ATTR2, _PROTECTION_USER, _READ_ONLY);
 
     NV_ASSERT_OR_RETURN(!RMCFG_FEATURE_PLATFORM_GSP, NV_ERR_NOT_SUPPORTED);
 
@@ -126,25 +136,35 @@ gpushareddataConstruct_IMPL
     pData->pollingIntervalMs = pGpu->userSharedData.defaultPollingIntervalMs;
 
     if (RS_IS_COPY_CTOR(pParams))
-        return NV_OK;
+    {
+        return _rusdListInsert(pGpu, pData);
+    }
 
     if (*ppMemDesc == NULL)
         return NV_ERR_NOT_SUPPORTED;
 
-    // TODO: no need to iterate through all clients for adding a new mask
+    status = _rusdListInsert(pGpu, pData);
+    if (status != NV_OK)
+        return status;
+
     if (pAllocParams->polledDataMask != 0U)
     {
         pData->polledDataMask = pAllocParams->polledDataMask;
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            _handlePollMaskHelper(pGpu, NV_FALSE, NV_FALSE));
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            _handlePollMaskHelper(pGpu, NV_FALSE, NV_FALSE), fail);
     }
 
-    NV_ASSERT_OK_OR_RETURN(memConstructCommon(pMemory,
-                NV01_MEMORY_SYSTEM, 0, *ppMemDesc, 0, NULL, 0, 0, 0, 0,
-                NVOS32_MEM_TAG_NONE, NULL));
+    NV_ASSERT_OK_OR_GOTO(status, memConstructCommon(pMemory,
+                NV01_MEMORY_SYSTEM, 0, *ppMemDesc, 0, NULL, 0, attr2, 0, 0,
+                NVOS32_MEM_TAG_NONE, NULL), fail);
     memdescAddRef(pGpu->userSharedData.pMemDesc);
 
     return NV_OK;
+
+fail:
+    _rusdListRemove(pGpu, pData);
+    NV_CHECK(LEVEL_ERROR, _handlePollMaskHelper(pGpu, NV_FALSE, NV_FALSE) == NV_OK);
+    return status;
 }
 
 void
@@ -159,6 +179,8 @@ gpushareddataDestruct_IMPL(GpuUserSharedData *pData)
     {
         return;
     }
+
+    _rusdListRemove(pGpu, pData);
 
     // On object destruction, reset to default and re-trigger polling param calculation.
     pData->polledDataMask = 0U;
@@ -332,10 +354,6 @@ _gpusharedataPollingIntervalSanityCheck
         {
             pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_TESLA;
         }
-        else if (RMCFG_FEATURE_PLATFORM_WINDOWS && IS_GSP_CLIENT(pGpu))
-        {
-            pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_WINDOWS_GSP;
-        }
         else
         {
             pGpu->userSharedData.pollingIntervalMs = NV_REG_STR_RM_RUSD_POLLING_INTERVAL_DEFAULT;
@@ -395,10 +413,12 @@ gpuCreateRusdMemory_IMPL
     NvBool               bCCFeatureEnabled = NV_FALSE;
     NvBool               bTdispGpuTrusted = NV_FALSE;
 
-    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
-    if (pCC != NULL)
+    bCCFeatureEnabled = gpuIsCCFeatureEnabled(pGpu);
+
+    if (gpuIsTdispFeatureEnabled(pGpu))
     {
-        bCCFeatureEnabled = pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED);
+        TdispMgr *pTdispMgr = GPU_GET_TDISP_MGR(pGpu);
+        bTdispGpuTrusted = tdispmgrIsGpuTrusted_HAL(pGpu, pTdispMgr);
     }
 
     //
@@ -431,6 +451,8 @@ gpuCreateRusdMemory_IMPL
 
     gpuRusdInitPhysical_HAL(pGpu);
 
+    listInit(&pGpu->userSharedData.rusdObjList, portMemAllocatorGetGlobalNonPaged());
+
     _gpushareddataInitPollingFrequency(pGpu);
 
     return NV_OK;
@@ -449,6 +471,9 @@ gpuDestroyRusdMemory_IMPL
 )
 {
     GpuSharedDataMap *pData = &pGpu->userSharedData;
+
+    NV_ASSERT(listCount(&pData->rusdObjList) == 0);
+    listDestroy(&pData->rusdObjList);
 
     if (pData->pMemDesc == NULL)
         return;
@@ -540,6 +565,44 @@ _gpushareddataSendDataPollRpc
     return NV_OK;
 }
 
+//
+// Add an RUSD object to the GPU-local RUSD object list. Callers run under the
+// GPU lock, which serializes all list access. The list stores object pointers,
+// so the append allocates a node and can fail.
+//
+static NV_STATUS
+_rusdListInsert
+(
+    OBJGPU *pGpu,
+    GpuUserSharedData *pData
+)
+{
+    NvU32 gpuMaskUnused;
+
+    NV_ASSERT(rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE, &gpuMaskUnused));
+
+    return (listAppendValue(&pGpu->userSharedData.rusdObjList, &pData) != NULL) ?
+        NV_OK : NV_ERR_NO_MEMORY;
+}
+
+//
+// Remove an RUSD object from the GPU-local RUSD object list. Callers run under
+// the GPU lock, which serializes all list access. No-op if not on the list.
+//
+static void
+_rusdListRemove
+(
+    OBJGPU *pGpu,
+    GpuUserSharedData *pData
+)
+{
+    NvU32 gpuMaskUnused;
+
+    NV_ASSERT(rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE, &gpuMaskUnused));
+
+    listRemoveFirstByValue(&pGpu->userSharedData.rusdObjList, &pData);
+}
+
 static void _gpushareddataGetPollDataUnion
 (
     OBJGPU *pGpu,
@@ -547,34 +610,26 @@ static void _gpushareddataGetPollDataUnion
     NvU32 *pPollingIntervalMs
 )
 {
-    RmClient **ppClient;
+    GpuSharedDataMap *pMap = &pGpu->userSharedData;
+    GpuUserSharedDataListIter it = listIterAll(&pMap->rusdObjList);
+    NvU32 gpuMaskUnused;
 
-    // Iterate over all clients to get all RUSD objects
-    for (ppClient = serverutilGetFirstClientUnderLock();
-         ppClient != NULL;
-         ppClient = serverutilGetNextClientUnderLock(ppClient))
+    NV_ASSERT(rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE, &gpuMaskUnused));
+
+    while (listIterNext(&it))
     {
-        // Collect mask of all data requested by any existing RUSD objects
-        RS_ITERATOR iter = clientRefIter(staticCast(*ppClient, RsClient), NULL,
-                                         classId(GpuUserSharedData), RS_ITERATE_DESCENDANTS, NV_TRUE);
-        while (clientRefIterNext(iter.pClient, &iter))
+        GpuUserSharedData *pIterData = *it.pValue;
+
+        // poll data mask is the union of mask requested by all RUSD clients
+        (*pPolledDataMask) |= pIterData->polledDataMask;
+
+        NV_ASSERT(pIterData->pollingIntervalMs >= NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MIN);
+        NV_ASSERT(pIterData->pollingIntervalMs <= pMap->defaultPollingIntervalMs);
+
+        // polling interval is the minimum of all RUSD clients
+        if (pIterData->pollingIntervalMs < *pPollingIntervalMs)
         {
-            // Ignore RUSD objects on GPUs that don't match the RUSD object this poll request came from
-            GpuUserSharedData *pIterData = dynamicCast(iter.pResourceRef->pResource, GpuUserSharedData);
-            if ((pIterData != NULL) && (staticCast(pIterData, Memory)->pGpu == pGpu))
-            {
-                // poll data mask is the union of mask requested by all RUSD clients
-                (*pPolledDataMask) |= pIterData->polledDataMask;
-
-                NV_ASSERT(pIterData->pollingIntervalMs >= NV_REG_STR_RM_RUSD_POLLING_INTERVAL_MIN);
-                NV_ASSERT(pIterData->pollingIntervalMs <= pGpu->userSharedData.defaultPollingIntervalMs);
-
-                // polling interval is the minimum of all RUSD clients
-                if (pIterData->pollingIntervalMs < *pPollingIntervalMs)
-                {
-                    *pPollingIntervalMs = pIterData->pollingIntervalMs;
-                }
-            }
+            *pPollingIntervalMs = pIterData->pollingIntervalMs;
         }
     }
 }

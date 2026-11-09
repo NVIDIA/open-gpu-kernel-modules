@@ -42,9 +42,17 @@
      (1 << NVKMS_COMPOSITION_BLENDING_MODE_NON_PREMULT_SURFACE_ALPHA) | \
      (1 << NVKMS_COMPOSITION_BLENDING_MODE_PREMULT_SURFACE_ALPHA))
 
-#define NV_EVO3_DEFAULT_WINDOW_USAGE_BOUNDS_C5                                     \
-    (DRF_DEF(C57D, _WINDOW_SET_WINDOW_USAGE_BOUNDS, _ILUT_ALLOWED, _TRUE)        | \
-     DRF_DEF(C57D, _WINDOW_SET_WINDOW_USAGE_BOUNDS, _TMO_LUT_ALLOWED, _TRUE))
+static inline NvU32
+nvEvoGetDefaultWindowUsageBoundsC5(const NVDevEvoRec *pDevEvo, NvU32 win)
+{
+    NvU32 bounds = DRF_DEF(C57D, _WINDOW_SET_WINDOW_USAGE_BOUNDS,
+                           _ILUT_ALLOWED, _TRUE);
+    if (pDevEvo->capabilities.window[win].tmoPresent) {
+        bounds |= DRF_DEF(C57D, _WINDOW_SET_WINDOW_USAGE_BOUNDS,
+                          _TMO_LUT_ALLOWED, _TRUE);
+    }
+    return bounds;
+}
 
 // HW supports ratio = 1, 2 (downscaling), 4 (downscaling)
 #define NUM_SCALER_RATIOS 3

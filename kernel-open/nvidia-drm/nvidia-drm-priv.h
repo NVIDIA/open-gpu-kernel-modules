@@ -98,6 +98,21 @@ enum nv_drm_dithering_mode {
     NV_DRM_DITHERING_MODE_MAX
 };
 
+enum nv_drm_connector_color_format {
+    NV_DRM_CONNECTOR_COLOR_FORMAT_AUTO = 0,
+    NV_DRM_CONNECTOR_COLOR_FORMAT_RGB,
+    NV_DRM_CONNECTOR_COLOR_FORMAT_YCbCr422,
+    NV_DRM_CONNECTOR_COLOR_FORMAT_YCbCr444,
+};
+
+enum nv_drm_connector_output_bpc {
+    NV_DRM_CONNECTOR_OUTPUT_BPC_AUTO = 0,
+    NV_DRM_CONNECTOR_OUTPUT_BPC_6,
+    NV_DRM_CONNECTOR_OUTPUT_BPC_8,
+    NV_DRM_CONNECTOR_OUTPUT_BPC_10,
+    NV_DRM_CONNECTOR_OUTPUT_BPC_12,
+};
+
 struct nv_drm_device {
     nv_gpu_info_t gpu_info;
     MIGDeviceId gpu_mig_device;
@@ -138,6 +153,7 @@ struct nv_drm_device {
     NvU64 modifiers[6 /* block linear */ + 1 /* linear */ + 1 /* terminator */];
 
     struct delayed_work hotplug_event_work;
+    struct delayed_work content_protection_event_work;
     atomic_t enable_event_handling;
 
     /**
@@ -187,6 +203,7 @@ struct nv_drm_device {
 
     struct drm_property *nv_plane_tmo_lut_property;
     struct drm_property *nv_plane_tmo_lut_size_property;
+    struct drm_property *nv_plane_tmo_sat_corr_enable_property;
 
     struct drm_property *nv_plane_color_passthrough_property;
 
@@ -199,7 +216,13 @@ struct nv_drm_device {
 
     struct drm_property *nv_connector_dithering_mode_property;
 
+    struct drm_property *nv_connector_color_format_property;
+    struct drm_property *nv_connector_output_bpc_property;
+
     struct drm_property *nv_connector_hdmi_vsif_metadata_property;
+
+    struct drm_property *nv_connector_allm_capable_property;
+    struct drm_property *nv_connector_allm_mode_property;
 
     struct nv_drm_device *next;
 

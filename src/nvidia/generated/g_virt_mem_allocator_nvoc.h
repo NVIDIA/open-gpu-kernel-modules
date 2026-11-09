@@ -126,10 +126,9 @@ typedef struct _def_dma_bar1p2p_mapping_params
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__VirtMemAllocator;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__VirtMemAllocator;
 
 
 struct VirtMemAllocator {
@@ -165,42 +164,20 @@ struct VirtMemAllocator {
 
     // Data members
     NvU32 gpuGartCaps;
-    NvU32 increaseRsvdPages;
     NvBool bDmaMemoryMapOverride;
     NvBool bDmaRestrictVaRange;
-    NvBool bDmaShaderAccessSupported;
     NvBool bDmaIsSupportedSparseVirtual;
     NvBool bDmaMmuInvalidateDisable;
     NvBool bDmaEnforce32BitPointer;
-    NvBool bDmaEnableFullCompTagLine;
     NvBool bDmaMultipleVaspaceSupported;
     struct ENG_INFO_LINK_NODE *infoList;
 };
 
 
-// Vtable with 14 per-class function pointers
-struct NVOC_VTABLE__VirtMemAllocator {
-    NV_STATUS (*__dmaConstructEngine__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__dmaStateInitLocked__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__dmaStatePostLoad__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    void (*__dmaInitMissing__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStatePreInitLocked__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStatePreInitUnlocked__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStateInitUnlocked__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStatePreLoad__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStateLoad__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStatePreUnload__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStateUnload__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStatePostUnload__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__dmaStateDestroy__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__dmaIsPresent__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__VirtMemAllocator {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__VirtMemAllocator vtable;
 };
 
 #ifndef __nvoc_class_id_VirtMemAllocator
@@ -294,9 +271,9 @@ static inline struct OBJVASPACE * dmaGetPrivateVAS(struct VirtMemAllocator *pDma
 
 
 // Wrapper macros for halified functions
-#define dmaConstructEngine_FNPTR(pDma) pDma->__nvoc_metadata_ptr->vtable.__dmaConstructEngine__
+#define dmaConstructEngine_FNPTR(pDma) pDma->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define dmaConstructEngine(pGpu, pDma, arg3) dmaConstructEngine_DISPATCH(pGpu, pDma, arg3)
-#define dmaStateInitLocked_FNPTR(pDma) pDma->__nvoc_metadata_ptr->vtable.__dmaStateInitLocked__
+#define dmaStateInitLocked_FNPTR(pDma) pDma->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__
 #define dmaStateInitLocked(pGpu, pDma) dmaStateInitLocked_DISPATCH(pGpu, pDma)
 #define dmaInit_HAL(pGpu, pDma) dmaInit(pGpu, pDma)
 #define dmaConstructHal_HAL(pGpu, pDma) dmaConstructHal(pGpu, pDma)
@@ -331,10 +308,14 @@ static inline struct OBJVASPACE * dmaGetPrivateVAS(struct VirtMemAllocator *pDma
 #define dmaUnmapBuffer_FNPTR(pDma) pDma->__dmaUnmapBuffer__
 #define dmaUnmapBuffer(pGpu, pDma, pVAS, vaddr) dmaUnmapBuffer_DISPATCH(pGpu, pDma, pVAS, vaddr)
 #define dmaUnmapBuffer_HAL(pGpu, pDma, pVAS, vaddr) dmaUnmapBuffer_DISPATCH(pGpu, pDma, pVAS, vaddr)
-#define dmaStatePostLoad_FNPTR(pDma) pDma->__nvoc_metadata_ptr->vtable.__dmaStatePostLoad__
+#define dmaStatePostLoad_FNPTR(pDma) pDma->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__
 #define dmaStatePostLoad(pGpu, pDma, arg3) dmaStatePostLoad_DISPATCH(pGpu, pDma, arg3)
 #define dmaStatePostLoad_HAL(pGpu, pDma, arg3) dmaStatePostLoad_DISPATCH(pGpu, pDma, arg3)
 #define dmaGetPrivateVAS_HAL(pDma) dmaGetPrivateVAS(pDma)
+#define dmaConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define dmaConstructApertures(pGpu, pEngstate) dmaConstructApertures_DISPATCH(pGpu, pEngstate)
+#define dmaDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define dmaDestructApertures(pGpu, pEngstate) dmaDestructApertures_DISPATCH(pGpu, pEngstate)
 #define dmaInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define dmaInitMissing(pGpu, pEngstate) dmaInitMissing_DISPATCH(pGpu, pEngstate)
 #define dmaStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -360,11 +341,11 @@ static inline struct OBJVASPACE * dmaGetPrivateVAS(struct VirtMemAllocator *pDma
 
 // Dispatch functions
 static inline NV_STATUS dmaConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, ENGDESCRIPTOR arg3) {
-    return pDma->__nvoc_metadata_ptr->vtable.__dmaConstructEngine__(pGpu, pDma, arg3);
+    return pDma->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(pGpu, staticCast(pDma, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS dmaStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
-    return pDma->__nvoc_metadata_ptr->vtable.__dmaStateInitLocked__(pGpu, pDma);
+    return pDma->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pDma, OBJENGSTATE));
 }
 
 static inline NV_STATUS dmaAllocMapping_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *arg3, MEMORY_DESCRIPTOR *arg4, NvU64 *arg5, NvU32 arg6, NvU32 arg7, CLI_DMA_ALLOC_MAP_INFO *arg8, NvU32 arg9) {
@@ -408,51 +389,59 @@ static inline void dmaUnmapBuffer_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAl
 }
 
 static inline NV_STATUS dmaStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, NvU32 arg3) {
-    return pDma->__nvoc_metadata_ptr->vtable.__dmaStatePostLoad__(pGpu, pDma, arg3);
+    return pDma->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__(pGpu, staticCast(pDma, OBJENGSTATE), arg3);
+}
+
+static inline NV_STATUS dmaConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
+static inline void dmaDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline void dmaInitMissing_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__dmaInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS dmaStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dmaStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS dmaStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dmaStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS dmaStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dmaStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS dmaStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dmaStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS dmaStateLoad_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dmaStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS dmaStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dmaStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS dmaStateUnload_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dmaStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS dmaStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dmaStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline void dmaStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__dmaStateDestroy__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NvBool dmaIsPresent_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__dmaIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions
@@ -523,18 +512,6 @@ static inline NV_STATUS dmaUpdateVASpace_395e98(struct OBJGPU *pGpu, struct Virt
 
 static inline NV_STATUS dmaXlateVAtoPAforChannel_395e98(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct KernelChannel *pKernelChannel, NvU64 vAddr, NvU64 *pAddr, NvU32 *memType){
     return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NvU32 dmaGetPTESize_474d46(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma){
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
-
-static inline NV_STATUS dmaMapBuffer_5baef9(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, PMEMORY_DESCRIPTOR pMemDesc, NvU64 *pVaddr, NvU32 allocFlags, NvU32 mapFlags){
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-static inline void dmaUnmapBuffer_f2d351(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, NvU64 vaddr){
-    NV_ASSERT_PRECOMP(0);
 }
 
 static inline struct OBJVASPACE * dmaGetPrivateVAS_9e2234(struct VirtMemAllocator *pDma){

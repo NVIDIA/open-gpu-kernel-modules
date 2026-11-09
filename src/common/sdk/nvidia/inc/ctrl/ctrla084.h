@@ -334,7 +334,6 @@ typedef struct NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS {
  * vgpuTaskLogBuffSize      -> size of vgpu task log buffer
  * kernelLogBuffOffset      -> offset of kernel log buffer
  * kernelLogBuffSize        -> size of kernel log buffer
- * hMigRmHeapMemory         -> MIG-RM heap memory handle
  * bDeviceProfilingEnabled  -> If set to true, profiling is allowed
  */
 #define NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK (0xa084010d) /* finn: Evaluated from "(FINN_NVA084_KERNEL_HOST_VGPU_DEVICE_KERNEL_HOST_VGPU_DEVICE_INTERFACE_ID << 8) | NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS_MESSAGE_ID" */
@@ -352,7 +351,6 @@ typedef struct NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffSize, 8);
     NV_DECLARE_ALIGNED(NvU64 kernelLogBuffOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 kernelLogBuffSize, 8);
-    NvHandle hMigRmHeapMemory;
     NvBool   bDeviceProfilingEnabled;
 } NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS;
 

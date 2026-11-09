@@ -21,175 +21,36 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# Converts OpenRM binhex-encoded images to Nouveau- and Nova-compatible
-# binary blobs.
+# Converts OpenRM binhex-encoded images to Nouveau-compatible binary blobs.
 # See nouveau_firmware_layout.ods for documentation on the file format.
 
 import sys
 import os
 import argparse
 import re
-import gzip
 import struct
 import zlib
 import tempfile
 import urllib.request
 
+# Locate the shared helper module relative to this script (not the current
+# working directory), so that the script can be run from anywhere.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from extract_firmware_common import (
+    MyException,
+    round_up_to_base,
+    get_bytes,
+    is_supported,
+    symlink,
+    extract_run_file,
+)
+
 FLCN_BLK_ALIGNMENT = 256
 
-class MyException(Exception):
-    pass
 
-def round_up_to_base(x, base = 10):
-    return x + (base - x) % base
-
-def parse_array(f):
-    """Parses a bindata array definition and returns its binhex as bytes
-
-    Example:
-    static BINDATA_CONST NvU8 ksec2BinArchiveSecurescrubUcode_AD10X_header_prod_data[] =
-    {
-        0x63, 0x60, 0x00, 0x02, 0x46, 0x20, 0x96, 0x02, 0x62, 0x66, 0x08, 0x13, 0x4c, 0x48, 0x42, 0x69,
-        0x20, 0x00, 0x00, 0x30, 0x39, 0x0a, 0xfc, 0x24, 0x00, 0x00, 0x00,
-    };
-    """
-    output = b''
-    for line in f:
-        if "};" in line:
-            break
-        bytes = [int(b, 16) for b in re.findall('0x[0-9a-f][0-9a-f]', line)]
-        if len(bytes) > 0:
-            output += struct.pack(f"{len(bytes)}B", *bytes)
-
-    return output
-
-def parse_struct(f):
-    """Parses a struct definition and returns its binhex as bytes
-
-    Example:
-    static const RM_FLCN_BL_DESC ksec2BinArchiveBlUcode_TU102_ucode_desc_data = {
-        0xfd,
-        0,
-        {
-            0x0,
-            0x200,
-            0x200,
-            0x100
-        }
-    };
-
-    """
-    output = b''
-    for line in f:
-        if "};" in line:
-            break
-        words = [int(b, 16) for b in re.findall('(?:0x|)[0-9a-f]+', line)]
-        if len(words) > 0:
-            output += struct.pack(f"<{len(words)}I", *words)
-
-
-    return output
-
-def get_bytes(filename, array1, array2):
-    """Extract the bytes for the given array or struct in the given file.
-
-    :param filename: the file to parse
-    :param array1: the first half of name of the array/struct to parse
-    :param array2: the second half
-    :returns: byte array
-
-    This function scans the file for the array or struct and returns a bytearray
-    of its contents, uncompressing the data if it is tagged as compressed.
-
-    This function assumes that each array/struct is immediately preceded with a
-    comment section that specifies whether the array is compressed and how many
-    bytes of data there should be.  Example:
-
-    //
-    // FUNCTION: ksec2GetBinArchiveSecurescrubUcode_AD10X("header_prod")
-    // FILE NAME: kernel/inc/securescrub/bin/ad10x/g_securescrubuc_sec2_ad10x_boot_from_hs_prod.h
-    // FILE TYPE: TEXT
-    // VAR NAME: securescrub_ucode_header_ad10x_boot_from_hs
-    // COMPRESSION: YES
-    // COMPLEX_STRUCT: NO
-    // DATA SIZE (bytes): 36
-    // COMPRESSED SIZE (bytes): 27
-    //
-    static BINDATA_CONST NvU8 ksec2BinArchiveSecurescrubUcode_AD10X_header_prod_data[] =
-
-    The actual extraction of binhex bytes is handled by parse_array() or parse_struct().
-    """
-
-    # Build the five possible array/struct names.  BINDATA_LABEL was added in r575,
-    # and NV_DECLARE_ALIGNED(NvU8, 8) was added in r590.
-    arrays = [
-        f"static BINDATA_CONST NvU8 {array1}_{array2}_data",
-        f"static BINDATA_CONST NvU8 {array1}_BINDATA_LABEL_{array2.upper()}_data",
-        f"static BINDATA_CONST NV_DECLARE_ALIGNED(NvU8, 8) {array1}_BINDATA_LABEL_{array2.upper()}_data",
-        f"static const {array1}_{array2}_data",
-        f"static const {array1}_BINDATA_LABEL_{array2.upper()}_data",
-    ]
-
-    with open(filename) as f:
-        for line in f:
-            m = re.search(r"COMPRESSION: (\w*)", line)
-            if m:
-                is_compressed = m.group(1) == "YES"
-            m = re.search(r"COMPLEX_STRUCT: (\w*)", line)
-            if m:
-                is_struct = m.group(1) == "YES"
-            m = re.search(r"DATA SIZE \(bytes\): (\d+)", line)
-            if m:
-                data_size = int(m.group(1))
-            m = re.search(r"DATA SIZE \(bytes\): sizeof\((\d+)\)", line)
-            if m:
-                data_size = None
-            m = re.search(r"COMPRESSED SIZE \(bytes\): N/A", line)
-            if m:
-                compressed_size = None
-            m = re.search(r"COMPRESSED SIZE \(bytes\): (\d+)", line)
-            if m:
-                compressed_size = int(m.group(1))
-            m = next((a for a in arrays if a in line), None)
-            if m:
-                # We found the array, so remember its name in case we need to report an error
-                array = m
-                break
-        else:
-            raise MyException(f"array {array1}_{array2}_data not found in {filename}")
-
-        if is_struct:
-            output = parse_struct(f)
-            # Struct entries reference themselves for the size.  The only way
-            # to determine the actual size is to compile the C code.  Instead,
-            # just assume the header file is complete.
-            data_size = len(output)
-        else:
-            output = parse_array(f)
-
-    if len(output) == 0:
-        raise MyException(f"no data found for {array} in {filename}")
-
-    # Structs are never compressed
-    if is_struct and is_compressed:
-        raise MyException(f"struct {array} in {filename} cannot be compressed")
-
-    # Make sure we actually read a compressed size
-    if is_compressed and not compressed_size:
-        raise MyException(f"array {array} in {filename} compressed size is undetermined")
-
-    if is_compressed:
-        if len(output) != compressed_size:
-            raise MyException(f"compressed array {array} in {filename} should be {compressed_size} bytes but is actually {len(output)}.")
-        gzipheader = struct.pack("<4BL2B", 0x1f, 0x8b, 8, 0, 0, 0, 3)
-        output = gzip.decompress(gzipheader + output)
-        if len(output) != data_size:
-            raise MyException(f"array {array} in {filename} decompressed to {len(output)} bytes but should have been {data_size} bytes.")
-        return output
-    else:
-        if len(output) != data_size:
-            raise MyException(f"array {array} in {filename} should be {data_size} bytes but is actually {len(output)}.")
-        return output
+# -------------------------------------------------------------------
+# Generate firmware binaries
+# -------------------------------------------------------------------
 
 # Generic Falcon bootloader.  First, FWSEC runs on the RISC-V GSP core.
 # Then this generic bootloader runs on the SEC2 core, in order to restart the GSP
@@ -215,6 +76,18 @@ def generic_bootloader(gpu):
         descriptor = get_bytes(filename, f"RM_FLCN_BL_DESC ksec2BinArchiveBlUcode_{GPU}", "ucode_desc")
         descriptor_size = len(descriptor) # 24
 
+        (start_tag, dmem_load_off, code_off, code_size, data_off,
+            data_size) = struct.unpack("<6I", descriptor)
+        # Both RM and Nouveau only load the code section, and both assume that
+        # code_off and dmem_load_off are zero.
+        if code_off != 0:
+            raise MyException(f"code offset in ksec2BinArchiveBlUcode_{GPU} should be 0 but is {code_off}")
+        if dmem_load_off != 0:
+            raise MyException(f"dmem load offset in ksec2BinArchiveBlUcode_{GPU} should be 0 but is {dmem_load_off}")
+        # Ensure the start tag fits in the register
+        if start_tag > 65535:
+            raise MyException(f"start tag in ksec2BinArchiveBlUcode_{GPU} value of {start_tag} is too large")
+
         # First, add the nvfw_bin_hdr header
         total_size = round_up_to_base(24 + firmware_size + descriptor_size, FLCN_BLK_ALIGNMENT)
         firmware_offset = 24 + descriptor_size
@@ -235,6 +108,7 @@ def gsp_bootloader(gpu, fuse = ""):
     if len(fuse) > 0:
         fuse = f"_{fuse}"
 
+    name = f"gsp-bootloader-{gpu}{fuse}"
     GPU = gpu.upper()
     filename = f"src/nvidia/generated/g_bindata_kgspGetBinArchiveGspRmBoot_{GPU}.c"
 
@@ -247,8 +121,32 @@ def gsp_bootloader(gpu, fuse = ""):
         firmware_size = len(firmware)
 
         # Extract the descriptor (RM_RISCV_UCODE_DESC)
+        # Note: the size of RM_RISCV_UCODE_DESC varies from version to version, but Nouveau
+        # only cares about the first few fields.  So we use unpack_from() which ignores excess
+        # bytes.
         descriptor = get_bytes(filename, f"kgspBinArchiveGspRmBoot_{GPU}", f"ucode_desc{fuse}")
         descriptor_size = len(descriptor) # 76 on TU10x/GA100, 84 on GA102+
+        (desc_version, bootloader_offset, bootloader_size, bootloader_param_offset, bootloader_param_size,
+         riscv_elf_offset, riscv_elf_size, app_version, manifest_offset, manifest_size, monitor_data_offset,
+         monitor_data_size, monitor_code_offset, monitor_code_size) = struct.unpack_from("<14I", descriptor)
+
+        if desc_version < 4:
+            raise MyException(f"unsupported version {desc_version} for {name}")
+
+        # Validate a few of the offsets
+        if manifest_offset + manifest_size > len(firmware):
+            raise MyException(f"{manifest_offset=} + {manifest_size=} is too large for {name} (size={len(firmware)})")
+        if monitor_data_offset + monitor_data_size > len(firmware):
+            raise MyException(f"{monitor_data_offset=} + {monitor_data_size=} is too large for {name} (size={len(firmware)})")
+        if monitor_code_offset + monitor_code_size > len(firmware):
+            raise MyException(f"{monitor_code_offset=} + {monitor_code_size=} is too large for {name} (size={len(firmware)})")
+
+        if manifest_offset % 256 != 0:
+            raise MyException(f"{manifest_offset=} is not 256-byte aligned")
+        if monitor_data_offset % 256 != 0:
+            raise MyException(f"{monitor_data_offset=} is not 256-byte aligned")
+        if monitor_code_offset % 256 != 0:
+            raise MyException(f"{monitor_code_offset=} is not 256-byte aligned")
 
         # First, add the nvfw_bin_hdr header
         total_size = round_up_to_base(24 + firmware_size + descriptor_size, FLCN_BLK_ALIGNMENT)
@@ -281,10 +179,10 @@ def booter(gpu, load, sigsize, fuse = "prod"):
         firmware_size = len(firmware)
 
         # Query the number of signatures.  This should be a 4-byte array (32-bit little-endian integer)
-        bytes = get_bytes(filename, f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}", "num_sigs")
-        if len(bytes) != 4:
-            raise MyException(f"num_sigs array for {name} is wrong size of {len(bytes)}")
-        num_sigs = struct.unpack("<L", bytes)[0]
+        raw = get_bytes(filename, f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}", "num_sigs")
+        if len(raw) != 4:
+            raise MyException(f"num_sigs array for {name} is wrong size of {len(raw)}")
+        num_sigs = struct.unpack("<I", raw)[0]
         if num_sigs < 1 or num_sigs > 15:
             raise MyException(f"out of range number of signatures ({num_sigs}) for {name}")
 
@@ -319,27 +217,39 @@ def booter(gpu, load, sigsize, fuse = "prod"):
         f.write(signatures)
 
         # Extract the patch location
-        bytes = get_bytes(filename, f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}", "patch_loc")
-        patchloc = struct.unpack("<L", bytes)[0]
+        raw = get_bytes(filename, f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}", "patch_loc")
+        if len(raw) != 4:
+            raise MyException(f"patch_loc[] array for {name} should be one element, but is {len(raw)} bytes.")
+        patchloc = struct.unpack("<I", raw)[0]
+
+        # Extract the patch sig offset.  RM expects this to be zero, but doesn't use it,
+        # so if it's ever non-zero, something has changed.
+        raw = get_bytes(filename, f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}", "patch_sig")
+        if len(raw) != 4:
+            raise MyException(f"patch_sig[] array for {name} should be one element, but is {len(raw)} bytes.")
+        patchsig = struct.unpack("<I", raw)[0]
+        if patchsig != 0:
+            raise MyException(f"patch_sig for {name} should be 0, but is instead {patchsig}.")
 
         # Extract the patch meta variables
-        bytes = get_bytes(filename, f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}", "patch_meta")
-        fuse_ver, engine_id, ucode_id = struct.unpack("<LLL", bytes)
+        raw = get_bytes(filename, f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}", "patch_meta")
+        fuse_ver, engine_id, ucode_id = struct.unpack("<III", raw)
 
         # Fourth, patch_loc[], patch_sig[], fuse_ver, engine_id, ucode_id, and num_sigs
-        f.write(struct.pack("<6L", patchloc, 0, fuse_ver, engine_id, ucode_id, num_sigs))
+        f.write(struct.pack("<6L", patchloc, patchsig, fuse_ver, engine_id, ucode_id, num_sigs))
 
         # Extract the descriptor (nvfw_hs_load_header_v2)
         descriptor = get_bytes(filename, f"kgspBinArchiveBooter{LOAD}Ucode_{GPU}", f"header_{fuse}")
+        if len(descriptor) < 36:
+            raise MyException(f"nvfw_hs_load_header_v2 descriptor for {name} must be at least 36 bytes, but is instead {len(descriptor)} bytes.")
 
         # Extract some of individual fields of nvfw_hs_load_header_v2
-        # num_apps is the fifth field of struct nvfw_hs_load_header_v2
         (os_code_offset, os_code_size, os_data_offset, os_data_size, num_apps,
-         app_code_offset, app_code_size, app_data_offset, app_data_size) = struct.unpack("<9L", descriptor)
+         app_code_offset, app_code_size, app_data_offset, app_data_size) = struct.unpack_from("<9I", descriptor)
         # Verify that sizeof(descriptor) == 5 * 4 + num_apps * 16
         if len(descriptor) != 5 * 4 + num_apps * 16:
             raise MyException(f"nvfw_hs_load_header_v2 descriptor for {name} should be {5 * 4 + num_apps * 16} bytes, but is instead {len(descriptor)} bytes.")
-        # Nova depends on os_code_size == app_code_offset
+        # Nouveau depends on os_code_size == app_code_offset
         if os_code_size != app_code_offset:
             raise MyException(f"nvfw_hs_load_header_v2 descriptor for {name} has os_code_size={os_code_size} and app_code_offset={app_code_offset}, but they should be the same.")
 
@@ -370,10 +280,10 @@ def scrubber(gpu, sigsize, fuse = "prod"):
         firmware_size = len(firmware)
 
         # Query the number of signatures.  This should be a 4-byte array (32-bit little-endian integer)
-        bytes = get_bytes(filename, f"ksec2BinArchiveSecurescrubUcode_{GPUX}", "num_sigs")
-        if len(bytes) != 4:
-            raise MyException(f"num_sigs array for {name} is wrong size of {len(bytes)}")
-        num_sigs = struct.unpack("<L", bytes)[0]
+        raw = get_bytes(filename, f"ksec2BinArchiveSecurescrubUcode_{GPUX}", "num_sigs")
+        if len(raw) != 4:
+            raise MyException(f"num_sigs array for {name} is wrong size of {len(raw)}")
+        num_sigs = struct.unpack("<I", raw)[0]
         if num_sigs < 1 or num_sigs > 15:
             raise MyException(f"out of range number of signatures ({num_sigs}) for {name}")
 
@@ -404,18 +314,42 @@ def scrubber(gpu, sigsize, fuse = "prod"):
         f.write(signatures)
 
         # Extract the patch location
-        bytes = get_bytes(filename, f"ksec2BinArchiveSecurescrubUcode_{GPUX}", "patch_loc")
-        patchloc = struct.unpack("<L", bytes)[0]
+        raw = get_bytes(filename, f"ksec2BinArchiveSecurescrubUcode_{GPUX}", "patch_loc")
+        if len(raw) != 4:
+            raise MyException(f"patch_loc[] array for {name} should be one element, but is {len(raw)} bytes.")
+        patchloc = struct.unpack("<I", raw)[0]
+
+        # Extract the patch sig offset.  RM expects this to be zero, but doesn't use it,
+        # so if it's ever non-zero, something has changed.
+        raw = get_bytes(filename, f"ksec2BinArchiveSecurescrubUcode_{GPUX}", "patch_sig")
+        if len(raw) != 4:
+            raise MyException(f"patch_sig[] array for {name} should be one element, but is {len(raw)} bytes.")
+        patchsig = struct.unpack("<I", raw)[0]
+        if patchsig != 0:
+            raise MyException(f"patch_sig for {name} should be 0, but is instead {patchsig}.")
 
         # Extract the patch meta variables
-        bytes = get_bytes(filename, f"ksec2BinArchiveSecurescrubUcode_{GPUX}", "patch_meta")
-        fuse_ver, engine_id, ucode_id = struct.unpack("<LLL", bytes)
+        raw = get_bytes(filename, f"ksec2BinArchiveSecurescrubUcode_{GPUX}", "patch_meta")
+        fuse_ver, engine_id, ucode_id = struct.unpack("<III", raw)
 
         # Fourth, patch_loc[], patch_sig[], fuse_ver, engine_id, ucode_id, and num_sigs
-        f.write(struct.pack("<6L", patchloc, 0, fuse_ver, engine_id, ucode_id, num_sigs))
+        f.write(struct.pack("<6L", patchloc, patchsig, fuse_ver, engine_id, ucode_id, num_sigs))
 
         # Extract the descriptor (nvkm_gsp_booter_fw_hdr)
         descriptor = get_bytes(filename, f"ksec2BinArchiveSecurescrubUcode_{GPUX}", f"header_{fuse}")
+        if len(descriptor) < 36:
+            raise MyException(f"nvfw_hs_load_header_v2 descriptor for {name} must be at least 36 bytes, but is instead {len(descriptor)} bytes.")
+
+        # Extract some of individual fields of nvfw_hs_load_header_v2
+        # num_apps is the fifth field of struct nvfw_hs_load_header_v2
+        (os_code_offset, os_code_size, os_data_offset, os_data_size, num_apps,
+         app_code_offset, app_code_size, app_data_offset, app_data_size) = struct.unpack_from("<9I", descriptor)
+        # Verify that sizeof(descriptor) == 5 * 4 + num_apps * 16
+        if len(descriptor) != 5 * 4 + num_apps * 16:
+            raise MyException(f"nvfw_hs_load_header_v2 descriptor for {name} should be {5 * 4 + num_apps * 16} bytes, but is instead {len(descriptor)} bytes.")
+        # Nouveau depends on os_code_size == app_code_offset
+        if os_code_size != app_code_offset:
+            raise MyException(f"nvfw_hs_load_header_v2 descriptor for {name} has os_code_size={os_code_size} and app_code_offset={app_code_offset}, but they should be the same.")
 
         # Fifth, the descriptor
         f.write(descriptor)
@@ -540,7 +474,7 @@ def write_padded(f, b):
 # Unlike the other images, FMC firmware and its metadata are encapsulated in
 # an ELF image.  FMC metadata is simpler than the other firmware types, as it
 # comprises just three binary blobs.
-def fmc(gpu: str, fuse: str, elf64: bool):
+def fmc(gpu: str, fuse: str, elf64: bool = False):
     global outputpath
     global version
 
@@ -555,12 +489,18 @@ def fmc(gpu: str, fuse: str, elf64: bool):
 
     ucode_hash = get_bytes(filename, f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}", "ucode_hash")
     (ucode_hash_size, ucode_hash_padded_size) = sizes(ucode_hash)
+    if ucode_hash_size != 48:
+        raise MyException(f"FSP hash length for {gpu} should be 48 but is {len(ucode_hash)}")
 
     ucode_sig = get_bytes(filename, f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}", "ucode_sig")
     (ucode_sig_size, ucode_sig_padded_size) = sizes(ucode_sig)
+    if ucode_sig_size < 96 or ucode_sig_size > 384:
+        raise MyException(f"FSP signature for {gpu} has an invalid length of {ucode_sig_size}")
 
     ucode_pkey = get_bytes(filename, f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}", "ucode_pkey")
     (ucode_pkey_size, ucode_pkey_padded_size) = sizes(ucode_pkey)
+    if ucode_pkey_size < 97 or ucode_pkey_size > 384:
+        raise MyException(f"FSP public key for {gpu} has an invalid length of {ucode_pkey_size}")
 
     ucode_image = get_bytes(filename, f"kgspBinArchiveGspRmFmcGfw{fuse}Signed_{GPU}", "ucode_image")
     (ucode_image_size, ucode_image_padded_size) = sizes(ucode_image)
@@ -629,70 +569,33 @@ def fmc(gpu: str, fuse: str, elf64: bool):
 
 # Extract the GSP-RM firmware from the .run file and copy the binaries
 # to the target directory.
-def gsp_firmware(filename):
+def gsp_firmware_from_run(filename):
     global outputpath
     global version
 
-    import subprocess
     import shutil
 
-    basename = os.path.basename(filename)
-
     with tempfile.TemporaryDirectory() as temp:
-        os.chdir(temp)
+        directory = extract_run_file(filename, temp)
 
-        try:
-            print(f"Validating {basename}")
+        tu10x_gsp_src = f"{directory}/gsp_tu10x.bin"
+        ga10x_gsp_src = f"{directory}/gsp_ga10x.bin"
 
-            result = subprocess.run(['/bin/sh', filename, '--check'], shell=False,
-                                    check=True, timeout=10,
-                                    stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-            output = result.stdout.strip().decode("ascii")
-            if not "check sums and md5 sums are ok" in output:
-                raise MyException(f"{basename} is not a valid Nvidia driver .run file")
-        except subprocess.CalledProcessError as error:
-            print(error.output.decode())
-            raise
-
-        try:
-            print(f"Extracting {basename} to {temp}")
-            # The -x parameter tells the installer to only extract the
-            # contents and then exit.
-            subprocess.run(['/bin/sh', filename, '-x'], shell=False,
-                           check=True, timeout=60,
-                           stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-        except subprocess.SubprocessError as error:
-            print(error.output.decode())
-            raise
-
-        try:
-            # The .run file extracts its contents to a directory with the same
-            # name as the file itself, minus the .run.  The GSP-RM firmware
-            # images are in the 'firmware' subdirectory.
-            result = subprocess.run(['/bin/sh', filename, '--target-directory'], shell=False,
-                                    check=True, timeout=10,
-                                    stdout = subprocess.PIPE, stderr = subprocess.DEVNULL)
-            directory = result.stdout.strip().decode("ascii")
-            os.chdir(f"{directory}/firmware")
-        except subprocess.SubprocessError as e:
-            print(e.output.decode())
-            raise
-
-        if not os.path.exists('gsp_tu10x.bin') or not os.path.exists('gsp_ga10x.bin'):
-            raise MyException(f"Firmware files are missing in {basename}")
-
-        shutil.copyfile('gsp_tu10x.bin', f"{outputpath}/nvidia/tu102/gsp/gsp-{version}.bin")
+        shutil.copyfile(tu10x_gsp_src, f"{outputpath}/nvidia/tu102/gsp/gsp-{version}.bin")
         print(f"Copied gsp_tu10x.bin to tu102/gsp/gsp-{version}.bin")
-        shutil.copyfile('gsp_ga10x.bin', f"{outputpath}/nvidia/ga102/gsp/gsp-{version}.bin")
+        shutil.copyfile(ga10x_gsp_src, f"{outputpath}/nvidia/ga102/gsp/gsp-{version}.bin")
         print(f"Copied gsp_ga10x.bin to ga102/gsp/gsp-{version}.bin")
+
+        tu10x_ucodes_src = f"{directory}/ucodes_tu10x.bin"
+        ga10x_ucodes_src = f"{directory}/ucodes_ga10x.bin"
 
         # Copy ucodes binaries if present (r610+).  Each ucodes.bin is paired
         # with the corresponding gsp.bin and loaded separately by the driver.
-        if os.path.exists('ucodes_tu10x.bin'):
-            shutil.copyfile('ucodes_tu10x.bin', f"{outputpath}/nvidia/tu102/gsp/ucodes-{version}.bin")
+        if os.path.exists(tu10x_ucodes_src):
+            shutil.copyfile(tu10x_ucodes_src, f"{outputpath}/nvidia/tu102/gsp/ucodes-{version}.bin")
             print(f"Copied ucodes_tu10x.bin to tu102/gsp/ucodes-{version}.bin")
-        if os.path.exists('ucodes_ga10x.bin'):
-            shutil.copyfile('ucodes_ga10x.bin', f"{outputpath}/nvidia/ga102/gsp/ucodes-{version}.bin")
+        if os.path.exists(ga10x_ucodes_src):
+            shutil.copyfile(ga10x_ucodes_src, f"{outputpath}/nvidia/ga102/gsp/ucodes-{version}.bin")
             print(f"Copied ucodes_ga10x.bin to ga102/gsp/ucodes-{version}.bin")
 
 
@@ -710,10 +613,8 @@ def gsp_firmware_from_build(gsp_build_dir):
     tu10x_src = os.path.join(gsp_build_dir, "gsp_tu10x.bin")
     ga10x_src = os.path.join(gsp_build_dir, "gsp_ga10x.bin")
 
-    if not os.path.exists(tu10x_src):
-        raise MyException(f"GSP firmware not found: {tu10x_src}")
-    if not os.path.exists(ga10x_src):
-        raise MyException(f"GSP firmware not found: {ga10x_src}")
+    if not os.path.exists(tu10x_src) or not os.path.exists(ga10x_src):
+        raise MyException(f"Firmware files are missing in {gsp_build_dir}")
 
     os.makedirs(f"{outputpath}/nvidia/tu102/gsp/", exist_ok = True)
     os.makedirs(f"{outputpath}/nvidia/ga102/gsp/", exist_ok = True)
@@ -736,24 +637,12 @@ def gsp_firmware_from_build(gsp_build_dir):
         shutil.copyfile(ucodes_ga10x_src, f"{outputpath}/nvidia/ga102/gsp/ucodes-{version}.bin")
         print(f"Copied ucodes_ga10x.bin to nvidia/ga102/gsp/ucodes-{version}.bin")
 
-# Create a symlink, deleting the existing file/link if necessary
-def symlink(dest, source, target_is_directory = False):
-    import errno
-
-    try:
-        os.symlink(dest, source, target_is_directory = target_is_directory)
-    except OSError as e:
-        if e.errno == errno.EEXIST:
-            os.remove(source)
-            os.symlink(dest, source, target_is_directory = target_is_directory)
-        else:
-            raise e
-
 # Create symlinks in the target directory for the other GPUs.  This mirrors
 # what the WHENCE file in linux-firmware does.
 def symlinks():
     global outputpath
     global version
+    from pathlib import Path
 
     print(f"Creating symlinks in {outputpath}/nvidia")
     os.chdir(f"{outputpath}/nvidia")
@@ -799,20 +688,21 @@ def symlinks():
     # Symlink the GSP-RM image
     symlink(f"../../tu102/gsp/gsp-{version}.bin", f"tu116/gsp/gsp-{version}.bin")
     symlink(f"../../tu102/gsp/gsp-{version}.bin", f"ga100/gsp/gsp-{version}.bin")
-    symlink(f"../../ga102/gsp/gsp-{version}.bin", f"ad102/gsp/gsp-{version}.bin")
-    symlink(f"../../ga102/gsp/gsp-{version}.bin", f"gh100/gsp/gsp-{version}.bin")
-    symlink(f"../../ga102/gsp/gsp-{version}.bin", f"gb100/gsp/gsp-{version}.bin")
-    symlink(f"../../ga102/gsp/gsp-{version}.bin", f"gb202/gsp/gsp-{version}.bin")
+
+    # Every other path
+    root = Path(".")
+    paths = [p for p in root.glob("*") if os.path.isdir(f"{p}/gsp") and not os.path.exists(f"{p}/gsp/gsp-{version}.bin")]
+    for p in paths:
+        symlink(f"../../ga102/gsp/gsp-{version}.bin", f"{p}/gsp/gsp-{version}.bin")
 
     # Symlink the ucodes binaries
     if os.path.exists(f"tu102/gsp/ucodes-{version}.bin"):
         symlink(f"../../tu102/gsp/ucodes-{version}.bin", f"tu116/gsp/ucodes-{version}.bin")
         symlink(f"../../tu102/gsp/ucodes-{version}.bin", f"ga100/gsp/ucodes-{version}.bin")
     if os.path.exists(f"ga102/gsp/ucodes-{version}.bin"):
-        symlink(f"../../ga102/gsp/ucodes-{version}.bin", f"ad102/gsp/ucodes-{version}.bin")
-        symlink(f"../../ga102/gsp/ucodes-{version}.bin", f"gh100/gsp/ucodes-{version}.bin")
-        symlink(f"../../ga102/gsp/ucodes-{version}.bin", f"gb100/gsp/ucodes-{version}.bin")
-        symlink(f"../../ga102/gsp/ucodes-{version}.bin", f"gb202/gsp/ucodes-{version}.bin")
+        paths = [p for p in root.glob("*") if os.path.isdir(f"{p}/gsp") and not os.path.exists(f"{p}/gsp/ucodes-{version}.bin")]
+        for p in paths:
+            symlink(f"../../ga102/gsp/ucodes-{version}.bin", f"{p}/gsp/ucodes-{version}.bin")
 
 # Create a text file that can be inserted as-is to the WHENCE file of the
 # linux-firmware git repository.  Note that existing firmware versions in
@@ -826,7 +716,7 @@ def symlinks():
 #     independently.
 #  2. All files must be located in the /gsp/ subdirectory of the GPU directory,
 #     and there must be no symlinks to any files outside of the /gsp/ directory.
-#     This allows the Nova driver to find all of the files it needs inside
+#     This allows the Nouveau driver to find all of the files it needs inside
 #     the /gsp/ directory.
 #  3. The WHENCE file should list each version in a separate block.  This wasn't
 #     enforced in early versions of the WHENCE file.
@@ -999,15 +889,14 @@ def main():
 
     parser = argparse.ArgumentParser(
         description = 'Extract firmware binaries from the OpenRM git repository'
-        ' in a format expected by the Nouveau/Nova device drivers.',
+        ' in a format expected by the Nouveau device drivers.',
         epilog = 'Running as root and specifying -o /lib/firmware will install'
-        ' the firmware files directly where Nouveau and Nova expects them.'
+        ' the firmware files directly where Nouveau expects them.'
         ' The --revision option is useful for testing new firmware'
-        ' versions without changing Nouveau/Nova source code.'
+        ' versions without changing Nouveau source code.'
         ' The --driver option accepts a .run file path, a URL, or a local'
         ' build output directory.  If -d is given with no argument, the .run'
-        ' file is downloaded automatically.'
-        ' --elf32 and --elf64 are mutually exclusive.')
+        ' file is downloaded automatically.')
     parser.add_argument('-i', '--input', default = os.getcwd(),
         help = 'Path to source directory (where version.mk exists)')
     parser.add_argument('-o', '--output', default = os.path.join(os.getcwd(), '_out'),
@@ -1029,12 +918,6 @@ def main():
     parser.add_argument('-w', '--whence', action='store_true',
         help = 'Also generate a WHENCE file')
 
-    elf_group = parser.add_mutually_exclusive_group()
-    elf_group.add_argument('--elf32', action='store_false', dest='elf64', default=True,
-        help = 'Generate Nouveau-compatible 32-bit ELF images for FMC')
-    elf_group.add_argument('--elf64', action='store_true', dest='elf64',
-        help = 'Generate Nova-compatible 64-bit ELF images for FMC (default)')
-
     args = parser.parse_args()
 
     args.output = os.path.abspath(args.output)
@@ -1053,9 +936,12 @@ def main():
             version = re.search(r'^NVIDIA_VERSION = ([^\s]+)', f.read(), re.MULTILINE).group(1)
         del f
 
+    if not version.isascii():
+        raise MyException(f"Version string {version} must not contain non-ASCII characters")
+
     print(f"Generating files for version {version}")
 
-    outputpath = args.output;
+    outputpath = args.output
     print(f"Writing files to {outputpath}")
 
     os.makedirs(f"{outputpath}/nvidia", exist_ok = True)
@@ -1092,16 +978,31 @@ def main():
     booter("ad102", "load", 384, fuse)
     booter("ad102", "unload", 384, fuse)
     gsp_bootloader("ad102", fuse)
-    scrubber("ad102", 384, fuse) # Not currently used by Nouveau
+    # scrubber("ad102", 384, fuse) # Not currently used by Nouveau
 
     gsp_bootloader("gh100", fuse)
-    fmc("gh100", fmc_fuse, args.elf64)
+    fmc("gh100", fmc_fuse)
 
     gsp_bootloader("gb100", fuse)
-    fmc("gb100", fmc_fuse, args.elf64)
+    fmc("gb100", fmc_fuse)
+
+    # GB10B (Jetson Thor) support was added in r580
+    if is_supported("gb10b"):
+        gsp_bootloader("gb10b", fuse)
+        fmc("gb10b", fmc_fuse)
 
     gsp_bootloader("gb202", fuse)
-    fmc("gb202", fmc_fuse, args.elf64)
+    fmc("gb202", fmc_fuse)
+
+    # GB20B (N1X) support was added in r580
+    if is_supported("gb20b"):
+        gsp_bootloader("gb20b", fuse)
+        fmc("gb20b", fmc_fuse)
+
+    # GR100 support was added in r610
+    if is_supported("gr100"):
+        gsp_bootloader("gr100", fuse)
+        fmc("gr100", fmc_fuse)
 
     gsp_origin = None
 
@@ -1115,7 +1016,7 @@ def main():
             with tempfile.NamedTemporaryFile(prefix = f'NVIDIA-Linux-x86_64-{version}-', suffix = '.run') as f:
                 print(f"Downloading driver from {args.driver} as {f.name}")
                 urllib.request.urlretrieve(args.driver, f.name)
-                gsp_firmware(f.name)
+                gsp_firmware_from_run(f.name)
             del f
         elif os.path.isdir(args.driver):
             gsp_firmware_from_build(args.driver)
@@ -1124,7 +1025,7 @@ def main():
             if not os.path.exists(args.driver):
                 raise MyException(f"File {args.driver} does not exist.")
 
-            gsp_firmware(args.driver)
+            gsp_firmware_from_run(args.driver)
 
     if args.symlink:
         symlinks()

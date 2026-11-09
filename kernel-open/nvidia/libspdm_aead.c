@@ -1,5 +1,5 @@
 /*
-* SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+* SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 * SPDX-License-Identifier: MIT
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
@@ -134,6 +134,11 @@ static int lkca_aead_internal(struct crypto_aead *aead,
 {
     DECLARE_CRYPTO_WAIT(wait);
     int rc = 0;
+
+    if (crypto_aead_setauthsize(aead, tag_size)) {
+        pr_info("authentication tag size could not be set\n");
+        return -EINVAL;
+    }
 
     if (crypto_aead_setkey(aead, key, key_size)) {
         pr_info("key could not be set\n");
@@ -474,4 +479,3 @@ bool libspdm_aead_aes_gcm_decrypt_prealloc(void *context,
     return ret == 0;
 
 }
-

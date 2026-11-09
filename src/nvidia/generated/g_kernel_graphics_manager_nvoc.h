@@ -68,6 +68,27 @@ typedef struct KGRMGR_FECS_GLOBAL_TRACE_INFO KGRMGR_FECS_GLOBAL_TRACE_INFO;
 typedef struct KGRMGR_FECS_VGPU_GLOBAL_TRACE_INFO KGRMGR_FECS_VGPU_GLOBAL_TRACE_INFO;
 
 /*!
+ * State for the SRT RC watchdog test
+ */
+typedef struct KGRMGR_RC_WATCHDOG_TEST_INFO
+{
+    /*! Whether the SRT RC watchdog test mode is enabled */
+    NvBool bEnabled;
+
+    /*! Client handle that is running the SRT RC watchdog test */
+    NvHandle hTestClient;
+
+    /*! Subdevice handle that is running the SRT RC watchdog test */
+    NvHandle hTestSubdevice;
+
+    /*! Original ctxsw timeout */
+    NvU32 origCtxswTimeout;
+
+    /*! Whether the original ctxsw timeout is enabled */
+    NvBool bOrigCtxswTimeoutEnabled;
+} KGRMGR_RC_WATCHDOG_TEST_INFO;
+
+/*!
  * KernelGraphicsManager provides means to access KernelGraphics engine with specified index.
  * It also houses information at a higher level or that is common between KernelGraphics engines.
  */
@@ -82,10 +103,9 @@ typedef struct KGRMGR_FECS_VGPU_GLOBAL_TRACE_INFO KGRMGR_FECS_VGPU_GLOBAL_TRACE_
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelGraphicsManager;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__KernelGraphicsManager;
 
 
 struct KernelGraphicsManager {
@@ -111,6 +131,7 @@ struct KernelGraphicsManager {
 //  NvBool PDB_PROP_KGRMGR_IS_MISSING inherited from OBJENGSTATE
 
     // Data members
+    KGRMGR_RC_WATCHDOG_TEST_INFO rcWatchdogTest;
     GRMGR_LEGACY_KGRAPHICS_STATIC_INFO PRIVATE_FIELD(legacyKgraphicsStaticInfo);
     NvU64 PRIVATE_FIELD(veidInUseMask);
     NvU64 PRIVATE_FIELD(grIdxVeidMask)[8];
@@ -143,6 +164,7 @@ struct KernelGraphicsManager_PRIVATE {
 //  NvBool PDB_PROP_KGRMGR_IS_MISSING inherited from OBJENGSTATE
 
     // Data members
+    KGRMGR_RC_WATCHDOG_TEST_INFO rcWatchdogTest;
     GRMGR_LEGACY_KGRAPHICS_STATIC_INFO legacyKgraphicsStaticInfo;
     NvU64 veidInUseMask;
     NvU64 grIdxVeidMask[8];
@@ -152,29 +174,10 @@ struct KernelGraphicsManager_PRIVATE {
 };
 
 
-// Vtable with 14 per-class function pointers
-struct NVOC_VTABLE__KernelGraphicsManager {
-    NV_STATUS (*__kgrmgrConstructEngine__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    void (*__kgrmgrStateDestroy__)(OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual override (engstate) base (engstate)
-    void (*__kgrmgrInitMissing__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreInitLocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreInitUnlocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateInitLocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateInitUnlocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreLoad__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateLoad__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePostLoad__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreUnload__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateUnload__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePostUnload__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kgrmgrIsPresent__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelGraphicsManager {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__KernelGraphicsManager vtable;
 };
 
 #ifndef __nvoc_class_id_KernelGraphicsManager
@@ -415,13 +418,17 @@ static inline NV_STATUS kgrmgrCheckVeidsRequest(OBJGPU *arg1, struct KernelGraph
 
 
 // Wrapper macros for halified functions
-#define kgrmgrConstructEngine_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kgrmgrConstructEngine__
+#define kgrmgrConstructEngine_FNPTR(arg_this) arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define kgrmgrConstructEngine(arg1, arg_this, arg3) kgrmgrConstructEngine_DISPATCH(arg1, arg_this, arg3)
-#define kgrmgrStateDestroy_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__kgrmgrStateDestroy__
+#define kgrmgrStateDestroy_FNPTR(arg_this) arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__
 #define kgrmgrStateDestroy(arg1, arg_this) kgrmgrStateDestroy_DISPATCH(arg1, arg_this)
 #define kgrmgrGetVeidsFromGpcCount_FNPTR(arg_this) arg_this->__kgrmgrGetVeidsFromGpcCount__
 #define kgrmgrGetVeidsFromGpcCount(arg1, arg_this, gpcCount, pVeidCount) kgrmgrGetVeidsFromGpcCount_DISPATCH(arg1, arg_this, gpcCount, pVeidCount)
 #define kgrmgrGetVeidsFromGpcCount_HAL(arg1, arg_this, gpcCount, pVeidCount) kgrmgrGetVeidsFromGpcCount_DISPATCH(arg1, arg_this, gpcCount, pVeidCount)
+#define kgrmgrConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define kgrmgrConstructApertures(pGpu, pEngstate) kgrmgrConstructApertures_DISPATCH(pGpu, pEngstate)
+#define kgrmgrDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define kgrmgrDestructApertures(pGpu, pEngstate) kgrmgrDestructApertures_DISPATCH(pGpu, pEngstate)
 #define kgrmgrInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define kgrmgrInitMissing(pGpu, pEngstate) kgrmgrInitMissing_DISPATCH(pGpu, pEngstate)
 #define kgrmgrStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
@@ -449,63 +456,71 @@ static inline NV_STATUS kgrmgrCheckVeidsRequest(OBJGPU *arg1, struct KernelGraph
 
 // Dispatch functions
 static inline NV_STATUS kgrmgrConstructEngine_DISPATCH(OBJGPU *arg1, struct KernelGraphicsManager *arg_this, ENGDESCRIPTOR arg3) {
-    return arg_this->__nvoc_metadata_ptr->vtable.__kgrmgrConstructEngine__(arg1, arg_this, arg3);
+    return arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(arg1, staticCast(arg_this, OBJENGSTATE), arg3);
 }
 
 static inline void kgrmgrStateDestroy_DISPATCH(OBJGPU *arg1, struct KernelGraphicsManager *arg_this) {
-    arg_this->__nvoc_metadata_ptr->vtable.__kgrmgrStateDestroy__(arg1, arg_this);
+    arg_this->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(arg1, staticCast(arg_this, OBJENGSTATE));
 }
 
 static inline NV_STATUS kgrmgrGetVeidsFromGpcCount_DISPATCH(OBJGPU *arg1, struct KernelGraphicsManager *arg_this, NvU32 gpcCount, NvU32 *pVeidCount) {
     return arg_this->__kgrmgrGetVeidsFromGpcCount__(arg1, arg_this, gpcCount, pVeidCount);
 }
 
+static inline NV_STATUS kgrmgrConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
+static inline void kgrmgrDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
 static inline void kgrmgrInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kgrmgrStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kgrmgrStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kgrmgrStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kgrmgrStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS kgrmgrStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kgrmgrStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kgrmgrStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kgrmgrStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kgrmgrStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS kgrmgrStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NvBool kgrmgrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__kgrmgrIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions
@@ -561,6 +576,40 @@ static inline KGRMGR_FECS_GLOBAL_TRACE_INFO * kgrmgrGetFecsGlobalTraceInfo(OBJGP
 static inline KGRMGR_FECS_VGPU_GLOBAL_TRACE_INFO * kgrmgrGetFecsVgpuGlobalTraceInfo(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager){
     struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
     return pKernelGraphicsManager_PRIVATE->pFecsVgpuGlobalTraceInfo;
+}
+
+static inline NvBool kgrmgrGetRcWatchdogTestMode(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager){
+    return pKernelGraphicsManager->rcWatchdogTest.bEnabled;
+}
+
+static inline void kgrmgrSetRcWatchdogTestMode(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvBool bEnable){
+    pKernelGraphicsManager->rcWatchdogTest.bEnabled = bEnable;
+}
+
+static inline NvHandle kgrmgrGetRcWatchdogTestClient(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager){
+    return pKernelGraphicsManager->rcWatchdogTest.hTestClient;
+}
+
+static inline void kgrmgrSetRcWatchdogTestClient(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvHandle hClient){
+    pKernelGraphicsManager->rcWatchdogTest.hTestClient = hClient;
+}
+
+static inline NvHandle kgrmgrGetRcWatchdogTestSubdevice(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager){
+    return pKernelGraphicsManager->rcWatchdogTest.hTestSubdevice;
+}
+
+static inline void kgrmgrSetRcWatchdogTestSubdevice(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvHandle hSubdevice){
+    pKernelGraphicsManager->rcWatchdogTest.hTestSubdevice = hSubdevice;
+}
+
+static inline void kgrmgrGetRcWatchdogOrigCtxswTimeout(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvBool *pbEnabled, NvU32 *pTimeout){
+    *pbEnabled = pKernelGraphicsManager->rcWatchdogTest.bOrigCtxswTimeoutEnabled;
+    *pTimeout = pKernelGraphicsManager->rcWatchdogTest.origCtxswTimeout;
+}
+
+static inline void kgrmgrSetRcWatchdogOrigCtxswTimeout(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvBool bEnabled, NvU32 timeout){
+    pKernelGraphicsManager->rcWatchdogTest.bOrigCtxswTimeoutEnabled = bEnabled;
+    pKernelGraphicsManager->rcWatchdogTest.origCtxswTimeout = timeout;
 }
 
 #undef PRIVATE_FIELD

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,8 @@
 #include "kernel/gpu/mem_mgr/heap.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/rc/kernel_rc.h"
+#include "core/gmcapi_impl.h"
+#include "gmcapi/gmcapi_sched.h"
 #include "gpu/fifo/kernel_channel.h"
 #include "gpu/fifo/kernel_fifo.h"
 #include "kernel/rmapi/event_api.h"
@@ -51,10 +53,13 @@
 
 #include "gpu/mem_mgr/mem_desc.h"
 #include "os/os.h"
+#include "nverror.h"
 #include "vgpu/dev_vgpu.h"
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_util.h"
 
+#include "mctp_format.h"
+#include "nvdm_format.h"
 #ifndef RM_PAGE_SIZE
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
 #endif
@@ -64,6 +69,9 @@
 // workitem callback for pstate change event
 static void
 _rmPstateEventCallback(NvU32 gpuInstance, void *pPstateParams);
+
+static void
+_rmGpuStunEventCallback(NvU32 gpuInstance, void *pStunParams);
 
 static inline NvU32 _readEventBufPut(OBJGPU *pGpu, OBJVGPU *pVGpu)
 {
@@ -102,7 +110,7 @@ NV_STATUS _setupGspEventInfrastructure(OBJGPU *pGpu, OBJVGPU *pVGpu)
         addressSpace = ADDR_SYSMEM;
 
     status = _allocRpcMemDesc(pGpu,
-                              RM_PAGE_SIZE,
+                              RM_PAGE_SIZE_128K,
                               NV_MEMORY_CONTIGUOUS,
                               addressSpace,
                               memFlags,
@@ -114,6 +122,12 @@ NV_STATUS _setupGspEventInfrastructure(OBJGPU *pGpu, OBJVGPU *pVGpu)
         NV_PRINTF(LEVEL_ERROR, "_setupGspEventInfrastructure: GSP Event buf memory setup failed: 0x%x\n", status);
         return status;
     }
+
+    // Even though the allocated size up above is 128K, keep these values set to the ones used for a 4K
+    // event buffer until we negotiate support for GMC events.
+    pVGpu->eventRingSize = RM_PAGE_SIZE;
+    pVGpu->eventRingElementSize = VGPU_EVENT_BUF_ENTRY_SIZE;
+    pVGpu->eventRingElementCount = VGPU_EVENT_BUF_ENTRY_COUNT;
 
     pVGpu->eventRing.mem.pfn = memdescGetPte(pVGpu->eventRing.mem.pMemDesc, AT_GPU, 0) >> RM_PAGE_SHIFT;
 
@@ -207,6 +221,17 @@ void vgpuServiceEventGuestAllocated(OBJGPU *pGpu, OBJVGPU *pVGpu, VGPU_EVENT_BUF
                      notifyIdx, 0, 0,
                      NV_OK, NV_OS_WRITE_THEN_AWAKEN);
     }
+}
+
+void vgpuServiceEventGpuResetRequired(OBJGPU *pGpu, OBJVGPU *pVGpu)
+{
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_VGPU_RESET_REQUIRED))
+        return;
+
+    // Emit XID 154 so the guest OS surfaces it (Linux dmesg/journald, Windows Event Viewer).
+    nvErrorLog_va(pGpu, GPU_RECOVERY_ACTION_CHANGED, "GPU marked for reset by host");
+
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_VGPU_RESET_REQUIRED, NV_TRUE);
 }
 
 void vgpuServiceEventRC(OBJGPU *pGpu, OBJVGPU *pVGpu, VGPU_EVENT_BUF_ENTRY *pEventEntry)
@@ -330,6 +355,115 @@ void vgpuServiceEventVnc(OBJGPU *pGpu, OBJVGPU *pVGpu)
     }
 }
 
+/* Stubbed out on builds where externs aren't linkable. */
+#if (NVOS_IS_LINUX && !NVOS_IS_VMWARE && !RMCFG_FEATURE_PLATFORM_GSP && !RMCFG_FEATURE_PLATFORM_MODS)
+extern NV_STATUS nv_uvm_suspend(void);
+extern NV_STATUS nv_uvm_resume(void);
+
+static NV_STATUS vgpuUvmSuspend(OBJGPU *pGpu, OBJVGPU *pVGpu)
+{
+    NV_STATUS status;
+
+    status = nv_uvm_suspend();
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVRM: %s: UVM suspend failed: 0x%x\n",
+                  __func__, status);
+    }
+    return status;
+}
+
+static NV_STATUS vgpuUvmResume(OBJGPU *pGpu, OBJVGPU *pVGpu)
+{
+    NV_STATUS status;
+
+    status = nv_uvm_resume();
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVRM: %s: UVM resume failed: 0x%x\n",
+                  __func__, status);
+    }
+    return status;
+}
+#else
+static NV_STATUS vgpuUvmSuspend(OBJGPU *pGpu, OBJVGPU *pVGpu)
+{
+    return NV_OK;
+}
+
+static NV_STATUS vgpuUvmResume(OBJGPU *pGpu, OBJVGPU *pVGpu)
+{
+    return NV_OK;
+}
+#endif
+
+typedef enum {
+    VGPU_STUN_WORKITEM_STUN,
+    VGPU_STUN_WORKITEM_UNSTUN,
+} VGPU_STUN_WORKITEM_TYPE;
+
+typedef struct {
+    VGPU_STUN_WORKITEM_TYPE type;
+} VGPU_STUN_WORKITEM_PARAMS;
+
+static PORT_ATOMIC NvU32 g_gpuStunCount = 0;
+static PORT_ATOMIC NvU32 g_gpuUnstunCount = 0;
+
+static NV_STATUS
+_vgpuQueueGpuStunWorkItem
+(
+    OBJGPU                *pGpu,
+    VGPU_STUN_WORKITEM_TYPE type
+)
+{
+    NV_STATUS status;
+    VGPU_STUN_WORKITEM_PARAMS *pParams;
+
+    pParams = portMemAllocNonPaged(sizeof(*pParams));
+    if (pParams == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to allocate GPU stun work item params\n");
+        return NV_ERR_NO_MEMORY;
+    }
+
+    pParams->type = type;
+
+    /*
+     * UVM suspend/resume must run without the RM GPU lock held; 
+     * the callback acquires it for the RPC ack only.
+     */
+    status = osQueueWorkItem(pGpu,
+                             _rmGpuStunEventCallback,
+                             (void *)pParams,
+                             (OsQueueWorkItemFlags){0});
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to schedule GPU stun/unstun work item: 0x%x\n",
+                  status);
+        portMemFree(pParams);
+    }
+
+    return status;
+}
+
+void vgpuServiceEventGpuStun(OBJGPU *pGpu, OBJVGPU *pVGpu)
+{
+    (void)_vgpuQueueGpuStunWorkItem(pGpu, VGPU_STUN_WORKITEM_STUN);
+}
+
+void vgpuServiceEventGpuUnstun(OBJGPU *pGpu, OBJVGPU *pVGpu)
+{
+    (void)_vgpuQueueGpuStunWorkItem(pGpu, VGPU_STUN_WORKITEM_UNSTUN);
+}
+
+void vgpuServiceEventHwsResumePendingWork(OBJGPU *pGpu, OBJVGPU *pVGpu)
+{
+    NV_PRINTF(LEVEL_INFO,
+              "HWS resume pending work notification received\n");
+}
+
 void vgpuServiceEventPstate(OBJGPU *pGpu, OBJVGPU *pVGpu)
 {
     NV_STATUS status = NV_OK;
@@ -427,7 +561,7 @@ void vgpuServiceEventInbandResponse(OBJGPU *pGpu, OBJVGPU *pVGpu)
                 goto cleanup;
 
             status = knvlinkInbandMsgCallbackDispatcher(pGpu, GPU_GET_KERNEL_NVLINK(pGpu),
-                                                        sizeof(*pData), (void*)pData);
+                                                        sizeof(pData->data), (void*)pData);
             if (status != NV_OK)
                 goto cleanup;
 
@@ -441,7 +575,7 @@ void vgpuServiceEventInbandResponse(OBJGPU *pGpu, OBJVGPU *pVGpu)
                 goto cleanup;
 
             status = knvlinkInbandMsgCallbackDispatcher(pGpu, GPU_GET_KERNEL_NVLINK(pGpu),
-                                                        sizeof(*pData), (void*)pData);
+                                                        sizeof(pData->data), (void*)pData);
             if (status != NV_OK)
                 goto cleanup;
         }
@@ -458,6 +592,9 @@ void vgpuServiceEventTracing(OBJGPU *pGpu, OBJVGPU *pVGpu)
 #endif
 }
 
+ct_assert(NV_IS_ALIGNED64(NV_VGPU_MSG_MCTP_INDEX_COUNT * sizeof(NvU32), sizeof(NvU64)));
+ct_assert(NV_IS_ALIGNED64(VGPU_EVENT_BUF_ENTRY_SIZE_MCTP, sizeof(NvU64)));
+
 void vgpuServiceEvents(OBJGPU *pGpu, OBJVGPU *pVGpu)
 {
     VGPU_EVENT_BUF_ENTRY *pEventEntry;
@@ -469,60 +606,141 @@ void vgpuServiceEvents(OBJGPU *pGpu, OBJVGPU *pVGpu)
     // process all pending events
     while (pVGpu->eventRing.get != pVGpu->eventRing.put)
     {
-        pEventEntry = ((VGPU_EVENT_BUF_ENTRY*) pVGpu->eventRing.mem.pMemory) + pVGpu->eventRing.get;
+        NvU8 *eventData = (NvU8*)pVGpu->eventRing.mem.pMemory + pVGpu->eventRing.get * pVGpu->eventRingElementSize;
+        pEventEntry = NULL;
 
-        flags = pEventEntry->flags;
+        if (pVGpu->bMctpEventsSupported)
+        {
+            NvU32 *eventBuf = (NvU32*)eventData;
+            NvU32 nvdmPayloadOffset = NV_VGPU_MSG_MCTP_INDEX_COUNT * sizeof(NvU32);
+            NvU32 mctpMagic = eventBuf[NV_VGPU_MSG_MCTP_INDEX_MCTP_MAGIC];
+            NvU32 mctpPayloadSize = eventBuf[NV_VGPU_MSG_MCTP_INDEX_MCTP_PAYLOAD_SIZE];
+            NvU32 mctpHeader = eventBuf[NV_VGPU_MSG_MCTP_INDEX_MCTP_HEADER];
+            NvU32 nvdmHeader = eventBuf[NV_VGPU_MSG_MCTP_INDEX_NVDM_HEADER];
+            NvU32 nvdmPayloadSize = eventBuf[NV_VGPU_MSG_MCTP_INDEX_NVDM_PAYLOAD_SIZE];
+            NvU32 nvdmReserved = eventBuf[NV_VGPU_MSG_MCTP_INDEX_NVDM_RESERVED];
 
-        if (FLD_TEST_DRF(_VGPU, _EV_FLAGS, _ALLOCATED, _GUEST, flags))
-        {
-            vgpuServiceEventGuestAllocated(pGpu, pVGpu, pEventEntry);
-        }
-        else if (FLD_TEST_DRF(_VGPU, _EV_FLAGS, _ALLOCATED, _PLUGIN, flags))
-        {
-            // Plugin allocated events may/may not have guest-side equivalents
-            switch (DRF_VAL(_VGPU, _EV_FLAGS, _TYPE, flags))
+            NV_CHECK_OR_GOTO(LEVEL_ERROR, mctpMagic == NV_VGPU_MSG_SIGNATURE_VALID_MCTP, next_event);
+            NV_CHECK_OR_GOTO(LEVEL_ERROR, mctpHeader == (mctpCreateTransportHeader(1, 1, 0, 0, 0) | REF_NUM(MCTP_HEADER_TO, 1)), next_event);
+            NV_CHECK_OR_GOTO(LEVEL_ERROR, nvdmReserved == 0, next_event);
+            NV_CHECK_OR_GOTO(LEVEL_ERROR, mctpPayloadSize >= nvdmPayloadOffset, next_event);
+            NV_CHECK_OR_GOTO(LEVEL_ERROR, mctpPayloadSize <= pVGpu->eventRingElementSize, next_event);
+            NV_CHECK_OR_GOTO(LEVEL_ERROR, nvdmPayloadSize <= (mctpPayloadSize - nvdmPayloadOffset), next_event);
+
+            if (nvdmHeader == mctpCreateNvdmHeader(NVDM_TYPE_GMCAPI))
             {
-                case NV_VGPU_EV_FLAGS_TYPE_ROBUST_CHANNEL_ERROR:
-                    vgpuServiceEventRC(pGpu, pVGpu, pEventEntry);
-                    break;
+                // GMC style event. Make sure there's at least enough for the GMC header.
+                NV_CHECK_OR_GOTO(LEVEL_ERROR, nvdmPayloadSize >= sizeof(GMCAPI_HEADER), next_event);
 
-                case NV_VGPU_EV_FLAGS_TYPE_ROBUST_CHANNEL_ERROR_INSTBLK:
-                    vgpuServiceEventRCInstblk(pGpu, pVGpu, pEventEntry);
-                    break;
+                GMCAPI_HEADER *pGmcHeader = (GMCAPI_HEADER*)(eventData + nvdmPayloadOffset);
+                // Read size, validate payload size fits within remaining nvdmPayloadSize.
+                NvU32 availableGmcPayloadSize = nvdmPayloadSize - sizeof(GMCAPI_HEADER);
+                NvU32 gmcPayloadSize = pGmcHeader->size;
+                NvU32 gmcResponseSize = pGmcHeader->request.max_response_size;
+                NV_CHECK_OR_GOTO(LEVEL_ERROR, gmcPayloadSize <= availableGmcPayloadSize, next_event);
+                NV_CHECK_OR_GOTO(LEVEL_ERROR, gmcResponseSize == 0, next_event);
 
-                case NV_VGPU_EV_FLAGS_TYPE_VNC:
-                    vgpuServiceEventVnc(pGpu, pVGpu);
-                    break;
-
-                case NV_VGPU_EV_FLAGS_TYPE_PSTATE:
-                    vgpuServiceEventPstate(pGpu, pVGpu);
-                    break;
-
-                case NV_VGPU_EV_FLAGS_TYPE_ECC:
-                    vgpuServiceEventEcc(pGpu, pVGpu);
-                    break;
-
-                case NV_VGPU_EV_FLAGS_TYPE_NVENC_REPORTING_STATE:
-                    vgpuServiceEventNvencReportingState(pGpu, pVGpu);
-                    break;
-
-                case NV_VGPU_EV_FLAGS_TYPE_INBAND_RESPONSE:
-                    vgpuServiceEventInbandResponse(pGpu, pVGpu);
-                    break;
-
-                case NV_VGPU_EV_FLAGS_TYPE_TRACING:
-                    vgpuServiceEventTracing(pGpu,pVGpu);
-                    break;
-
-                default:
-                    NV_PRINTF(LEVEL_ERROR, "Unsupported vgpu event type %d\n",
-                              DRF_VAL(_VGPU, _EV_FLAGS, _TYPE, flags));
-                    break;
+                GMCAPI_CONTEXT gmc_ctx =
+                {
+                    .pGpu            = pGpu,
+                    .gfid            = GPU_GFID_PF,
+                    .command         = pGmcHeader->command,
+                    .inParamSize     = gmcPayloadSize, // Don't re-read this from memory after we've validated it.
+                    .pInParams       = pGmcHeader->data,
+                    .maxOutParamSize = 0,
+                    .pOutParams      = NULL,
+                    .flags           = 0  // Filled in by gmcapiDispatch
+                };
+                NV_CHECK_OR_GOTO(LEVEL_ERROR, gmcapiDispatch(&gmc_ctx) == NV_OK, next_event);
+            }
+            else if (nvdmHeader == mctpCreateNvdmHeader(NVDM_TYPE_RM_RPC))
+            {
+                // RM_RPC style event.  The payload size should be exactly what we expect.
+                NV_CHECK_OR_GOTO(LEVEL_ERROR, nvdmPayloadSize == sizeof(VGPU_EVENT_BUF_ENTRY), next_event);
+                pEventEntry = (VGPU_EVENT_BUF_ENTRY*)(eventData + nvdmPayloadOffset);
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_ERROR, "Unsupported vgpu nvdm header 0x%x\n", nvdmHeader);
+                goto next_event;
             }
         }
+        else
+        {
+            pEventEntry = (VGPU_EVENT_BUF_ENTRY*)eventData;
+        }
 
+        if(pEventEntry != NULL)
+        {
+            flags = pEventEntry->flags;
+
+            if (FLD_TEST_DRF(_VGPU, _EV_FLAGS, _ALLOCATED, _GUEST, flags))
+            {
+                vgpuServiceEventGuestAllocated(pGpu, pVGpu, pEventEntry);
+            }
+            else if (FLD_TEST_DRF(_VGPU, _EV_FLAGS, _ALLOCATED, _PLUGIN, flags))
+            {
+                // Plugin allocated events may/may not have guest-side equivalents
+                switch (DRF_VAL(_VGPU, _EV_FLAGS, _TYPE, flags))
+                {
+                    case NV_VGPU_EV_FLAGS_TYPE_ROBUST_CHANNEL_ERROR:
+                        vgpuServiceEventRC(pGpu, pVGpu, pEventEntry);
+                        break;
+
+                    case NV_VGPU_EV_FLAGS_TYPE_ROBUST_CHANNEL_ERROR_INSTBLK:
+                        vgpuServiceEventRCInstblk(pGpu, pVGpu, pEventEntry);
+                        break;
+
+                    case NV_VGPU_EV_FLAGS_TYPE_GPU_STUN:
+                        vgpuServiceEventGpuStun(pGpu, pVGpu);
+                        break;
+
+                    case NV_VGPU_EV_FLAGS_TYPE_GPU_UNSTUN:
+                        vgpuServiceEventGpuUnstun(pGpu, pVGpu);
+                        break;
+
+                    case NV_VGPU_EV_FLAGS_TYPE_HWS_RESUME_PENDING_WORK:
+                        vgpuServiceEventHwsResumePendingWork(pGpu, pVGpu);
+                        break;
+
+                    case NV_VGPU_EV_FLAGS_TYPE_VNC:
+                        vgpuServiceEventVnc(pGpu, pVGpu);
+                        break;
+
+                    case NV_VGPU_EV_FLAGS_TYPE_PSTATE:
+                        vgpuServiceEventPstate(pGpu, pVGpu);
+                        break;
+
+                    case NV_VGPU_EV_FLAGS_TYPE_ECC:
+                        vgpuServiceEventEcc(pGpu, pVGpu);
+                        break;
+
+                    case NV_VGPU_EV_FLAGS_TYPE_NVENC_REPORTING_STATE:
+                        vgpuServiceEventNvencReportingState(pGpu, pVGpu);
+                        break;
+
+                    case NV_VGPU_EV_FLAGS_TYPE_INBAND_RESPONSE:
+                        vgpuServiceEventInbandResponse(pGpu, pVGpu);
+                        break;
+
+                    case NV_VGPU_EV_FLAGS_TYPE_TRACING:
+                        vgpuServiceEventTracing(pGpu,pVGpu);
+                        break;
+
+                    case NV_VGPU_EV_FLAGS_TYPE_GPU_RESET_REQUIRED:
+                        vgpuServiceEventGpuResetRequired(pGpu, pVGpu);
+                        break;
+
+                    default:
+                        NV_PRINTF(LEVEL_ERROR, "Unsupported vgpu event type %d\n",
+                                DRF_VAL(_VGPU, _EV_FLAGS, _TYPE, flags));
+                        break;
+                }
+            }
+        }
+next_event:
         // update the get/put pointers
-        pVGpu->eventRing.get = (pVGpu->eventRing.get + 1) % VGPU_EVENT_BUF_ENTRY_COUNT;
+        pVGpu->eventRing.get = (pVGpu->eventRing.get + 1) % pVGpu->eventRingElementCount;
         _writeEventBufGet(pGpu, pVGpu, pVGpu->eventRing.get);
         pVGpu->eventRing.put = _readEventBufPut(pGpu, pVGpu);
     }
@@ -579,5 +797,117 @@ _rmPstateEventCallback
         NV_PRINTF(LEVEL_ERROR,
                   "GPU sanity check failed! gpuInstance = 0x%x.\n",
                   gpuInstance);
+    }
+}
+
+/*
+ * Workitem callback for GPU stun/unstun events.
+ *
+ * Suspend on the first STUN; resume on the first UNSTUN.
+ * Reset stun/unstun counters only after all UNSTUN events serviced.
+ */
+static void
+_rmGpuStunEventCallback
+(
+    NvU32 gpuInstance,
+    void *pStunParams
+)
+{
+    OBJGPU                    *pGpu = gpumgrGetGpu(gpuInstance);
+    VGPU_STUN_WORKITEM_PARAMS *pParams = (VGPU_STUN_WORKITEM_PARAMS *)pStunParams;
+    NV_STATUS                  status = NV_OK;
+    NV_STATUS                  rpcStatus = NV_OK;
+    NvU32                      stunCount;
+    NvU32                      unstunCount;
+    NvU32                      stunEventType;
+    NvU32                      gpuMaskRelease = 0;
+    NvBool                     bLockAcquired = NV_FALSE;
+
+    if ((pGpu == NULL) || (pParams == NULL))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "NVRM: %s: invalid params (gpuInstance = 0x%x)\n",
+                  __func__, gpuInstance);
+        return;
+    }
+
+    if (pParams->type == VGPU_STUN_WORKITEM_STUN)
+    {
+        stunEventType = NV_VGPU_GPU_STUN_EVENT_TYPE_STUN;
+        stunCount = portAtomicIncrementU32(&g_gpuStunCount);
+
+        if (stunCount == 1)
+        {
+            status = vgpuUvmSuspend(pGpu, GPU_GET_VGPU(pGpu));
+        }
+    }
+    else
+    {
+        stunEventType = NV_VGPU_GPU_STUN_EVENT_TYPE_UNSTUN;
+        unstunCount = portAtomicIncrementU32(&g_gpuUnstunCount);
+        stunCount = portAtomicOrU32(&g_gpuStunCount, 0);
+
+        if (unstunCount == 1)
+        {
+            status = vgpuUvmResume(pGpu, GPU_GET_VGPU(pGpu));
+        }
+
+        if (unstunCount == stunCount)
+        {
+            portAtomicSetU32(&g_gpuStunCount, 0);
+            portAtomicSetU32(&g_gpuUnstunCount, 0);
+        }
+    }
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "NVRM: %s: guest GPU %s failed: 0x%x (gpuInstance = 0x%x)\n",
+                  __func__,
+                  (stunEventType == NV_VGPU_GPU_STUN_EVENT_TYPE_STUN) ? "STUN" : "UNSTUN",
+                  status,
+                  gpuInstance);
+    }
+
+    if (!FULL_GPU_SANITY_CHECK(pGpu))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "NVRM: %s: GPU sanity check failed (gpuInstance = 0x%x)\n",
+                  __func__, gpuInstance);
+        return;
+    }
+
+    if (!rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE, &gpuMaskRelease))
+    {
+        if (rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                  GPU_LOCK_GRP_SUBDEVICE,
+                                  GPUS_LOCK_FLAGS_NONE,
+                                  RM_LOCK_MODULES_RPC,
+                                  &gpuMaskRelease) != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "NVRM: %s: failed to acquire GPU lock for stun RPC\n",
+                      __func__);
+            return;
+        }
+
+        bLockAcquired = NV_TRUE;
+    }
+
+    // Notify the host of the guest suspend/resume result, including failures.
+    NV_RM_RPC_SEND_GUEST_STUN_COMPLETION(pGpu, stunEventType, status, rpcStatus);
+    if (rpcStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "NVRM: %s: failed to send guest %s completion RPC: 0x%x (gpuInstance = 0x%x)\n",
+                  __func__,
+                  (stunEventType == NV_VGPU_GPU_STUN_EVENT_TYPE_STUN) ? "STUN" : "UNSTUN",
+                  rpcStatus,
+                  gpuInstance);
+    }
+
+    if (bLockAcquired && gpuMaskRelease != 0)
+    {
+        rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
     }
 }

@@ -168,7 +168,7 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     // default
     else
     {
-        pThis->__kheadResetPendingLastData__ = &kheadResetPendingLastData_f2d351;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
 
     // kheadReadVblankIntrEnable -- halified (3 hals) body
@@ -188,7 +188,7 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     // default
     else
     {
-        pThis->__kheadReadVblankIntrEnable__ = &kheadReadVblankIntrEnable_86b752;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
 
     // kheadGetDisplayInitialized -- halified (2 hals) body
@@ -205,7 +205,7 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     // default
     else
     {
-        pThis->__kheadGetDisplayInitialized__ = &kheadGetDisplayInitialized_86b752;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
 
     // kheadWriteVblankIntrEnable -- halified (3 hals) body
@@ -225,7 +225,7 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     // default
     else
     {
-        pThis->__kheadWriteVblankIntrEnable__ = &kheadWriteVblankIntrEnable_e426af;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
 
     // kheadProcessVblankCallbacks -- halified (2 hals) body
@@ -242,7 +242,7 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     // default
     else
     {
-        pThis->__kheadProcessVblankCallbacks__ = &kheadProcessVblankCallbacks_e426af;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
 
     // kheadResetPendingVblank -- halified (2 hals) body
@@ -259,13 +259,13 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     // default
     else
     {
-        pThis->__kheadResetPendingVblank__ = &kheadResetPendingVblank_e426af;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
 
     // kheadReadPendingVblank -- halified (2 hals) body
     if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00200000UL) )) /* DispIpHal: DISPv0000 */ 
     {
-        pThis->__kheadReadPendingVblank__ = &kheadReadPendingVblank_72a2e1;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
     else
     {
@@ -341,7 +341,7 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     // default
     else
     {
-        pThis->__kheadProcessRgLineCallbacks__ = &kheadProcessRgLineCallbacks_ca557d;
+        // NVOC_UNREACHABLE, NULL-initialized.
     }
 
     // kheadReadPendingRgSemIntr -- halified (2 hals) body

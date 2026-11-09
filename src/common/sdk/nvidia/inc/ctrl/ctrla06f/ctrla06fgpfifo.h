@@ -124,7 +124,8 @@ typedef struct NVA06F_CTRL_SET_ERROR_NOTIFIER_PARAMS {
  * NVA06F_CTRL_CMD_SET_INTERLEAVE_LEVEL
  *
  * Symmetric to NVA06C_CTRL_CMD_SET_INTERLEAVE_LEVEL, applied to the individual
- * target channel.
+ * target channel: the same permission model, supported configurations, and
+ * status values apply (see the NVA06C control documentation).
  *
  * When belonging to a TSG, same interleave level will be set to every channel
  * in the TSG.

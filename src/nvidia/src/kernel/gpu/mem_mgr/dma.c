@@ -54,7 +54,6 @@
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/bus/kern_bus.h"
-#include "platform/sli/sli.h"
 #include "containers/eheap_old.h"
 
 /*!
@@ -86,7 +85,6 @@ dmaAllocMap_IMPL
 {
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NV_STATUS         status = NV_OK;
-    NvU32             p2p;
     NvU64             vaddr;
     NvU32             dmaAllocMapFlag;
     NvU32             dmaAllocMapFlag2;
@@ -97,29 +95,6 @@ dmaAllocMap_IMPL
     CLI_DMA_ALLOC_MAP_INFO  mapInfo;
 
     NV_ASSERT(pVirtualMemory != NULL);
-
-    p2p = DRF_VAL(OS46, _FLAGS, _P2P_ENABLE, pDmaMappingInfo->Flags);
-
-    //
-    // By default any fabric memory should be mapped as peer memory. So, don't honor
-    // any P2P flags.
-    //
-    if (
-        (memdescGetAddressSpace(pDmaMappingInfo->pMemDesc) == ADDR_FABRIC_MC) ||
-        (memdescGetAddressSpace(pDmaMappingInfo->pMemDesc) == ADDR_FABRIC_V2))
-    {
-        p2p  = 0;
-    }
-
-    if ((p2p == NVOS46_FLAGS_P2P_ENABLE_NOSLI) && IsSLIEnabled(pGpu))
-    {
-        NvU32 deviceInst  = gpuGetDeviceInstance(pGpu);
-        NvU32 subDevIdTgt = DRF_VAL(OS46, _FLAGS, _P2P_SUBDEV_ID_TGT, pDmaMappingInfo->Flags);
-
-        pGpu = gpumgrGetGpuFromSubDeviceInst(deviceInst, subDevIdTgt);
-        gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
-        pDma = GPU_GET_DMA(pGpu);
-    }
 
     //
     // Temporarily set _DMA_UNICAST_REUSE_ALLOC for NV50_MEMORY_VIRTUAL since that
@@ -191,12 +166,6 @@ dmaAllocMap_IMPL
         pDmaMappingInfo->DmaOffset = vaddr;
     }
 
-    if ((p2p == NVOS46_FLAGS_P2P_ENABLE_NOSLI) && IsSLIEnabled(pGpu))
-    {
-        pGpu = gpumgrGetParentGPU(pGpu);
-        gpumgrSetBcEnabledStatus(pGpu, NV_TRUE);
-    }
-
     return status;
 }
 
@@ -227,19 +196,7 @@ dmaFreeMap_IMPL
 )
 {
     NV_STATUS status = NV_OK;
-    NvU32     p2p, subDevIdTgt;
-    NvU32     deviceInst = gpuGetDeviceInstance(pGpu);
     CLI_DMA_ALLOC_MAP_INFO mapInfo;
-
-    p2p =  DRF_VAL(OS46, _FLAGS, _P2P_ENABLE, pDmaMappingInfo->Flags);
-    subDevIdTgt = DRF_VAL(OS46, _FLAGS, _P2P_SUBDEV_ID_TGT, pDmaMappingInfo->Flags);
-
-    if ((p2p == NVOS46_FLAGS_P2P_ENABLE_NOSLI) && IsSLIEnabled(pGpu))
-    {
-        pGpu = gpumgrGetGpuFromSubDeviceInst(deviceInst, subDevIdTgt);
-        gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
-        pDma = GPU_GET_DMA(pGpu);
-    }
 
     mapInfo.pVirtualMemory  = pVirtualMemory;
     mapInfo.pMemory         = NULL;
@@ -248,12 +205,6 @@ dmaFreeMap_IMPL
     // free mapping in context dma
     status = dmaFreeMapping_HAL(pGpu, pDma, pVAS, pDmaMappingInfo->DmaOffset,
                                 pDmaMappingInfo->pMemDesc, flags, &mapInfo);
-
-    if ((p2p == NVOS46_FLAGS_P2P_ENABLE_NOSLI) && IsSLIEnabled(pGpu))
-    {
-        pGpu = gpumgrGetParentGPU(pGpu);
-        gpumgrSetBcEnabledStatus(pGpu, NV_TRUE);
-    }
 
     return status;
 }
@@ -310,8 +261,8 @@ deviceCtrlCmdDmaUpdatePde2_IMPL
 {
     OBJGPU      *pGpu       = GPU_RES_GET_GPU(pDevice);;
     OBJVASPACE  *pVAS       = NULL;
+    OBJGVASPACE *pGVAS      = NULL;
     NV_STATUS    status     = NV_OK;
-    NvBool       bBcState   = NV_TRUE;
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
@@ -331,39 +282,13 @@ deviceCtrlCmdDmaUpdatePde2_IMPL
                           vaspaceGetByHandleOrDeviceDefault(RES_GET_CLIENT(pDevice), RES_GET_HANDLE(pDevice),
                                                             pParams->hVASpace, &pVAS));
 
-    // Force to UC if client passed in sub-device handle.
-    if (0 != pParams->subDeviceId)
+    pGVAS = dynamicCast(pVAS, OBJGVASPACE);
+    if (pGVAS == NULL)
     {
-        bBcState = gpumgrGetBcEnabledStatus(pGpu);
-
-        pGpu = gpumgrGetGpuFromSubDeviceInst(gpuGetDeviceInstance(pGpu),
-                                             pParams->subDeviceId - 1);
-        gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
+        return NV_ERR_NOT_SUPPORTED;
     }
 
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-    {
-        OBJGVASPACE *pGVAS = dynamicCast(pVAS, OBJGVASPACE);
-        if (pGVAS == NULL)
-        {
-            status = NV_ERR_NOT_SUPPORTED;
-            SLI_LOOP_BREAK;
-        }
-        status = gvaspaceUpdatePde2(pGVAS, pGpu, pParams);
-        if (status != NV_OK)
-        {
-            SLI_LOOP_BREAK;
-        }
-    }
-    SLI_LOOP_END
-
-    // Restore BC if required.
-    if (0 != pParams->subDeviceId)
-    {
-        gpumgrSetBcEnabledStatus(pGpu, bBcState);
-    }
-
-    return status;
+    return gvaspaceUpdatePde2(pGVAS, pGpu, pParams);
 }
 
 //
@@ -440,7 +365,6 @@ deviceCtrlCmdDmaSetPageDirectory_IMPL
     OBJVASPACE     *pVAS;
     OBJGVASPACE    *pGVAS;
     NV_STATUS       status      = NV_OK;
-    NvBool          bBcState    = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
@@ -495,71 +419,46 @@ deviceCtrlCmdDmaSetPageDirectory_IMPL
         return status;
     }
 
-    // Force to UC if client passed in sub-device handle.
-    if (pParams->subDeviceId != 0)
-    {
-        bBcState = gpumgrGetBcEnabledStatus(pGpu);
+    if (status != NV_OK)
+        goto fail;
 
-        pGpu = gpumgrGetGpuFromSubDeviceInst(gpuGetDeviceInstance(pGpu),
-                                             pParams->subDeviceId - 1);
-        gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu) || IS_GSP_CLIENT(pGpu))
+    {
+        NV_RM_RPC_CONTROL(pGpu,
+                          hClient,
+                          hDevice,
+                          NV0080_CTRL_CMD_DMA_SET_PAGE_DIRECTORY,
+                          pParams,
+                          sizeof(NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_PARAMS),
+                          status);
+        if (status != NV_OK)
+            goto fail;
     }
 
+    status = gvaspaceExternalRootDirCommit(pGVAS, hClient, pGpu, pParams);
+    if (status != NV_OK)
+        goto fail;
 
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
+    return NV_OK;
+
+fail:
     {
+        NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS params = {0};
+        params.hVASpace    = pParams->hVASpace;
+        params.subDeviceId = pParams->subDeviceId;
 
-        if (IS_VIRTUAL_WITH_SRIOV(pGpu) || IS_GSP_CLIENT(pGpu))
+        gvaspaceExternalRootDirRevoke(pGVAS, pGpu, &params);
+
+        if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL_WITH_SRIOV(pGpu))
         {
             NV_RM_RPC_CONTROL(pGpu,
                               hClient,
                               hDevice,
-                              NV0080_CTRL_CMD_DMA_SET_PAGE_DIRECTORY,
-                              pParams,
-                              sizeof(NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_PARAMS),
+                              NV0080_CTRL_CMD_DMA_UNSET_PAGE_DIRECTORY,
+                              &params,
+                              sizeof(NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS),
                               status);
-            if (status != NV_OK)
-            {
-                SLI_LOOP_BREAK;
-            }
         }
-
-        status = gvaspaceExternalRootDirCommit(pGVAS, hClient, pGpu, pParams);
-        if (status != NV_OK)
-        {
-            SLI_LOOP_BREAK;
-        }
-    }
-    SLI_LOOP_END
-
-    if (status != NV_OK)
-    {
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-        {
-            NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS params = {0};
-            params.hVASpace    = pParams->hVASpace;
-            params.subDeviceId = pParams->subDeviceId;
-
-            gvaspaceExternalRootDirRevoke(pGVAS, pGpu, &params);
-
-            if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL_WITH_SRIOV(pGpu))
-            {
-                NV_RM_RPC_CONTROL(pGpu,
-                                  hClient,
-                                  hDevice,
-                                  NV0080_CTRL_CMD_DMA_UNSET_PAGE_DIRECTORY,
-                                  &params,
-                                  sizeof(NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS),
-                                  status);
-            }
-        }
-        SLI_LOOP_END
-    }
-
-    // Restore BC if required.
-    if (pParams->subDeviceId != 0)
-    {
-        gpumgrSetBcEnabledStatus(pGpu, bBcState);
     }
 
     return status;
@@ -582,7 +481,6 @@ deviceCtrlCmdDmaUnsetPageDirectory_IMPL
     OBJVASPACE     *pVAS          = NULL;
     CALL_CONTEXT   *pCallContext  = resservGetTlsCallContext();
     RmCtrlParams   *pRmCtrlParams = pCallContext->pControlParams->pLegacyParams;
-    NvBool          bBcState      = NV_FALSE;
     NV_STATUS       status        = NV_OK;
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
@@ -618,39 +516,13 @@ deviceCtrlCmdDmaUnsetPageDirectory_IMPL
                           status);
     }
 
-    // Force to UC if client passed in sub-device handle.
-    if (pParams->subDeviceId != 0)
-    {
-        bBcState = gpumgrGetBcEnabledStatus(pGpu);
-
-        pGpu = gpumgrGetGpuFromSubDeviceInst(gpuGetDeviceInstance(pGpu),
-                                             pParams->subDeviceId - 1);
-        gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
-    }
-
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-    {
-        status = gvaspaceExternalRootDirRevoke(pGVAS, pGpu, pParams);
-        if (status != NV_OK)
-        {
-            SLI_LOOP_BREAK;
-        }
-    }
-    SLI_LOOP_END
+    NV_ASSERT_OK(gvaspaceExternalRootDirRevoke(pGVAS, pGpu, pParams));
 
     //
     // Updating the instance block of all channels in the TSGs that's using
     // the VA space
     //
-    status = gvaspaceUnregisterAllChanGrps(pGVAS, pGpu);
-
-    // Restore BC if required.
-    if (pParams->subDeviceId != 0)
-    {
-        gpumgrSetBcEnabledStatus(pGpu, bBcState);
-    }
-
-    return status;
+    return gvaspaceUnregisterAllChanGrps(pGVAS, pGpu);
 }
 
 //
@@ -704,16 +576,12 @@ deviceCtrlCmdDmaFlush_IMPL
 
     if ((targetMem != FB_CACHE_MEM_UNDEFINED) && (cacheOp != FB_CACHE_OP_UNDEFINED))
     {
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
+        status = kmemsysCacheOp_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu), NULL,
+                                    targetMem, cacheOp);
+        if (status != NV_OK)
         {
-            KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-            status = kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, NULL, targetMem, cacheOp);
-            if (status != NV_OK)
-            {
-                SLI_LOOP_RETURN(status);
-            }
+            return status;
         }
-        SLI_LOOP_END
     }
 
     if (FLD_TEST_DRF(0080, _CTRL_DMA_FLUSH_TARGET_UNIT, _FB, _ENABLE,
@@ -1004,16 +872,11 @@ deviceCtrlCmdDmaInvalidateTLB_IMPL
                           vaspaceGetByHandleOrDeviceDefault(RES_GET_CLIENT(pDevice), RES_GET_HANDLE(pDevice),
                                                             pParams->hVASpace, &pVAS));
 
-
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-    {
-        //
-        // Although this function is used following PTE upgrades most of the time,
-        // we cannot guarantee that, nor can we easily determine the update type.
-        //
-        vaspaceInvalidateTlb(pVAS, pGpu, PTE_DOWNGRADE);
-    }
-    SLI_LOOP_END
+    //
+    // Although this function is used following PTE upgrades most of the time,
+    // we cannot guarantee that, nor can we easily determine the update type.
+    //
+    vaspaceInvalidateTlb(pVAS, pGpu, PTE_DOWNGRADE);
 
     return NV_OK;
 }
@@ -1050,9 +913,6 @@ deviceCtrlCmdDmaGetCaps_IMPL
     // Fill in caps
     if (pDma->bDmaEnforce32BitPointer)
         RMCTRL_SET_CAP(pDmaCapsParams->capsTbl, NV0080_CTRL_DMA_CAPS, _32BIT_POINTER_ENFORCED);
-
-    if (pDma->bDmaShaderAccessSupported)
-        RMCTRL_SET_CAP(pDmaCapsParams->capsTbl, NV0080_CTRL_DMA_CAPS, _SHADER_ACCESS_SUPPORTED);
 
     if (pDma->bDmaIsSupportedSparseVirtual)
         RMCTRL_SET_CAP(pDmaCapsParams->capsTbl, NV0080_CTRL_DMA_CAPS, _SPARSE_VIRTUAL_SUPPORTED);

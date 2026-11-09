@@ -104,6 +104,9 @@ module_param_named(debug_force_color_space, debug_force_color_space, uint, 0444)
 static bool enable_overlay_layers = true;
 module_param_named(enable_overlay_layers, enable_overlay_layers, bool, 0444);
 
+static bool opportunistic_flip_sync = true;
+module_param_named(opportunistic_flip_sync, opportunistic_flip_sync, bool, 0444);
+
 /* These parameters are used for fault injection tests.  Normally the defaults
  * should be used. */
 MODULE_PARM_DESC(fail_malloc, "Fail the Nth call to nvkms_alloc");
@@ -282,6 +285,11 @@ enum NvKmsDebugForceColorSpace nvkms_debug_force_color_space(void)
 NvBool nvkms_enable_overlay_layers(void)
 {
     return enable_overlay_layers;
+}
+
+NvBool nvkms_opportunistic_flip_sync(void)
+{
+    return opportunistic_flip_sync;
 }
 
 NvBool nvkms_debug_logging(void)
@@ -745,13 +753,7 @@ void nvkms_usleep(NvU64 usec)
 
 NvU64 nvkms_get_usec(void)
 {
-    struct timespec64 ts;
-    NvU64 ns;
-
-    ktime_get_raw_ts64(&ts);
-
-    ns = timespec64_to_ns(&ts);
-    return ns / 1000;
+    return nv_ktime_get_raw_ns() / NSEC_PER_USEC;
 }
 
 int nvkms_copyin(void *kptr, NvU64 uaddr, size_t n)

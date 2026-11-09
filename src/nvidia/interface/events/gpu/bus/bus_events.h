@@ -62,5 +62,32 @@ public:
                            GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
 };
 
+NVOC_EVENT(busgpufob, export) class BusGpuFallenOffBus : public GpuInterconnectError
+{
+public:
+    GpuXidEventCtx xid79;
+
+    NV_STATUS busgpufobConstruct(BusGpuFallenOffBus *pEvent,
+                                 EventBus *pEventBus)
+    : GpuInterconnectError(pEventBus,
+                           "GPU-BUS",
+                           BUS_OP_EVENT_CODE_GPU_FALLEN_OFF_BUS,
+                           OPERATIONAL_EVENT_SEVERITY_FATAL,
+                           REF_DEF(OPERATIONAL_EVENT_ATTR_PRIMARY, _TRUE),
+                           GPU_OPERATIONAL_EVENT_SCOPE_DEVICE,
+                           GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_SW_CHECK,
+                           GPU_OPERATIONAL_EVENT_LOG_LEVEL_ERROR);
+};
+
+NV_STATUS busc2ccontnmtDeserialize(OBJGPU *pGpu,
+                                   const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+                                   const NvU8 *pContextData,
+                                   NvU32 contextDataSize);
+
+NV_STATUS busgpufobDeserialize(OBJGPU *pGpu,
+                               const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+                               const NvU8 *pContextData,
+                               NvU32 contextDataSize);
+
 #endif // _BUS_EVENTS_H_
 

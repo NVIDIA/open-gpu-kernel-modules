@@ -1480,7 +1480,6 @@ pmaFreePages
     //
     for (i = 0; i < pageCount; i++)
     {
-
         PMA_LOCALIZATION_INFO localizationInfo;
 
         regId = findRegionID(pPma, pPages[i]);
@@ -1502,13 +1501,15 @@ pmaFreePages
 
         scrubFlags |= SCRUBBER_SUBMIT_FLAGS_LOCALIZED_SCRUB;
 
-        if (localizationInfo.allocatedFrameCount == 0)
-        {
 #if PMA_DEBUG
-            NV_PRINTF(LEVEL_INFO, "Reclaiming localized region containing frame 0x%llx\n", frameNum);
+        NV_PRINTF(LEVEL_INFO, "Reclaiming localized region containing frame 0x%llx\n", frameNum);
 #endif
-
-
+        //
+        // If we're not going to scrub, reclaim now. Otherwise we reclaim after
+        // scrub in _pmaClearScrubBit
+        //
+        if ( (!(bScrubValid && bNeedScrub)) && (localizationInfo.allocatedFrameCount == 0))
+        {
             pPma->pMapInfo->pmaMapChangeLocalizationState(pMap, frameNum, 0, LOCALIZATION_STATE_IS_LOCALIZED);
         }
     }

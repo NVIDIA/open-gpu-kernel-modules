@@ -705,7 +705,7 @@ nv_dma_buf_unmap_pages(
         return;
     }
 
-    dma_unmap_sg_attrs(dev, sgt->sgl, sgt->nents,
+    dma_unmap_sg_attrs(dev, sgt->sgl, sgt->orig_nents,
                        DMA_BIDIRECTIONAL, DMA_ATTR_SKIP_CPU_SYNC);
 }
 
@@ -1422,16 +1422,10 @@ nv_dma_buf_mmap(
 found_start_page:
 
     // RO and cache type settings
-    if (nv_encode_caching(&vma->vm_page_prot,
-                          rm_disable_iomap_wc() ? NV_MEMORY_UNCACHED : priv->map_attrs.cache_type,
-                          priv->map_attrs.memory_type))
-    {
-        nv_printf(NV_DBG_ERRORS,
-                  "NVRM: [nv_dma_buf_mmap-failed] i[%u] cache_type[%llx] memory_type[%d] page_prot[%x] \n",
-                  i, priv->map_attrs.cache_type, priv->map_attrs.memory_type, pgprot_val(vma->vm_page_prot));
-        ret = -ENXIO;
-        goto put_phys_addrs;
-    }
+    vma->vm_page_prot = nv_encode_caching(vma->vm_page_prot,
+                                          rm_disable_iomap_wc() ?
+                                              NV_MEMORY_UNCACHED :
+                                              priv->map_attrs.cache_type);
 
     if (priv->map_attrs.read_only_mem)
     {

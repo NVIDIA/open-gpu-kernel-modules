@@ -74,10 +74,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__MIGMonitorSession;
 struct NVOC_METADATA__RmResource;
-struct NVOC_VTABLE__MIGMonitorSession;
 
 
 struct MIGMonitorSession {
@@ -103,36 +102,10 @@ struct MIGMonitorSession {
 };
 
 
-// Vtable with 21 per-class function pointers
-struct NVOC_VTABLE__MIGMonitorSession {
-    NvBool (*__migmonitorsessionAccessCallback__)(struct MIGMonitorSession * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__migmonitorsessionShareCallback__)(struct MIGMonitorSession * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__migmonitorsessionGetMemInterMapParams__)(struct MIGMonitorSession * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__migmonitorsessionCheckMemInterUnmap__)(struct MIGMonitorSession * /*this*/, NvBool);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__migmonitorsessionGetMemoryMappingDescriptor__)(struct MIGMonitorSession * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__migmonitorsessionControlSerialization_Prologue__)(struct MIGMonitorSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__migmonitorsessionControlSerialization_Epilogue__)(struct MIGMonitorSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__migmonitorsessionControl_Prologue__)(struct MIGMonitorSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__migmonitorsessionControl_Epilogue__)(struct MIGMonitorSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__migmonitorsessionCanCopy__)(struct MIGMonitorSession * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__migmonitorsessionIsDuplicate__)(struct MIGMonitorSession * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (rmres)
-    void (*__migmonitorsessionPreDestruct__)(struct MIGMonitorSession * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__migmonitorsessionControl__)(struct MIGMonitorSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__migmonitorsessionControlFilter__)(struct MIGMonitorSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__migmonitorsessionMap__)(struct MIGMonitorSession * /*this*/, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__migmonitorsessionUnmap__)(struct MIGMonitorSession * /*this*/, struct CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NvBool (*__migmonitorsessionIsPartialUnmapSupported__)(struct MIGMonitorSession * /*this*/);  // inline virtual inherited (res) base (rmres) body
-    NV_STATUS (*__migmonitorsessionMapTo__)(struct MIGMonitorSession * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__migmonitorsessionUnmapFrom__)(struct MIGMonitorSession * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
-    NvU32 (*__migmonitorsessionGetRefCount__)(struct MIGMonitorSession * /*this*/);  // virtual inherited (res) base (rmres)
-    void (*__migmonitorsessionAddAdditionalDependants__)(struct RsClient *, struct MIGMonitorSession * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__MIGMonitorSession {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__RmResource metadata__RmResource;
-    const struct NVOC_VTABLE__MIGMonitorSession vtable;
 };
 
 #ifndef __nvoc_class_id_MIGMonitorSession
@@ -169,9 +142,9 @@ void migmonitorsessionDestruct_IMPL(struct MIGMonitorSession *pMIGMonitorSession
 
 
 // Wrapper macros for halified functions
-#define migmonitorsessionAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define migmonitorsessionAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define migmonitorsessionAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) migmonitorsessionAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define migmonitorsessionShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresShareCallback__
+#define migmonitorsessionShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define migmonitorsessionShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) migmonitorsessionShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define migmonitorsessionGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define migmonitorsessionGetMemInterMapParams(pRmResource, pParams) migmonitorsessionGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -179,13 +152,13 @@ void migmonitorsessionDestruct_IMPL(struct MIGMonitorSession *pMIGMonitorSession
 #define migmonitorsessionCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) migmonitorsessionCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define migmonitorsessionGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define migmonitorsessionGetMemoryMappingDescriptor(pRmResource, ppMemDesc) migmonitorsessionGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define migmonitorsessionControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define migmonitorsessionControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define migmonitorsessionControlSerialization_Prologue(pResource, pCallContext, pParams) migmonitorsessionControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define migmonitorsessionControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define migmonitorsessionControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define migmonitorsessionControlSerialization_Epilogue(pResource, pCallContext, pParams) migmonitorsessionControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define migmonitorsessionControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define migmonitorsessionControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define migmonitorsessionControl_Prologue(pResource, pCallContext, pParams) migmonitorsessionControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define migmonitorsessionControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define migmonitorsessionControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define migmonitorsessionControl_Epilogue(pResource, pCallContext, pParams) migmonitorsessionControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define migmonitorsessionCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define migmonitorsessionCanCopy(pResource) migmonitorsessionCanCopy_DISPATCH(pResource)
@@ -214,87 +187,87 @@ void migmonitorsessionDestruct_IMPL(struct MIGMonitorSession *pMIGMonitorSession
 
 // Dispatch functions
 static inline NvBool migmonitorsessionAccessCallback_DISPATCH(struct MIGMonitorSession *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool migmonitorsessionShareCallback_DISPATCH(struct MIGMonitorSession *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS migmonitorsessionGetMemInterMapParams_DISPATCH(struct MIGMonitorSession *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS migmonitorsessionCheckMemInterUnmap_DISPATCH(struct MIGMonitorSession *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS migmonitorsessionGetMemoryMappingDescriptor_DISPATCH(struct MIGMonitorSession *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS migmonitorsessionControlSerialization_Prologue_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void migmonitorsessionControlSerialization_Epilogue_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS migmonitorsessionControl_Prologue_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void migmonitorsessionControl_Epilogue_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool migmonitorsessionCanCopy_DISPATCH(struct MIGMonitorSession *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionCanCopy__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS migmonitorsessionIsDuplicate_DISPATCH(struct MIGMonitorSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void migmonitorsessionPreDestruct_DISPATCH(struct MIGMonitorSession *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionPreDestruct__(pResource);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS migmonitorsessionControl_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS migmonitorsessionControlFilter_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS migmonitorsessionMap_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pResource, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS migmonitorsessionUnmap_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pResource, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NvBool migmonitorsessionIsPartialUnmapSupported_DISPATCH(struct MIGMonitorSession *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS migmonitorsessionMapTo_DISPATCH(struct MIGMonitorSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS migmonitorsessionUnmapFrom_DISPATCH(struct MIGMonitorSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 migmonitorsessionGetRefCount_DISPATCH(struct MIGMonitorSession *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionGetRefCount__(pResource);
+    return pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void migmonitorsessionAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct MIGMonitorSession *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__migmonitorsessionAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 // Virtual method declarations and/or inline definitions

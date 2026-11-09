@@ -63,11 +63,10 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__AccessCounterBuffer;
 struct NVOC_METADATA__GpuResource;
 struct NVOC_METADATA__Notifier;
-struct NVOC_VTABLE__AccessCounterBuffer;
 
 
 struct AccessCounterBuffer {
@@ -98,46 +97,11 @@ struct AccessCounterBuffer {
 };
 
 
-// Vtable with 30 per-class function pointers
-struct NVOC_VTABLE__AccessCounterBuffer {
-    NV_STATUS (*__accesscntrMap__)(struct AccessCounterBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual override (res) base (gpures)
-    NV_STATUS (*__accesscntrUnmap__)(struct AccessCounterBuffer * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual override (res) base (gpures)
-    NV_STATUS (*__accesscntrGetMapAddrSpace__)(struct AccessCounterBuffer * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual override (gpures) base (gpures)
-    NV_STATUS (*__accesscntrControl__)(struct AccessCounterBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__accesscntrShareCallback__)(struct AccessCounterBuffer * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__accesscntrGetRegBaseOffsetAndSize__)(struct AccessCounterBuffer * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__accesscntrInternalControlForward__)(struct AccessCounterBuffer * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__accesscntrGetInternalObjectHandle__)(struct AccessCounterBuffer * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__accesscntrAccessCallback__)(struct AccessCounterBuffer * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__accesscntrGetMemInterMapParams__)(struct AccessCounterBuffer * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__accesscntrCheckMemInterUnmap__)(struct AccessCounterBuffer * /*this*/, NvBool);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__accesscntrGetMemoryMappingDescriptor__)(struct AccessCounterBuffer * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__accesscntrControlSerialization_Prologue__)(struct AccessCounterBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__accesscntrControlSerialization_Epilogue__)(struct AccessCounterBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__accesscntrControl_Prologue__)(struct AccessCounterBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__accesscntrControl_Epilogue__)(struct AccessCounterBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NvBool (*__accesscntrCanCopy__)(struct AccessCounterBuffer * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__accesscntrIsDuplicate__)(struct AccessCounterBuffer * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__accesscntrPreDestruct__)(struct AccessCounterBuffer * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__accesscntrControlFilter__)(struct AccessCounterBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (gpures)
-    NvBool (*__accesscntrIsPartialUnmapSupported__)(struct AccessCounterBuffer * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__accesscntrMapTo__)(struct AccessCounterBuffer * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__accesscntrUnmapFrom__)(struct AccessCounterBuffer * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__accesscntrGetRefCount__)(struct AccessCounterBuffer * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__accesscntrAddAdditionalDependants__)(struct RsClient *, struct AccessCounterBuffer * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-    PEVENTNOTIFICATION * (*__accesscntrGetNotificationListPtr__)(struct AccessCounterBuffer * /*this*/);  // virtual inherited (notify) base (notify)
-    struct NotifShare * (*__accesscntrGetNotificationShare__)(struct AccessCounterBuffer * /*this*/);  // virtual inherited (notify) base (notify)
-    void (*__accesscntrSetNotificationShare__)(struct AccessCounterBuffer * /*this*/, struct NotifShare *);  // virtual inherited (notify) base (notify)
-    NV_STATUS (*__accesscntrUnregisterEvent__)(struct AccessCounterBuffer * /*this*/, NvHandle, NvHandle, NvHandle, NvHandle);  // virtual inherited (notify) base (notify)
-    NV_STATUS (*__accesscntrGetOrAllocNotifShare__)(struct AccessCounterBuffer * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (notify)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__AccessCounterBuffer {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__GpuResource metadata__GpuResource;
     const struct NVOC_METADATA__Notifier metadata__Notifier;
-    const struct NVOC_VTABLE__AccessCounterBuffer vtable;
 };
 
 #ifndef __nvoc_class_id_AccessCounterBuffer
@@ -274,15 +238,15 @@ static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnableIntr(struct Acces
 
 
 // Wrapper macros for halified functions
-#define accesscntrMap_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__nvoc_metadata_ptr->vtable.__accesscntrMap__
+#define accesscntrMap_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__
 #define accesscntrMap(pAccessCounterBuffer, pCallContext, pParams, pCpuMapping) accesscntrMap_DISPATCH(pAccessCounterBuffer, pCallContext, pParams, pCpuMapping)
-#define accesscntrUnmap_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__nvoc_metadata_ptr->vtable.__accesscntrUnmap__
+#define accesscntrUnmap_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__
 #define accesscntrUnmap(pAccessCounterBuffer, pCallContext, pCpuMapping) accesscntrUnmap_DISPATCH(pAccessCounterBuffer, pCallContext, pCpuMapping)
-#define accesscntrGetMapAddrSpace_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__nvoc_metadata_ptr->vtable.__accesscntrGetMapAddrSpace__
+#define accesscntrGetMapAddrSpace_FNPTR(pAccessCounterBuffer) pAccessCounterBuffer->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__
 #define accesscntrGetMapAddrSpace(pAccessCounterBuffer, pCallContext, mapFlags, pAddrSpace) accesscntrGetMapAddrSpace_DISPATCH(pAccessCounterBuffer, pCallContext, mapFlags, pAddrSpace)
-#define accesscntrControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresControl__
+#define accesscntrControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__
 #define accesscntrControl(pGpuResource, pCallContext, pParams) accesscntrControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define accesscntrShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresShareCallback__
+#define accesscntrShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__
 #define accesscntrShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) accesscntrShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define accesscntrGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__
 #define accesscntrGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) accesscntrGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
@@ -290,7 +254,7 @@ static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnableIntr(struct Acces
 #define accesscntrInternalControlForward(pGpuResource, command, pParams, size) accesscntrInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define accesscntrGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
 #define accesscntrGetInternalObjectHandle(pGpuResource) accesscntrGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define accesscntrAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresAccessCallback__
+#define accesscntrAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__
 #define accesscntrAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) accesscntrAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 #define accesscntrGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__
 #define accesscntrGetMemInterMapParams(pRmResource, pParams) accesscntrGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -298,13 +262,13 @@ static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnableIntr(struct Acces
 #define accesscntrCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) accesscntrCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define accesscntrGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__
 #define accesscntrGetMemoryMappingDescriptor(pRmResource, ppMemDesc) accesscntrGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define accesscntrControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Prologue__
+#define accesscntrControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__
 #define accesscntrControlSerialization_Prologue(pResource, pCallContext, pParams) accesscntrControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define accesscntrControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
+#define accesscntrControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define accesscntrControlSerialization_Epilogue(pResource, pCallContext, pParams) accesscntrControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define accesscntrControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
+#define accesscntrControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
 #define accesscntrControl_Prologue(pResource, pCallContext, pParams) accesscntrControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define accesscntrControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
+#define accesscntrControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define accesscntrControl_Epilogue(pResource, pCallContext, pParams) accesscntrControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define accesscntrCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
 #define accesscntrCanCopy(pResource) accesscntrCanCopy_DISPATCH(pResource)
@@ -324,136 +288,136 @@ static inline NV_STATUS accesscntrCtrlCmdAccessCntrBufferEnableIntr(struct Acces
 #define accesscntrGetRefCount(pResource) accesscntrGetRefCount_DISPATCH(pResource)
 #define accesscntrAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__
 #define accesscntrAddAdditionalDependants(pClient, pResource, pReference) accesscntrAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define accesscntrGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationListPtr__
+#define accesscntrGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationListPtr__
 #define accesscntrGetNotificationListPtr(pNotifier) accesscntrGetNotificationListPtr_DISPATCH(pNotifier)
-#define accesscntrGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetNotificationShare__
+#define accesscntrGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationShare__
 #define accesscntrGetNotificationShare(pNotifier) accesscntrGetNotificationShare_DISPATCH(pNotifier)
-#define accesscntrSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifySetNotificationShare__
+#define accesscntrSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifySetNotificationShare__
 #define accesscntrSetNotificationShare(pNotifier, pNotifShare) accesscntrSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define accesscntrUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyUnregisterEvent__
+#define accesscntrUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyUnregisterEvent__
 #define accesscntrUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) accesscntrUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define accesscntrGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_metadata_ptr->vtable.__notifyGetOrAllocNotifShare__
+#define accesscntrGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetOrAllocNotifShare__
 #define accesscntrGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) accesscntrGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NV_STATUS accesscntrMap_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pAccessCounterBuffer->__nvoc_metadata_ptr->vtable.__accesscntrMap__(pAccessCounterBuffer, pCallContext, pParams, pCpuMapping);
+    return pAccessCounterBuffer->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMap__(staticCast(pAccessCounterBuffer, RsResource), pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS accesscntrUnmap_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pAccessCounterBuffer->__nvoc_metadata_ptr->vtable.__accesscntrUnmap__(pAccessCounterBuffer, pCallContext, pCpuMapping);
+    return pAccessCounterBuffer->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmap__(staticCast(pAccessCounterBuffer, RsResource), pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS accesscntrGetMapAddrSpace_DISPATCH(struct AccessCounterBuffer *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pAccessCounterBuffer->__nvoc_metadata_ptr->vtable.__accesscntrGetMapAddrSpace__(pAccessCounterBuffer, pCallContext, mapFlags, pAddrSpace);
+    return pAccessCounterBuffer->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetMapAddrSpace__(staticCast(pAccessCounterBuffer, GpuResource), pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS accesscntrControl_DISPATCH(struct AccessCounterBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__accesscntrControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl__(staticCast(pGpuResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool accesscntrShareCallback_DISPATCH(struct AccessCounterBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__accesscntrShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resShareCallback__(staticCast(pGpuResource, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS accesscntrGetRegBaseOffsetAndSize_DISPATCH(struct AccessCounterBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__accesscntrGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetRegBaseOffsetAndSize__(staticCast(pGpuResource, GpuResource), pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS accesscntrInternalControlForward_DISPATCH(struct AccessCounterBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__accesscntrInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(pGpuResource, GpuResource), command, pParams, size);
 }
 
 static inline NvHandle accesscntrGetInternalObjectHandle_DISPATCH(struct AccessCounterBuffer *pGpuResource) {
-    return pGpuResource->__nvoc_metadata_ptr->vtable.__accesscntrGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__(staticCast(pGpuResource, GpuResource));
 }
 
 static inline NvBool accesscntrAccessCallback_DISPATCH(struct AccessCounterBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__nvoc_metadata_ptr->vtable.__accesscntrAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAccessCallback__(staticCast(pResource, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS accesscntrGetMemInterMapParams_DISPATCH(struct AccessCounterBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__accesscntrGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemInterMapParams__(staticCast(pRmResource, RmResource), pParams);
 }
 
 static inline NV_STATUS accesscntrCheckMemInterUnmap_DISPATCH(struct AccessCounterBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__accesscntrCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresCheckMemInterUnmap__(staticCast(pRmResource, RmResource), bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS accesscntrGetMemoryMappingDescriptor_DISPATCH(struct AccessCounterBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__nvoc_metadata_ptr->vtable.__accesscntrGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresGetMemoryMappingDescriptor__(staticCast(pRmResource, RmResource), ppMemDesc);
 }
 
 static inline NV_STATUS accesscntrControlSerialization_Prologue_DISPATCH(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__accesscntrControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void accesscntrControlSerialization_Epilogue_DISPATCH(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__accesscntrControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NV_STATUS accesscntrControl_Prologue_DISPATCH(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__accesscntrControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void accesscntrControl_Epilogue_DISPATCH(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__nvoc_metadata_ptr->vtable.__accesscntrControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool accesscntrCanCopy_DISPATCH(struct AccessCounterBuffer *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__accesscntrCanCopy__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS accesscntrIsDuplicate_DISPATCH(struct AccessCounterBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__nvoc_metadata_ptr->vtable.__accesscntrIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsDuplicate__(staticCast(pResource, RsResource), hMemory, pDuplicate);
 }
 
 static inline void accesscntrPreDestruct_DISPATCH(struct AccessCounterBuffer *pResource) {
-    pResource->__nvoc_metadata_ptr->vtable.__accesscntrPreDestruct__(pResource);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resPreDestruct__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS accesscntrControlFilter_DISPATCH(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__accesscntrControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlFilter__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline NvBool accesscntrIsPartialUnmapSupported_DISPATCH(struct AccessCounterBuffer *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__accesscntrIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resIsPartialUnmapSupported__(staticCast(pResource, RsResource));
 }
 
 static inline NV_STATUS accesscntrMapTo_DISPATCH(struct AccessCounterBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__accesscntrMapTo__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resMapTo__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NV_STATUS accesscntrUnmapFrom_DISPATCH(struct AccessCounterBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__accesscntrUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resUnmapFrom__(staticCast(pResource, RsResource), pParams);
 }
 
 static inline NvU32 accesscntrGetRefCount_DISPATCH(struct AccessCounterBuffer *pResource) {
-    return pResource->__nvoc_metadata_ptr->vtable.__accesscntrGetRefCount__(pResource);
+    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resGetRefCount__(staticCast(pResource, RsResource));
 }
 
 static inline void accesscntrAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct AccessCounterBuffer *pResource, RsResourceRef *pReference) {
-    pResource->__nvoc_metadata_ptr->vtable.__accesscntrAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resAddAdditionalDependants__(pClient, staticCast(pResource, RsResource), pReference);
 }
 
 static inline PEVENTNOTIFICATION * accesscntrGetNotificationListPtr_DISPATCH(struct AccessCounterBuffer *pNotifier) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__accesscntrGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationListPtr__(staticCast(pNotifier, INotifier));
 }
 
 static inline struct NotifShare * accesscntrGetNotificationShare_DISPATCH(struct AccessCounterBuffer *pNotifier) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__accesscntrGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetNotificationShare__(staticCast(pNotifier, INotifier));
 }
 
 static inline void accesscntrSetNotificationShare_DISPATCH(struct AccessCounterBuffer *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__nvoc_metadata_ptr->vtable.__accesscntrSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifySetNotificationShare__(staticCast(pNotifier, INotifier), pNotifShare);
 }
 
 static inline NV_STATUS accesscntrUnregisterEvent_DISPATCH(struct AccessCounterBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__accesscntrUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyUnregisterEvent__(staticCast(pNotifier, INotifier), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS accesscntrGetOrAllocNotifShare_DISPATCH(struct AccessCounterBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__nvoc_metadata_ptr->vtable.__accesscntrGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_metadata_ptr->vtable.__inotifyGetOrAllocNotifShare__(staticCast(pNotifier, INotifier), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 // Virtual method declarations and/or inline definitions

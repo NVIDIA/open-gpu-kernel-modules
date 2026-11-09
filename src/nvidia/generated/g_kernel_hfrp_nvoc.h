@@ -81,10 +81,9 @@ extern "C" {
 #endif
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelHFRP;
 struct NVOC_METADATA__OBJENGSTATE;
-struct NVOC_VTABLE__KernelHFRP;
 
 
 struct KernelHFRP {
@@ -116,29 +115,10 @@ struct KernelHFRP {
 };
 
 
-// Vtable with 14 per-class function pointers
-struct NVOC_VTABLE__KernelHFRP {
-    NV_STATUS (*__khfrpStatePreInitLocked__)(struct OBJGPU *, struct KernelHFRP * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__khfrpConstructEngine__)(struct OBJGPU *, struct KernelHFRP * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    void (*__khfrpInitMissing__)(struct OBJGPU *, struct KernelHFRP * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khfrpStatePreInitUnlocked__)(struct OBJGPU *, struct KernelHFRP * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khfrpStateInitLocked__)(struct OBJGPU *, struct KernelHFRP * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khfrpStateInitUnlocked__)(struct OBJGPU *, struct KernelHFRP * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khfrpStatePreLoad__)(struct OBJGPU *, struct KernelHFRP * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khfrpStateLoad__)(struct OBJGPU *, struct KernelHFRP * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khfrpStatePostLoad__)(struct OBJGPU *, struct KernelHFRP * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khfrpStatePreUnload__)(struct OBJGPU *, struct KernelHFRP * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khfrpStateUnload__)(struct OBJGPU *, struct KernelHFRP * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khfrpStatePostUnload__)(struct OBJGPU *, struct KernelHFRP * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__khfrpStateDestroy__)(struct OBJGPU *, struct KernelHFRP * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__khfrpIsPresent__)(struct OBJGPU *, struct KernelHFRP * /*this*/);  // virtual inherited (engstate) base (engstate)
-};
-
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 struct NVOC_METADATA__KernelHFRP {
     const struct NVOC_RTTI rtti;
     const struct NVOC_METADATA__OBJENGSTATE metadata__OBJENGSTATE;
-    const struct NVOC_VTABLE__KernelHFRP vtable;
 };
 
 #ifndef __nvoc_class_id_KernelHFRP
@@ -317,10 +297,14 @@ static inline NV_STATUS khfrpInterfaceReset(struct KernelHFRP *pHfrp) {
 
 
 // Wrapper macros for halified functions
-#define khfrpStatePreInitLocked_FNPTR(pHfrp) pHfrp->__nvoc_metadata_ptr->vtable.__khfrpStatePreInitLocked__
+#define khfrpStatePreInitLocked_FNPTR(pHfrp) pHfrp->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__
 #define khfrpStatePreInitLocked(pGpu, pHfrp) khfrpStatePreInitLocked_DISPATCH(pGpu, pHfrp)
-#define khfrpConstructEngine_FNPTR(pHfrp) pHfrp->__nvoc_metadata_ptr->vtable.__khfrpConstructEngine__
+#define khfrpConstructEngine_FNPTR(pHfrp) pHfrp->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define khfrpConstructEngine(pGpu, pHfrp, engDesc) khfrpConstructEngine_DISPATCH(pGpu, pHfrp, engDesc)
+#define khfrpConstructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__
+#define khfrpConstructApertures(pGpu, pEngstate) khfrpConstructApertures_DISPATCH(pGpu, pEngstate)
+#define khfrpDestructApertures_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__
+#define khfrpDestructApertures(pGpu, pEngstate) khfrpDestructApertures_DISPATCH(pGpu, pEngstate)
 #define khfrpInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__
 #define khfrpInitMissing(pGpu, pEngstate) khfrpInitMissing_DISPATCH(pGpu, pEngstate)
 #define khfrpStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__
@@ -348,59 +332,67 @@ static inline NV_STATUS khfrpInterfaceReset(struct KernelHFRP *pHfrp) {
 
 // Dispatch functions
 static inline NV_STATUS khfrpStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pHfrp) {
-    return pHfrp->__nvoc_metadata_ptr->vtable.__khfrpStatePreInitLocked__(pGpu, pHfrp);
+    return pHfrp->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitLocked__(pGpu, staticCast(pHfrp, OBJENGSTATE));
 }
 
 static inline NV_STATUS khfrpConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pHfrp, ENGDESCRIPTOR engDesc) {
-    return pHfrp->__nvoc_metadata_ptr->vtable.__khfrpConstructEngine__(pGpu, pHfrp, engDesc);
+    return pHfrp->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(pGpu, staticCast(pHfrp, OBJENGSTATE), engDesc);
+}
+
+static inline NV_STATUS khfrpConstructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate) {
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
+}
+
+static inline void khfrpDestructApertures_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate) {
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateDestructApertures__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline void khfrpInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__khfrpInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateInitMissing__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS khfrpStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khfrpStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS khfrpStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khfrpStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS khfrpStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khfrpStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS khfrpStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khfrpStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS khfrpStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khfrpStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS khfrpStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khfrpStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostLoad__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS khfrpStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khfrpStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS khfrpStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khfrpStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline NV_STATUS khfrpStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate, NvU32 arg3) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khfrpStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePostUnload__(pGpu, staticCast(pEngstate, OBJENGSTATE), arg3);
 }
 
 static inline void khfrpStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate) {
-    pEngstate->__nvoc_metadata_ptr->vtable.__khfrpStateDestroy__(pGpu, pEngstate);
+    pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateDestroy__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NvBool khfrpIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelHFRP *pEngstate) {
-    return pEngstate->__nvoc_metadata_ptr->vtable.__khfrpIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateIsPresent__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 // Virtual method declarations and/or inline definitions

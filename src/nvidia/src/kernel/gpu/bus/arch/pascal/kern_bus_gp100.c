@@ -30,7 +30,6 @@
 #include "gpu/mem_mgr/fermi_dma.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "vgpu/vgpu_events.h"
-#include "platform/sli/sli.h"
 
 #include "published/pascal/gp100/dev_ram.h"
 
@@ -85,10 +84,8 @@ _kbusExecGspRmRpcForNvlink
     NvU32         paramSize
 )
 {
-    NvU32     gpuMaskRelease = 0;
-    NvU32     gpuMaskInitial = rmGpuLocksGetOwnedMask();
-    NvU32     gpuMask        = gpuMaskInitial | NVBIT(pGpu->gpuInstance);
-    NV_STATUS status         = NV_OK;
+    NvU32     gpuMask = NVBIT(pGpu->gpuInstance);
+    NV_STATUS status  = NV_OK;
 
     //
     // XXX Bug 1795328: Fix P2P path to acquire locks for the GPU
@@ -96,26 +93,27 @@ _kbusExecGspRmRpcForNvlink
     //  consistently held at this point in the call stack. This function
     //  requires exclusive access to RM/PMU data structures to update HSHUB,
     //  and therefore requires the GPU lock to be held at this point.
-    //  This check should be removed once the P2P paths have been updated to
+    //  This temporary acquisition should be removed once the P2P paths
     //  acquire the GPU locks consistently for all platforms.
     //
     if (IS_GSP_CLIENT(pGpu))
     {
-        if (!rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_MASK, &gpuMask))
+        // SAFE_LOCK_UPGRADE preserves held locks and returns only newly acquired locks.
+        status = rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                       GPU_LOCK_GRP_MASK,
+                                       GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE,
+                                       RM_LOCK_MODULES_NVLINK,
+                                       &gpuMask);
+        if (status != NV_OK)
         {
-            status = rmGpuGroupLockAcquire(pGpu->gpuInstance,
-                                           GPU_LOCK_GRP_MASK,
-                                           GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE,
-                                           RM_LOCK_MODULES_NVLINK,
-                                           &gpuMask);
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "Failed to acquire locks for gpumask 0x%x\n", gpuMask);
-                return status;
-            }
-
-            gpuMaskRelease = (gpuMask & (~gpuMaskInitial));
+            NV_PRINTF(LEVEL_ERROR, "Failed to acquire locks for gpumask 0x%x\n", gpuMask);
+            return status;
         }
+    }
+    else
+    {
+        // No locks were acquired by this call.
+        gpuMask = 0;
     }
 
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
@@ -123,9 +121,9 @@ _kbusExecGspRmRpcForNvlink
                              pGpu->hInternalClient,
                              pGpu->hInternalSubdevice,
                              cmd, paramAddr, paramSize);
-    if (gpuMaskRelease)
+    if (gpuMask != 0)
     {
-        rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+        rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
     }
 
     return status;
@@ -600,7 +598,12 @@ _kbusRemoveNvlinkPeerMapping
                 return status;
             }
 
-            bBufferReady = ((knvlinkGetInitializedLinkMask(pGpu0, pKernelNvlink0) & knvlinkGetPeerLinkMask(pGpu0, pKernelNvlink0, peerId)) != 0) ? NV_TRUE : NV_FALSE;
+            {
+                NVLINK_BIT_VECTOR tempAndResult;
+                bitVectorAnd(&tempAndResult, knvlinkGetInitializedLinkMask(pGpu0, pKernelNvlink0),
+                             knvlinkGetPeerLinkMask(pGpu0, pKernelNvlink0, peerId));
+                bBufferReady = !bitVectorTestAllCleared(&tempAndResult) ? NV_TRUE : NV_FALSE;
+            }
             if (!pKernelNvlink0->getProperty(pKernelNvlink0, PDB_PROP_KNVLINK_CONFIG_REQUIRE_INITIALIZED_LINKS_CHECK) ||
                 !bBufferReady)
             {
@@ -1088,15 +1091,14 @@ kbusInitInstBlk_GP100
                                sizeof(NvU32),
                                NV_FALSE,
                                pKernelBus->InstBlkAperture));
+		kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY_VIA_PRAMIN_WINDOW);
     }
     else
     {
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-        pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
         pMap = kbusMapRmAperture_HAL(pGpu, pInstBlkMemDesc);
         if (pMap == NULL)
         {
-            SLI_LOOP_RETURN(NV_ERR_INSUFFICIENT_RESOURCES);
+            return NV_ERR_INSUFFICIENT_RESOURCES;
         }
         kbusBar2InstBlkWrite_HAL(pGpu, pKernelBus, pMap, pPDB, vaLimit, bigPageSize);
         kbusUnmapRmAperture_HAL(pGpu, pInstBlkMemDesc, &pMap, NV_TRUE);
@@ -1109,8 +1111,6 @@ kbusInitInstBlk_GP100
             //
             kbusReleaseRmAperture_HAL(pGpu, pKernelBus, pInstBlkMemDesc);
         }
-        SLI_LOOP_END
-        pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     }
     return NV_OK;
 }

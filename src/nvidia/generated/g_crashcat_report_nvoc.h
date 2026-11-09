@@ -92,6 +92,7 @@ typedef struct CrashCatReportHal CrashCatReportHal;
 void __nvoc_init_halspec_CrashCatReportHal(CrashCatReportHal*, NV_CRASHCAT_PACKET_FORMAT_VERSION, CrashCatImplementer);
 
 
+
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
 // the matching C source file, but causes diagnostics to be issued if another
 // source file references the field.

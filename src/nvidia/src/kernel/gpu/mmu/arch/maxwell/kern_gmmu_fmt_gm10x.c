@@ -28,58 +28,6 @@
 #include "mmu/gmmu_fmt.h"
 #include "published/maxwell/gm107/dev_mmu.h"
 
-/*!
- *  64KB Big Page Size Format
- *
- *  PD [39:26]
- *  |        \
- *  |         \
- *  v          v
- *  PT_SMALL  PT_BIG
- *  [25:12]   [25:16]
- *
- *  128KB Big Page Size Format
- *
- *  PD [39:27]
- *  |        \
- *  |         \
- *  v          v
- *  PT_SMALL  PT_BIG
- *  [26:12]   [26:17]
- */
-void kgmmuFmtInitLevels_GM10X(KernelGmmu    *pKernelGmmu,
-                              MMU_FMT_LEVEL *pLevels,
-                              const NvU32    numLevels,
-                              const NvU32    version,
-                              const NvU32    bigPageShift)
-{
-    NV_ASSERT_OR_RETURN_VOID(numLevels >= 3);
-    NV_ASSERT_OR_RETURN_VOID(version == GMMU_FMT_VERSION_1);
-    NV_ASSERT_OR_RETURN_VOID(bigPageShift == 16 || bigPageShift == 17);
-
-    // Page directory (root).
-    pLevels[0].virtAddrBitHi  = 39;
-    pLevels[0].virtAddrBitLo  = (NvU8)bigPageShift + 10;
-    pLevels[0].entrySize      = NV_MMU_PDE__SIZE;
-    pLevels[0].numSubLevels   = 2;
-    pLevels[0].subLevels      = pLevels + 1;
-    pLevels[0].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PD0;
-
-    // Big page table.
-    pLevels[1].virtAddrBitHi  = pLevels[0].virtAddrBitLo - 1;
-    pLevels[1].virtAddrBitLo  = (NvU8)bigPageShift;
-    pLevels[1].entrySize      = NV_MMU_PTE__SIZE;
-    pLevels[1].bPageTable     = NV_TRUE;
-    pLevels[1].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PT_BIG;
-
-    // Small page table.
-    pLevels[2].virtAddrBitHi  = pLevels[0].virtAddrBitLo - 1;
-    pLevels[2].virtAddrBitLo  = 12;
-    pLevels[2].entrySize      = NV_MMU_PTE__SIZE;
-    pLevels[2].bPageTable     = NV_TRUE;
-    pLevels[2].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PT_4K;
-}
-
 void kgmmuFmtInitPdeApertures_GM10X
 (
     KernelGmmu          *pKernelGmmu,

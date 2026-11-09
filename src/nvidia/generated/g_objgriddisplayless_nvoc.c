@@ -39,19 +39,6 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__OBJGRIDDISPLAYLESS;
 NV_STATUS __nvoc_down_thunk_OBJGRIDDISPLAYLESS_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pGriddisplayless, ENGDESCRIPTOR arg3);    // this
 
 // Up-thunk(s) to bridge OBJGRIDDISPLAYLESS methods to ancestors (if any)
-void __nvoc_up_thunk_OBJENGSTATE_griddisplaylessInitMissing(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreInitLocked(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreInitUnlocked(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateInitLocked(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateInitUnlocked(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreLoad(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateLoad(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePostLoad(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreUnload(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateUnload(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePostUnload(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3);    // this
-void __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateDestroy(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate);    // this
-NvBool __nvoc_up_thunk_OBJENGSTATE_griddisplaylessIsPresent(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate);    // this
 
 // Class-specific details for OBJGRIDDISPLAYLESS
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGRIDDISPLAYLESS = 
@@ -69,7 +56,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGRIDDISPLAYLESS =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__OBJGRIDDISPLAYLESS __nvoc_metadata__OBJGRIDDISPLAYLESS = {
     .rtti.pClassDef = &__nvoc_class_def_OBJGRIDDISPLAYLESS,    // (griddisplayless) this
     .rtti.dtor      = &__nvoc_dtor_OBJGRIDDISPLAYLESS,
@@ -81,33 +68,21 @@ static const struct NVOC_METADATA__OBJGRIDDISPLAYLESS __nvoc_metadata__OBJGRIDDI
     .metadata__OBJENGSTATE.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__OBJENGSTATE.metadata__Object.rtti.offset    = NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
 
-    .vtable.__griddisplaylessConstructEngine__ = &griddisplaylessConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_OBJGRIDDISPLAYLESS_engstateConstructEngine,    // virtual
-    .vtable.__griddisplaylessInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-    .vtable.__griddisplaylessStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-    .vtable.__griddisplaylessStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .vtable.__griddisplaylessStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
-    .vtable.__griddisplaylessStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-    .vtable.__griddisplaylessStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-    .vtable.__griddisplaylessStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
-    .vtable.__griddisplaylessStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePostLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-    .vtable.__griddisplaylessStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-    .vtable.__griddisplaylessStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
-    .vtable.__griddisplaylessStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__griddisplaylessStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateDestroy,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &engstateStateDestroy_IMPL,    // virtual
-    .vtable.__griddisplaylessIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_griddisplaylessIsPresent,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
 };
 
@@ -126,75 +101,7 @@ const struct NVOC_CASTINFO __nvoc_castinfo__OBJGRIDDISPLAYLESS = {
 
 // griddisplaylessConstructEngine: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_OBJGRIDDISPLAYLESS_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pGriddisplayless, ENGDESCRIPTOR arg3) {
-    return griddisplaylessConstructEngine(pGpu, (struct OBJGRIDDISPLAYLESS *)(((unsigned char *) pGriddisplayless) - NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-
-// 13 up-thunk(s) defined to bridge methods in OBJGRIDDISPLAYLESS to superclasses
-
-// griddisplaylessInitMissing: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_griddisplaylessInitMissing(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)));
-}
-
-// griddisplaylessStatePreInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreInitLocked(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)));
-}
-
-// griddisplaylessStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreInitUnlocked(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)));
-}
-
-// griddisplaylessStateInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateInitLocked(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)));
-}
-
-// griddisplaylessStateInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateInitUnlocked(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)));
-}
-
-// griddisplaylessStatePreLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreLoad(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// griddisplaylessStateLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateLoad(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// griddisplaylessStatePostLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePostLoad(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// griddisplaylessStatePreUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePreUnload(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// griddisplaylessStateUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateUnload(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// griddisplaylessStatePostUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStatePostUnload(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate, NvU32 arg3) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// griddisplaylessStateDestroy: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_griddisplaylessStateDestroy(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)));
-}
-
-// griddisplaylessIsPresent: virtual inherited (engstate) base (engstate)
-NvBool __nvoc_up_thunk_OBJENGSTATE_griddisplaylessIsPresent(struct OBJGPU *pGpu, struct OBJGRIDDISPLAYLESS *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)));
+    return griddisplaylessConstructEngine_IMPL(pGpu, (struct OBJGRIDDISPLAYLESS *)(((unsigned char *) pGriddisplayless) - NV_OFFSETOF(OBJGRIDDISPLAYLESS, __nvoc_base_OBJENGSTATE)), arg3);
 }
 
 
@@ -246,7 +153,7 @@ static void __nvoc_init_funcTable_OBJGRIDDISPLAYLESS_1(OBJGRIDDISPLAYLESS *pThis
 } // End __nvoc_init_funcTable_OBJGRIDDISPLAYLESS_1
 
 
-// Initialize vtable(s) for 14 virtual method(s).
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJGRIDDISPLAYLESS(OBJGRIDDISPLAYLESS *pThis) {
     __nvoc_init_funcTable_OBJGRIDDISPLAYLESS_1(pThis);
 }

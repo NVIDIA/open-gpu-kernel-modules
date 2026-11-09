@@ -24,8 +24,14 @@
 #include "events/gpu/gpu_events.h"
 
 #include "cper/gpu_cper.h"
+#if !defined(SRT_BUILD)
+#include "gpu/gpu.h"
+#endif
 #include "nvoc/event.h"
 #include "nvport/nvport.h"
+#include "utils/nvassert.h"
+
+#define GPU_EVENTS_PROTOBUF_SUPPORTED 0
 
 /* ----------------------------- GPU Operational Event Categories ----------------------------- */
 
@@ -35,21 +41,71 @@ static NV_STATUS _gpuTimeoutSerializeToEventBufferOpEventCtx
     EventContextHeader *pContextHeader,
     NV_OPERATIONAL_EVENT_CONTEXT *pOutput,
     NvU32 outputSize,
-    NvU32 *pBytesWritten
+    EventBufferOpEventCtxInfo *pInfo
 )
 {
     return gpuEventCtxSerializeToEventBufferGoeCtxType(
             pContextHeader,
             pOutput,
             outputSize,
-            pBytesWritten,
+            pInfo,
             GPU_OPERATIONAL_EVENT_CTX_TYPE_GPU_TIMEOUT_DATA,
             GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA_VERSION);
+}
+
+static NV_STATUS _gpuTimeoutSerializeToProtobuf
+(
+    EventContextHeader *pContextHeader,
+    PRB_ENCODER         *pPrbEnc,
+    NvU32              *pContextType,
+    NvU32              *pDataFormatVersion
+)
+{
+    NV_ASSERT_OR_RETURN(pContextHeader != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pPrbEnc != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pContextType != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pDataFormatVersion != NULL, NV_ERR_INVALID_POINTER);
+
+    *pContextType = GPU_OPERATIONAL_EVENT_CTX_TYPE_GPU_TIMEOUT_DATA;
+    *pDataFormatVersion = GPU_OPERATIONAL_EVENT_CTX_GPU_TIMEOUT_DATA_VERSION;
+
+#if GPU_EVENTS_PROTOBUF_SUPPORTED
+    GpuTimeoutEventCtx *pContext = (GpuTimeoutEventCtx *)pContextHeader;
+    NV_STATUS           status;
+
+    status = prbEncNestedStart(
+        pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_CONTEXT_GPU_TIMEOUT);
+    if (status != NV_OK)
+        return status;
+
+    status = prbEncAddUInt64(
+        pPrbEnc, GPUEVENTS_GPUTIMEOUTCONTEXT_TIMEOUT_NS,
+        pContext->data.timeoutNs);
+    if (status != NV_OK)
+        return status;
+
+    status = prbEncAddUInt64(
+        pPrbEnc, GPUEVENTS_GPUTIMEOUTCONTEXT_ELAPSED_NS,
+        pContext->data.elapsedNs);
+    if (status != NV_OK)
+        return status;
+
+    status = prbEncAddString(
+        pPrbEnc, GPUEVENTS_GPUTIMEOUTCONTEXT_WAIT_TARGET,
+        pContext->data.waitTarget);
+    if (status != NV_OK)
+        return status;
+
+    return prbEncNestedEnd(pPrbEnc);
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
 }
 
 static const EventContextOutputAdapters g_gpuTimeoutOutputAdapters =
 {
     .serializeToEventBufferOpEventCtx = _gpuTimeoutSerializeToEventBufferOpEventCtx,
+    .serializeToProtobuf = _gpuTimeoutSerializeToProtobuf,
     .serializeToCperEventCtx = gpuEventCtxSerializeToCperOpaqueCtx,
     .emitToOsLogXid = NULL,
 };
@@ -196,6 +252,40 @@ NV_STATUS gpuresretConstruct_IMPL
     return NV_OK;
 }
 
+// GPU_OPERATIONAL_EVENT_CATEGORY_STATE_CHANGED
+NV_STATUS gpustatechangedConstruct_IMPL
+(
+    GpuStateChanged *pEvent,
+    EventBus        *pEventBus,
+    const char      *pModuleSignature,
+    NvU32            eventCode,
+    NvU32            severity,
+    NvU32            attributes,
+    NvU32            scope,
+    NvU32            reportingSource,
+    NvU32            logLevel
+)
+{
+    return NV_OK;
+}
+
+// GPU_OPERATIONAL_EVENT_CATEGORY_RESOURCE_THRESHOLD
+NV_STATUS gpuresthresholdConstruct_IMPL
+(
+    GpuResourceThreshold *pEvent,
+    EventBus             *pEventBus,
+    const char           *pModuleSignature,
+    NvU32                 eventCode,
+    NvU32                 severity,
+    NvU32                 attributes,
+    NvU32                 scope,
+    NvU32                 reportingSource,
+    NvU32                 logLevel
+)
+{
+    return NV_OK;
+}
+
 /* ---------------------------------- GPU Operational Events ---------------------------------- */
 
 static NV_STATUS _gpuDriverInitMetadataSerializeToRmapiOpEvent
@@ -203,14 +293,14 @@ static NV_STATUS _gpuDriverInitMetadataSerializeToRmapiOpEvent
     EventContextHeader *pContextHeader,
     NV_OPERATIONAL_EVENT_CONTEXT *pOutput,
     NvU32 outputSize,
-    NvU32 *pBytesWritten
+    EventBufferOpEventCtxInfo *pInfo
 )
 {
     return gpuEventCtxSerializeToEventBufferGoeCtxType(
         pContextHeader,
         pOutput,
         outputSize,
-        pBytesWritten,
+        pInfo,
         GPU_EVENT_CTX_TYPE_GPU_INIT_METADATA,
         GPU_OPERATIONAL_EVENT_CTX_GPU_INIT_METADATA_VERSION);
 }
@@ -245,4 +335,44 @@ NV_STATUS gpudrvinitConstruct_IMPL
 
     return NV_OK;
 }
+
+#if !defined(SRT_BUILD) && RMCFG_FEATURE_GSP_CLIENT_RM
+NV_STATUS gpudrvinitDeserialize
+(
+    OBJGPU *pGpu,
+    const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+    const NvU8 *pContextData,
+    NvU32 contextDataSize
+)
+{
+    static const GpuOpEventExpectedMetadata expected =
+    {
+        .pModuleSignature = "GPU",
+        .moduleEventCode = GPU_OP_EVENT_CODE_DRIVER_INIT,
+        .eventCategory = GPU_OPERATIONAL_EVENT_CATEGORY_INITIALIZATION,
+        .allowedSeverityMask = GPU_OP_EVENT_SEVERITY_MASK_INFORMATIONAL,
+        .attributes = (NvU8)REF_DEF(OPERATIONAL_EVENT_ATTR_PRIMARY, _TRUE),
+        .scope = GPU_OPERATIONAL_EVENT_SCOPE_DEVICE,
+        .reportingSource = GPU_OPERATIONAL_EVENT_REPORTING_SOURCE_SW_CHECK,
+        .logLevel = GPU_OPERATIONAL_EVENT_LOG_LEVEL_NOTICE,
+        .bReportingSourceVariable = NV_FALSE,
+    };
+    NV_STATUS status;
+
+    if ((pGpu == NULL) || (pRecord == NULL))
+        return NV_ERR_INVALID_ARGUMENT;
+
+    status = gpuOpEventValidateMetadata(pRecord, &expected);
+    if (status != NV_OK)
+        return status;
+
+    // Init metadata is populated by the existing bus handler after emission.
+    // Any structurally valid serialized contexts are intentionally ignored;
+    // constructor/subscriber-derived contexts are regenerated on the target.
+    (void)pContextData;
+    (void)contextDataSize;
+    eventTryEmitSimulated(GpuDriverInit, pGpu, status);
+    return status;
+}
+#endif
 

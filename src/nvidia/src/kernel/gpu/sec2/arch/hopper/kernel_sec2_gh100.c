@@ -37,10 +37,10 @@ ksec2StateLoad_GH100
 {
     ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
 
-    if ((pConfCompute != NULL) &&
-        (pConfCompute->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED)))
+    if ((pConfCompute != NULL) && (gpuIsCCFeatureEnabled(pGpu) || gpuIsSpdmHeartbeatEnabled(pGpu)))
     {
         NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets_HAL(pConfCompute, MC_ENGINE_IDX_SEC2));
     }
+
     return NV_OK;
 }

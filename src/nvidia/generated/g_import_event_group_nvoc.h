@@ -51,9 +51,9 @@ extern "C" {
 // EventGroup specialization for events reconstructed from already-rendered
 // wire records (host-side import of GSP-produced operational events).
 //
-// The only added state is the producer's groupCursor. opevtlogAppendEventGroup
-// dynamicCasts to detect import groups and adopts the cursor into the log
-// entry; group size is always eventCount (we re-serialize what we have).
+// Retain the producer's wire identity. Missing records are legal under
+// EventBuffer backpressure, so producerGroupSize can be larger than
+// producerEventCount and producerGroupIndices need not be contiguous.
 //
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
@@ -89,6 +89,9 @@ struct ImportEventGroup {
 
     // Data members
     NvU64 cursor;
+    NvU8 producerGroupSize;
+    NvU8 producerEventCount;
+    NvU8 producerGroupIndices[255];
 };
 
 

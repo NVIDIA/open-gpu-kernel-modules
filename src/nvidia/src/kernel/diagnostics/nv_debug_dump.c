@@ -25,6 +25,8 @@
 #include "diagnostics/nv_debug_dump.h"
 #include "diagnostics/journal.h"
 #include "nvdump.h"
+#include "nvrm_registry.h"
+#include "os/os.h"
 #include "vgpu/rpc.h"
 
 #include "lib/protobuf/prb.h"
@@ -36,7 +38,17 @@ static NV_STATUS prbAppendSubMsg(PRB_ENCODER *pPrbEnc, NvU32 tag, NvU8 *buffer, 
 
 NV_STATUS nvdConstructEngine_IMPL(OBJGPU *pGpu, NvDebugDump *pNvd, ENGDESCRIPTOR engDesc)
 {
+    NvU32 data32;
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DEBUG_DUMP_PROTOBUF_BEST_EFFORT,
+        &data32) != NV_OK)
+    {
+        data32 = NV_REG_STR_RM_DEBUG_DUMP_PROTOBUF_BEST_EFFORT_DEFAULT;
+    }
+    pNvd->bBestEffort = !!data32;
+
     pNvd->pHeadDebugBuffer = NULL;
+
     return NV_OK;
 }
 
@@ -169,12 +181,14 @@ static NV_STATUS
 nvdEngineDumpCallbackHelper
 (
     OBJGPU              *pGpu,
+    NvDebugDump         *pNvd,
     PRB_ENCODER         *pPrbEnc,
     NVD_STATE           *pNvDumpState,
     NVD_ENGINE_CALLBACK *pEngineCallback
 )
 {
     NV_STATUS   nvStatus      = NV_OK;
+    NV_STATUS   rpcStatus     = NV_OK;
     NvU8        startingDepth = prbEncNestingLevel(pPrbEnc);
     OBJSYS     *pSys          = SYS_GET_INSTANCE();
 
@@ -195,8 +209,26 @@ nvdEngineDumpCallbackHelper
         !FLD_TEST_REF(NVD_ENGINE_FLAGS_SOURCE, _CPU, pEngineCallback->flags) &&
         !pSys->getProperty(pSys, PDB_PROP_SYS_IN_OCA_DATA_COLLECTION))
     {
+        if (pNvd->bBestEffort)
+        {
+            NV_RM_RPC_DUMP_PROTOBUF_COMPONENT(pGpu, rpcStatus, pPrbEnc,
+                pNvDumpState, pEngineCallback->engDesc);
+
+            if (rpcStatus != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR,
+                          "Live GSP debug dump failed for engine 0x%x; "
+                          "continuing without it, status: %s (0x%08x)\n",
+                          pEngineCallback->engDesc,
+                          nvstatusToString(rpcStatus),
+                          rpcStatus);
+            }
+        }
+        else
+        {
             NV_RM_RPC_DUMP_PROTOBUF_COMPONENT(pGpu, nvStatus, pPrbEnc,
                 pNvDumpState, pEngineCallback->engDesc);
+        }
 
         // Check the protobuf depth and unwind to the correct depth.
         NV_ASSERT(startingDepth == prbEncNestingLevel(pPrbEnc));
@@ -233,7 +265,7 @@ nvdDoEngineDump_IMPL
     if (pEngineCallback != NULL)
     {
         NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(nvStatus, LEVEL_ERROR,
-            nvdEngineDumpCallbackHelper(pGpu, pPrbEnc, pNvDumpState, pEngineCallback));
+            nvdEngineDumpCallbackHelper(pGpu, pNvd, pPrbEnc, pNvDumpState, pEngineCallback));
     }
 
     // Now we can dump the requested engine.
@@ -243,7 +275,7 @@ nvdDoEngineDump_IMPL
     if (pEngineCallback != NULL)
     {
         NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(nvStatus, LEVEL_ERROR,
-            nvdEngineDumpCallbackHelper(pGpu, pPrbEnc, pNvDumpState, pEngineCallback));
+            nvdEngineDumpCallbackHelper(pGpu, pNvd, pPrbEnc, pNvDumpState, pEngineCallback));
     }
 
     prbEncNestedEnd(pPrbEnc);
@@ -271,7 +303,7 @@ nvdDumpAllEngines_IMPL
         pEngineCallback = pEngineCallback->pNext)
     {
         NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(nvStatus, LEVEL_ERROR,
-            nvdEngineDumpCallbackHelper(pGpu, pPrbEnc, pNvDumpState, pEngineCallback));
+            nvdEngineDumpCallbackHelper(pGpu, pNvd, pPrbEnc, pNvDumpState, pEngineCallback));
 
         // Check to see if GPU is inaccessible
         if (pGpu->getProperty(pGpu, PDB_PROP_GPU_INACCESSIBLE))

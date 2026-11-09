@@ -59,6 +59,9 @@ vgpuCreateObject
     OBJVGPU   *pVGpu;
     NvU32      gpuMaskRelease = 0;
     NvBool     bLockAcquired = NV_FALSE;
+    NvBool     bL1VHEnabled = NV_FALSE;
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
 
     if (gpuGetInstance(pGpu) >= NV_VGPU_MAX_INSTANCES)
     {
@@ -77,7 +80,17 @@ vgpuCreateObject
         goto error_exit;
     }
 
-    if (hypervisorIsType(OS_HYPERVISOR_HYPERV) && !IS_VIRTUAL_WITH_FULL_SRIOV(pGpu))
+    if (pHypervisor != NULL)
+    {
+        bL1VHEnabled = pHypervisor->getProperty(pHypervisor,
+                                                PDB_PROP_HYPERVISOR_HYPERV_L1VH_ENABLED);
+    }
+    
+    // Disable dirty page tracking on Hyper-V Enabled Guests for:
+    // (1) non-full-SR-IOV guests (Enable for WSL2), or
+    // (2) L1VH Guests.
+    if (hypervisorIsType(OS_HYPERVISOR_HYPERV) &&
+       (!IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) || bL1VHEnabled))
     {
         pGpu->setProperty(pGpu, PDB_PROP_GPU_SRIOV_SYSMEM_DIRTY_PAGE_TRACKING_ENABLED, NV_FALSE);
     }
@@ -201,6 +214,12 @@ vgpuInitRegistryOverWrite
             osWriteRegistryDword(pGpu, NV_REG_STR_RM_WATCHDOG_TIMEOUT, 2);
         }
 
+		if ((NV_OK == osReadRegistryDword(pGpu,
+                NV_REG_STR_RM_DISABLE_VGPU_HWS_BYPASS, &data)) &&
+            (data == NV_REG_STR_RM_DISABLE_VGPU_HWS_BYPASS_TRUE))
+        {
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_VGPU_HWS_BYPASS_DISABLED, NV_TRUE);
+        }
     }
 
     NvU32 min = 0, max = 0;

@@ -69,7 +69,7 @@ _getMsgQueueParams
     MESSAGE_QUEUE_INFO *pRmQueueInfo = &pMQCollection->rpcQueues[RPC_TASK_RM_QUEUE_IDX];
     NvU32 numPtes;
     const NvLength defaultCommandQueueSize = 0x40000; // 256 KB
-    const NvLength defaultStatusQueueSize  = 0x40000; // 256 KB
+    const NvLength defaultStatusQueueSize  = 0x80000; // 512 KB
     NvU32 regStatusQueueSize;
 
     //
@@ -77,7 +77,7 @@ _getMsgQueueParams
     // is marked as bConstructEarly in gpu_child_list.h, while KernelGsp is not.
     // We end up here in kgspConstructEngine, which happens after CC enablement.
     //
-    pRmQueueInfo->bEncryptionEnabled = gpuIsCCFeatureEnabled(pGpu);
+    pRmQueueInfo->bEncryptionEnabled = gpuIsCCFeatureEnabled(pGpu) || gpuIsBaremetalSecureAiEnabled(pGpu);
 
     pRmQueueInfo->queueElementHdrSize = pRmQueueInfo->bEncryptionEnabled ?
         GSP_MSG_QUEUE_ELEMENT_SIZE_WITH_ENCRYPTION : GSP_MSG_QUEUE_ELEMENT_SIZE_NO_ENCRYPTION;

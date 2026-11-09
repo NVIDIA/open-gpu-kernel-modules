@@ -35,8 +35,6 @@
 
 /*!
  * @brief Determine the kind of uncompressed PTE for a given allocation.
- * GB20X only supported GMK or GMK compression kinds. If bOverrideToGMK is true, only return GMK otherwise
- * call the _TU102 function.
  *
  * @param[in] pFbAllocPageFormat FB_ALLOC_PAGE_FORMAT pointer
  *
@@ -84,6 +82,21 @@ memmgrChooseKindCompressZ_GB20B
 )
 {
     NvU32 kind = memmgrChooseKindCompressZ_TU102(pGpu, pMemoryManager, pFbAllocPageFormat);
+
+    if (pMemoryManager->bDisableCompressiblePteKinds)
+    {
+        if (kind == NV_MMU_PTE_KIND_S8_COMPRESSIBLE_DISABLE_PLC)
+        {
+            return NV_MMU_PTE_KIND_S8;
+        }
+
+        if (kind == NV_MMU_PTE_KIND_Z16_COMPRESSIBLE_DISABLE_PLC)
+        {
+            return NV_MMU_PTE_KIND_Z16;
+        }
+
+        return NV_MMU_PTE_KIND_GENERIC_MEMORY;
+    }
     
     if (kind == NV_MMU_PTE_KIND_S8_COMPRESSIBLE_DISABLE_PLC)
     {
@@ -102,8 +115,6 @@ memmgrChooseKindCompressZ_GB20B
 
 /*
  * @brief Return an uncompressible kind for the given kind.  
- * GB20X only supports GMK or compressible-GMK. Return GMK if bOverrideToGMK
- * is set or if mods want to bypass uncompression, otherwise call the _TU102 function.
  * 
  * @param[in] NvU32   - PTE kind
  * @param[in] NvBool  - ReleaseReacquire / full-fledge mode
@@ -152,14 +163,18 @@ memmgrGetCompressedKind_GB20B
         case NV_MMU_PTE_KIND_GENERIC_MEMORY:
         case NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE:
         case NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE_DISABLE_PLC:
+            if (pMemoryManager->bDisableCompressiblePteKinds)
+            {
+                return NV_MMU_PTE_KIND_GENERIC_MEMORY;
+            }
             return bDisablePlc ? NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE_DISABLE_PLC
                                : NV_MMU_PTE_KIND_GENERIC_MEMORY_COMPRESSIBLE;
         case NV_MMU_PTE_KIND_S8:
         case NV_MMU_PTE_KIND_S8_COMPRESSIBLE_DISABLE_PLC:
-            return NV_MMU_PTE_KIND_S8_COMPRESSIBLE_DISABLE_PLC;
+            return pMemoryManager->bDisableCompressiblePteKinds ? NV_MMU_PTE_KIND_S8 : NV_MMU_PTE_KIND_S8_COMPRESSIBLE_DISABLE_PLC;
         case NV_MMU_PTE_KIND_Z16:
         case NV_MMU_PTE_KIND_Z16_COMPRESSIBLE_DISABLE_PLC:
-            return NV_MMU_PTE_KIND_Z16_COMPRESSIBLE_DISABLE_PLC;
+            return pMemoryManager->bDisableCompressiblePteKinds ? NV_MMU_PTE_KIND_Z16 : NV_MMU_PTE_KIND_Z16_COMPRESSIBLE_DISABLE_PLC;
         default:
         {
             NV_PRINTF(LEVEL_ERROR, "Unknown kind 0x%x.\n", kind);

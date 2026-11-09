@@ -21,11 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-
 #include "resserv/resserv.h"
 #include "rmapi/rmapi.h"
-
-#include "ctrl/ctrlxxxx.h"
 
 #include "g_finn_rm_api.h"
 
@@ -78,10 +75,12 @@ serverSerializeCtrlDown
         NvU8 *pSerBuffer;
         const NvU32 interface_id = _rmapiFinnGetInterfaceId(cmd);
         const NvU32 message_id = _rmapiFinnGetMessageId(cmd);
-        NvU32 serializedSize = (NvU32)FinnRmApiGetSerializedSize(interface_id, message_id, *ppParams);
+        NvU32 serializedSize;
 
         pCallContext->pDeserializedParams = *ppParams;
         pCallContext->deserializedSize = *pParamsSize;
+
+        serializedSize = (NvU32)FinnRmApiGetSerializedSize(interface_id, message_id, *ppParams);
 
         // Nothing to do if FINN doesn't support serializing this control
         if (serializedSize == 0)
@@ -157,7 +156,9 @@ serverDeserializeCtrlDown
         void *pDeserParams;
         const NvU32 interface_id = _rmapiFinnGetInterfaceId(cmd);
         const NvU32 message_id = _rmapiFinnGetMessageId(cmd);
-        NvU32 unserializedSize = (NvU32)FinnRmApiGetUnserializedSize(interface_id, message_id);
+        NvU32 unserializedSize;
+
+        unserializedSize = (NvU32)FinnRmApiGetUnserializedSize(interface_id, message_id);
 
         // Report error if FINN can't deserialize but RM is reporting the control as serialized
         if (unserializedSize == 0)

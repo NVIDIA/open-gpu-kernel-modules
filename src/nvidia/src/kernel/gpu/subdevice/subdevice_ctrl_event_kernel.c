@@ -41,6 +41,9 @@
 #include "gpu/gsp/gsp_trace_rats_macro.h"
 #include "ctrl/ctrl2080/ctrl2080event.h"
 #include "rmapi/event_buffer.h"
+#include "diagnostics/nocat_event_list.h"
+#include "diagnostics/op_event_log.h"
+#include "gpu/gpu_op_event.h"
 //
 // EVENT RM SubDevice Controls
 //
@@ -313,8 +316,101 @@ subdeviceCtrlCmdEventNocatBindEvtbuf_IMPL
 )
 {
     NV_STATUS status = NV_OK;
+    RsClient *pClient = RES_GET_CLIENT(pSubdevice);
+    RsResourceRef *pEventBufferRef = NULL;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+    NvHandle hNotifier = RES_GET_HANDLE(pSubdevice);
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
+
+    NV_ASSERT_OK_OR_RETURN(serverutilGetResourceRefWithType(hClient,
+                                                            pParams->hEventBuffer,
+                                                            classId(EventBuffer),
+                                                            &pEventBufferRef));
+
+    status = nocatAddBindpoint(pGpu,
+                               pClient,
+                               pEventBufferRef,
+                               hNotifier);
 
     return status;
+}
+
+//
+// The inject buffer holds one fixed NV_GPU_OPERATIONAL_EVENT_RECORD followed by
+// its serialized contexts. Injectable single-event records are small (largest
+// today is a few hundred bytes), so MAX_RECORD_SIZE is capped to keep this
+// test-only control's by-value params compact. Guard against the cap being
+// trimmed below even the fixed record prefix; larger records are already
+// rejected at runtime (recordSize > sizeof(recordData) and the size checks in
+// gpuOpEventInjectSimulated()).
+//
+ct_assert(sizeof(NV_GPU_OPERATIONAL_EVENT_RECORD) <=
+          NV2080_CTRL_EVENT_OPERATIONAL_INJECT_MAX_RECORD_SIZE);
+
+//
+// Test-only: emit a simulated GPU operational event onto this GPU's event bus.
+// RM_TEST_ONLY_CODE gating is enforced centrally by the RMAPI control path;
+// no manual property check here. Returns NV_ERR_NOT_SUPPORTED when the
+// GPU_OPERATIONAL_EVENTS feature is compiled out.
+//
+NV_STATUS
+subdeviceCtrlCmdEventOperationalInject_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_EVENT_OPERATIONAL_INJECT_PARAMS *pParams
+)
+{
+    // gpuOpEventInjectSimulated() is CPU-RM only (GSP_CLIENT_RM); match its
+    // gating so firmware builds of this control resolve without it.
+#if !defined(SRT_BUILD) && RMCFG_FEATURE_GPU_OPERATIONAL_EVENTS && \
+    RMCFG_FEATURE_GSP_CLIENT_RM
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(),
+                        NV_ERR_INVALID_LOCK_STATE);
+
+    // Match CLEAR_SIMULATED: entries stamped before UUID initialization cannot
+    // be matched and removed by the per-GPU cleanup control.
+    if (!pGpu->gpuUuid.isInitialized)
+        return NV_ERR_INVALID_STATE;
+
+    if (pParams->recordSize > sizeof(pParams->recordData))
+        return NV_ERR_INVALID_ARGUMENT;
+
+    return gpuOpEventInjectSimulated(pGpu, pParams->recordData,
+                                     pParams->recordSize);
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif // !SRT_BUILD && GPU_OPERATIONAL_EVENTS && GSP_CLIENT_RM
+}
+
+//
+// Test-only: remove retained simulated GPU operational events for this GPU.
+// RM_TEST_ONLY_CODE gating is enforced centrally by the RMAPI control path.
+//
+NV_STATUS
+subdeviceCtrlCmdEventOperationalClearSimulated_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_EVENT_OPERATIONAL_CLEAR_SIMULATED_PARAMS *pParams
+)
+{
+    NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_INVALID_POINTER);
+
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
+    if (opEventLog == NULL)
+        return NV_ERR_INVALID_STATE;
+    if (!pGpu->gpuUuid.isInitialized)
+        return NV_ERR_INVALID_STATE;
+
+    return opevtlogClearSimulated(opEventLog, pGpu->gpuUuid.uuid,
+                                  &pParams->removedEntryCount);
 }
 
 NV_STATUS

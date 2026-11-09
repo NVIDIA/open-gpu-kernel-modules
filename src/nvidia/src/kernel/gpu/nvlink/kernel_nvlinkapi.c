@@ -33,8 +33,40 @@
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "kernel/gpu_mgr/gpu_mgr.h"
+#include "rmapi/client.h"
+#include "os/capability.h"
 #include "vgpu/rpc.h"
 #include "nvrm_registry.h"
+
+/*
+ * MNCCD runs unprivileged, so the NVLE control calls it issues are gated on the
+ * MNCC management capability instead of on root.
+ */
+static NV_STATUS
+_nvlinkCheckMnccPermission
+(
+    Subdevice *pSubdevice
+)
+{
+    RmClient     *pRmClient    = dynamicCast(RES_GET_CLIENT(pSubdevice), RmClient);
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    NvBool        bPermitted;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pCallContext != NULL, NV_ERR_INVALID_STATE);
+
+    bPermitted = rmclientIsCapableOrAdmin(pRmClient, NV_RM_CAP_SYS_MNCC_MGMT,
+                                          pCallContext->secInfo.privLevel);
+
+    if (!bPermitted)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Client holds neither the MNCC management capability nor admin privileges\n");
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
+    return NV_OK;
+}
 
 /*
  * @brief Get the number of successful error recoveries
@@ -497,6 +529,8 @@ subdeviceCtrlCmdNvlinkSetupNvleEncryptionKey_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
 
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _nvlinkCheckMnccPermission(pSubdevice));
+
     if (pKernelNvlink == NULL)
         return NV_ERR_NOT_SUPPORTED;
 
@@ -508,4 +542,90 @@ subdeviceCtrlCmdNvlinkSetupNvleEncryptionKey_IMPL
 
     return knvlinkSetupEncryptionKeys(pGpu, pKernelNvlink, pParams->localGpuAlid, pParams->remoteGpuAlid,
                                       &pParams->localGpuPlatformInfo, &pParams->remoteGpuPlatformInfo, pParams->nvleKey);
+}
+
+NV_STATUS
+subdeviceCtrlCmdNvlinkSetNvleReady_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_NVLINK_SET_NVLE_READY_PARAMS *pParams
+)
+{
+    OBJGPU        *pGpu          = GPU_RES_GET_GPU(pSubdevice);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _nvlinkCheckMnccPermission(pSubdevice));
+
+    if (pKernelNvlink == NULL)
+        return NV_ERR_NOT_SUPPORTED;
+
+    if (!pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED) ||
+        pKernelNvlink->bNvleQualModeRegkey)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_NVLE_READY, pParams->bNvleReady);
+
+    //
+    // With BMSAI enabled MNCCD sets the NVLE ready state a) once setup
+    // is complete and b) once a link-retrain flow is complete.
+    // If RM was in recovery, clear the state and recovery action.
+    //
+    if (pParams->bNvleReady)
+    {
+        knvlinkNvleRekeyRelease(pGpu, pKernelNvlink);
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Lock the remap table to prevent MSE from making any further updates.
+ *
+ * The work happens on physical RM; kernel RM only owns the capability check.
+ */
+NV_STATUS
+subdeviceCtrlCmdNvlinkLockRemapTableAndMse_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_NVLINK_LOCK_REMAP_TABLE_AND_MSE_PARAMS *pParams
+)
+{
+    OBJGPU       *pGpu          = GPU_RES_GET_GPU(pSubdevice);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _nvlinkCheckMnccPermission(pSubdevice));
+
+    if (pKernelNvlink == NULL)
+        return NV_ERR_NOT_SUPPORTED;
+
+    return knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                               NV2080_CTRL_CMD_NVLINK_LOCK_REMAP_TABLE_AND_MSE_PHYSICAL,
+                               pParams, sizeof(*pParams));
+}
+
+/*!
+ * @brief Return the remap table addresses for a range of remap table entries.
+ *
+ * The work happens on physical RM; kernel RM only owns the capability check.
+ */
+NV_STATUS
+subdeviceCtrlCmdNvlinkGetRemapTableInfoV2_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_NVLINK_GET_REMAP_TABLE_INFO_V2_PARAMS *pParams
+)
+{
+    OBJGPU       *pGpu          = GPU_RES_GET_GPU(pSubdevice);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _nvlinkCheckMnccPermission(pSubdevice));
+
+    if (pKernelNvlink == NULL)
+        return NV_ERR_NOT_SUPPORTED;
+
+    return knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                               NV2080_CTRL_CMD_NVLINK_GET_REMAP_TABLE_INFO_V2_PHYSICAL,
+                               pParams, sizeof(*pParams));
 }

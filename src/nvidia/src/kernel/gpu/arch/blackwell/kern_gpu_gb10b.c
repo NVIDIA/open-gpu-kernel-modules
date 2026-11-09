@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "gpu/gpu_uuid.h"
 #include "gpu/gpu_child_class_defs.h"
 #include "os/os.h"
 #include "gpu/eng_desc.h"
@@ -57,6 +58,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB10B[] =
     GPU_CHILD_PRESENT(OBJTMR, 1),
     GPU_CHILD_PRESENT(KernelMIGManager, 1),
     GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelVbios, 1),
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
@@ -83,7 +85,8 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GB10B[] =
     GPU_CHILD_PRESENT(OBJGRIDDISPLAYLESS, 1),
     GPU_CHILD_PRESENT(KernelGsp, 1),
     GPU_CHILD_PRESENT(KernelSec2, 1),
-    GPU_CHILD_PRESENT(KernelOob, 1),
+    GPU_CHILD_PRESENT(TdispMgr, 1),
+    GPU_CHILD_PRESENT(KernelOob, 0),
 };
 
 const GPUCHILDPRESENT *
@@ -92,6 +95,43 @@ gpuGetChildrenPresent_GB10B(OBJGPU *pGpu, NvU32 *pNumEntries)
     *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GB10B);
     NV_PRINTF(LEVEL_INFO, "pNumEntries[%u]\n", *pNumEntries);
     return gpuChildrenPresent_GB10B;
+}
+
+/*!
+ * @brief Generate PDI/PCI-based UUID for Tegra dGPU.
+ *
+ * Uses the PDI fuse combined with PCI domain/bus/device to produce a globally
+ * unique UUID. The SOC path (gpuInstance-based) cannot be used on multi-GPU
+ * platforms because each GSP instance sees gpuInstance=0 for its own GPU.
+ *
+ * On multi-die Tegra dGPU packages the PDI fuses may be shared across dies,
+ * so PCI domain/bus/device is required to differentiate dies that share PDI.
+ */
+NV_STATUS
+gpuGenGidData_GB10B
+(
+    OBJGPU *pGpu,
+    NvU8   *pGidData,
+    NvU32   gidSize,
+    NvU32   gidFlags
+)
+{
+    NvU64 pdi64;
+    NvU16 chipId = gpuGetChipId(pGpu);
+
+    NV_ASSERT_OR_RETURN(pGidData != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(gidSize == NV_UUID_LEN, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(FLD_TEST_DRF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1, gidFlags),
+                        NV_ERR_NOT_SUPPORTED);
+    NV_ASSERT_OR_RETURN(gpuIsDBDFValid(pGpu), NV_ERR_INVALID_STATE);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, gpuGetPdi_HAL(pGpu, &pdi64));
+
+    pdi64 ^= gpuGetDBDF(pGpu);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, nvGenerateGpuUuid(chipId, pdi64, (NvUuid*)(pGidData)));
+
+    return NV_OK;
 }
 
 /*!

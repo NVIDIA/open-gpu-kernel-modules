@@ -48,16 +48,69 @@ enum
     RAS_OP_EVENT_CODE_LTS_REPAIR_FAILURE                            = 0x000CU,
     RAS_OP_EVENT_CODE_MEMORY_CHANNEL_REPAIR_PENDING                 = 0x000DU,
     RAS_OP_EVENT_CODE_MEMORY_CHANNEL_REPAIR_FAILURE                 = 0x000EU,
-    RAS_OP_EVENT_CODE_TPC_REPAIR_PENDING_SAME_GPC                   = 0x000FU,
-    RAS_OP_EVENT_CODE_TPC_REPAIR_PENDING_DIFFERENT_GPC              = 0x0010U,
-    RAS_OP_EVENT_CODE_TPC_REPAIR_FAILURE_NO_SPARE                   = 0x0011U,
-    RAS_OP_EVENT_CODE_TPC_REPAIR_FAILURE_NO_SPARE_MIG               = 0x0012U,
+    RAS_OP_EVENT_CODE_SPARING_REPAIR_PENDING                        = 0x000FU,
+
+    // 0x0010U deprecated
+    RAS_OP_EVENT_CODE_SPARING_REPAIR_NOT_POSSIBLE                   = 0x0011U,
+
+    // 0x0012U deprecated
     
     // Residual ECC errors affecting init/runtime
     RAS_OP_EVENT_CODE_ECC_RESIDUAL_UNCORRECTABLE_ERROR              = 0x0013U,
     RAS_OP_EVENT_CODE_DRAM_ECC_INTR_STORM                           = 0x0014U,
     RAS_OP_EVENT_CODE_SM_ECC_INTR_STORM                             = 0x0015U,
     RAS_OP_EVENT_CODE_BANK_REMAPPING_PENDING                        = 0x0016U,
+    
+    // Fatal LTC errors
+    RAS_OP_EVENT_CODE_LTC_FATAL_ERROR                               = 0x0017U,
+
+    // Fatal LRC errors
+    RAS_OP_EVENT_CODE_LRC_FATAL_ERROR                               = 0x0018U,
+
+    // DRAM errors
+    RAS_OP_EVENT_CODE_DRAM_ERROR                                    = 0x0019U,
+    RAS_OP_EVENT_CODE_DRAM_SIDEBAND_ERROR                           = 0x001AU,
+    RAS_OP_EVENT_CODE_DRAM_CBC_FATAL_ERROR                          = 0x001BU,
+    RAS_OP_EVENT_CODE_DRAM_CBC_NON_FATAL_ERROR                      = 0x001CU,
+
+    // Recoverable LTC errors
+    RAS_OP_EVENT_CODE_LTC_ERROR                                     = 0x001DU,
+    RAS_OP_EVENT_CODE_LTC_UNSUPPORTED_CLIENT_POISON_UNCONTAINED_ERROR = 0x001EU,
+    RAS_OP_EVENT_CODE_LTC_UNSUPPORTED_CLIENT_POISON_CONTAINED_ERROR   = 0x001FU,
+
+    // Poison errors
+    RAS_OP_EVENT_CODE_PCIE_INGRESS_POISON_CONTAINED_ERROR           = 0x0020U,
+    RAS_OP_EVENT_CODE_PCIE_INGRESS_POISON_UNCONTAINED_ERROR         = 0x0021U,
+    RAS_OP_EVENT_CODE_PCIE_EGRESS_POISON_ERROR                      = 0x0022U,
+    RAS_OP_EVENT_CODE_FBHUB_FATAL_POISON_ERROR                      = 0x0023U,
+    RAS_OP_EVENT_CODE_FBHUB_NON_FATAL_POISON_ERROR                  = 0x0024U,
+    RAS_OP_EVENT_CODE_MMU_POISON_ERROR                              = 0x0025U,
+    RAS_OP_EVENT_CODE_GSP_POISON_ERROR                              = 0x0026U,
+    RAS_OP_EVENT_CODE_COPY_ENGINE_POISON_CONTAINED_ERROR            = 0x0027U,
+    RAS_OP_EVENT_CODE_COPY_ENGINE_POISON_UNCONTAINED_ERROR          = 0x0028U,
+    RAS_OP_EVENT_CODE_PMU_POISON_ERROR                              = 0x0029U,
+    RAS_OP_EVENT_CODE_SEC2_POISON_ERROR                             = 0x002AU,
+    RAS_OP_EVENT_CODE_FBFALCON_POISON_ERROR                         = 0x002BU,
+    RAS_OP_EVENT_CODE_VIDEO_ENGINE_POISON_ERROR                     = 0x002CU,
+    RAS_OP_EVENT_CODE_SM_POISON_ERROR                               = 0x002DU,
+    RAS_OP_EVENT_CODE_CONTEXT_SWITCH_POISON_ERROR                   = 0x002EU,
+    RAS_OP_EVENT_CODE_GCC_POISON_ERROR                              = 0x002FU,
+
+    // SRAM ECC errors
+    RAS_OP_EVENT_CODE_PCIE_UNCORRECTABLE_ERROR                      = 0x0030U,
+    RAS_OP_EVENT_CODE_COPY_ENGINE_UNCORRECTABLE_ERROR               = 0x0031U,
+    RAS_OP_EVENT_CODE_MMU_UNCORRECTABLE_ERROR                       = 0x0032U,
+    RAS_OP_EVENT_CODE_FECS_UNCORRECTABLE_ERROR                      = 0x0033U,
+    RAS_OP_EVENT_CODE_SM_CONTAINED_UNCORRECTABLE_ERROR              = 0x0034U,
+    RAS_OP_EVENT_CODE_GCC_UNCORRECTABLE_ERROR                       = 0x0035U,
+    RAS_OP_EVENT_CODE_CONTEXT_SWITCH_UNCORRECTABLE_ERROR            = 0x0036U,
+    RAS_OP_EVENT_CODE_GPCMMU_UNCORRECTABLE_ERROR                    = 0x0037U,
+    RAS_OP_EVENT_CODE_GSP_UNCORRECTABLE_ERROR                       = 0x0038U,
+    RAS_OP_EVENT_CODE_LPSEC_UNCORRECTABLE_ERROR                     = 0x0039U,
+    RAS_OP_EVENT_CODE_NVLINK_UNCORRECTABLE_ERROR                    = 0x003AU,
+    RAS_OP_EVENT_CODE_PMU_UNCORRECTABLE_ERROR                       = 0x003BU,
+    RAS_OP_EVENT_CODE_SEC2_UNCORRECTABLE_ERROR                      = 0x003CU,
+    RAS_OP_EVENT_CODE_SPARING_EVENT                                 = 0x003DU,
 };
 
 #endif // _RAS_EVENT_DEFS_H_

@@ -1209,7 +1209,13 @@ static int os_get_dynamic_boost_support(
     NV_STATUS status = NV_OK;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pNvpcfParams;
+    static const NvU32 supportedSubFuncs[] =
+    {
+        NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED_CASE,
+        NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_SUPPORTED_CASE,
+    };
     OBJGPU *pGpu;
+    NvU32 i;
     int ret;
 
     status = os_alloc_mem((void**)&pNvpcfParams, sizeof(*pNvpcfParams));
@@ -1221,28 +1227,35 @@ static int os_get_dynamic_boost_support(
     }
 
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
-    pNvpcfParams->gpuId = pGpu->gpuId;
-    pNvpcfParams->subFunc = 
-        NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED_CASE;
-    status = pRmApi->Control(pRmApi,
-                           nv->rmapi.hClient,
-                           nv->rmapi.hClient,
-                           NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO,
-                           (void*)pNvpcfParams,
-                           sizeof(*pNvpcfParams));
-    if (status == NV_OK)
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(supportedSubFuncs); i++)
     {
-        ret = 1;
-    }
-    else if (status == NV_ERR_NOT_SUPPORTED)
-    {
-        ret = 0;
-    }
-    else
-    {
-        ret = -1;
+        portMemSet(pNvpcfParams, 0, sizeof(*pNvpcfParams));
+        pNvpcfParams->gpuId = pGpu->gpuId;
+        pNvpcfParams->subFunc = supportedSubFuncs[i];
+
+        status = pRmApi->Control(pRmApi,
+                               nv->rmapi.hClient,
+                               nv->rmapi.hClient,
+                               NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO,
+                               (void*)pNvpcfParams,
+                               sizeof(*pNvpcfParams));
+        if (status == NV_OK)
+        {
+            ret = 1;
+            goto cleanup;
+        }
+
+        if (status != NV_ERR_NOT_SUPPORTED)
+        {
+            ret = -1;
+            goto cleanup;
+        }
     }
 
+    ret = 0;
+
+cleanup:
     os_free_mem(pNvpcfParams);
 end:
     return ret;
@@ -3036,12 +3049,6 @@ RmInitS0ixPowerManagement(
     nv_priv_t  *nvp = NV_GET_NV_PRIV(nv);
     NvU32       data;
 
-    // S0ix-based S2Idle, on desktops, is not supported yet. Return early for desktop SKUs
-    if (!nvp->b_mobile_config_enabled)
-    {
-        return;
-    }
-
     /*
      * The GPU S0ix-based system power management will be enabled
      * only if all the following necessary requirements are met:
@@ -3191,7 +3198,7 @@ void RmInitPowerManagement(
             nvp->gc6_upstream_port_configured = RmConfigureUpstreamPortForRTD3(nv, NV_TRUE);
         }
 
-        nv->is_pm_unsupported = pGpu->getProperty(pGpu, PDB_PROP_GPU_POWER_MANAGEMENT_UNSUPPORTED);
+        nv->is_pm_unsupported = gpuIsPowerManagementUnsupported(pGpu);
 
         // UNLOCK: release GPUs lock
         rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);

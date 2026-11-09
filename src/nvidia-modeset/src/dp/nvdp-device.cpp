@@ -63,7 +63,7 @@ void nvDPDeviceSetPowerState(NVDpyEvoPtr pDpyEvo, NvBool on)
             if (nvDpyIdIsInDpyIdList(pDpyEvo->id,
                                      pDpLibConnector->dpyIdList[head]) &&
                 (pDispEvo->headState[head].timings.vrr.type !=
-                 NVKMS_DPY_VRR_TYPE_NONE)) {
+                 NVKMS_VRR_TYPE_NONE)) {
                 nvDPLibSetAdaptiveSync(pDispEvo, head, TRUE);
                 break;
             }

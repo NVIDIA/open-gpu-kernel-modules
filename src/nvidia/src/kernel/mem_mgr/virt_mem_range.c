@@ -122,13 +122,12 @@ vmrangeConstruct_IMPL
     // VGPU: With GUEST_MANAGED_VA we should not have to forward this object,
     // but virtual ContextDma and the memory destructor depend on it.
     //
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    if (memNeedRpcAlloc(pMemory))
     {
         NV_RM_RPC_ALLOC_OBJECT(pGpu, hClient, hParent, hMemory, class,
             pAllocData, sizeof(*pAllocData), status);
         if (status != NV_OK)
         {
-            memdescDestroy(pMemDesc);
             return status;
         }
         pMemory->bRpcAlloc = NV_TRUE;

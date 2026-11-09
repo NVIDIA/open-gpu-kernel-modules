@@ -47,6 +47,8 @@
 //
 
 struct OpEventLogEntry;
+struct OpEventLog;
+struct OBJGPU;
 
 //
 // Render an event log entry's event as an NV_GPU_OPERATIONAL_EVENT_RECORD
@@ -79,5 +81,22 @@ NV_STATUS opEventLogEntryRenderToEventBufferCperSubset(const struct OpEventLogEn
 NV_STATUS opEventLogEntryRenderCper(const struct OpEventLogEntry *pEntry,
                                     NvU8 *pBuffer, NvU32 bufferCap,
                                     NvU32 *pRecordSize);
+
+//
+// Build one GPU operational event protobuf using the size selected by OBJINFOROM.
+//
+NV_STATUS opEventLogEntryRenderGoeProtobufEvent(
+    const struct OpEventLogEntry *pEntry,
+    NvU32 eventIndex,
+    NvU8 *pBuffer, NvU32 bufferCap,
+    NvU32 *pRecordSize,
+    NvBool *pTruncated);
+
+//
+// Best-effort persistence hook for the append path.
+//
+void opEventLogEntryPersistent(struct OpEventLog *pLog,
+                               struct OBJGPU *pGpu,
+                               const struct OpEventLogEntry *pEntry);
 
 #endif // _OP_EVENT_LOG_ENTRY_H_

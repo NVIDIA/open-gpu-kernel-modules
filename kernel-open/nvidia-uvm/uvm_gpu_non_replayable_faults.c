@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2025 NVIDIA Corporation
+    Copyright (c) 2017-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -271,10 +271,10 @@ static bool use_clear_faulted_channel_sw_method(uvm_parent_gpu_t *parent_gpu)
     if (uvm_parent_gpu_is_virt_mode_sriov(parent_gpu))
         use_sw_method = true;
 
-    // In Confidential Computing access to the privileged registers is blocked,
-    // in order to prevent interference between guests, or between the
-    // (untrusted) host and the guests.
-    if (g_uvm_global.conf_computing_enabled)
+    // When the BAR0 decoupler is enabled, access to the privileged registers
+    // used to clear the faulted bit is blocked, so request RM to do the
+    // clearing via a SW method instead.
+    if (parent_gpu->cant_access_fault_clear_register)
         use_sw_method = true;
 
     if (use_sw_method)
@@ -378,6 +378,7 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_va_block_t *va_block,
     uvm_perf_thrashing_hint_t thrashing_hint;
     uvm_processor_id_t new_residency;
     bool read_duplicate;
+    bool ats_pte_fixup;
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     uvm_non_replayable_fault_buffer_t *non_replayable_faults = &gpu->parent->fault_buffer.non_replayable;
     const uvm_va_policy_t *policy;
@@ -389,6 +390,13 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_va_block_t *va_block,
     UVM_ASSERT(fault_entry->va_space == va_space);
     UVM_ASSERT(fault_entry->fault_address >= va_block->start);
     UVM_ASSERT(fault_entry->fault_address <= va_block->end);
+
+    page_index = uvm_va_block_cpu_page_index(va_block, fault_entry->fault_address);
+
+    // Initialize the ATS PTE fixup masks to avoid stale entries from a
+    // previous fault
+    uvm_page_mask_zero(&service_context->ats_pte_fixup_mask);
+    uvm_page_mask_zero(&service_context->ats_pte_write_mask);
 
     policy = uvm_va_policy_get(va_block, fault_entry->fault_address);
 
@@ -424,7 +432,23 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_va_block_t *va_block,
     service_context->read_duplicate_count = 0;
     service_context->thrashing_pin_count = 0;
 
-    page_index = uvm_va_block_cpu_page_index(va_block, fault_entry->fault_address);
+    // If this is an ATS processor and the CPU PTE is present, the ATS
+    // translation failed on the CPU PTE itself (an access flag or dirty-bit
+    // fault, or a write to a PTE without write permission such as CoW). Block
+    // servicing cannot fix the CPU PTE, so fix it up once the va_block lock has
+    // been dropped instead. Note that this drops the va_block lock to snapshot
+    // the CPU PTE, and asks for a retry if the block changed.
+    status = uvm_hmm_ats_pte_fixup_check_and_record(va_block,
+                                                    gpu,
+                                                    page_index,
+                                                    fault_entry->fault_access_type,
+                                                    service_context,
+                                                    &ats_pte_fixup);
+    if (status != NV_OK)
+        return status;
+
+    if (ats_pte_fixup)
+        return NV_OK;
 
     // Compute new residency and update the masks
     new_residency = uvm_va_block_select_residency(va_block,
@@ -437,26 +461,6 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_va_block_t *va_block,
                                                   UVM_SERVICE_OPERATION_NON_REPLAYABLE_FAULTS,
                                                   hmm_migratable,
                                                   &read_duplicate);
-
-    // If this is a ATS processor and the page is already resident in the correct location
-    // then it should already be mapped on the CPU so handle this as a minor fault.
-    if (uvm_va_block_is_hmm(va_block) && gpu->parent->ats_supported) {
-        uvm_va_block_page_resident_processors(va_block, page_index,
-                                              &service_context->block_context->scratch_processor_mask);
-        if (uvm_processor_mask_test(&service_context->block_context->scratch_processor_mask, gpu->id)) {
-            unsigned int flags = FAULT_FLAG_REMOTE;
-            if (fault_entry->fault_access_type >= UVM_FAULT_ACCESS_TYPE_WRITE)
-                flags |= FAULT_FLAG_WRITE;
-
-            // handle_mm_fault() may call hmm_invalidate() so we can't call it with the block lock held
-            uvm_mutex_unlock(&va_block->lock);
-            UVM_HANDLE_MM_FAULT(service_context->block_context->hmm.vma,
-                                uvm_va_block_cpu_page_address(va_block, page_index), flags);
-            uvm_mutex_lock(&va_block->lock);
-
-            return NV_OK;
-        }
-    }
 
     // Initialize the minimum necessary state in the fault service context
     uvm_processor_mask_zero(&service_context->resident_processors);
@@ -514,8 +518,28 @@ static NV_STATUS service_managed_fault_in_block(uvm_va_block_t *va_block,
 
     uvm_mutex_unlock(&va_block->lock);
 
-    if (uvm_va_block_is_hmm(va_block))
+    if (uvm_va_block_is_hmm(va_block)) {
+        NV_STATUS fixup_status = uvm_hmm_ats_pte_fixup(va_block,
+                                                       service_context,
+                                                       fault_entry->fault_address,
+                                                       fault_entry->fault_access_type);
+
         uvm_hmm_migrate_finish(va_block);
+
+        if (fixup_status == NV_ERR_INVALID_ADDRESS) {
+            // The CPU PTE could not be fixed up (SIGSEGV, SIGBUS or a poisoned
+            // page). A CPU thread would be killed here, so cancel the fault
+            // the same way a logical permission failure is cancelled instead
+            // of replaying it forever.
+            fault_entry->is_fatal = true;
+            fault_entry->fatal_reason = uvm_tools_status_to_fatal_fault_reason(fixup_status);
+        }
+        else if (fixup_status != NV_OK && status == NV_OK) {
+            // NV_ERR_NO_MEMORY: report it like an allocation failure in
+            // uvm_va_block_service_locked().
+            status = fixup_status;
+        }
+    }
 
     return status == NV_OK? tracker_status: status;
 }

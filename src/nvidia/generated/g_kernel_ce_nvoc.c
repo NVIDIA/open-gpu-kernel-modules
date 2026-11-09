@@ -44,20 +44,10 @@ NV_STATUS __nvoc_down_thunk_KernelCE_engstateStateInitLocked(OBJGPU *arg1, struc
 NV_STATUS __nvoc_down_thunk_KernelCE_engstateStateUnload(OBJGPU *pGpu, struct OBJENGSTATE *pKCe, NvU32 flags);    // this
 NV_STATUS __nvoc_down_thunk_KernelCE_engstateStateLoad(OBJGPU *arg1, struct OBJENGSTATE *arg_this, NvU32 arg3);    // this
 void __nvoc_down_thunk_KernelCE_engstateStateDestroy(OBJGPU *arg1, struct OBJENGSTATE *arg_this);    // this
-void __nvoc_down_thunk_KernelCE_intrservRegisterIntrService(OBJGPU *arg1, struct IntrService *arg_this, IntrServiceRecord arg3[181]);    // this
+void __nvoc_down_thunk_KernelCE_intrservRegisterIntrService(OBJGPU *arg1, struct IntrService *arg_this, IntrServiceRecord arg3[320]);    // this
 NV_STATUS __nvoc_down_thunk_KernelCE_intrservServiceNotificationInterrupt(OBJGPU *arg1, struct IntrService *arg_this, IntrServiceServiceNotificationInterruptArguments *arg3);    // this
 
 // Up-thunk(s) to bridge KernelCE methods to ancestors (if any)
-void __nvoc_up_thunk_OBJENGSTATE_kceInitMissing(struct OBJGPU *pGpu, struct KernelCE *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePreInitLocked(struct OBJGPU *pGpu, struct KernelCE *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelCE *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStateInitUnlocked(struct OBJGPU *pGpu, struct KernelCE *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePreLoad(struct OBJGPU *pGpu, struct KernelCE *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePostLoad(struct OBJGPU *pGpu, struct KernelCE *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePreUnload(struct OBJGPU *pGpu, struct KernelCE *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePostUnload(struct OBJGPU *pGpu, struct KernelCE *pEngstate, NvU32 arg3);    // this
-NvBool __nvoc_up_thunk_IntrService_kceClearInterrupt(OBJGPU *pGpu, struct KernelCE *pIntrService, IntrServiceClearInterruptArguments *pParams);    // this
-NvU32 __nvoc_up_thunk_IntrService_kceServiceInterrupt(OBJGPU *pGpu, struct KernelCE *pIntrService, IntrServiceServiceInterruptArguments *pParams);    // this
 
 // Class-specific details for KernelCE
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCE = 
@@ -75,7 +65,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCE =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__KernelCE __nvoc_metadata__KernelCE = {
     .rtti.pClassDef = &__nvoc_class_def_KernelCE,    // (kce) this
     .rtti.dtor      = &__nvoc_dtor_KernelCE,
@@ -90,38 +80,25 @@ static const struct NVOC_METADATA__KernelCE __nvoc_metadata__KernelCE = {
     .metadata__IntrService.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__IntrService.rtti.offset    = NV_OFFSETOF(KernelCE, __nvoc_base_IntrService),
 
-    .vtable.__kceConstructEngine__ = &kceConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelCE_engstateConstructEngine,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &__nvoc_down_thunk_KernelCE_engstateIsPresent,    // virtual
-    .vtable.__kceStateInitLocked__ = &kceStateInitLocked_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &__nvoc_down_thunk_KernelCE_engstateStateInitLocked,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &__nvoc_down_thunk_KernelCE_engstateStateUnload,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &__nvoc_down_thunk_KernelCE_engstateStateLoad,    // virtual
-    .vtable.__kceStateDestroy__ = &kceStateDestroy_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &__nvoc_down_thunk_KernelCE_engstateStateDestroy,    // virtual
-    .vtable.__kceRegisterIntrService__ = &kceRegisterIntrService_IMPL,    // virtual override (intrserv) base (intrserv)
     .metadata__IntrService.vtable.__intrservRegisterIntrService__ = &__nvoc_down_thunk_KernelCE_intrservRegisterIntrService,    // virtual
-    .vtable.__kceServiceNotificationInterrupt__ = &kceServiceNotificationInterrupt_IMPL,    // virtual override (intrserv) base (intrserv)
     .metadata__IntrService.vtable.__intrservServiceNotificationInterrupt__ = &__nvoc_down_thunk_KernelCE_intrservServiceNotificationInterrupt,    // virtual
-    .vtable.__kceInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kceInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-    .vtable.__kceStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kceStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-    .vtable.__kceStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kceStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .vtable.__kceStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kceStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-    .vtable.__kceStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kceStatePreLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-    .vtable.__kceStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kceStatePostLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-    .vtable.__kceStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kceStatePreUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-    .vtable.__kceStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kceStatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__kceClearInterrupt__ = &__nvoc_up_thunk_IntrService_kceClearInterrupt,    // virtual inherited (intrserv) base (intrserv)
     .metadata__IntrService.vtable.__intrservClearInterrupt__ = &intrservClearInterrupt_IMPL,    // virtual
-    .vtable.__kceServiceInterrupt__ = &__nvoc_up_thunk_IntrService_kceServiceInterrupt,    // virtual inherited (intrserv) base (intrserv)
     .metadata__IntrService.vtable.__intrservServiceInterrupt__ = &intrservServiceInterrupt_IMPL,    // virtual
 };
 
@@ -141,7 +118,7 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelCE = {
 
 // kceConstructEngine: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelCE_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pKCe, ENGDESCRIPTOR arg3) {
-    return kceConstructEngine(pGpu, (struct KernelCE *)(((unsigned char *) pKCe) - NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)), arg3);
+    return kceConstructEngine_IMPL(pGpu, (struct KernelCE *)(((unsigned char *) pKCe) - NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)), arg3);
 }
 
 // kceIsPresent: virtual halified (2 hals) override (engstate) base (engstate) body
@@ -151,7 +128,7 @@ NvBool __nvoc_down_thunk_KernelCE_engstateIsPresent(OBJGPU *pGpu, struct OBJENGS
 
 // kceStateInitLocked: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelCE_engstateStateInitLocked(OBJGPU *arg1, struct OBJENGSTATE *arg_this) {
-    return kceStateInitLocked(arg1, (struct KernelCE *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)));
+    return kceStateInitLocked_IMPL(arg1, (struct KernelCE *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)));
 }
 
 // kceStateUnload: virtual halified (2 hals) override (engstate) base (engstate) body
@@ -166,70 +143,17 @@ NV_STATUS __nvoc_down_thunk_KernelCE_engstateStateLoad(OBJGPU *arg1, struct OBJE
 
 // kceStateDestroy: virtual override (engstate) base (engstate)
 void __nvoc_down_thunk_KernelCE_engstateStateDestroy(OBJGPU *arg1, struct OBJENGSTATE *arg_this) {
-    kceStateDestroy(arg1, (struct KernelCE *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)));
+    kceStateDestroy_IMPL(arg1, (struct KernelCE *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)));
 }
 
 // kceRegisterIntrService: virtual override (intrserv) base (intrserv)
-void __nvoc_down_thunk_KernelCE_intrservRegisterIntrService(OBJGPU *arg1, struct IntrService *arg_this, IntrServiceRecord arg3[181]) {
-    kceRegisterIntrService(arg1, (struct KernelCE *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCE, __nvoc_base_IntrService)), arg3);
+void __nvoc_down_thunk_KernelCE_intrservRegisterIntrService(OBJGPU *arg1, struct IntrService *arg_this, IntrServiceRecord arg3[320]) {
+    kceRegisterIntrService_IMPL(arg1, (struct KernelCE *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCE, __nvoc_base_IntrService)), arg3);
 }
 
 // kceServiceNotificationInterrupt: virtual override (intrserv) base (intrserv)
 NV_STATUS __nvoc_down_thunk_KernelCE_intrservServiceNotificationInterrupt(OBJGPU *arg1, struct IntrService *arg_this, IntrServiceServiceNotificationInterruptArguments *arg3) {
-    return kceServiceNotificationInterrupt(arg1, (struct KernelCE *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCE, __nvoc_base_IntrService)), arg3);
-}
-
-
-// 10 up-thunk(s) defined to bridge methods in KernelCE to superclasses
-
-// kceInitMissing: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_kceInitMissing(struct OBJGPU *pGpu, struct KernelCE *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)));
-}
-
-// kceStatePreInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePreInitLocked(struct OBJGPU *pGpu, struct KernelCE *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)));
-}
-
-// kceStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelCE *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)));
-}
-
-// kceStateInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStateInitUnlocked(struct OBJGPU *pGpu, struct KernelCE *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)));
-}
-
-// kceStatePreLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePreLoad(struct OBJGPU *pGpu, struct KernelCE *pEngstate, NvU32 arg3) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kceStatePostLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePostLoad(struct OBJGPU *pGpu, struct KernelCE *pEngstate, NvU32 arg3) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kceStatePreUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePreUnload(struct OBJGPU *pGpu, struct KernelCE *pEngstate, NvU32 arg3) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kceStatePostUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kceStatePostUnload(struct OBJGPU *pGpu, struct KernelCE *pEngstate, NvU32 arg3) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelCE, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kceClearInterrupt: virtual inherited (intrserv) base (intrserv)
-NvBool __nvoc_up_thunk_IntrService_kceClearInterrupt(OBJGPU *pGpu, struct KernelCE *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return intrservClearInterrupt(pGpu, (struct IntrService *)(((unsigned char *) pIntrService) + NV_OFFSETOF(KernelCE, __nvoc_base_IntrService)), pParams);
-}
-
-// kceServiceInterrupt: virtual inherited (intrserv) base (intrserv)
-NvU32 __nvoc_up_thunk_IntrService_kceServiceInterrupt(OBJGPU *pGpu, struct KernelCE *pIntrService, IntrServiceServiceInterruptArguments *pParams) {
-    return intrservServiceInterrupt(pGpu, (struct IntrService *)(((unsigned char *) pIntrService) + NV_OFFSETOF(KernelCE, __nvoc_base_IntrService)), pParams);
+    return kceServiceNotificationInterrupt_IMPL(arg1, (struct KernelCE *)(((unsigned char *) arg_this) - NV_OFFSETOF(KernelCE, __nvoc_base_IntrService)), arg3);
 }
 
 
@@ -318,7 +242,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // kceIsPresent -- virtual halified (2 hals) override (engstate) base (engstate) body
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T238D | T264D */ 
     {
         pThis->__kceIsPresent__ = &kceIsPresent_d69453;
     }
@@ -329,7 +253,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceStateUnload -- virtual halified (2 hals) override (engstate) base (engstate) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xfdf0ffe0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060ffUL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->__kceStateUnload__ = &kceStateUnload_GP100;
     }
@@ -340,7 +264,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
     }
 
     // kceStateLoad -- virtual halified (2 hals) override (engstate) base (engstate) body
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T238D | T264D */ 
     {
         pThis->__kceStateLoad__ = &kceStateLoad_395e98;
     }
@@ -351,7 +275,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceSetShimInstance -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf8000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030c1UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB20B | GB20C | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060c1UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->__kceSetShimInstance__ = &kceSetShimInstance_GB100;
     }
@@ -363,7 +287,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceIsSecureCe -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x1c000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030feUL) )) /* ChipHal: GH100 | GB100 | GB102 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060feUL) )) /* ChipHal: GH100 | GB100 | GB102 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->__kceIsSecureCe__ = &kceIsSecureCe_GH100;
     }
@@ -391,7 +315,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceIsCeSysmemRead__ = &kceIsCeSysmemRead_GP100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000303fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000603fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
     {
         pThis->__kceIsCeSysmemRead__ = &kceIsCeSysmemRead_GB100;
     }
@@ -407,7 +331,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceIsCeSysmemWrite__ = &kceIsCeSysmemWrite_GP100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000303fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000603fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
     {
         pThis->__kceIsCeSysmemWrite__ = &kceIsCeSysmemWrite_GB100;
     }
@@ -419,7 +343,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceIsCCWorkSubmitLce -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceIsCCWorkSubmitLce__ = &kceIsCCWorkSubmitLce_GB100;
     }
@@ -431,7 +355,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceIsCeNvlinkP2P -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceIsCeNvlinkP2P__ = &kceIsCeNvlinkP2P_GB100;
     }
@@ -448,7 +372,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceIsScrubLce -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceIsScrubLce__ = &kceIsScrubLce_GB100;
     }
@@ -464,7 +388,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceAssignCeCaps__ = &kceAssignCeCaps_GP100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000303fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000603fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
     {
         pThis->__kceAssignCeCaps__ = &kceAssignCeCaps_GB100;
     }
@@ -484,7 +408,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceGetP2PCes__ = &kceGetP2PCes_GV100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf8000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060ffUL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->__kceGetP2PCes__ = &kceGetP2PCes_GB100;
     }
@@ -496,7 +420,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceGetSysmemRWLCEs -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf8000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceGetSysmemRWLCEs__ = &kceGetSysmemRWLCEs_GB100;
     }
@@ -512,7 +436,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
     }
 
     // kceGetNvlinkAutoConfigCeValues -- halified (4 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T238D | T264D */ 
     {
         pThis->__kceGetNvlinkAutoConfigCeValues__ = &kceGetNvlinkAutoConfigCeValues_ac1694;
     }
@@ -521,7 +445,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceGetNvlinkAutoConfigCeValues__ = &kceGetNvlinkAutoConfigCeValues_TU102;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf8000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030c1UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB20B | GB20C | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060c1UL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->__kceGetNvlinkAutoConfigCeValues__ = &kceGetNvlinkAutoConfigCeValues_GB100;
     }
@@ -542,7 +466,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceIsCurrentMaxTopology -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | T234D | T239D | T264D */ 
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | T234D | T238D | T264D */ 
     {
         pThis->__kceIsCurrentMaxTopology__ = &kceIsCurrentMaxTopology_d69453;
     }
@@ -552,7 +476,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
     }
 
     // kceClearAssignedNvlinkPeerMasks -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T238D | T264D */ 
     {
         pThis->__kceClearAssignedNvlinkPeerMasks__ = &kceClearAssignedNvlinkPeerMasks_d44104;
     }
@@ -567,7 +491,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceGetAutoConfigTableEntry__ = &kceGetAutoConfigTableEntry_GH100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf9f0ffe0UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060ffUL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->__kceGetAutoConfigTableEntry__ = &kceGetAutoConfigTableEntry_GV100;
     }
@@ -582,7 +506,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
     {
         pThis->__kceGetGrceConfigSize1__ = &kceGetGrceConfigSize1_GB20B;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T238D | T264D */ 
     {
         pThis->__kceGetGrceConfigSize1__ = &kceGetGrceConfigSize1_b2b553;
     }
@@ -616,11 +540,11 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
     {
         pThis->__kceGetPce2lceConfigSize1__ = &kceGetPce2lceConfigSize1_GB20B;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003000UL) )) /* ChipHal: GR100 | GR102 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006000UL) )) /* ChipHal: GR100 | GR102 */ 
     {
         pThis->__kceGetPce2lceConfigSize1__ = &kceGetPce2lceConfigSize1_GR100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T239D | T264D */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: T234D | T238D | T264D */ 
     {
         pThis->__kceGetPce2lceConfigSize1__ = &kceGetPce2lceConfigSize1_b2b553;
     }
@@ -651,12 +575,12 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceGetMappings__ = &kceGetMappings_GA100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceGetMappings__ = &kceGetMappings_GB100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | T234D | T239D | T264D */ 
+             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | T234D | T238D | T264D */ 
     {
         pThis->__kceGetMappings__ = &kceGetMappings_395e98;
     }
@@ -687,7 +611,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceMapPceLceForC2C__ = &kceMapPceLceForC2C_GH100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceMapPceLceForC2C__ = &kceMapPceLceForC2C_GB100;
     }
@@ -699,7 +623,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceMapPceLceForScrub -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceMapPceLceForScrub__ = &kceMapPceLceForScrub_GB100;
     }
@@ -711,7 +635,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceMapPceLceForWorkSubmitLces -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceMapPceLceForWorkSubmitLces__ = &kceMapPceLceForWorkSubmitLces_GB100;
     }
@@ -723,7 +647,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceMapPceLceForDecomp -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceMapPceLceForDecomp__ = &kceMapPceLceForDecomp_GB100;
     }
@@ -735,7 +659,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceMapPceLceForPCIe -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceMapPceLceForPCIe__ = &kceMapPceLceForPCIe_GB100;
     }
@@ -775,7 +699,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceGetLceMaskForShimInstance -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf8000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060ffUL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->__kceGetLceMaskForShimInstance__ = &kceGetLceMaskForShimInstance_GB100;
     }
@@ -786,7 +710,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
     }
 
     // kceSupportsEquidistantPces -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003000UL) )) /* ChipHal: GR100 | GR102 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006000UL) )) /* ChipHal: GR100 | GR102 */ 
     {
         pThis->__kceSupportsEquidistantPces__ = &kceSupportsEquidistantPces_e661f0;
     }
@@ -820,7 +744,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceMapPceLceForNvlinkPeers__ = &kceMapPceLceForNvlinkPeers_GA100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceMapPceLceForNvlinkPeers__ = &kceMapPceLceForNvlinkPeers_GB100;
     }
@@ -836,7 +760,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceGetSysmemSupportedLceMask__ = &kceGetSysmemSupportedLceMask_GA100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf9f0f800UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030c1UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB20B | GB20C | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060c1UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->__kceGetSysmemSupportedLceMask__ = &kceGetSysmemSupportedLceMask_GA102;
     }
@@ -867,7 +791,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceMapAsyncLceDefault__ = &kceMapAsyncLceDefault_GA100;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00003001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006001UL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GR100 | GR102 */ 
     {
         pThis->__kceMapAsyncLceDefault__ = &kceMapAsyncLceDefault_GB100;
     }
@@ -878,7 +802,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceGetNvlinkPeerSupportedLceMask -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | T234D | T239D | T264D */ 
+        ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | T234D | T238D | T264D */ 
     {
         pThis->__kceGetNvlinkPeerSupportedLceMask__ = &kceGetNvlinkPeerSupportedLceMask_b2b553;
     }
@@ -902,7 +826,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
         pThis->__kceGetGrceSupportedLceMask__ = &kceGetGrceSupportedLceMask_GB202;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) ) ||
-             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | T234D | T239D | T264D */ 
+             ( ((chipHal_HalVarIdx >> 5) == 3UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000e000UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | T234D | T238D | T264D */ 
     {
         pThis->__kceGetGrceSupportedLceMask__ = &kceGetGrceSupportedLceMask_b2b553;
     }
@@ -948,7 +872,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 
     // kceGetGroupIdStride -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xf8000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060ffUL) )) /* ChipHal: GB100 | GB102 | GB10B | GB10C | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
     {
         pThis->__kceGetGroupIdStride__ = &kceGetGroupIdStride_GB100;
     }
@@ -960,7 +884,7 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, GpuHalspecOwner *p
 } // End __nvoc_init_funcTable_KernelCE_1 with approximately 125 basic block(s).
 
 
-// Initialize vtable(s) for 56 virtual method(s).
+// Initialize vtable(s) for 41 virtual method(s).
 void __nvoc_init_funcTable_KernelCE(KernelCE *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize vtable(s) with 41 per-object function pointer(s).

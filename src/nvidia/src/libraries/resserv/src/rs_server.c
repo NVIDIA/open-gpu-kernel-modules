@@ -48,6 +48,10 @@ enum CLIENT_LIST_LOCK_STATE
     CLIENT_LIST_LOCK_UNLOCKED,
 };
 
+#if RS_STANDALONE_TEST
+void serverTestFreeResourceRelock(RsServer *pServer, RS_RES_FREE_PARAMS *pParams);
+#endif // RS_STANDALONE_TEST 
+
 /**
  * Get the RsClient from a client handle without taking locks
  * @param[in]   pServer
@@ -133,10 +137,11 @@ static NV_STATUS _serverCreateEntryAndLockForNewClient(RsServer *pServer, NvHand
 
 /**
  * Lock the RsClient given a CLIENT_ENTRY
+ * @param[in]   pServer
  * @param[in]   access       Read or write lock access
  * @param[in]   pClientEntry The client entry to lock
  */
-static void _serverLockClient(LOCK_ACCESS_TYPE access, CLIENT_ENTRY* pClientEntry);
+static void _serverLockClient(RsServer *pServer, LOCK_ACCESS_TYPE access, CLIENT_ENTRY* pClientEntry);
 
 /**
  * Lock and retrieve the RsClient associated with a client handle, and update lock info.
@@ -173,10 +178,11 @@ static NV_STATUS _serverLockAllClientsWithLockInfo(RsServer *pServer, RS_LOCK_IN
 
 /**
  * Unlock the RsClient given a CLIENT_ENTRY
+ * @param[in]   pServer
  * @param[in]   access       Read or write lock access
  * @param[in]   pClientEntry The client entry to unlock
  */
-static void _serverUnlockClient(LOCK_ACCESS_TYPE access, CLIENT_ENTRY* pClientEntry);
+static void _serverUnlockClient(RsServer *pServer, LOCK_ACCESS_TYPE access, CLIENT_ENTRY* pClientEntry);
 
 /**
  * Unlock a client and update lock info.
@@ -330,6 +336,12 @@ serverConstruct
     pServer->bDebugFreeList        = NV_FALSE;
     pServer->bRsAccessEnabled      = NV_TRUE;
     pServer->allClientLockOwnerTid = ~0;
+
+    pServer->bPerClientLockDisabled   = NV_FALSE;
+    pServer->pGlobalClientLock        = NULL;
+    pServer->globalClientLockOwnerTid = ~0;
+    pServer->globalClientLockDepth    = 0;
+
     pServer->internalHandleBase = RS_CLIENT_INTERNAL_HANDLE_BASE;
     pServer->clientHandleBase   = RS_CLIENT_HANDLE_BASE;
     pServer->activeClientCount  = 0;
@@ -462,6 +474,12 @@ serverDestruct
 
     portSyncSpinlockDestroy(pServer->pShareMapLock);
     portSyncSpinlockDestroy(pServer->pClientListLock);
+
+    if (pServer->pGlobalClientLock != NULL)
+    {
+        portSyncRwLockDestroy(pServer->pGlobalClientLock);
+        pServer->pGlobalClientLock = NULL;
+    }
 
     portMemAllocatorRelease(pServer->pAllocator);
 
@@ -657,7 +675,7 @@ serverAllocClient
 
 done:
     if (bLockedClient)
-        _serverUnlockClient(LOCK_ACCESS_WRITE, pClientEntry);
+        _serverUnlockClient(pServer, LOCK_ACCESS_WRITE, pClientEntry);
 
     if ((status != NV_OK) && (pClientEntry != NULL))
     {
@@ -735,13 +753,12 @@ serverAllocResource
     NvBool              bClientAlloc = (pParams->externalClassId == NV01_ROOT ||
                                         pParams->externalClassId == NV01_ROOT_CLIENT ||
                                         pParams->externalClassId == NV01_ROOT_NON_PRIV);
-    LOCK_ACCESS_TYPE    topLockAccess;
+    LOCK_ACCESS_TYPE    topLockAccess = LOCK_ACCESS_READ;
     NvU32               initialLockState;
     RS_LOCK_INFO       *pLockInfo;
     CLIENT_ENTRY       *pClientEntry = NULL;
     CLIENT_ENTRY       *pSecondClientEntry = NULL;
     NvHandle            hSecondClient;
-    CALL_CONTEXT        callContext = {0};
 
     if (!pServer->bConstructed)
         return NV_ERR_NOT_READY;
@@ -755,6 +772,9 @@ serverAllocResource
     if (status != NV_OK)
         return status;
 
+    PORT_ALLOC_LARGE_STRUCTURE(CALL_CONTEXT, pCallContext, { status = NV_ERR_NO_MEMORY; goto done; });
+    portMemSet(pCallContext, 0, sizeof(*pCallContext));
+
     status = serverAllocResourceLookupLockFlags(pServer, RS_LOCK_TOP, pParams, &topLockAccess);
     if (status != NV_OK)
         goto done;
@@ -765,7 +785,7 @@ serverAllocResource
     if (status == NV_OK)
     {
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            serverDeserializeAllocDown(&callContext, pParams->externalClassId, &pParams->pAllocParams, &pParams->paramsSize, &pParams->allocFlags),
+            serverDeserializeAllocDown(pCallContext, pParams->externalClassId, &pParams->pAllocParams, &pParams->paramsSize, &pParams->allocFlags),
             done);
 
         if (bClientAlloc)
@@ -867,9 +887,12 @@ done:
         }
     }
 
-    NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR,
-        serverSerializeAllocUp(&callContext, pParams->externalClassId, &pParams->pAllocParams, &pParams->paramsSize, &pParams->allocFlags));
-    serverFreeSerializeStructures(&callContext, pParams->pAllocParams);
+    if (pCallContext != NULL)
+    {
+        NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR,
+            serverSerializeAllocUp(pCallContext, pParams->externalClassId, &pParams->pAllocParams, &pParams->paramsSize, &pParams->allocFlags));
+        serverFreeSerializeStructures(pCallContext, pParams->pAllocParams);
+    }
 
     serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);
 
@@ -878,6 +901,7 @@ done:
 
     NV_ASSERT(pLockInfo->state == initialLockState);
 
+    PORT_FREE_LARGE_STRUCTURE(pCallContext);
     return status;
 }
 
@@ -942,7 +966,8 @@ clientUpdatePendingFreeList_IMPL
     NvBool bMove
 )
 {
-    RsIndexIter it;
+    RsRefDependentListIter it;
+    RsRefChildMapIter childIt;
     NvBool bInList = refPendingFree(pTargetRef, pClient);
     RS_FREE_STACK *pFs = pClient->pFreeStack;
     if (bMove)
@@ -972,20 +997,20 @@ clientUpdatePendingFreeList_IMPL
     // Recursively add children to the pending free list and move
     // them to the front of the list
     //
-    it = indexRefIterAll(&pTargetRef->childRefMap);
-    while (indexRefIterNext(&it))
+    childIt = childRefIterAll(pTargetRef);
+    while (childRefIterNext(&childIt))
     {
-        clientUpdatePendingFreeList(pClient, *it.pValue, pReference, NV_TRUE);
+        clientUpdatePendingFreeList(pClient, childIt.pValue, pReference, NV_TRUE);
     }
 
     //
-    // Recursively add dependencies to the pending free list and
+    // Recursively add dependent resources to the pending free list and
     // move them to the front of the list
     //
-    it = indexRefIterAll(&pTargetRef->depRefMap);
-    while (indexRefIterNext(&it))
+    it = listIterAll(&pTargetRef->depRefList);
+    while (listIterNext(&it))
     {
-        clientUpdatePendingFreeList(pClient, *it.pValue, pReference, NV_TRUE);
+        clientUpdatePendingFreeList(pClient, it.pValue->pDependentRef, pReference, NV_TRUE);
     }
 
     if (pTargetRef->pResource != NULL)
@@ -1251,10 +1276,14 @@ serverFreeResourceTree
         {
             // Resource requires RW locking so need to re-lock and look up the resource again
             pParams->pResourceRef = NULL;
+            pResourceRef = NULL;
             _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pClientEntry, pLockInfo, &releaseFlags);
             pClientEntry = NULL;
             serverTopLock_Epilogue(pServer, firstTopLockAccess, pLockInfo, &releaseFlags);
 
+#if RS_STANDALONE_TEST
+            serverTestFreeResourceRelock(pServer, pParams);
+#endif // RS_STANDALONE_TEST
             status = serverFreeResourceTreeLockAndFindResource(pServer, pParams, topLockAccess,
                                                                &releaseFlags, &pClientEntry, &pResourceRef);
             if ((status != NV_OK) || (pResourceRef == NULL))
@@ -1309,7 +1338,7 @@ serverFreeResourceTree
         goto done;
     }
 
-    if (pParams->bInvalidateOnly && pResourceRef->bInvalidated)
+    if (pParams->bInvalidateOnly && (pResourceRef->flags & RS_RESOURCE_REF_INVALIDATED))
     {
         status = NV_OK;
         goto done;
@@ -1420,7 +1449,6 @@ serverFreeResourceTree
             NV_CHECK_OK(status, LEVEL_INFO, serverTopLock_Prologue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags));
             _serverFreeClient(pServer, &clientFreeParams);
             serverTopLock_Epilogue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags);
-            initialLockState &= ~RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED;
         }
         else
         {
@@ -1563,7 +1591,7 @@ serverControl
         goto done;
     pParams->pResourceRef = pResourceRef;
 
-    if (pResourceRef->bInvalidated || pResourceRef->pResource == NULL)
+    if ((pResourceRef->flags & RS_RESOURCE_REF_INVALIDATED) || pResourceRef->pResource == NULL)
     {
         status = NV_ERR_RESOURCE_LOST;
         goto done;
@@ -1713,7 +1741,7 @@ serverCopyResource
         goto done;
     }
 
-    if (pResourceRefSrc->bInvalidated)
+    if (pResourceRefSrc->flags & RS_RESOURCE_REF_INVALIDATED)
     {
         status = NV_ERR_RESOURCE_LOST;
         goto done;
@@ -1824,11 +1852,15 @@ _serverShareResourceAccessClient
     pClientOwner = pClientEntryOwner->pClient;
     pClientTarget = pClientEntryTarget->pClient;
 
+    status = clientValidate(pClientOwner, pParams->pSecInfo);
+    if (status != NV_OK)
+        goto done;
+
     status = clientGetResourceRef(pClientOwner, pParams->hResource, &pResourceRef);
     if (status != NV_OK)
         goto done;
 
-    if (pResourceRef->bInvalidated)
+    if (pResourceRef->flags & RS_RESOURCE_REF_INVALIDATED)
     {
         status = NV_ERR_RESOURCE_LOST;
         goto done;
@@ -1948,7 +1980,7 @@ serverShareResourceAccess
     if (status != NV_OK)
         goto done;
 
-    if (pResourceRef->bInvalidated)
+    if (pResourceRef->flags & RS_RESOURCE_REF_INVALIDATED)
     {
         status = NV_ERR_RESOURCE_LOST;
         goto done;
@@ -2304,7 +2336,7 @@ serverInterMap
         goto done;
     bClientInterMapped = NV_TRUE;
 
-    NV_ASSERT_OK_OR_GOTO(status, refCreateInterMapping(pMapperRef, &pMapping), done);
+    NV_ASSERT_OK_OR_GOTO(status, refCreateInterMapping(pServer, pMapperRef, &pMapping), done);
 
     pMapping->size = pParams->length;
 
@@ -2326,7 +2358,7 @@ done:
             {
                 refRemoveInterMapping(pMapperRef, pMapping, NV_FALSE);
             }
-            refDestroyInterMapping(pMapperRef, pMapping);
+            refDestroyInterMapping(pServer, pMapperRef, pMapping);
             pMapping = NULL;
         }
 
@@ -2388,6 +2420,7 @@ done:
 static NV_STATUS
 serverInterUnmapMapping
 (
+    RsServer              *pServer,
     RsClient              *pClient,
     RsResourceRef         *pMapperRef,
     RsInterMapping        *pMapping,
@@ -2407,7 +2440,7 @@ serverInterUnmapMapping
 
     if (pParams->dmaOffset > pMapping->dmaOffset)
     {
-        NV_ASSERT_OK_OR_GOTO(status, refCreateInterMapping(pMapperRef, &pNewMappingLeft), done);
+        NV_ASSERT_OK_OR_GOTO(status, refCreateInterMapping(pServer, pMapperRef, &pNewMappingLeft), done);
 
         pNewMappingLeft->size = pParams->dmaOffset - pMapping->dmaOffset;
 
@@ -2427,7 +2460,7 @@ serverInterUnmapMapping
     {
         NvU64 newMappingRightDmaOffset = pParams->dmaOffset + pParams->size;
 
-        NV_ASSERT_OK_OR_GOTO(status, refCreateInterMapping(pMapperRef, &pNewMappingRight), done);
+        NV_ASSERT_OK_OR_GOTO(status, refCreateInterMapping(pServer, pMapperRef, &pNewMappingRight), done);
 
         pNewMappingRight->size = pMapping->dmaOffset + pMapping->size - newMappingRightDmaOffset;
 
@@ -2456,7 +2489,7 @@ done:
             {
                 refRemoveInterMapping(pMapperRef, pNewMappingLeft, NV_TRUE);
             }
-            refDestroyInterMapping(pMapperRef, pNewMappingLeft);
+            refDestroyInterMapping(pServer, pMapperRef, pNewMappingLeft);
         }
 
         if (pNewMappingRight != NULL)
@@ -2465,7 +2498,7 @@ done:
             {
                 refRemoveInterMapping(pMapperRef, pNewMappingRight, NV_TRUE);
             }
-            refDestroyInterMapping(pMapperRef, pNewMappingRight);
+            refDestroyInterMapping(pServer, pMapperRef, pNewMappingRight);
         }
 
         // Add the original mapping back if we couldn't split it up
@@ -2491,7 +2524,7 @@ done:
                 mapRemove(&pMapperRef->interMappingContextMap, pInterMappings);
             }
         }
-        refDestroyInterMapping(pMapperRef, pMapping);
+        refDestroyInterMapping(pServer, pMapperRef, pMapping);
     }
 
     return status;
@@ -2500,7 +2533,7 @@ done:
 static NV_STATUS
 serverInterUnmapInternal
 (
-
+    RsServer              *pServer,
     RsClient              *pClient,
     RsResourceRef         *pMapperRef,
     RsResourceRef         *pContextRef,
@@ -2529,7 +2562,7 @@ serverInterUnmapInternal
         pParams->size = pMapping->size;
 
         NV_ASSERT_OK_OR_GOTO(status,
-                             serverInterUnmapMapping(pClient, pMapperRef, pMapping, pParams, bPartialUnmap),
+                             serverInterUnmapMapping(pServer, pClient, pMapperRef, pMapping, pParams, bPartialUnmap),
                              done);
     }
     else
@@ -2588,7 +2621,7 @@ serverInterUnmapInternal
             }
 
             NV_ASSERT_OK_OR_GOTO(status,
-                                 serverInterUnmapMapping(pClient, pMapperRef, pMapping, pParams, bPartialUnmap),
+                                 serverInterUnmapMapping(pServer, pClient, pMapperRef, pMapping, pParams, bPartialUnmap),
                                  done);
 
             pMapping = pNextMapping;
@@ -2645,7 +2678,7 @@ serverInterUnmap
     if (status != NV_OK)
         goto done;
 
-    if ((pMapperRef->bInvalidated) && (pMapperRef->pResource == NULL))
+    if ((pMapperRef->flags & RS_RESOURCE_REF_INVALIDATED) && (pMapperRef->pResource == NULL))
     {
         // Object has already been freed and unmapped
         goto done;
@@ -2682,7 +2715,7 @@ serverInterUnmap
     if (status != NV_OK)
         goto done;
 
-    status = serverInterUnmapInternal(pClient, pMapperRef, pContextRef, pParams);
+    status = serverInterUnmapInternal(pServer, pClient, pMapperRef, pContextRef, pParams);
 done:
     serverInterUnmap_Epilogue(pServer, pParams);
 
@@ -2953,7 +2986,7 @@ serverLockAllClients
         CLIENT_ENTRY *pClientEntry = *lockedClientListIter.pValue;
 
         if (pClientEntry != NULL)
-            _serverLockClient(LOCK_ACCESS_WRITE, pClientEntry);
+            _serverLockClient(pServer, LOCK_ACCESS_WRITE, pClientEntry);
     }
 
     // Set all client lock owner TID
@@ -3109,7 +3142,7 @@ _serverGetAndLockClientEntryByHandle
         return NV_FALSE;
     }
 
-    _serverLockClient(access, pClientEntry);
+    _serverLockClient(pServer, access, pClientEntry);
 
     // Handle race condition where client entry was marked pending free
     if (pClientEntry->bPendingFree)
@@ -3131,7 +3164,7 @@ _serverPutAndUnlockClientEntry
     CLIENT_ENTRY    *pClientEntry
 )
 {
-    _serverUnlockClient(access, pClientEntry);
+    _serverUnlockClient(pServer, access, pClientEntry);
     _serverPutClientEntry(pServer, pClientEntry);
 }
 
@@ -3192,7 +3225,7 @@ _serverInsertClientEntry
  * @param[out]   pClientEntry The client entry associated with the handle
  *
  * @return NV_TRUE if client entry was found and marked pending free
- *         NV_FALSE if client couldn't be found
+ *         NV_FALSE if client couldn't be found or marked pending free
  */
 static NvBool _serverMarkClientEntryPendingFree(RsServer *pServer, NvHandle hClient, CLIENT_ENTRY **ppClientEntry)
 {
@@ -3241,6 +3274,15 @@ static NvBool _serverMarkClientEntryPendingFree(RsServer *pServer, NvHandle hCli
                 listRemoveFirstByValue(&pServer->lockedClientList, &pClientEntry);
             }
 
+            // A client lock already owned by this thread could self-deadlock below.
+            if (pClientEntry->lockOwnerTid == portThreadGetCurrentThreadId())
+            {
+                NV_ASSERT_FAILED("The client lock is already owned by this thread");
+                serverAcquireClientListLock(pServer);
+                pClientEntry->bPendingFree = NV_FALSE;
+                goto fail;
+            }
+
             //
             // Wait for all API's using the CLIENT_ENTRY to finish, waiting till the
             // reference count reaches 1 and using the client lock to postpone execution
@@ -3249,8 +3291,8 @@ static NvBool _serverMarkClientEntryPendingFree(RsServer *pServer, NvHandle hCli
             //
             while (pClientEntry->refCount > 1)
             {
-                _serverLockClient(LOCK_ACCESS_WRITE, pClientEntry);
-                _serverUnlockClient(LOCK_ACCESS_WRITE, pClientEntry);
+                _serverLockClient(pServer, LOCK_ACCESS_WRITE, pClientEntry);
+                _serverUnlockClient(pServer, LOCK_ACCESS_WRITE, pClientEntry);
             }
 
             // Client is no longer active so decrement the count
@@ -3296,7 +3338,8 @@ _serverPutClientEntry
         pClientEntry->pClient = NULL;
         pClientEntry->hClient = 0;
 
-        portSyncRwLockDestroy(pClientEntry->pLock);
+        if (pClientEntry->pLock != NULL)
+            portSyncRwLockDestroy(pClientEntry->pLock);
         PORT_FREE(pServer->pAllocator, pClientEntry);
     }
 }
@@ -3383,9 +3426,12 @@ _serverCreateEntryAndLockForNewClient
     // Perform memory allocations before taking the client list spinlock, they must
     // be performed outside of the spinlock's critical section.
     //
-    pLock = portSyncRwLockCreate(pServer->pAllocator);
-    if (pLock == NULL)
-        return NV_ERR_INSUFFICIENT_RESOURCES;
+    if (!pServer->bPerClientLockDisabled)
+    {
+        pLock = portSyncRwLockCreate(pServer->pAllocator);
+        if (pLock == NULL)
+            return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
 
     pClientEntry = (CLIENT_ENTRY *)PORT_ALLOC(pServer->pAllocator, sizeof(CLIENT_ENTRY));
     if (pClientEntry == NULL)
@@ -3485,8 +3531,7 @@ _serverCreateEntryAndLockForNewClient
     // Acquire the client lock here. Nothing else should have acquired it since
     // pClientEntry->pClient is still NULL.
     //
-    RS_RWLOCK_ACQUIRE_WRITE(pClientEntry->pLock, &pClientEntry->lockVal);
-    pClientEntry->lockOwnerTid = portThreadGetCurrentThreadId();
+    _serverLockClient(pServer, LOCK_ACCESS_WRITE, pClientEntry);
 
     *phClient = hClient;
     *ppClientEntry = pClientEntry;
@@ -3507,24 +3552,66 @@ _serverCreateEntryAndLockForNewClient_exit:
     return status;
 }
 
-static
-void
+static void
 _serverLockClient
 (
+    RsServer *pServer,
     LOCK_ACCESS_TYPE access,
     CLIENT_ENTRY* pClientEntry
 )
 {
-    if (access == LOCK_ACCESS_READ)
+    //
+    // Compartment 1: acquire the lock PRIMITIVE.
+    // This is the only place (with _serverUnlockClient) that touches a client
+    // lock primitive. The bookkeeping below is independent of which primitive
+    // backed the lock, so both paths fall through to the shared block.
+    //
+    if (pClientEntry->pLock != NULL)
     {
-        RS_RWLOCK_ACQUIRE_READ(pClientEntry->pLock, &pClientEntry->lockVal);
-        portAtomicIncrementU32(&pClientEntry->lockReadOwnerCnt);
+        // Per-client lock path (default)
+        if (access == LOCK_ACCESS_READ)
+            RS_RWLOCK_ACQUIRE_READ(pClientEntry->pLock, &pClientEntry->lockVal);
+        else
+            RS_RWLOCK_ACQUIRE_WRITE(pClientEntry->pLock, &pClientEntry->lockVal);
     }
     else
     {
-        RS_RWLOCK_ACQUIRE_WRITE(pClientEntry->pLock, &pClientEntry->lockVal);
-        pClientEntry->lockOwnerTid = portThreadGetCurrentThreadId();
+        //
+        // Global client lock path
+        // Certain single-thread configs cannot have client contention, so they disable
+        // per-client locks to save memory. These configs still acquire a global client
+        // lock to enforce this assumption.
+        //
+        NvU64 tid = portThreadGetCurrentThreadId();
+
+        NV_ASSERT_OR_RETURN_VOID(pServer->pGlobalClientLock != NULL);
+
+        if (pServer->globalClientLockOwnerTid != tid)
+        {
+            //
+            // This assert fires if different tasks/threads are caught contending on the
+            // RS client lock which should be impossible in the global-lock config.
+            // This assert should be dealt with by re-introducing per-client locks.
+            // Execution is allowed to continue serialized behind the global client lock.
+            //
+            NV_ASSERT(pServer->globalClientLockDepth == 0);
+            portSyncRwLockAcquireWrite(pServer->pGlobalClientLock);
+            pServer->globalClientLockOwnerTid = tid;
+        }
+
+        // Same thread acquiring the lock multiple times increments the depth
+        pServer->globalClientLockDepth++;
     }
+
+    //
+    // Compartment 2: per-client-entry lock-state BOOKKEEPING (primitive-independent).
+    // Single source of truth read by lock checking code in RS.
+    // Must run for both primitives above.
+    //
+    if (access == LOCK_ACCESS_READ)
+        portAtomicIncrementU32(&pClientEntry->lockReadOwnerCnt);
+    else
+        pClientEntry->lockOwnerTid = portThreadGetCurrentThreadId();
 }
 
 static
@@ -3715,7 +3802,7 @@ _serverLockDualClientWithLockInfo
         if (!_serverGetAndLockClientEntryByHandle(pServer, hClient2nd, access,
                 ppClientEntry2nd))
         {
-            _serverUnlockClient(access, *ppClientEntry1st);
+            _serverUnlockClient(pServer, access, *ppClientEntry1st);
             status = NV_ERR_INVALID_OBJECT_HANDLE;
             goto done;
         }
@@ -3783,28 +3870,56 @@ _serverLockAllClientsWithLockInfo
             return status;
 
         *pReleaseFlags |= RS_LOCK_RELEASE_CLIENT_LOCK;
+
+        pLockInfo->state |= RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED;
     }
 
     return NV_OK;
 }
 
-static
-void
+static void
 _serverUnlockClient
 (
+    RsServer *pServer,
     LOCK_ACCESS_TYPE access,
     CLIENT_ENTRY* pClientEntry
 )
 {
+    //
+    // Compartment 2: per-client-entry lock-state BOOKKEEPING (primitive-independent).
+    // Released before the primitive to mirror the acquire ordering in
+    // _serverLockClient. Must run for both primitives below.
+    //
     if (access == LOCK_ACCESS_READ)
-    {
         portAtomicDecrementU32(&pClientEntry->lockReadOwnerCnt);
-        RS_RWLOCK_RELEASE_READ(pClientEntry->pLock, &pClientEntry->lockVal);
+    else
+        pClientEntry->lockOwnerTid = ~0;
+
+    //
+    // Compartment 1: release the lock PRIMITIVE.
+    //
+    if (pClientEntry->pLock != NULL)
+    {
+        // Per-client lock path (default)
+        if (access == LOCK_ACCESS_READ)
+            RS_RWLOCK_RELEASE_READ(pClientEntry->pLock, &pClientEntry->lockVal);
+        else
+            RS_RWLOCK_RELEASE_WRITE(pClientEntry->pLock, &pClientEntry->lockVal);
     }
     else
     {
-        pClientEntry->lockOwnerTid = ~0;
-        RS_RWLOCK_RELEASE_WRITE(pClientEntry->pLock, &pClientEntry->lockVal);
+        // Global client lock path (per-client locks disabled).
+        NV_ASSERT_OR_RETURN_VOID(pServer->pGlobalClientLock != NULL);
+
+        NV_CHECK(LEVEL_ERROR,
+                 pServer->globalClientLockOwnerTid == portThreadGetCurrentThreadId());
+
+        NV_ASSERT_OR_RETURN_VOID(pServer->globalClientLockDepth > 0);
+        if (--pServer->globalClientLockDepth == 0)
+        {
+            pServer->globalClientLockOwnerTid = ~(NvU64)0;
+            portSyncRwLockReleaseWrite(pServer->pGlobalClientLock);
+        }
     }
 }
 
@@ -3831,7 +3946,7 @@ _serverUnlockClientWithLockInfo
 {
     if (*pReleaseFlags & RS_LOCK_RELEASE_CLIENT_LOCK)
     {
-        _serverUnlockClient(access, pClientEntry);
+        _serverUnlockClient(pServer, access, pClientEntry);
 
         pLockInfo->state &= ~RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED;
         pLockInfo->pClient = NULL;
@@ -3870,9 +3985,9 @@ _serverUnlockDualClientWithLockInfo
             pClientEntry2nd = pClientEntry1;
         }
 
-        _serverUnlockClient(access, pClientEntry2nd);
+        _serverUnlockClient(pServer, access, pClientEntry2nd);
         if (pClientEntry1->pClient->hClient != pClientEntry2->pClient->hClient)
-            _serverUnlockClient(access, pClientEntry1st);
+            _serverUnlockClient(pServer, access, pClientEntry1st);
 
         pLockInfo->state &= ~RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED;
         pLockInfo->pClient = NULL;
@@ -3901,6 +4016,8 @@ _serverUnlockAllClientsWithLockInfo
             return status;
 
         *pReleaseFlags &= ~RS_LOCK_RELEASE_CLIENT_LOCK;
+
+        pLockInfo->state &= ~RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED;
     }
 
     return NV_OK;

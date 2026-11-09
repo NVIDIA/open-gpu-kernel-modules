@@ -1576,7 +1576,7 @@ kvgpumgrGuestUnregister(OBJGPU *pGpu, KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDe
         {
             NV_PRINTF(LEVEL_ERROR, "Request to unregister Invalid GFID\n");
             rmStatus = NV_ERR_INVALID_STATE;
-            return rmStatus;
+            goto done;
         }
     }
 
@@ -1941,24 +1941,34 @@ NvU32 kvgpumgrGetPgpuCapEncoding(OBJGPU *pGpu, NvU8 *pgpuString, NvU32 strSize)
     }
 
     {
-        NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS eccStatus = {0};
+        NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS *pEccStatus;
+
+        pEccStatus = portMemAllocStackOrHeap(sizeof(*pEccStatus));
+        if (pEccStatus == NULL)
+        {
+            return NV_U32_MAX;
+        }
+
+        portMemSet(pEccStatus, 0, sizeof(*pEccStatus));
 
         if (pRmApi->Control(pRmApi,
                             pGpu->hInternalClient,
                             pGpu->hInternalSubdevice,
                             NV2080_CTRL_CMD_GPU_QUERY_ECC_STATUS,
-                            &eccStatus, sizeof(eccStatus)) == NV_OK)
+                            pEccStatus, sizeof(*pEccStatus)) == NV_OK)
         {
             NvU32 i;
             for (i = 0; i < NV2080_CTRL_GPU_ECC_UNIT_COUNT; i++)
             {
-                if (eccStatus.units[i].enabled)
+                if (pEccStatus->units[i].enabled)
                 {
                     pgpuCap |= PGPU_CAP_ECC_ON;
                     break;
                 }
             }
         }
+
+        portMemFreeStackOrHeap(pEccStatus);
     }
 
     {

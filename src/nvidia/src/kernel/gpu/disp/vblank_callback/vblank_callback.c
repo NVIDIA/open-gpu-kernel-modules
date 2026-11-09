@@ -133,22 +133,23 @@ vblcbCtrlSetVBlankNotification_IMPL
     KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     KernelHead    *pKernelHead    = KDISP_GET_HEAD(pKernelDisplay, pVblankCallback->LogicalHead);
     NV_STATUS      status         = NV_ERR_INVALID_ARGUMENT;
-    NvBool         enabled        = NV_FALSE;
+    NvU32          vblankIntrState = NV_HEAD_VBLANK_INTR_UNAVAILABLE;
     if (pVblankCallback->CallBack.Proc != NULL)
     {
         if (pParams->bSetVBlankNotifyEnable)
         {
             pVblankCallback->CallBack.bIsVblankNotifyEnable = NV_TRUE;
-            
-            enabled = kheadReadVblankIntrEnable_HAL(pGpu, pKernelHead);
-            // 
-            // We are assuming list is not empty as DD already done the registration for vsync
-            // So we can enable the _LAST_DATA in case if it is already disable.
+
+            vblankIntrState = kheadReadVblankIntrState(pGpu, pKernelHead);
             //
-            if (!enabled)
+            // DD already registered for vsync, so the callback list is expected
+            // to be non-empty. Re-sync SW state from HW before enabling
+            // _LAST_DATA in case HW was disabled while SW still said ENABLED.
+            //
+            if (vblankIntrState == NV_HEAD_VBLANK_INTR_AVAILABLE)
             {
                 kheadWriteVblankIntrState(pGpu, pKernelHead, NV_HEAD_VBLANK_INTR_ENABLED);
-            }
+            }        
         }
         else
         {

@@ -896,8 +896,37 @@ static NV_STATUS fetch_fault_buffer_entries(uvm_parent_gpu_t *parent_gpu,
         // done in PAGE_SIZE chunks which might be larger.
         current_entry->fault_address = UVM_PAGE_ALIGN_DOWN(current_entry->fault_address);
 
-        // Make sure that all fields in the entry are properly initialized
-        current_entry->is_fatal = (current_entry->fault_type >= UVM_FAULT_TYPE_FATAL);
+        // Prefetch faults can't be cancelled, so don't mark them as fatal.
+        // Doing so can lead to random application crashes. This is because
+        // pushing a cancel for the faulting VA only has an effect if there
+        // happens to be a real (ie. non-prefetch) fault present in the replay
+        // buffer. Often that isn't the case, and even if it is the case
+        // cancelling the actual access is unlikely to be correct.
+        current_entry->is_fatal = (current_entry->fault_type >= UVM_FAULT_TYPE_FATAL) &&
+                                  (current_entry->fault_access_type != UVM_FAULT_ACCESS_TYPE_PREFETCH);
+
+        // We expect to get some types of prefetch fault that are normally
+        // considered fatal. This is because a non-prefetch access will succeed
+        // even though a prefetch doesn't. This occurs when for example a
+        // particular HW unit doesn't support prefetch or HW/SW resolves the
+        // problem only for an actual access.
+        //
+        // However we still report unexpected prefetch faults, as this could
+        // indicate some kind of unexpected problem such as a corrupted PTE.
+        // We can't easily kill the application, and doing so could well be
+        // incorrect anyway, so just log an error. An actual non-prefetch access
+        // will cause a fatal application error anyway if it really needs the
+        // mapping.
+        if (current_entry->fault_type >= UVM_FAULT_TYPE_FATAL &&
+            current_entry->fault_access_type == UVM_FAULT_ACCESS_TYPE_PREFETCH &&
+            current_entry->fault_type != UVM_FAULT_TYPE_UNSUPPORTED_APERTURE &&
+            current_entry->fault_type != UVM_FAULT_TYPE_CC_VIOLATION &&
+            current_entry->fault_type != UVM_FAULT_TYPE_REGION_VIOLATION &&
+            current_entry->fault_type != UVM_FAULT_TYPE_POISONED &&
+            current_entry->fault_type != UVM_FAULT_TYPE_WORK_CREATION) {
+            UVM_ERR_PRINT_ALWAYS_RL("Unexpected fatal prefetch fault type %s for address 0x%llx\n",
+                                    uvm_fault_type_string(current_entry->fault_type), current_entry->fault_address);
+        }
 
         if (current_entry->is_fatal) {
             // Record the fatal fault event later as we need the va_space locked
@@ -1219,6 +1248,12 @@ static void mark_fault_fatal(uvm_fault_service_batch_context_t *batch_context,
 {
     uvm_fault_utlb_info_t *utlb = &batch_context->utlbs[fault_entry->fault_source.utlb_id];
 
+    // Prefetch faults must never be marked fatal: they are speculative and are
+    // not reported again after a replay, so the cancel sequence would have
+    // nothing to find. Callers route them to mark_fault_invalid_prefetch()
+    // instead.
+    UVM_ASSERT(fault_entry->fault_access_type != UVM_FAULT_ACCESS_TYPE_PREFETCH);
+
     fault_entry->is_fatal = true;
     fault_entry->fatal_reason = fatal_reason;
     fault_entry->replayable.cancel_va_mode = cancel_va_mode;
@@ -1382,6 +1417,8 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_va_space_t *gpu_va_spa
     uvm_processor_mask_zero(&block_context->resident_processors);
     block_context->thrashing_pin_count = 0;
     block_context->read_duplicate_count = 0;
+    uvm_page_mask_zero(&block_context->ats_pte_fixup_mask);
+    uvm_page_mask_zero(&block_context->ats_pte_write_mask);
 
     // The first entry is guaranteed to fall within this block
     UVM_ASSERT(first_fault_entry->va_space == va_space);
@@ -1417,6 +1454,7 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_va_space_t *gpu_va_spa
         bool is_duplicate = false;
         uvm_fault_access_type_t service_access_type;
         NvU32 service_access_type_mask;
+        bool ats_pte_fixup;
 
         UVM_ASSERT(current_entry->fault_access_type ==
                    uvm_fault_access_type_mask_highest(current_entry->access_type_mask));
@@ -1485,6 +1523,25 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_va_space_t *gpu_va_spa
                                                 uvm_fault_access_type_to_prot(service_access_type)))
             continue;
 
+        // If this is an ATS processor and the CPU PTE is present, the ATS
+        // translation failed on the CPU PTE itself (an access flag or dirty-bit
+        // fault, or a write to a PTE without write permission such as CoW).
+        // Block servicing cannot fix the CPU PTE, so fix it up once the
+        // va_block lock has been dropped instead. Note that this drops the
+        // va_block lock to snapshot the CPU PTE, and asks for a retry if the
+        // block changed.
+        status = uvm_hmm_ats_pte_fixup_check_and_record(va_block,
+                                                        gpu,
+                                                        page_index,
+                                                        service_access_type,
+                                                        block_context,
+                                                        &ats_pte_fixup);
+        if (status != NV_OK)
+            return status;
+
+        if (ats_pte_fixup)
+            continue;
+
         thrashing_hint = uvm_perf_thrashing_get_hint(va_block,
                                                      block_context->block_context,
                                                      current_entry->fault_address,
@@ -1520,28 +1577,6 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_va_space_t *gpu_va_spa
                                                       UVM_SERVICE_OPERATION_REPLAYABLE_FAULTS,
                                                       hmm_migratable,
                                                       &read_duplicate);
-
-        // If this is a ATS processor and the page is already resident in the
-        // correct location then it should already be mapped on the CPU so handle this as a
-        // minor fault.
-        if (uvm_va_block_is_hmm(va_block) && gpu->parent->ats_supported) {
-            uvm_va_block_page_resident_processors(va_block, page_index,
-                                                  &block_context->block_context->scratch_processor_mask);
-            if (uvm_processor_mask_test(&block_context->block_context->scratch_processor_mask, gpu->id)) {
-                unsigned int flags = FAULT_FLAG_REMOTE;
-
-                if (service_access_type >= UVM_FAULT_ACCESS_TYPE_WRITE)
-                    flags |= FAULT_FLAG_WRITE;
-
-                // handle_mm_fault() may call hmm_invalidate() so we can't call it with the block lock held
-                uvm_mutex_unlock(&va_block->lock);
-                UVM_HANDLE_MM_FAULT(block_context->block_context->hmm.vma,
-                                    uvm_va_block_cpu_page_address(va_block, page_index), flags);
-                uvm_mutex_lock(&va_block->lock);
-
-                continue;
-            }
-        }
 
         if (!uvm_processor_mask_test_and_set(&block_context->resident_processors, new_residency))
             uvm_page_mask_zero(&block_context->per_processor_masks[uvm_id_value(new_residency)].new_residency);
@@ -1629,8 +1664,61 @@ static NV_STATUS service_fault_batch_block(uvm_gpu_va_space_t *gpu_va_space,
 
     uvm_mutex_unlock(&va_block->lock);
 
-    if (uvm_va_block_is_hmm(va_block))
+    if (uvm_va_block_is_hmm(va_block)) {
+        NvU32 i;
+
+        // Fix up the CPU PTEs of the pages recorded for fixup. The access
+        // type has to come from the fault entries: recorded pages skip the
+        // store to access_type[], and prefetch can overwrite that array for
+        // pages that did not change residency.
+        for (i = first_fault_index; i < first_fault_index + *block_faults; i++) {
+            uvm_fault_buffer_entry_t *entry = batch_context->ordered_fault_cache[i];
+            NV_STATUS fixup_status = uvm_hmm_ats_pte_fixup(va_block,
+                                                           fault_block_context,
+                                                           entry->fault_address,
+                                                           entry->fault_access_type);
+
+            if (fixup_status == NV_ERR_INVALID_ADDRESS) {
+                // The CPU PTE could not be fixed up. Cancel the fault instead
+                // of replaying it forever. Marking this one entry is enough:
+                // the precise cancel RCs the fault channel, and the fault
+                // cancelling loop re-services whatever the replay brings back,
+                // so duplicates on the same page from this or another fault
+                // channel are cancelled there when the fixup fails again.
+                if (entry->fault_access_type == UVM_FAULT_ACCESS_TYPE_PREFETCH)
+                    mark_fault_invalid_prefetch(batch_context, entry);
+                else
+                    mark_fault_fatal(batch_context,
+                                     entry,
+                                     uvm_tools_status_to_fatal_fault_reason(fixup_status),
+                                     UVM_FAULT_CANCEL_VA_MODE_ALL);
+
+                continue;
+            }
+
+            if (fixup_status != NV_OK) {
+                // NV_ERR_NO_MEMORY: report it like an allocation failure in
+                // uvm_va_block_service_locked(). Keep servicing the other
+                // recorded pages; they are independent.
+                if (status == NV_OK)
+                    status = fixup_status;
+
+                continue;
+            }
+
+            // On 4K, the GPU does not re-fetch a cached invalid ATS PTE after
+            // the fixup makes the CPU PTE valid, and Linux does not
+            // invalidate that transition. See uvm_ats_service_faults_region()
+            // in the numa path.
+            if (gpu->parent->ats_supported && PAGE_SIZE == UVM_PAGE_SIZE_4K)
+                uvm_flush_tlb_va_region(gpu_va_space,
+                                        entry->fault_address,
+                                        UVM_PAGE_SIZE_4K,
+                                        UVM_FAULT_CLIENT_TYPE_GPC);
+        }
+
         uvm_hmm_migrate_finish(va_block);
+    }
 
     return status == NV_OK? tracker_status: status;
 }

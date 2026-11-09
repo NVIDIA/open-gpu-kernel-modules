@@ -93,7 +93,7 @@
 #define RMCFG_CHIP_T234      0
 
 #define RMCFG_CHIP_T234D     1
-#define RMCFG_CHIP_T239D     1
+#define RMCFG_CHIP_T238D     1
 
 #define RMCFG_CHIP_T264D     1
 
@@ -267,16 +267,6 @@
 #define RMCFG_FEATURE_PLATFORM_MODS_WINDOWS       0  // Running as part of MODS on Windows
 #define RMCFG_FEATURE_PLATFORM_MODS_UNIX          0  // Running as part of MODS on UNIX
 #define RMCFG_FEATURE_PLATFORM_UNIX_VMWARE        0  // Running on VMware
-#define RMCFG_FEATURE_ARCH_UNKNOWN                0  // unknown arch
-#define RMCFG_FEATURE_ARCH_X86                    0  // Intel x86, 32bit
-#define RMCFG_FEATURE_ARCH_X64                    0  // Intel 64bit
-#define RMCFG_FEATURE_ARCH_RISCV64                0  // RISCV, 64bit
-#define RMCFG_FEATURE_ARCH_AMD64                  1  // AMD, 64bit
-#define RMCFG_FEATURE_ARCH_PPC                    0  // Power PC
-#define RMCFG_FEATURE_ARCH_PPC64LE                0  // 64-bit PPC little-endian
-#define RMCFG_FEATURE_ARCH_ARM                    0  // ARM
-#define RMCFG_FEATURE_ARCH_ARM_V7                 0  // ARM v7
-#define RMCFG_FEATURE_ARCH_AARCH64                0  // AArch64
 #define RMCFG_FEATURE_RMCORE_BASE                 1  // RMCORE Base
 #define RMCFG_FEATURE_KERNEL_RM                   1  // Kernel layer of RM
 #define RMCFG_FEATURE_ORIN_PHYSICAL_RM            1  // Physical layer of RM, disabled only on Orin
@@ -327,6 +317,7 @@
 #define RMCFG_FEATURE_MULTINODE_FABRIC_IMEX       1  // Multinode fabric memory import/export support
 #define RMCFG_FEATURE_NVIDIA_CAP_FOR_PROFILING    1  // NVIDIA Capability for Profiling
 #define RMCFG_FEATURE_NVIDIA_CAP_FOR_WPPS         1  // NVIDIA Capability for WPPS (Workload Power Profile Settings)
+#define RMCFG_FEATURE_NVIDIA_CAP_FOR_MNCC         1  // NVIDIA Capability for MNCC (Multi-Node Confidential Computing)
 #define RMCFG_FEATURE_MANUAL_TRIGGER_BA_DMA_MODE  0  // Support for manually actuated BA DMA mode data collection.
 #define RMCFG_FEATURE_RM_DRIVEN_BA_DMA_MODE       0  // Support for RM-driven BA DMA mode data collection.
 #define RMCFG_FEATURE_VBLANK_CALLBACK             1  // Vblank callback functionality within RM
@@ -342,6 +333,7 @@
 #define RMCFG_FEATURE_LOCALIZED_MEMORY            1  // Support for Localized memory feature
 #define RMCFG_FEATURE_LTS_REPAIR                  1  // Support for LTS swapping in-field
 #define RMCFG_FEATURE_TPC_REPAIR                  1  // Support for TPC swapping in-field
+#define RMCFG_FEATURE_TIM1_VOID_TPC_REPAIR        1  // Support for TIM1 VOID TPC repair for thermal issues
 #define RMCFG_FEATURE_GSP_SEC2_ENC_CHNLMGMT_RC_WAR  1  // WAR required for RC handling. See comment #36 of bug 4406277
 #define RMCFG_FEATURE_FABRIC_LINEAR_ADDRESSING    1  // Unicast fabric memory management
 #define RMCFG_FEATURE_GSP_RM_TRACE_RATS           1
@@ -349,6 +341,7 @@
 #define RMCFG_FEATURE_TEGRA_BPMP                  1  // Tegra BPMP integration
 #define RMCFG_FEATURE_BINDATA_IMAGE               0  // Extract bindata from RM binary during compilation and save it in bindata_image.bin
 #define RMCFG_FEATURE_BINDATA_EXTRACTION          0  // Load bindata from disk.(Needs BINDATA_IMAGE to be enabled)
+#define RMCFG_FEATURE_BINDATA_LOAD_FROM_FILE      0  // Enable bindata loading from file during runtime
 #define RMCFG_FEATURE_SOC_PACKAGE_POWER_STATE     1  // RM support for SOC Package Power States
 #define RMCFG_FEATURE_DISP_POWER_GATING           1  // RM support for Display Power Gating
 #define RMCFG_FEATURE_INST_IN_SYS_SUPPORT_ACR_DEV_IN_PROGRESS  1  // RM support inst-in-sys mode ls engine boot via ACR
@@ -403,6 +396,7 @@
 #define RMCFG_CLASS_PROFILER_CONTEXT_EVENT        1
 #define RMCFG_CLASS_TRACE_DEVICE_EVENT            1
 #define RMCFG_CLASS_WPPS_CONFIG_SESSION           1
+#define RMCFG_CLASS_NV_MNCC_SESSION               1
 #define RMCFG_CLASS_NV_MEMORY_EXPORT              1
 #define RMCFG_CLASS_NV_CE_UTILS                   1
 #define RMCFG_CLASS_NV_MEMORY_FABRIC              1
@@ -718,6 +712,7 @@
 #define RMCFG_MODULE_TMR                          1
 #define RMCFG_MODULE_SEQ                          0  // Sequencer for backlight and LVDS control
 #define RMCFG_MODULE_VGA                          0  // Video Graphics Array
+#define RMCFG_MODULE_KERNEL_VBIOS                 1
 #define RMCFG_MODULE_VBIOS                        0
 #define RMCFG_MODULE_KERNEL_RC                    1  // Robust Channels and Watchdog Kernel API
 #define RMCFG_MODULE_RC                           0  // Robust Channels
@@ -862,6 +857,7 @@
 #define RMCFG_MODULE_KERNEL_CCU                   1  // Counter Collection Unit Kernel(CPU) RM
 #define RMCFG_MODULE_LIBSPDM                      1  // Secure Protocol and Data Management (SPDM) library on Kernel(CPU) RM
 #define RMCFG_MODULE_SPDM                         1  // Secure Protocol and Data Management (SPDM) support Kernel(CPU)-Physical(GSP) RM
+#define RMCFG_MODULE_TDISP_MGR                    1  // TEE Device Interface Protocol support in Kernel and Physical RM
 #define RMCFG_MODULE_KEYSTORE                     1  // Crypto and key derivation Kernel RM
 
 
@@ -881,7 +877,7 @@
 // each defined chip, feature, etc, irrespective of it's enable/disable
 // state.
 #define _RMCFG_vet(x)  0
-#if __RMCFG_vet_enabled && defined(__GNUC__) // broken on MSVC
+#if __RMCFG_vet_enabled && defined(__GNUC__) && !defined(NVOC) // broken on MSVC and NVOC
 #  undef  _RMCFG_vet
 #  define _RMCFG_vet(x)  ((__def_RMCFG ## x) ? 0 : (0 * (1/0)))
 #endif

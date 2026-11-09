@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,7 @@
 #include "gpu/device/device.h"
 #include "vgpu/rpc.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
+#include "kernel/gpu/fifo/kernel_channel.h"
 
 NV_STATUS
 kfifoIdleChannelsPerDevice_KERNEL
@@ -41,6 +42,7 @@ kfifoIdleChannelsPerDevice_KERNEL
 )
 {
     NV_STATUS rmStatus = NV_OK;
+
     NV_RM_RPC_IDLE_CHANNELS(pGpu, phClients, phDevices, phChannels,
                             numChannels, flags, timeout, rmStatus);
     return rmStatus;

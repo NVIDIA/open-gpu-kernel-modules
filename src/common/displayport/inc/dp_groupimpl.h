@@ -53,6 +53,7 @@ namespace DisplayPort
         bool            bIsHeadShutdownNeeded;      // Set if head shutdown is requested during modeset
         bool            hdcpEnabled;
         bool            hdcpPreviousStatus;
+        bool            isDestroying;               // True once destroy() has begun teardown; suppresses re-entrant callbacks
         bool            qseEncryptionStatusMismatch;
         bool            bWaitForDeAllocACT;
         bool            bDeferredPayloadAlloc;
@@ -79,6 +80,7 @@ namespace DisplayPort
               bIsHeadShutdownNeeded(true),
               hdcpEnabled(false),
               hdcpPreviousStatus(false),
+              isDestroying(false),
               qseEncryptionStatusMismatch(false),
               bWaitForDeAllocACT(false),
               dscModeRequest(DSC_MODE_NONE),

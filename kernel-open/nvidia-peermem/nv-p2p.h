@@ -445,7 +445,6 @@ void nvidia_p2p_unregister_rsync_driver(nvidia_p2p_rsync_driver_t *driver,
 typedef struct nvidia_p2p_rsync_reg {
     void *ptr;
     size_t size;
-    struct pci_dev *ibmnpu;
     struct pci_dev *gpu;
     uint32_t cluster_id;
     uint32_t socket_id;

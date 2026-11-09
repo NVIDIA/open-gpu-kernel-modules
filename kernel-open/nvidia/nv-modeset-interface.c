@@ -167,9 +167,7 @@ NV_STATUS nvidia_get_rm_ops(nvidia_modeset_rm_ops_t *rm_ops)
 
     *rm_ops = local_rm_ops;
 
-    if (NV_ALLOW_WRITE_COMBINING(NV_MEMORY_TYPE_FRAMEBUFFER)) {
-        rm_ops->system_info.allow_write_combining = NV_TRUE;
-    }
+    rm_ops->system_info.allow_write_combining = NV_TRUE;
 
     return NV_OK;
 }

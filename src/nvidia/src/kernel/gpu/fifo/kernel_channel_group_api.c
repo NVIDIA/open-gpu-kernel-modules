@@ -78,7 +78,6 @@ kchangrpapiConstruct_IMPL
     NV_CHANNEL_GROUP_ALLOCATION_PARAMETERS *pAllocParams        = NULL;
     RM_ENGINE_TYPE                          rmEngineType;
 
-
     NV_PRINTF(LEVEL_INFO,
               "hClient: 0x%x, hParent: 0x%x, hObject:0x%x, hClass: 0x%x\n",
               pParams->hClient, pParams->hParent, pParams->hResource,
@@ -305,8 +304,8 @@ kchangrpapiConstruct_IMPL
     // Default interleave level
     NV_ASSERT_OK_OR_GOTO(
             rmStatus,
-            kchangrpSetInterleaveLevel(pGpu, pKernelChannelGroup,
-                                       NVA06C_CTRL_INTERLEAVE_LEVEL_MEDIUM),
+            kchangrpSetInterleaveLevelInternal(
+                pGpu, pKernelChannelGroup, KCHANGRP_DEFAULT_INTERLEAVE_LEVEL),
             failed);
 
     ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
@@ -538,7 +537,7 @@ kchangrpapiConstruct_IMPL
 
     if (kfifoIsZombieSubctxWarEnabled(pKernelFifo))
     {
-        kchangrpSetSubcontextZombieState_HAL(pGpu, pKernelChannelGroup, 0, NV_TRUE);
+        kchangrpSetSubcontextZombieState(pGpu, pKernelChannelGroup, 0, NV_TRUE);
         kchangrpUpdateSubcontextMask_HAL(pGpu, pKernelChannelGroup, 0, NV_TRUE);
     }
 
@@ -654,8 +653,12 @@ kchangrpapiDestruct_IMPL
         goto done;
     }
 
-    if (pKernelChannelGroup != NULL)
+
+    if ((pKernelChannelGroup != NULL)
+       )
+    {
         kchangrpSetRealtime_HAL(pGpu, pKernelChannelGroup, NV_FALSE);
+    }
 
     // If channels still exist in this group, free them
     // RS-TODO this can be removed after re-parenting support is added
@@ -1103,7 +1106,6 @@ kchangrpapiCtrlCmdGpFifoSchedule_IMPL
     CHANNEL_NODE        *pChanNode    = NULL;
     CHANNEL_LIST        *pChanList    = NULL;
     NvU32                runlistId    = INVALID_RUNLIST_ID;
-    RM_API              *pRmApi       = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     if (pKernelChannelGroupApi->pKernelChannelGroup == NULL)
         return NV_ERR_INVALID_OBJECT;
@@ -1216,19 +1218,9 @@ kchangrpapiCtrlCmdGpFifoSchedule_IMPL
         return status;
     }
 
-
-    //
-    // Do an internal control call to do channel reset
-    // on Host (Physical) RM
-    //
-    status = pRmApi->Control(pRmApi,
-                             RES_GET_CLIENT_HANDLE(pKernelChannelGroupApi),
-                             RES_GET_HANDLE(pKernelChannelGroupApi),
-                             NVA06C_CTRL_CMD_INTERNAL_GPFIFO_SCHEDULE,
-                             pSchedParams,
-                             sizeof(NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS));
-
-    return status;
+    NV_PRINTF(LEVEL_ERROR, "Invalid state during channel group gpfifo schedule call for TSG %d\n",
+              pKernelChannelGroup->grpID);
+    return NV_ERR_INVALID_STATE;
 }
 
 NV_STATUS
@@ -1271,11 +1263,11 @@ kchangrpapiCtrlCmdBind_IMPL
               gpuGetNv2080EngineType(globalEngineType), globalEngineType);
 
     // Translate globalEnginetype -> enginedesc
-    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         gpuXlateClientEngineIdToEngDesc(pGpu, globalEngineType, &engineDesc));
 
     // Translate engineDesc -> runlistId for TSG
-    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         kfifoEngineInfoXlate_HAL(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
             ENGINE_INFO_TYPE_ENG_DESC,
             engineDesc,
@@ -1330,7 +1322,6 @@ kchangrpapiCtrlCmdSetTimeslice_IMPL
     KernelChannelGroup *pKernelChannelGroup = NULL;
     NV_STATUS           status              = NV_OK;
     CLASSDESCRIPTOR    *pClass              = NULL;
-    RM_API             *pRmApi              = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     if (pKernelChannelGroupApi->pKernelChannelGroup == NULL)
         return NV_ERR_INVALID_OBJECT;
@@ -1368,18 +1359,11 @@ kchangrpapiCtrlCmdSetTimeslice_IMPL
         return status;
     }
 
-    //
-    // Do an internal control call to do channel reset
-    // on Host (Physical) RM
-    //
-    status = pRmApi->Control(pRmApi,
-                             RES_GET_CLIENT_HANDLE(pKernelChannelGroupApi),
-                             RES_GET_HANDLE(pKernelChannelGroupApi),
-                             NVA06C_CTRL_CMD_INTERNAL_SET_TIMESLICE,
-                             pTsParams,
-                             sizeof(NVA06C_CTRL_TIMESLICE_PARAMS));
+    return NV_OK;
 
-    return status;
+    NV_PRINTF(LEVEL_ERROR, "Invalid state during channel group set timeslice call for TSG %d\n",
+              pKernelChannelGroup->grpID);
+    return NV_ERR_INVALID_STATE;
 }
 
 NV_STATUS
@@ -1421,6 +1405,13 @@ kchangrpapiCtrlCmdSetInterleaveLevel_IMPL
     }
     NV_ASSERT_OR_RETURN((pClass != NULL), NV_ERR_NOT_SUPPORTED);
 
+    status = kfifoValidateInterleaveLevelAccess(pGpu,
+                                                pParams->tsgInterleaveLevel);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
         CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
@@ -1435,7 +1426,7 @@ kchangrpapiCtrlCmdSetInterleaveLevel_IMPL
                           pRmCtrlParams->pParams,
                           pRmCtrlParams->paramsSize,
                           status);
-        NV_CHECK_OR_RETURN(LEVEL_INFO, status == NV_OK, NV_ERR_NOT_SUPPORTED);
+        NV_CHECK_OK_OR_RETURN(LEVEL_INFO, status);
     }
 
     status = kchangrpSetInterleaveLevel(pGpu, pKernelChannelGroup, pParams->tsgInterleaveLevel);

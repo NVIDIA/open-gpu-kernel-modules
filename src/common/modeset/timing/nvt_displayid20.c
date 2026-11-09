@@ -126,16 +126,19 @@ NvTiming_DisplayID2ValidationMask(
 
     const DISPLAYID_2_0_SECTION *pSection = (const DISPLAYID_2_0_SECTION *)pDisplayId2;
 
-    // check the base section of DisplayId2 version
-    if (pSection->header.version != DISPLAYID_2_0_VERSION)
     {
-        ret |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_VERSION);
-    }
+        // check the base section of DisplayId2 version
+        if (pSection->header.version != DISPLAYID_2_0_VERSION)
+        {
+            ret |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_VERSION);
+        }
 
-    // validate for base displayid2 section checksum
-    if (computeDisplayId20SectionCheckSum((const NvU8 *)pSection, DISPLAYID_2_0_SECTION_SIZE_TOTAL(pSection->header)) != 0)
-    {
-        ret |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_CHECKSUM);
+        {
+            if (computeDisplayId20SectionCheckSum((const NvU8 *)pSection, DISPLAYID_2_0_SECTION_SIZE_TOTAL(pSection->header)) != 0)
+            {
+                ret |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_CHECKSUM);
+            }
+        }
     }
 
     // Strong validation to follow for the displayid2 data blocks
@@ -163,17 +166,19 @@ NvTiming_DisplayID2ValidationMask(
 
         // TODO : For each of the Data Block limitation
         // Type 7 Timings data block
-        for (j = 0; j <= pDisplayId20Info->total_timings; j++)
         {
-            if ( NVT_PREFERRED_TIMING_IS_DISPLAYID(pDisplayId20Info->timing[j].etc.flag) &&
-                 (pDisplayId20Info->display_param.h_pixels != 0) &&
-                 (pDisplayId20Info->display_param.v_pixels != 0))
+            for (j = 0; j < pDisplayId20Info->total_timings; j++)
             {
-                if ( pDisplayId20Info->timing[j].HVisible != pDisplayId20Info->display_param.h_pixels ||
-                     pDisplayId20Info->timing[j].VVisible != pDisplayId20Info->display_param.v_pixels )
+                if ( NVT_PREFERRED_TIMING_IS_DISPLAYID(pDisplayId20Info->timing[j].etc.flag) &&
+                     (pDisplayId20Info->display_param.h_pixels != 0) &&
+                     (pDisplayId20Info->display_param.v_pixels != 0))
                 {
-                    pDisplayId20Info->validation_fail_reason |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_NO_DATA_BLOCK);
-                    break;
+                    if ( pDisplayId20Info->timing[j].HVisible != pDisplayId20Info->display_param.h_pixels ||
+                         pDisplayId20Info->timing[j].VVisible != pDisplayId20Info->display_param.v_pixels )
+                    {
+                        pDisplayId20Info->validation_fail_reason |= NVT_DID2_VALIDATION_ERR_MASK(NVT_DID2_VALIDATION_ERR_NO_DATA_BLOCK);
+                        break;
+                    }
                 }
             }
         }

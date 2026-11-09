@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+
 #include "kernel/gpu/deferred_api.h"
 
 #include "kernel/core/locks.h"
@@ -353,6 +354,16 @@ defapiCtrlCmdDeferredApiV2_IMPL
                 NV2080_CTRL_FIFO_UPDATE_CHANNEL_INFO_PARAMS *pParams =
                     &pDeferredApi->api_bundle.ChannelInfoUpdate;
 
+                if (pParams->hClient != RES_GET_CLIENT_HANDLE(pDeferredApiObj))
+                {
+                    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+
+                    NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
+                    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                        pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL,
+                        NV_ERR_INSUFFICIENT_PERMISSIONS);
+                }
+
                 NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                     serverGetClientUnderLock(&g_resServ, pParams->hClient, &pClient));
 
@@ -372,6 +383,19 @@ defapiCtrlCmdDeferredApiV2_IMPL
                                        pResourceRef->pParentRef->hResource,
                                        pResourceRef->hResource));
 
+                break;
+            }
+            case NV2080_CTRL_CMD_DMA_INVALIDATE_TLB:
+            {
+                if (pDeferredApi->hClientVA != RES_GET_CLIENT_HANDLE(pDeferredApiObj))
+                {
+                    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+
+                    NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
+                    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                        pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL,
+                        NV_ERR_INSUFFICIENT_PERMISSIONS);
+                }
                 break;
             }
             default:
@@ -487,6 +511,13 @@ _class5080DeferredApiV2
             Subdevice *pSubdevice;
 
             bIsCtrlCall = NV_FALSE;
+
+            if ((pDeferredApi->hClientVA != RES_GET_CLIENT_HANDLE(pDeferredApiObject)) &&
+                (pCliDeferredApi->privLevel < RS_PRIV_LEVEL_KERNEL))
+            {
+                rmStatus = NV_ERR_INSUFFICIENT_PERMISSIONS;
+                break;
+            }
 
             rmStatus = serverGetClientUnderLock(&g_resServ, pDeferredApi->hClientVA,
                     &pClientVA);
@@ -716,4 +747,3 @@ NvBool defapiIsSwMethodStalling_IMPL
 
     return NV_TRUE;
 }
-

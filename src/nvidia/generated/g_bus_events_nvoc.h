@@ -148,6 +148,104 @@ NV_STATUS busc2ccontnmtConstruct_IMPL(struct BusC2cContainment *pEvent, struct E
 #undef PRIVATE_FIELD
 
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_BUS_EVENTS_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__BusGpuFallenOffBus;
+struct NVOC_METADATA__GpuInterconnectError;
+
+
+struct BusGpuFallenOffBus {
+
+    // Metadata starts with RTTI structure.
+    union {
+         const struct NVOC_METADATA__BusGpuFallenOffBus *__nvoc_metadata_ptr;
+         const struct NVOC_RTTI *__nvoc_rtti;
+    };
+
+    // Parent (i.e. superclass or base class) objects
+    struct GpuInterconnectError __nvoc_base_GpuInterconnectError;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^5
+    struct Event *__nvoc_pbase_Event;    // event super^4
+    struct OperationalEvent *__nvoc_pbase_OperationalEvent;    // opevt super^3
+    struct GpuOperationalEvent *__nvoc_pbase_GpuOperationalEvent;    // gpuopevt super^2
+    struct GpuInterconnectError *__nvoc_pbase_GpuInterconnectError;    // gpuinterconnecterr super
+    struct BusGpuFallenOffBus *__nvoc_pbase_BusGpuFallenOffBus;    // busgpufob
+
+    // Data members
+    GpuXidEventCtx xid79;
+};
+
+
+// Metadata with per-class RTTI with ancestor(s)
+struct NVOC_METADATA__BusGpuFallenOffBus {
+    const struct NVOC_RTTI rtti;
+    const struct NVOC_METADATA__GpuInterconnectError metadata__GpuInterconnectError;
+};
+
+#ifndef __nvoc_class_id_BusGpuFallenOffBus
+#define __nvoc_class_id_BusGpuFallenOffBus 0x9656d6u
+typedef struct BusGpuFallenOffBus BusGpuFallenOffBus;
+#endif /* __nvoc_class_id_BusGpuFallenOffBus */
+
+// Casting support
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_BusGpuFallenOffBus;
+
+#define __staticCast_BusGpuFallenOffBus(pThis) \
+    ((pThis)->__nvoc_pbase_BusGpuFallenOffBus)
+
+#ifdef __nvoc_bus_events_h_disabled
+#define __dynamicCast_BusGpuFallenOffBus(pThis) ((BusGpuFallenOffBus*) NULL)
+#else //__nvoc_bus_events_h_disabled
+#define __dynamicCast_BusGpuFallenOffBus(pThis) \
+    ((BusGpuFallenOffBus*) __nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(BusGpuFallenOffBus)))
+#endif //__nvoc_bus_events_h_disabled
+
+NV_STATUS __nvoc_objCreateDynamic_BusGpuFallenOffBus(Dynamic**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_BusGpuFallenOffBus(BusGpuFallenOffBus**, Dynamic*, NvU32, struct EventBus *pEventBus);
+#define __objCreate_BusGpuFallenOffBus(__nvoc_ppNewObj, __nvoc_pParent, __nvoc_createFlags, pEventBus) \
+    __nvoc_objCreate_BusGpuFallenOffBus((__nvoc_ppNewObj), staticCast((__nvoc_pParent), Dynamic), (__nvoc_createFlags), pEventBus)
+
+
+// Wrapper macros for implementation functions
+NV_STATUS busgpufobConstruct_IMPL(struct BusGpuFallenOffBus *pEvent, struct EventBus *pEventBus);
+#define __nvoc_busgpufobConstruct(pEvent, pEventBus) busgpufobConstruct_IMPL(pEvent, pEventBus)
+
+
+// Wrapper macros for halified functions
+
+// Dispatch functions
+// Virtual method declarations and/or inline definitions
+// Exported method declarations and/or inline definitions
+// HAL method declarations without bodies
+// Inline HAL method definitions
+// Static dispatch method declarations
+// Static inline method definitions
+#undef PRIVATE_FIELD
+
+
+NV_STATUS busc2ccontnmtDeserialize(struct OBJGPU *pGpu,
+                                   const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+                                   const NvU8 *pContextData,
+                                   NvU32 contextDataSize);
+
+NV_STATUS busgpufobDeserialize(struct OBJGPU *pGpu,
+                               const NV_GPU_OPERATIONAL_EVENT_RECORD *pRecord,
+                               const NvU8 *pContextData,
+                               NvU32 contextDataSize);
+
 #endif // _BUS_EVENTS_H_
 
 #ifdef __cplusplus

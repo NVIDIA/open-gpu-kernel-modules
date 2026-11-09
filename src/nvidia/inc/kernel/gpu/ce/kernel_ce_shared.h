@@ -25,6 +25,10 @@
 #define KERNEL_CE_SHARED_H
 
 #include "gpu/gpu.h"
+#include "utils/nvbitvector.h"
+#include "ctrl/ctrl2080/ctrl2080ce.h"
+
+MAKE_BITVECTOR(CE_PCE_BITVECTOR, NV2080_CTRL_MAX_PCES);
 
 #define UNKNOWN_PCIE_GEN_SPEED 0xFFFFFFFF
 

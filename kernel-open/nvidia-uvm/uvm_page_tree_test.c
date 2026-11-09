@@ -2268,6 +2268,7 @@ static NV_STATUS blackwell_test_page_tree(uvm_gpu_t *blackwell)
     NvU32 implementations[] = {
         0,
         NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B,
+        NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10C,
     };
 
     for (i = 0; i < ARRAY_SIZE(implementations); i++) {
@@ -2277,7 +2278,9 @@ static NV_STATUS blackwell_test_page_tree(uvm_gpu_t *blackwell)
         num_page_sizes = get_page_sizes(blackwell, page_sizes);
         UVM_ASSERT(num_page_sizes > 0);
 
-        if (implementations[i] == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B) {
+        if (implementations[i] == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10B
+            || implementations[i] == NV2080_CTRL_MC_ARCH_INFO_IMPLEMENTATION_GB10C
+        ) {
             page_sizes_bitvec = blackwell->parent->arch_hal->mmu_mode_hal()->page_sizes();
             TEST_CHECK_RET(page_sizes_bitvec == (UVM_PAGE_SIZE_2M | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_4K));
         }

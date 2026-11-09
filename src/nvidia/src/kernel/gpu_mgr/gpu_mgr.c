@@ -51,6 +51,7 @@
 #include "gpu/gpu_fabric_probe.h"
 #include "gpu/mig_mgr/gpu_instance_subscription.h"
 #include "ctrl/ctrlc56f.h"
+#include "gpu/tdisp/tdisp_mgr.h"
 
 // local static funcs
 static void   gpumgrSetAttachInfo(OBJGPU *, GPUATTACHARG *);
@@ -142,15 +143,24 @@ _gpumgrDetermineConfComputeCapabilities
     ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
     bCCFeatureEnabled = (pCC != NULL) &&
                          pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED);
+    TdispMgr *pTdispMgr = GPU_GET_TDISP_MGR(pGpu);
+    NvBool bTdispFeatureCapable = (pTdispMgr != NULL) &&
+                                  pTdispMgr->getProperty(pTdispMgr, PDB_PROP_TDISPMGR_TDISP_SUPPORTED);
+    NvBool bTdispFeatureEnabled = (pTdispMgr != NULL) &&
+                                  pTdispMgr->getProperty(pTdispMgr, PDB_PROP_TDISPMGR_TDISP_ENABLED);
 
     // First GPU
     if (ONEBITSET(pGpuMgr->gpuAttachMask))
     {
         pGpuMgr->ccCaps.bHccFeatureCapable = pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE);
         pGpuMgr->ccCaps.bCCFeatureEnabled = bCCFeatureEnabled;
+        pGpuMgr->ccCaps.bBmsaiCapable = pGpu->getProperty(pGpu, PDB_PROP_GPU_BMSAI_CAPABLE);
+        pGpuMgr->ccCaps.bBmsaiFeatureEnabled = gpuIsBaremetalSecureAiEnabled(pGpu);
         pGpuMgr->ccCaps.bDevToolsModeEnabled = gpuIsCCDevToolsModeEnabled(pGpu);
         pGpuMgr->ccCaps.bMultiGpuProtectedPcieModeEnabled = gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu);
         pGpuMgr->ccCaps.bMultiGpuNvleModeEnabled = gpuIsCCMultiGpuNvleModeEnabled(pGpu);
+        pGpuMgr->ccCaps.bTdispFeatureCapable = bTdispFeatureCapable;
+        pGpuMgr->ccCaps.bTdispFeatureEnabled = bTdispFeatureEnabled;
 
         if (pGpuMgr->ccCaps.bDevToolsModeEnabled)
         {
@@ -177,6 +187,22 @@ _gpumgrDetermineConfComputeCapabilities
         //
         pGpuMgr->ccCaps.bHccFeatureCapable &=
             pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE);
+
+        NV_ASSERT_OR_RETURN(pGpuMgr->ccCaps.bTdispFeatureCapable ==
+            bTdispFeatureCapable, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(pGpuMgr->ccCaps.bTdispFeatureEnabled ==
+            bTdispFeatureEnabled, NV_ERR_INVALID_STATE);
+
+        //
+        // All GPUs must either support or not support BMSAI, and their
+        // BMSAI enablement state must also be consistent across the system.
+        //
+        NV_ASSERT_OR_RETURN(pGpuMgr->ccCaps.bBmsaiCapable ==
+            pGpu->getProperty(pGpu, PDB_PROP_GPU_BMSAI_CAPABLE),
+            NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(pGpuMgr->ccCaps.bBmsaiFeatureEnabled ==
+            gpuIsBaremetalSecureAiEnabled(pGpu),
+            NV_ERR_INVALID_STATE);
 
         NV_ASSERT_OR_RETURN(pGpuMgr->ccCaps.bDevToolsModeEnabled ==
             gpuIsCCDevToolsModeEnabled(pGpu),
@@ -495,7 +521,7 @@ _gpumgrDestroyGpu(NvU32 gpuInstance)
     osSyncWithGpuDestroy(NV_FALSE);
 }
 
-POBJGPU
+OBJGPU *
 gpumgrGetGpu(NvU32 gpuInstance)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
@@ -521,7 +547,7 @@ gpumgrGetGpu(NvU32 gpuInstance)
     return NULL;
 }
 
-POBJGPU
+OBJGPU *
 gpumgrGetSomeGpu(void)
 {
     OBJGPU *pGpu        = NULL;
@@ -2105,7 +2131,7 @@ gpumgrStateLoadGpu_exit:
 // found, the start index value is bumped to the next bit position
 // in the mask.
 //
-POBJGPU
+OBJGPU *
 gpumgrGetNextGpu(NvU32 subDeviceMask, NvU32 *pStartIndex)
 {
     NvU32 i;
@@ -2388,7 +2414,7 @@ gpumgrGetSubDeviceInstanceFromGpu(OBJGPU *pGpu)
 //
 // gpumgrGetParentGPU
 //
-POBJGPU
+OBJGPU *
 gpumgrGetParentGPU(OBJGPU *pGpu)
 {
     OBJGPUGRP *pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
@@ -2424,7 +2450,7 @@ gpumgrSetParentGPU(OBJGPU *pGpu, OBJGPU *pParentGpu)
 //
 // Find the specified gpu from it's gpuId.
 //
-POBJGPU
+OBJGPU *
 gpumgrGetGpuFromId(NvU32 gpuId)
 {
     OBJGPU *pGpu;
@@ -2454,7 +2480,7 @@ gpumgrGetGpuFromId(NvU32 gpuId)
 // Get GPUOBJECT from UUID. Returns NULL if it cannot find a GPU with the
 // requested UUID.
 //
-POBJGPU
+OBJGPU *
 gpumgrGetGpuFromUuid(const NvU8 *pGpuUuid, NvU32 flags)
 {
      OBJGPU *pGpu;
@@ -2505,7 +2531,7 @@ gpumgrGetGpuFromUuid(const NvU8 *pGpuUuid, NvU32 flags)
 //
 // Find the specified GPU using its PCI bus info.
 //
-POBJGPU
+OBJGPU *
 gpumgrGetGpuFromBusInfo(NvU32 domain, NvU8 bus, NvU8 device)
 {
     NV_STATUS status;
@@ -2587,9 +2613,7 @@ gpumgrGetGpuIdInfoV2(NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS *pGpuInfo)
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    {
-        subDeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-    }
+    subDeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
 
     pGpuInfo->gpuInstance = pGpu->gpuInstance;
     pGpuInfo->deviceInstance = deviceInstance;
@@ -3130,7 +3154,7 @@ RmPhysAddr gpumgrGetGpuPhysFbAddr(OBJGPU *pGpu)
 //
 // Get GPU object from subdevice instance
 //
-POBJGPU
+OBJGPU *
 gpumgrGetGpuFromSubDeviceInst(NvU32 deviceInst, NvU32 subDeviceInst)
 {
     OBJGPU    *pGpu     = NULL;
@@ -3901,13 +3925,8 @@ gpumgrSetGpuNvlinkBwModePerGpu_IMPL
         return NV_OK;
     }
 
-    if (_gpumgrIsP2PObjectPresent())
-    {
-        return NV_ERR_IN_USE;
-    }
-
     // Set requested rbm link count for gpu
-    NV_ASSERT_OK_OR_RETURN(gpuFabricProbeSetBwModePerGpu(pGpu, mode, bSync));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, gpuFabricProbeSetBwModePerGpu(pGpu, mode, bSync));
 
     //
     // TODO: Need to check if all GPU BW modes are _FULL when requested mode
@@ -5023,4 +5042,82 @@ gpuMgrCacheNvleAlidClid
     }
 
     return NV_FALSE;
+}
+
+/**
+ * @brief Returns whether the primary query GPU PTC is initialized
+ *
+ * @param[in] pGpuMgr  OBJGPUMGR pointer
+ *
+ * return NV_TRUE if primary query GPU PTC is initialized
+ */
+NvBool
+gpumgrGetNvlinkPrimaryQueryGpuPtcInitialized
+(
+    OBJGPUMGR *pGpuMgr
+)
+{
+    return pGpuMgr->nvlinkGlobalPtcState.bPrimaryQueryGpuPtcInitialized;
+}
+
+/**
+ * @brief Set the primary query GPU PTC init status
+ *
+ * @param[in] pGpuMgr   OBJGPUMGR pointer
+ * @param[in] bPtcInit  Set primary query GPU PTC to this value
+ */
+void
+gpumgrSetNvlinkPrimaryQueryGpuPtcInitialized
+(
+    OBJGPUMGR *pGpuMgr,
+    NvBool     bPtcInit
+)
+{
+    pGpuMgr->nvlinkGlobalPtcState.bPrimaryQueryGpuPtcInitialized = bPtcInit;
+}
+
+/**
+ * @brief Returns the primary query GPU ID
+ *
+ * @param[in]  pGpuMgr  OBJGPUMGR pointer
+ * @param[out] pGpuId   Pointer to primary query GPU ID
+ *
+ * return NV_OK on success
+ */
+NV_STATUS
+gpumgrGetNvlinkPrimaryQueryGpuId
+(
+    OBJGPUMGR *pGpuMgr,
+    NvU32     *pGpuId
+)
+{
+    NV_ASSERT_OR_RETURN(pGpuId != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    if (pGpuMgr->nvlinkGlobalPtcState.bPrimaryQueryGpuPtcInitialized)
+    {
+        *pGpuId = pGpuMgr->nvlinkGlobalPtcState.primaryQueryGpuId;
+        return NV_OK;
+    }
+
+    return NV_ERR_OBJECT_NOT_FOUND;
+}
+
+/**
+ * @brief Set the primary query GPU ID
+ *
+ * @param[in] pGpuMgr  OBJGPUMGR pointer
+ * !param[in] gpuId    Primary query GPU ID
+ *
+ * return NV_OK on success
+ */
+NV_STATUS
+gpumgrSetNvlinkPrimaryQueryGpuId
+(
+    OBJGPUMGR *pGpuMgr,
+    NvU32      gpuId
+)
+{
+    pGpuMgr->nvlinkGlobalPtcState.primaryQueryGpuId = gpuId;
+
+    return NV_OK;
 }

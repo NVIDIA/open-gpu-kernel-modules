@@ -818,8 +818,12 @@ khfrpPostCommandBlocking_IMPL
 
     status = khfrpMailboxQueueMessage_IMPL(pKernelHfrp, commandHeader,
         pCommandPayload, commandPayloadSize, HFRP_COMMAND_MAILBOX_FLAG);
-    if (status == NV_ERR_BUFFER_FULL)
+    if (status != NV_OK)
     {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to queue HFRP command 0x%x with status = 0x%08X\n",
+                  commandIndex,
+                  status);
         khfrpFreeSequenceId_IMPL(pKernelHfrp, sequenceId);
         return status;
     }

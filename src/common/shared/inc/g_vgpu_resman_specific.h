@@ -29,6 +29,7 @@ static inline void _get_chip_id_for_alias_pgpu(NvU32 *dev_id, NvU32 *subdev_id)
         { 0x2941, 0x2046, 0x2941, 0x2045 },
         { 0x2BB5, 0x220B, 0x2BB5, 0x204E },
         { 0x2BB9, 0x2092, 0x2BB9, 0x2091 },
+        { 0x307F, 0x221A, 0x3041, 0x221A },
     };
 
     for (NvU32 i = 0; i < (sizeof(vgpu_aliases) / sizeof(struct vgpu_alias_details)); ++i) {
@@ -358,6 +359,18 @@ static const struct {
     {0x2C3A10DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _GFX_SIZE, _FULL)                 , 2254}, // NVIDIA RTX PRO 4500 Blackwell DC-2-32A
     {0x2C3A10DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _GFX_SIZE, _FULL)                 , 2255}, // NVIDIA RTX PRO 4500 Blackwell DC-2-32C
     {0x2C3A10DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _GFX_SIZE, _FULL)                 , 2256}, // NVIDIA RTX PRO 4500 Blackwell DC-2-32
+    {0x304110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU                                                                     , 2294}, // NVIDIA Vera Rubin NVL72-1-35C
+    {0x307F10DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU                                                                     , 2294}, // NVIDIA Vera Rubin NVL72-1-35C
+    {0x304110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_QUARTER_GPU                                                                 , 2295}, // NVIDIA Vera Rubin NVL72-1-70C
+    {0x307F10DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_QUARTER_GPU                                                                 , 2295}, // NVIDIA Vera Rubin NVL72-1-70C
+    {0x304110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_QUARTER_GPU                                                                      , 2296}, // NVIDIA Vera Rubin NVL72-2-70C
+    {0x307F10DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_QUARTER_GPU                                                                      , 2296}, // NVIDIA Vera Rubin NVL72-2-70C
+    {0x304110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_HALF_GPU                                                                    , 2297}, // NVIDIA Vera Rubin NVL72-3-140C
+    {0x307F10DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_HALF_GPU                                                                    , 2297}, // NVIDIA Vera Rubin NVL72-3-140C
+    {0x304110DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_HALF_GPU                                                                         , 2298}, // NVIDIA Vera Rubin NVL72-4-140C
+    {0x307F10DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_HALF_GPU                                                                         , 2298}, // NVIDIA Vera Rubin NVL72-4-140C
+    {0x304110DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU                                                                             , 2299}, // NVIDIA Vera Rubin NVL72-7-280C
+    {0x307F10DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU                                                                             , 2299}, // NVIDIA Vera Rubin NVL72-7-280C
     {0x318210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _REQ_DEC_JPG_OFA, _ENABLE), 2259}, // NVIDIA B300X-1-34CME
     {0x318210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU                                                                     , 2258}, // NVIDIA B300X-1-34C
     {0x318210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_QUARTER_GPU                                                                 , 2260}, // NVIDIA B300X-1-67C

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -121,7 +121,7 @@ typedef struct {
     struct NvKmsRect viewPortIn;
 
     NvBool hs10bpcHint;
-    NvBool yuv420;
+    enum NvYuv420Mode yuv420Mode;
     NvBool blendAfterWarp;
 
     enum NvKmsPixelShiftMode pixelShift;

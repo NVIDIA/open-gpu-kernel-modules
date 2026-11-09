@@ -251,7 +251,15 @@ typedef struct NVA06C_CTRL_GET_INFO_PARAMS {
  *       - L = # of LOW interleave level TSGs
  *       - M = # of MEDIUM interleave level TSGs
  *
- * For safety reasons, setting this property requires PRIVILEGED user level.
+ * LOW and MEDIUM may be set by any client. HIGH requires RS_ACCESS_NICE
+ * (CAP_SYS_NICE on Linux) unless the administrator has set the global
+ * scheduling-priority compute policy to HIGH; a level granted while the
+ * global policy was HIGH is not revoked when the policy is reset.
+ *
+ * The level is accepted and recorded on any configuration; it has a
+ * scheduling effect only where the runlist is built with an interleaved
+ * scheduling policy (in particular, it is inert under MIG, on vGPU, on
+ * non-GR runlists, and on runlists using the default policy).
  *
  * tsgInterleaveLevel
  *   Input parameter. One of:
@@ -401,38 +409,6 @@ typedef struct NVA06C_CTRL_MAKE_REALTIME_PARAMS {
 } NVA06C_CTRL_MAKE_REALTIME_PARAMS;
 
 
-
-
-
-/*
- * NVA06C_CTRL_CMD_INTERNAL_GPFIFO_SCHEDULE
- *
- * This command is an internal command sent from Kernel RM to Physical RM
- * to schedule a channel group in hardware.
- *
- * Please see description of NVA06C_CTRL_CMD_GPFIFO_SCHEDULE for more information.
- *
- */
-#define NVA06C_CTRL_CMD_INTERNAL_GPFIFO_SCHEDULE (0xa06c0201) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GROUP_A_INTERNAL_INTERFACE_ID << 8) | NVA06C_CTRL_INTERNAL_GPFIFO_SCHEDULE_PARAMS_MESSAGE_ID" */
-
-#define NVA06C_CTRL_INTERNAL_GPFIFO_SCHEDULE_PARAMS_MESSAGE_ID (0x1U)
-
-typedef NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS NVA06C_CTRL_INTERNAL_GPFIFO_SCHEDULE_PARAMS;
-
-/* 
- * NVA06C_CTRL_CMD_INTERNAL_SET_TIMESLICE
- *
- * This command is an internal command sent from Kernel RM to Physical RM
- * to modify the timeslice for a channel group in hardware.
- *
- * Please see description of NVA06C_CTRL_CMD_SET_TIMESLICE for more information.
- *
- */
-#define NVA06C_CTRL_CMD_INTERNAL_SET_TIMESLICE (0xa06c0202) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GROUP_A_INTERNAL_INTERFACE_ID << 8) | NVA06C_CTRL_INTERNAL_SET_TIMESLICE_PARAMS_MESSAGE_ID" */
-
-#define NVA06C_CTRL_INTERNAL_SET_TIMESLICE_PARAMS_MESSAGE_ID (0x2U)
-
-typedef NVA06C_CTRL_TIMESLICE_PARAMS NVA06C_CTRL_INTERNAL_SET_TIMESLICE_PARAMS;
 
 /* _ctrla06c.h_ */
 

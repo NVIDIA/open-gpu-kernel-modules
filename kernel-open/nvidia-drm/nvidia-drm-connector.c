@@ -47,6 +47,9 @@
 #include <drm/drm_edid.h>
 #include <drm/drm_sysfs.h>
 
+static void nv_drm_connector_set_allm_capable(struct nv_drm_connector *nv_connector,
+                                              NvBool allmCapable);
+
 /*
  * Dithering support requires connector atomic_check, which we only enable on
  * kernels with HDR metadata support (v5.14+). This serves as a proxy for
@@ -89,6 +92,51 @@ nv_drm_connector_translate_dither_mode(enum nv_drm_dithering_mode mode,
     }
 
     return 0;
+}
+
+static int
+nv_drm_connector_translate_color_format(enum nv_drm_connector_color_format fmt,
+                                        NvU32 *nvkms_fmt)
+{
+    switch (fmt) {
+    case NV_DRM_CONNECTOR_COLOR_FORMAT_AUTO:
+        *nvkms_fmt = NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_UNKNOWN;
+        return 0;
+    case NV_DRM_CONNECTOR_COLOR_FORMAT_RGB:
+        *nvkms_fmt = NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_RGB;
+        return 0;
+    case NV_DRM_CONNECTOR_COLOR_FORMAT_YCbCr422:
+        *nvkms_fmt = NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_YCbCr422;
+        return 0;
+    case NV_DRM_CONNECTOR_COLOR_FORMAT_YCbCr444:
+        *nvkms_fmt = NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_FORMAT_YCbCr444;
+        return 0;
+    }
+    return -EINVAL;
+}
+
+static int
+nv_drm_connector_translate_output_bpc(enum nv_drm_connector_output_bpc bpc,
+                                      NvU32 *nvkms_bpc)
+{
+    switch (bpc) {
+    case NV_DRM_CONNECTOR_OUTPUT_BPC_AUTO:
+        *nvkms_bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+        return 0;
+    case NV_DRM_CONNECTOR_OUTPUT_BPC_6:
+        *nvkms_bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
+        return 0;
+    case NV_DRM_CONNECTOR_OUTPUT_BPC_8:
+        *nvkms_bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+        return 0;
+    case NV_DRM_CONNECTOR_OUTPUT_BPC_10:
+        *nvkms_bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+        return 0;
+    case NV_DRM_CONNECTOR_OUTPUT_BPC_12:
+        *nvkms_bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_12;
+        return 0;
+    }
+    return -EINVAL;
 }
 #endif /* NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT */
 
@@ -179,6 +227,9 @@ __nv_drm_detect_encoder(struct NvKmsKapiDynamicDisplayParams *pDetectParams,
     drm_connector_set_vrr_capable_property(&nv_connector->base, pDetectParams->vrrSupported ? true : false);
 #endif
 
+    nv_drm_connector_set_allm_capable(nv_connector,
+                                      pDetectParams->allmCapable);
+
     if (pDetectParams->connected) {
         if (!pDetectParams->overrideEdid && pDetectParams->edid.bufferSize) {
 
@@ -220,6 +271,8 @@ static enum drm_connector_status __nv_drm_connector_detect_internal(
         nv_drm_free(nv_connector->edid);
         nv_connector->edid = NULL;
     }
+
+    nv_drm_connector_set_allm_capable(nv_connector, NV_FALSE);
 
     if ((pDetectParams = nv_drm_calloc(
                 1,
@@ -266,6 +319,32 @@ done:
     return status;
 }
 
+#if defined(NV_DRM_CONNECTOR_FUNCS_HAS_ATOMIC_CREATE_STATE)
+/**
+ * nv_drm_connector_atomic_create_state - connector state creation hook
+ * @crtc: DRM connector
+ *
+ * Allocate an empty DRM connector state.
+ */
+static struct drm_connector_state *
+nv_drm_connector_atomic_create_state(struct drm_connector *connector)
+{
+    struct nv_drm_connector_state *nv_connector_state =
+        nv_drm_calloc(1, sizeof(*nv_connector_state));
+
+    if (!nv_connector_state) {
+        return ERR_PTR(-ENOMEM);
+    }
+
+#if defined(NV_DRM_ATOMIC_HELPER_CONNECTOR_STATE_INIT)
+    __drm_atomic_helper_connector_state_init(&nv_connector_state->base, connector);
+#else
+    __drm_atomic_helper_connector_state_reset(&nv_connector_state->base, connector);
+#endif
+
+    return &nv_connector_state->base;
+}
+#else
 static void nv_drm_connector_reset(struct drm_connector *connector)
 {
     struct nv_drm_connector_state  * nv_connector_state =
@@ -285,6 +364,7 @@ static void nv_drm_connector_reset(struct drm_connector *connector)
 
     __drm_atomic_helper_connector_reset(connector, &nv_connector_state->base);
 }
+#endif
 
 static struct drm_connector_state* nv_drm_connector_atomic_duplicate_state(struct drm_connector *connector)
 {
@@ -300,6 +380,8 @@ static struct drm_connector_state* nv_drm_connector_atomic_duplicate_state(struc
     __drm_atomic_helper_connector_duplicate_state(connector, &nv_drm_new_connector_state->base);
 
     nv_drm_new_connector_state->dithering_mode = nv_drm_old_connector_state->dithering_mode;
+    nv_drm_new_connector_state->color_format = nv_drm_old_connector_state->color_format;
+    nv_drm_new_connector_state->output_bpc = nv_drm_old_connector_state->output_bpc;
     nv_drm_new_connector_state->hdcp_topology_blob = nv_drm_old_connector_state->hdcp_topology_blob;
     if (nv_drm_new_connector_state->hdcp_topology_blob) {
         drm_property_blob_get(nv_drm_new_connector_state->hdcp_topology_blob);
@@ -310,6 +392,9 @@ static struct drm_connector_state* nv_drm_connector_atomic_duplicate_state(struc
     if (nv_drm_new_connector_state->hdmi_vsif_metadata) {
         drm_property_blob_get(nv_drm_new_connector_state->hdmi_vsif_metadata);
     }
+
+    nv_drm_new_connector_state->allmMode =
+        nv_drm_old_connector_state->allmMode;
 
     return &nv_drm_new_connector_state->base;
 }
@@ -356,6 +441,12 @@ static int nv_drm_connector_atomic_set_property(
         }
         nv_connector_state->dithering_mode = val;
         return 0;
+    } else if (property == nv_dev->nv_connector_color_format_property) {
+        nv_connector_state->color_format = val;
+        return 0;
+    } else if (property == nv_dev->nv_connector_output_bpc_property) {
+        nv_connector_state->output_bpc = val;
+        return 0;
     } else if (property == nv_dev->nv_hdcp_level_property) {
         // nv_hdcp_level_property is read only
         return -EINVAL;
@@ -369,6 +460,23 @@ static int nv_drm_connector_atomic_set_property(
                     val,
                     NV_DRM_HDMI_VSIF_METADATA_MIN_PAYLOAD_SIZE,
                     NV_DRM_HDMI_VSIF_METADATA_MAX_PAYLOAD_SIZE);
+    }
+
+    if (property == nv_dev->nv_connector_allm_mode_property) {
+        struct nv_drm_connector *nv_connector = to_nv_connector(connector);
+        if (val > NV_DRM_ALLM_MODE_ENABLED_FORCED) {
+            return -EINVAL;
+        }
+        if (((enum nv_drm_allm_mode) val != NV_DRM_ALLM_MODE_DISABLED) &&
+            !nv_connector->allmCapable) {
+            NV_DRM_DEV_LOG_INFO(
+                nv_dev,
+                "allmMode=%llu requires allm capability. Display is not ALLM-capable",
+                val);
+            return -EINVAL;
+        }
+        nv_connector_state->allmMode = (enum nv_drm_allm_mode) val;
+        return 0;
     }
 
     /* Unknown property - DRM core handles standard connector properties */
@@ -389,6 +497,12 @@ static int nv_drm_connector_atomic_get_property(
     if (property == nv_dev->nv_connector_dithering_mode_property) {
         *val = nv_connector_state->dithering_mode;
         return 0;
+    } else if (property == nv_dev->nv_connector_color_format_property) {
+        *val = nv_connector_state->color_format;
+        return 0;
+    } else if (property == nv_dev->nv_connector_output_bpc_property) {
+        *val = nv_connector_state->output_bpc;
+        return 0;
     } else if (property == nv_dev->nv_hdcp_level_property) {
         *val = nv_conn->cp;
         return 0;
@@ -400,13 +514,27 @@ static int nv_drm_connector_atomic_get_property(
         return 0;
     }
 
+    if (property == nv_dev->nv_connector_allm_capable_property) {
+        *val = nv_conn->allmCapable ? 1 : 0;
+        return 0;
+    }
+
+    if (property == nv_dev->nv_connector_allm_mode_property) {
+        *val = nv_connector_state->allmMode;
+        return 0;
+    }
+
     /* Unknown property - DRM core handles standard connector properties */
     return -EINVAL;
 }
 
 static struct drm_connector_funcs nv_connector_funcs = {
     .destroy                = nv_drm_connector_destroy,
+#if defined(NV_DRM_CONNECTOR_FUNCS_HAS_ATOMIC_CREATE_STATE)
+    .atomic_create_state    = nv_drm_connector_atomic_create_state,
+#else
     .reset                  = nv_drm_connector_reset,
+#endif
     .force                  = __nv_drm_connector_force,
     .detect                 = nv_drm_connector_detect,
     .fill_modes             = drm_helper_probe_single_connector_modes,
@@ -545,15 +673,23 @@ __nv_drm_connector_atomic_check(struct drm_connector *connector,
     struct drm_connector_state *old_connector_state =
         drm_atomic_get_old_connector_state(state, connector);
     struct nv_drm_device *nv_dev = to_nv_device(connector->dev);
+    struct nv_drm_connector *nv_connector = to_nv_connector(connector);
     struct nv_drm_connector_state *nv_new_connector_state =
         to_nv_drm_connector_state(new_connector_state);
     struct nv_drm_connector_state *nv_old_connector_state =
         to_nv_drm_connector_state(old_connector_state);
-
     struct drm_crtc *crtc = new_connector_state->crtc;
+    static const enum NvKmsAllmMode allmModeMap[] = {
+        [NV_DRM_ALLM_MODE_DISABLED]        = NVKMS_ALLM_MODE_DISABLED,
+        [NV_DRM_ALLM_MODE_ENABLED_DYNAMIC] = NVKMS_ALLM_MODE_ENABLED_DYNAMIC,
+        [NV_DRM_ALLM_MODE_ENABLED_FORCED]  = NVKMS_ALLM_MODE_ENABLED_FORCED,
+    };
     struct drm_crtc_state *crtc_state;
     struct nv_drm_crtc_state *nv_crtc_state;
     struct NvKmsKapiHeadRequestedConfig *req_config;
+    NvU32 nvkms_fmt;
+    NvU32 nvkms_bpc;
+    int ret;
 
     if (!crtc) {
         return 0;
@@ -563,6 +699,19 @@ __nv_drm_connector_atomic_check(struct drm_connector *connector,
     nv_crtc_state = to_nv_crtc_state(crtc_state);
     req_config = &nv_crtc_state->req_config;
 
+    /*
+     * The property setter validates userspace writes, but hotplug/detect can
+     * change connector capability while atomic state still preserves a
+     * non-disabled ALLM mode.
+     */
+    if ((nv_new_connector_state->allmMode != NV_DRM_ALLM_MODE_DISABLED) &&
+        !nv_connector->allmCapable) {
+        NV_DRM_DEV_LOG_INFO(
+            nv_dev,
+            "allmMode requires allm capability. Display is not ALLM-capable");
+        return -EINVAL;
+    }
+
     /* Handle dithering changes */
     req_config->flags.ditheringChanged =
         nv_old_connector_state->dithering_mode !=
@@ -570,7 +719,7 @@ __nv_drm_connector_atomic_check(struct drm_connector *connector,
     if (req_config->flags.ditheringChanged) {
         enum NvKmsDpyAttributeRequestedDitheringValue state;
         enum NvKmsDpyAttributeRequestedDitheringModeValue mode;
-        int ret = nv_drm_connector_translate_dither_mode(
+        ret = nv_drm_connector_translate_dither_mode(
             nv_new_connector_state->dithering_mode, &state, &mode);
         if (ret != 0) {
             return ret;
@@ -578,6 +727,28 @@ __nv_drm_connector_atomic_check(struct drm_connector *connector,
         req_config->modeSetConfig.dithering.state = state;
         req_config->modeSetConfig.dithering.mode = mode;
     }
+
+    /* Handle color format changes */
+    req_config->flags.colorFormatChanged =
+        (nv_old_connector_state->color_format !=
+         nv_new_connector_state->color_format);
+    ret = nv_drm_connector_translate_color_format(
+        nv_new_connector_state->color_format, &nvkms_fmt);
+    if (ret != 0) {
+        return ret;
+    }
+    req_config->modeSetConfig.colorFormat = nvkms_fmt;
+
+    /* Handle output bpc changes */
+    req_config->flags.colorBpcChanged =
+        (nv_old_connector_state->output_bpc !=
+         nv_new_connector_state->output_bpc);
+    ret = nv_drm_connector_translate_output_bpc(
+        nv_new_connector_state->output_bpc, &nvkms_bpc);
+    if (ret != 0) {
+        return ret;
+    }
+    req_config->modeSetConfig.colorBpc = nvkms_bpc;
 
     /* Handle HDMI VSIF metadata changes */
     req_config->flags.hdmiVsifMetadataChanged =
@@ -602,6 +773,13 @@ __nv_drm_connector_atomic_check(struct drm_connector *connector,
             req_config->modeSetConfig.hdmiVsifMetadata.payloadSize = 0;
         }
     }
+
+    /* Handle ALLM enable changes */
+    req_config->flags.allmModeChanged =
+        (nv_old_connector_state->allmMode !=
+         nv_new_connector_state->allmMode);
+    req_config->modeSetConfig.allmMode =
+        allmModeMap[nv_new_connector_state->allmMode];
 
     /*
      * Override metadata for the entire head instead of allowing NVKMS to derive
@@ -797,6 +975,17 @@ nv_drm_connector_new(struct drm_device *dev,
                                        nv_dev->nv_connector_hdmi_vsif_metadata_property,
                                        0);
         }
+
+        if (nv_dev->nv_connector_allm_capable_property) {
+            drm_object_attach_property(&nv_connector->base.base,
+                                       nv_dev->nv_connector_allm_capable_property,
+                                       0);
+        }
+        if (nv_dev->nv_connector_allm_mode_property) {
+            drm_object_attach_property(&nv_connector->base.base,
+                                       nv_dev->nv_connector_allm_mode_property,
+                                       NV_DRM_ALLM_MODE_DISABLED);
+        }
     } else if (nv_connector->type == NVKMS_CONNECTOR_TYPE_DP) {
 #if defined(NV_DRM_MODE_CREATE_DP_COLORSPACE_PROPERTY_HAS_SUPPORTED_COLORSPACES_ARG)
         if (drm_mode_create_dp_colorspace_property(
@@ -816,6 +1005,22 @@ nv_drm_connector_new(struct drm_device *dev,
         drm_object_attach_property(&nv_connector->base.base,
                                    nv_dev->nv_connector_dithering_mode_property,
                                    NV_DRM_DITHERING_MODE_AUTO);
+    }
+
+    /* Attach color format and output bpc properties for HDMI connectors */
+    if (nv_connector->type == NVKMS_CONNECTOR_TYPE_HDMI) {
+        if (nv_dev->nv_connector_color_format_property) {
+            drm_object_attach_property(
+                &nv_connector->base.base,
+                nv_dev->nv_connector_color_format_property,
+                NV_DRM_CONNECTOR_COLOR_FORMAT_AUTO);
+        }
+        if (nv_dev->nv_connector_output_bpc_property) {
+            drm_object_attach_property(
+                &nv_connector->base.base,
+                nv_dev->nv_connector_output_bpc_property,
+                NV_DRM_CONNECTOR_OUTPUT_BPC_AUTO);
+        }
     }
 
     /* Register connector with DRM subsystem */
@@ -908,15 +1113,27 @@ bool nv_drm_connector_revoke_permissions(struct drm_device *dev,
     return ret;
 }
 
+/*
+ * The caller must hold dev->mode_config.mutex (for nv_connector->cp) and
+ * dev->mode_config.connection_mutex (for calling drm_hdcp_update_content_protection).
+ */
 void nv_drm_connector_update_content_protection(struct nv_drm_connector *nv_connector)
 {
 #ifdef NV_DRM_SUPPORT_CONTENT_PROTECTION_PROPERTY
     struct drm_connector *connector = &nv_connector->base;
-    struct drm_connector_state *state = connector->state;
-    unsigned int content_protection = state->content_protection;
-    unsigned int hdcp_content_type = state->hdcp_content_type;
+    struct drm_device *dev = connector->dev;
+    struct drm_connector_state *state;
+    unsigned int content_protection;
+    unsigned int hdcp_content_type;
     bool update_cp = false;
     unsigned int cp_val;
+
+    WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));
+    WARN_ON(!drm_modeset_is_locked(&dev->mode_config.connection_mutex));
+
+    state = connector->state;
+    content_protection = state->content_protection;
+    hdcp_content_type = state->hdcp_content_type;
 
     if ((content_protection == DRM_MODE_CONTENT_PROTECTION_DESIRED) &&
         (hdcp_content_type == DRM_MODE_HDCP_CONTENT_TYPE0)) {
@@ -976,6 +1193,21 @@ int nv_drm_connector_update_topology_property(struct nv_drm_connector *nv_connec
 #else
     return 0;
 #endif
+}
+
+static void nv_drm_connector_set_allm_capable(struct nv_drm_connector *nv_connector,
+                                              NvBool allmCapable)
+{
+    struct nv_drm_device *nv_dev = to_nv_device(nv_connector->base.dev);
+
+    nv_connector->allmCapable = allmCapable;
+
+    if ((nv_connector->type == NVKMS_CONNECTOR_TYPE_HDMI) &&
+        nv_dev->nv_connector_allm_capable_property) {
+        drm_object_property_set_value(&nv_connector->base.base,
+                                      nv_dev->nv_connector_allm_capable_property,
+                                      nv_connector->allmCapable);
+    }
 }
 
 #endif

@@ -41,17 +41,6 @@ NV_STATUS __nvoc_down_thunk_KernelOob_engstateStateLoad(struct OBJGPU *pGpu, str
 NV_STATUS __nvoc_down_thunk_KernelOob_engstateStateUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelOob, NvU32 flags);    // this
 
 // Up-thunk(s) to bridge KernelOob methods to ancestors (if any)
-void __nvoc_up_thunk_OBJENGSTATE_koobInitMissing(struct OBJGPU *pGpu, struct KernelOob *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePreInitLocked(struct OBJGPU *pGpu, struct KernelOob *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelOob *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStateInitLocked(struct OBJGPU *pGpu, struct KernelOob *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStateInitUnlocked(struct OBJGPU *pGpu, struct KernelOob *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePreLoad(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePostLoad(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePreUnload(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePostUnload(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3);    // this
-void __nvoc_up_thunk_OBJENGSTATE_koobStateDestroy(struct OBJGPU *pGpu, struct KernelOob *pEngstate);    // this
-NvBool __nvoc_up_thunk_OBJENGSTATE_koobIsPresent(struct OBJGPU *pGpu, struct KernelOob *pEngstate);    // this
 
 // Class-specific details for KernelOob
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelOob = 
@@ -69,7 +58,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelOob =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__KernelOob __nvoc_metadata__KernelOob = {
     .rtti.pClassDef = &__nvoc_class_def_KernelOob,    // (koob) this
     .rtti.dtor      = &__nvoc_dtor_KernelOob,
@@ -81,31 +70,21 @@ static const struct NVOC_METADATA__KernelOob __nvoc_metadata__KernelOob = {
     .metadata__OBJENGSTATE.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__OBJENGSTATE.metadata__Object.rtti.offset    = NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
 
-    .vtable.__koobConstructEngine__ = &koobConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelOob_engstateConstructEngine,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &__nvoc_down_thunk_KernelOob_engstateStateLoad,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &__nvoc_down_thunk_KernelOob_engstateStateUnload,    // virtual
-    .vtable.__koobInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_koobInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-    .vtable.__koobStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_koobStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-    .vtable.__koobStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_koobStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .vtable.__koobStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_koobStateInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
-    .vtable.__koobStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_koobStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-    .vtable.__koobStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_koobStatePreLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-    .vtable.__koobStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_koobStatePostLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-    .vtable.__koobStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_koobStatePreUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-    .vtable.__koobStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_koobStatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__koobStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_koobStateDestroy,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &engstateStateDestroy_IMPL,    // virtual
-    .vtable.__koobIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_koobIsPresent,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
 };
 
@@ -124,7 +103,7 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelOob = {
 
 // koobConstructEngine: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelOob_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelOob, ENGDESCRIPTOR arg3) {
-    return koobConstructEngine(pGpu, (struct KernelOob *)(((unsigned char *) pKernelOob) - NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)), arg3);
+    return koobConstructEngine_IMPL(pGpu, (struct KernelOob *)(((unsigned char *) pKernelOob) - NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)), arg3);
 }
 
 // koobStateLoad: virtual halified (2 hals) override (engstate) base (engstate) body
@@ -135,64 +114,6 @@ NV_STATUS __nvoc_down_thunk_KernelOob_engstateStateLoad(struct OBJGPU *pGpu, str
 // koobStateUnload: virtual halified (2 hals) override (engstate) base (engstate) body
 NV_STATUS __nvoc_down_thunk_KernelOob_engstateStateUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelOob, NvU32 flags) {
     return koobStateUnload(pGpu, (struct KernelOob *)(((unsigned char *) pKernelOob) - NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)), flags);
-}
-
-
-// 11 up-thunk(s) defined to bridge methods in KernelOob to superclasses
-
-// koobInitMissing: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_koobInitMissing(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)));
-}
-
-// koobStatePreInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePreInitLocked(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)));
-}
-
-// koobStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)));
-}
-
-// koobStateInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStateInitLocked(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)));
-}
-
-// koobStateInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStateInitUnlocked(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)));
-}
-
-// koobStatePreLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePreLoad(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// koobStatePostLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePostLoad(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// koobStatePreUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePreUnload(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// koobStatePostUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_koobStatePostUnload(struct OBJGPU *pGpu, struct KernelOob *pEngstate, NvU32 arg3) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// koobStateDestroy: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_koobStateDestroy(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)));
-}
-
-// koobIsPresent: virtual inherited (engstate) base (engstate)
-NvBool __nvoc_up_thunk_OBJENGSTATE_koobIsPresent(struct OBJGPU *pGpu, struct KernelOob *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelOob, __nvoc_base_OBJENGSTATE)));
 }
 
 
@@ -268,7 +189,7 @@ static void __nvoc_init_funcTable_KernelOob_1(KernelOob *pThis, GpuHalspecOwner 
 
     // koobStateLoad -- virtual halified (2 hals) override (engstate) base (engstate) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000303fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000603fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
     {
         pThis->__koobStateLoad__ = &koobStateLoad_GB100;
     }
@@ -280,7 +201,7 @@ static void __nvoc_init_funcTable_KernelOob_1(KernelOob *pThis, GpuHalspecOwner 
 
     // koobStateUnload -- virtual halified (2 hals) override (engstate) base (engstate) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000303fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000603fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
     {
         pThis->__koobStateUnload__ = &koobStateUnload_GB100;
     }
@@ -292,7 +213,7 @@ static void __nvoc_init_funcTable_KernelOob_1(KernelOob *pThis, GpuHalspecOwner 
 
     // koobInitAperture -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000303fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000603fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
     {
         pThis->__koobInitAperture__ = &koobInitAperture_GB100;
     }
@@ -310,7 +231,7 @@ static void __nvoc_init_funcTable_KernelOob_1(KernelOob *pThis, GpuHalspecOwner 
     else
     {
         if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000303fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
+            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000603fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
         {
             pThis->__koobCheckSupported__ = &koobCheckSupported_GB100;
         }
@@ -329,7 +250,7 @@ static void __nvoc_init_funcTable_KernelOob_1(KernelOob *pThis, GpuHalspecOwner 
     else
     {
         if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000303fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
+            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000603fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
         {
             pThis->__koobSendEvent__ = &koobSendEvent_GB100;
         }
@@ -348,7 +269,7 @@ static void __nvoc_init_funcTable_KernelOob_1(KernelOob *pThis, GpuHalspecOwner 
     else
     {
         if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000303fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
+            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000603fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
         {
             pThis->__koobNsmEncodeEvent__ = &koobNsmEncodeEvent_GB100;
         }
@@ -367,7 +288,7 @@ static void __nvoc_init_funcTable_KernelOob_1(KernelOob *pThis, GpuHalspecOwner 
     else
     {
         if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000303fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
+            ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000603fUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GR100 | GR102 */ 
         {
             pThis->__koobMnocMboxSend__ = &koobMnocMboxSend_GB100;
         }
@@ -380,7 +301,7 @@ static void __nvoc_init_funcTable_KernelOob_1(KernelOob *pThis, GpuHalspecOwner 
 } // End __nvoc_init_funcTable_KernelOob_1 with approximately 18 basic block(s).
 
 
-// Initialize vtable(s) for 19 virtual method(s).
+// Initialize vtable(s) for 7 virtual method(s).
 void __nvoc_init_funcTable_KernelOob(KernelOob *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize vtable(s) with 7 per-object function pointer(s).

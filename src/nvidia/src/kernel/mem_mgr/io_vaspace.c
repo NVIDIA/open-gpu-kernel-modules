@@ -137,7 +137,7 @@ iovaspaceApplyDefaultAlignment_IMPL
         // as it doesn't have big page.
         //
         pVAS = staticCast(pIOVAS, OBJVASPACE);
-        pGpu = gpumgrGetGpu(gpumgrGetDefaultPrimaryGpu(pVAS->gpuMask));
+        pGpu = pVAS->pGpu;
         pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
         NV_ASSERT_OR_RETURN(NULL != pKernelGmmu, NV_ERR_INVALID_POINTER);
 
@@ -254,37 +254,20 @@ _iovaspaceCreateMappingDataFromMemDesc
     return pIovaMapping;
 }
 
-static NV_STATUS
+static PIOVAMAPPING
 _iovaspaceCreateSubmapping
 (
     OBJIOVASPACE *pIOVAS,
-    PMEMORY_DESCRIPTOR pPhysMemDesc
+    PMEMORY_DESCRIPTOR pPhysMemDesc,
+    PIOVAMAPPING pRootIovaMapping
 )
 {
     NvU64 rootOffset;
-    NV_STATUS status = NV_OK;
-    OBJVASPACE *pVAS = staticCast(pIOVAS, OBJVASPACE);
     PMEMORY_DESCRIPTOR pRootMemDesc = memdescGetRootMemDesc(pPhysMemDesc, &rootOffset);
-    PIOVAMAPPING pRootIovaMapping;
-    PIOVAMAPPING pSubMapping = NULL;
+    PIOVAMAPPING pSubMapping;
 
     NV_ASSERT(pRootMemDesc != pPhysMemDesc);
-
-    //
-    // A submapping requires the root mapping to be there, acquire a reference
-    // on it so that it sticks around for at least as long as the submapping.
-    // The reference is released when the submapping is destroyed.
-    //
-    status = iovaspaceAcquireMapping(pIOVAS, pRootMemDesc);
-    if (status != NV_OK)
-        return status;
-
-    //
-    // The root mapping has been just successfully acquired so it has to be
-    // there.
-    //
-    pRootIovaMapping = memdescGetIommuMap(pRootMemDesc, pVAS->vaspaceId);
-    NV_ASSERT(pRootIovaMapping != NULL);
+    NV_ASSERT_OR_RETURN(pRootIovaMapping->pPhysMemDesc == pRootMemDesc, NULL);
 
     //
     // Since this is a submemory descriptor, we need to account for the
@@ -297,29 +280,11 @@ _iovaspaceCreateSubmapping
     rootOffset -= pPhysMemDesc->PteAdjust;
     NV_ASSERT((rootOffset & GET_PAGE_MASK(pPhysMemDesc->pageArrayGranularity)) == 0);
 
-    //
-    // For submemory descriptors, there are two possibilities:
-    //  (1) The root descriptor already has an IOVA mapping for the entire
-    //      allocation in this IOVA space, in which case we just need a subset
-    //      of that.
-    //  (2) The root descriptor does not have an IOVA mapping for any of the
-    //      allocation in this IOVA space, in which case we need to create one
-    //      first.
-    //
-
     pSubMapping = _iovaspaceCreateMappingDataFromMemDesc(pPhysMemDesc);
-    if (pSubMapping == NULL)
-    {
-        iovaspaceReleaseMapping(pIOVAS, pRootIovaMapping);
-        return NV_ERR_NO_MEMORY;
-    }
+    NV_ASSERT_OR_RETURN(pSubMapping != NULL, NULL);
 
-    pSubMapping->refcount = 1;
     pSubMapping->iovaspaceId = pRootIovaMapping->iovaspaceId;
-    pSubMapping->link.pParent = pRootIovaMapping;
-
-    pSubMapping->pNext = pRootIovaMapping->link.pChildren;
-    pRootIovaMapping->link.pChildren = pSubMapping;
+    pSubMapping->pParent = pRootIovaMapping;
 
     //
     // We need to copy over the corresponding entries from the root IOVA
@@ -342,59 +307,11 @@ _iovaspaceCreateSubmapping
         }
     }
 
-    memdescAddIommuMap(pPhysMemDesc, pSubMapping);
-
     ++pIOVAS->mappingCount;
-
-    return NV_OK;
+    return pSubMapping;
 }
 
-static void
-_iovaspaceDestroySubmapping
-(
-    OBJIOVASPACE *pIOVAS,
-    PIOVAMAPPING pIovaMapping
-)
-{
-    PMEMORY_DESCRIPTOR pPhysMemDesc = pIovaMapping->pPhysMemDesc;
-    PIOVAMAPPING pRootIovaMapping = pIovaMapping->link.pParent;
-    PIOVAMAPPING pTmpIovaMapping = pRootIovaMapping->link.pChildren;
-
-    memdescRemoveIommuMap(pPhysMemDesc, pIovaMapping);
-
-    if (pTmpIovaMapping == pIovaMapping)
-    {
-        pRootIovaMapping->link.pChildren = pIovaMapping->pNext;
-    }
-    else
-    {
-        while (pTmpIovaMapping != NULL && pTmpIovaMapping->pNext != pIovaMapping)
-        {
-            pTmpIovaMapping = pTmpIovaMapping->pNext;
-        }
-
-        if (pTmpIovaMapping != NULL)
-        {
-            pTmpIovaMapping->pNext = pIovaMapping->pNext;
-        }
-        else
-        {
-            // Not found in the root submappings list?
-            NV_ASSERT(pTmpIovaMapping != NULL);
-        }
-    }
-
-    portMemFree(pIovaMapping);
-    --pIOVAS->mappingCount;
-
-    //
-    // After destroying a submapping, release its reference on the root mapping.
-    // The reference was acquired in _iovaspaceCreateSubmapping().
-    //
-    iovaspaceReleaseMapping(pIOVAS, pRootIovaMapping);
-}
-
-static NV_STATUS
+static PIOVAMAPPING
 _iovaspaceCreateMapping
 (
     OBJIOVASPACE *pIOVAS,
@@ -404,7 +321,7 @@ _iovaspaceCreateMapping
     NV_STATUS status;
     OBJVASPACE *pVAS = staticCast(pIOVAS, OBJVASPACE);
     NV_ADDRESS_SPACE addressSpace;
-    PIOVAMAPPING pIovaMapping = NULL;
+    PIOVAMAPPING pIovaMapping;
     OBJGPU *pMappingGpu = NULL;
 
     //
@@ -413,12 +330,6 @@ _iovaspaceCreateMapping
     // that assumes the PTEs in the memdesc are valid. There is no requirement
     // that it be mapped to the CPU at this point.
     //
-    if (pPhysMemDesc == NULL)
-    {
-        NV_ASSERT(pPhysMemDesc != NULL);
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
     pMappingGpu = gpumgrGetGpuFromId(pVAS->vaspaceId);
     addressSpace = memdescGetAddressSpace(pPhysMemDesc);
 
@@ -427,14 +338,11 @@ _iovaspaceCreateMapping
          !gpumgrCheckIndirectPeer(pMappingGpu, pPhysMemDesc->pGpu))
     {
         NV_ASSERT(0);
-        return NV_ERR_INVALID_STATE;
+        return NULL;
     }
 
     pIovaMapping = _iovaspaceCreateMappingDataFromMemDesc(pPhysMemDesc);
-    if (pIovaMapping == NULL)
-    {
-        return NV_ERR_NO_MEMORY;
-    }
+    NV_ASSERT_OR_RETURN(pIovaMapping != NULL, NULL);
 
     // Initialize the mapping as an identity mapping for the OS layer
     if (memdescGetContiguity(pPhysMemDesc, AT_CPU))
@@ -451,7 +359,6 @@ _iovaspaceCreateMapping
     }
 
     pIovaMapping->iovaspaceId = pVAS->vaspaceId;
-    pIovaMapping->refcount = 1;
 
     status = osIovaMap(pIovaMapping);
     if (status != NV_OK)
@@ -465,86 +372,37 @@ _iovaspaceCreateMapping
         KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pMappingGpu);
         if (pKernelGmmu != NULL)
         {
-            status = kgmmuTlbInvalidatePostIommuMap_HAL(pMappingGpu, pKernelGmmu,
-                                                        pPhysMemDesc);
+            status = kgmmuTlbInvalidatePostIommuMap_HAL(pMappingGpu, pKernelGmmu);
             if (status != NV_OK)
             {
+                NV_ASSERT(0);
                 osIovaUnmap(pIovaMapping);
                 goto error;
             }
         }
     }
-    memdescAddIommuMap(pPhysMemDesc, pIovaMapping);
     ++pIOVAS->mappingCount;
-
-    return NV_OK;
+    return pIovaMapping;
 
 error:
     portMemFree(pIovaMapping);
-    pIovaMapping = NULL;
-
-    return status;
+    return NULL;
 }
 
-NV_STATUS
-iovaspaceAcquireMapping_IMPL
+PIOVAMAPPING
+iovaspaceCreateMapping_IMPL
 (
     OBJIOVASPACE *pIOVAS,
-    PMEMORY_DESCRIPTOR pPhysMemDesc
+    PMEMORY_DESCRIPTOR pPhysMemDesc,
+    PIOVAMAPPING pParentIovaMapping
 )
 {
-    OBJVASPACE *pVAS = staticCast(pIOVAS, OBJVASPACE);
-    PIOVAMAPPING pIovaMapping = memdescGetIommuMap(pPhysMemDesc, pVAS->vaspaceId);
+    NV_ASSERT((pParentIovaMapping != NULL) == memdescIsSubMemoryMemDesc(pPhysMemDesc));
 
-    if (pIovaMapping)
-    {
-        // If the mapping is already there, just increment its refcount.
-        NV_ASSERT(pIovaMapping->refcount != 0);
-        ++pIovaMapping->refcount;
-        return NV_OK;
-    }
+    if (pParentIovaMapping != NULL)
+        return _iovaspaceCreateSubmapping(pIOVAS, pPhysMemDesc, pParentIovaMapping);
 
-    if (memdescIsSubMemoryMemDesc(pPhysMemDesc))
-        return _iovaspaceCreateSubmapping(pIOVAS, pPhysMemDesc);
-    else
-        return _iovaspaceCreateMapping(pIOVAS, pPhysMemDesc);
-}
-
-static void
-_iovaspaceDestroyRootMapping
-(
-    OBJIOVASPACE *pIOVAS,
-    PIOVAMAPPING pIovaMapping
-)
-{
-    PMEMORY_DESCRIPTOR pPhysMemDesc = pIovaMapping->pPhysMemDesc;
-    PIOVAMAPPING pNextIovaMapping, pTmpIovaMapping;
-
-    //
-    // Increment the refcount to guarantee that destroying the last submapping
-    // won't end up trying to destroy the root mapping we are already
-    // destroying.
-    //
-    ++pIovaMapping->refcount;
-
-    //
-    // Clear out any submappings underneath this mapping, since they will no
-    // longer be valid.
-    //
-    pNextIovaMapping = pIovaMapping->link.pChildren;
-    while (pNextIovaMapping != NULL)
-    {
-        pTmpIovaMapping = pNextIovaMapping->pNext;
-        _iovaspaceDestroySubmapping(pIOVAS, pNextIovaMapping);
-        pNextIovaMapping = pTmpIovaMapping;
-    }
-
-    memdescRemoveIommuMap(pPhysMemDesc, pIovaMapping);
-
-    osIovaUnmap(pIovaMapping);
-    portMemFree(pIovaMapping);
-
-    --pIOVAS->mappingCount;
+    return _iovaspaceCreateMapping(pIOVAS, pPhysMemDesc);
 }
 
 void
@@ -554,32 +412,19 @@ iovaspaceDestroyMapping_IMPL
     PIOVAMAPPING pIovaMapping
 )
 {
-    if (memdescIsSubMemoryMemDesc(pIovaMapping->pPhysMemDesc))
-        _iovaspaceDestroySubmapping(pIOVAS, pIovaMapping);
-    else
-        _iovaspaceDestroyRootMapping(pIOVAS, pIovaMapping);
-}
-
-void
-iovaspaceReleaseMapping_IMPL
-(
-    OBJIOVASPACE *pIOVAS,
-    PIOVAMAPPING pIovaMapping
-)
-{
-    if (pIovaMapping == NULL)
+    if (pIOVAS == NULL)
     {
+        // currently cross-device dup can lead to iommu mapping outliving GPU
         NV_ASSERT(0);
+        portMemFree(pIovaMapping);
         return;
     }
 
-    if (pIovaMapping->refcount == 0)
-        NV_ASSERT(pIovaMapping->refcount > 0);
+    if (pIovaMapping->pParent == NULL)
+        osIovaUnmap(pIovaMapping);
 
-    if (--pIovaMapping->refcount != 0)
-        return;
-
-    iovaspaceDestroyMapping(pIOVAS, pIovaMapping);
+    portMemFree(pIovaMapping);
+    --pIOVAS->mappingCount;
 }
 
 OBJIOVASPACE *iovaspaceFromId(NvU32 iovaspaceId)
@@ -606,14 +451,6 @@ OBJIOVASPACE *iovaspaceFromMapping(PIOVAMAPPING pIovaMapping)
     NV_ASSERT(pIOVAS != NULL);
 
     return pIOVAS;
-}
-
-void iovaMappingDestroy(PIOVAMAPPING pIovaMapping)
-{
-    OBJIOVASPACE *pIOVAS = iovaspaceFromMapping(pIovaMapping);
-
-    NV_ASSERT_OR_RETURN_VOID(pIOVAS != NULL);
-    iovaspaceDestroyMapping(pIOVAS, pIovaMapping);
 }
 
 #endif // (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_MODS_FEATURES) && !NVCPU_IS_ARM

@@ -34,9 +34,11 @@
 #include "diagnostics/import_event_group.h"
 #include "rmapi/event_buffer.h"
 #include "diagnostics/op_event_buffer_bind.h"
+#include "events/event_defs.h"
 #include "events/gpu/gpu_event_defs.h"
 #include "gpu/gpu_uuid.h"
 #include "libraries/cper/gpu_cper.h"
+#include "os/os.h"
 #include "gpu/oob/kernel_oob.h"
 
 //
@@ -77,7 +79,7 @@ MAKE_INTRUSIVE_LIST(OpEventLogBindList, OpEventLogBindpoint, node);
 MAKE_INTRUSIVE_LIST(OpEventLogEntryList, OpEventLogEntry, node);
 
 //
-// Opaque to callers — full definition lives here so the public header
+// Opaque to callers; full definition lives here so the public header
 // stays free of private fields and intrusive-list machinery.
 //
 struct OpEventLog
@@ -111,7 +113,7 @@ struct OpEventLog
     // EventBuffer publish failures count by 1; whole-entry drops
     // (scratch OOM, defensive paths) charge the entry's would-be
     // record count (GOE = eventCount, CPER = 1). Does NOT include
-    // records silently dropped by the producer's own ring-full path —
+    // records silently dropped by the producer's own ring-full path;
     // those are visible via pHeader->recordDropcount /
     // vardataDropcount on the consumer side.
     //
@@ -136,6 +138,13 @@ struct OpEventLog
     // EventBuffer; the producer has no internal lock.
     //
     PORT_MUTEX *pPushMutex;
+
+    //
+    // Common scratch space for various payloads. Access is serialized by
+    // pPushMutex so renderers can reuse it across event groups.
+    //
+    NvU8  *pRenderScratch;
+    NvU32  renderScratchSize;
 };
 
 // Module singleton; lifecycle in opEventLogConstruct / opEventLogDestruct.
@@ -245,7 +254,7 @@ _opevtlogBuildBindVisibleSubset
 // Derive a per-entry severity for the eviction policy.
 //
 // Typed entries (pEvents != NULL): max over the group's event severities.
-// OPERATIONAL_EVENT_SEVERITY is monotonic — a group containing one FATAL
+// OPERATIONAL_EVENT_SEVERITY is monotonic; a group containing one FATAL
 // is FATAL.
 //
 // Legacy CPER-bytes entries (pPrebuiltCperBytes != NULL): map the CPER
@@ -253,7 +262,7 @@ _opevtlogBuildBindVisibleSubset
 // NV_CPER_SEVERITY enum is NOT monotonic (RECOVERABLE=0, FATAL=1,
 // CORRECTED=2, INFORMATIONAL=3), so direct numeric comparison would be
 // wrong. A malformed or too-small buffer falls back to RECOVERABLE
-// (conservative — don't let a parse failure make severe legacy records
+// (conservative: don't let a parse failure make severe legacy records
 // the first eviction victim).
 //
 static OPERATIONAL_EVENT_SEVERITY
@@ -480,7 +489,7 @@ _opevtlogInsertWithEviction(OpEventLog *pLog,
 // = microseconds since the current decade epoch; low 15 bits = atomic
 // sequence counter). The cursor is later stamped into
 // initParams.recordId by the CPER renderer, so the cursor and the
-// recordId have to share construction — otherwise the on-wire CPER
+// recordId have to share construction; otherwise the on-wire CPER
 // header would carry a value whose low bits cperRecordIdToSequence()
 // can't decode as a sequence.
 //
@@ -644,11 +653,12 @@ _opevtlogBuildTypedEntry(struct EventGroup *pEventGroup,
                         NvU64 groupCursor,
                         OpEventLogEntry **ppEntryOut)
 {
-    OpEventLogEntry *pEntry = NULL;
-    const Event             *pLiveEvent;
-    NvU32                    eventCount = 0;
-    NvU32                    i;
-    NV_STATUS                status = NV_OK;
+    OpEventLogEntry  *pEntry = NULL;
+    ImportEventGroup *pImport;
+    const Event      *pLiveEvent;
+    NvU32             eventCount = 0;
+    NvU32             i;
+    NV_STATUS         status = NV_OK;
 
     //
     // First scan: count export events AND validate that each is a
@@ -682,6 +692,14 @@ _opevtlogBuildTypedEntry(struct EventGroup *pEventGroup,
     if (eventCount > OP_EVENT_LOG_PUSH_MAX_GROUP_EVENTS)
         return NV_ERR_NOT_SUPPORTED;
 
+    pImport = dynamicCast(pEventGroup, ImportEventGroup);
+    if ((pImport != NULL) &&
+        ((pImport->producerGroupSize == 0) ||
+         (pImport->producerEventCount != eventCount)))
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
     pEntry = portMemAllocNonPaged(sizeof(*pEntry));
     if (pEntry == NULL)
         return NV_ERR_NO_MEMORY;
@@ -689,6 +707,8 @@ _opevtlogBuildTypedEntry(struct EventGroup *pEventGroup,
     pEntry->groupCursor = groupCursor;
     pEntry->traceId     = eventgroupGetTraceId(pEventGroup);
     pEntry->groupAttrs  = eventgroupGetAttributes(pEventGroup);
+    pEntry->producerGroupSize = (pImport != NULL) ?
+                                    pImport->producerGroupSize : (NvU8)eventCount;
     pEntry->eventCount  = eventCount;
 
     pEntry->pEvents = portMemAllocNonPaged(eventCount * sizeof(*pEntry->pEvents));
@@ -702,7 +722,7 @@ _opevtlogBuildTypedEntry(struct EventGroup *pEventGroup,
     //
     // Second pass: copy scalars and context chains. The first-pass scan
     // already verified the type of every event in the group; the
-    // dynamicCast here is a defensive invariant check — the only way
+    // dynamicCast here is a defensive invariant check; the only way
     // it can fail is if the group mutated between the two walks, which
     // the caller's locking is supposed to prevent.
     //
@@ -715,6 +735,8 @@ _opevtlogBuildTypedEntry(struct EventGroup *pEventGroup,
                           { status = NV_ERR_INVALID_STATE; goto fail; });
 
         _opevtlogCopyEventScalars(&pEntry->pEvents[i], pGpuOp);
+        pEntry->pEvents[i].producerGroupIndex = (pImport != NULL) ?
+            pImport->producerGroupIndices[i] : (NvU8)i;
 
         status = _opevtlogCopyContextChain(
             staticCast(pGpuOp, OperationalEvent)->pContextList,
@@ -726,6 +748,9 @@ _opevtlogBuildTypedEntry(struct EventGroup *pEventGroup,
     }
 
     _opevtlogBuildDescriptor(&pEntry->desc, pEntry, &pEntry->pEvents[0]);
+
+    // Imported timestamps reflect host receipt and so should be considered imprecise
+    pEntry->desc.bTimestampPrecise = (pImport == NULL);
 
     *ppEntryOut = pEntry;
     return NV_OK;
@@ -816,7 +841,7 @@ _opevtlogPushEntryToBind(OpEventLog *pLog,
     }
     else
     {
-        // Unrecognized format — count as a whole-group drop and return.
+        // Unrecognized format: count as a whole-group drop and return.
         portSyncSpinlockAcquire(pLog->pSpinlock);
         pLog->droppedGroupCount++;
         portSyncSpinlockRelease(pLog->pSpinlock);
@@ -945,7 +970,7 @@ _opevtlogPushEntryToBind(OpEventLog *pLog,
 count_drop_whole_entry:
     //
     // Charge droppedRecordCount with the number of records this entry
-    // would have produced — GOE = pEntry->eventCount (each event is a
+    // would have produced: GOE = pEntry->eventCount (each event is a
     // record), CPER = 1. Without this, GOE scratch-OOM and similar
     // whole-entry drops would undercount: an N-record group would
     // register as a single record drop.
@@ -968,14 +993,14 @@ count_drop_whole_entry:
 // Best-effort: each bind gets exactly one attempt; the bind's cursor
 // is advanced past pEntry and pEntry->pendingBindCount is decremented
 // unconditionally after the attempt. There is no backlog and no retry
-// — under the best-effort design, every typed entry is "consumed for
+// Under the best-effort design, every typed entry is "consumed for
 // this bind" the moment we've tried to deliver it once.
 //
 // Caller holds pPushMutex; pEntry is pinned by the insert path so it
 // cannot be evicted underfoot. pEntry must be a typed entry
 // (pEvents != NULL); legacy CPER-bytes entries are never delivered to
 // binds and the legacy append path doesn't invoke this helper.
-// Iterates pLog->binds directly — pPushMutex serializes register /
+// Iterates pLog->binds directly; pPushMutex serializes register /
 // unregister / detach against this loop, so each bindpoint is stable
 // for the duration of its attempt.
 //
@@ -1030,6 +1055,32 @@ _opevtlogClearBindFromEntries(OpEventLog *pLog,
 
 /* ---------------------------------- OpEventLog API ---------------------------------- */
 
+NvU8 *
+opevtlogGetRenderScratch
+(
+    OpEventLog *pLog,
+    NvU32       minSize
+)
+{
+    NvU8 *pNewScratch;
+
+    NV_ASSERT_OR_RETURN(pLog != NULL, NULL);
+    NV_ASSERT_OR_RETURN(minSize != 0, NULL);
+
+    if (pLog->renderScratchSize >= minSize)
+        return pLog->pRenderScratch;
+
+    pNewScratch = portMemAllocNonPaged(minSize);
+    if (pNewScratch == NULL)
+        return NULL;
+
+    portMemFree(pLog->pRenderScratch);
+    pLog->pRenderScratch    = pNewScratch;
+    pLog->renderScratchSize = minSize;
+
+    return pLog->pRenderScratch;
+}
+
 static NV_STATUS
 _opevtlogInit(OpEventLog *pLog)
 {
@@ -1038,12 +1089,12 @@ _opevtlogInit(OpEventLog *pLog)
         return NV_ERR_NO_MEMORY;
 
     listInitIntrusive(&pLog->entries);
-    pLog->entryCount      = 0;
-    pLog->nextCperCursor     = 0;
-    pLog->overflowDropCount  = 0;
+    pLog->entryCount               = 0;
+    pLog->nextCperCursor           = 0;
+    pLog->overflowDropCount        = 0;
     pLog->bRetentionOverflowWarned = NV_FALSE;
-    pLog->droppedRecordCount = 0;
-    pLog->droppedGroupCount  = 0;
+    pLog->droppedRecordCount       = 0;
+    pLog->droppedGroupCount        = 0;
 
     listInitIntrusive(&pLog->binds);
 
@@ -1054,6 +1105,9 @@ _opevtlogInit(OpEventLog *pLog)
         pLog->pSpinlock = NULL;
         return NV_ERR_NO_MEMORY;
     }
+
+    pLog->pRenderScratch    = NULL;
+    pLog->renderScratchSize = 0;
 
     return NV_OK;
 }
@@ -1080,6 +1134,10 @@ _opevtlogTeardown(OpEventLog *pLog)
         portMemFree(pBp);
     }
     listDestroy(&pLog->binds);
+
+    portMemFree(pLog->pRenderScratch);
+    pLog->pRenderScratch    = NULL;
+    pLog->renderScratchSize = 0;
 
     if (pLog->pPushMutex != NULL)
     {
@@ -1134,7 +1192,7 @@ opevtlogAppendCperBytes(OpEventLog *pLog, NvU8 *pCperBytes, NvU32 size)
     portMemSet(pEntry, 0, sizeof(*pEntry));
 
     //
-    // Take ownership of the caller's buffer — the legacy path hands it
+    // Take ownership of the caller's buffer; the legacy path hands it
     // over for retention.
     //
     pEntry->pPrebuiltCperBytes = pCperBytes;
@@ -1202,7 +1260,7 @@ opevtlogFindNextCper
                     // The rendered CPER suppresses the FRU ID when the
                     // descriptor's bDeviceUuidValid is false (see
                     // opEventLogEntryRenderCper), so a filter can
-                    // never match those records — skip them so the
+                    // never match those records; skip them so the
                     // filter result is consistent with what the
                     // consumer will actually see.
                     //
@@ -1300,11 +1358,137 @@ _cperSeverityToLogLevelPrefix
     }
 }
 
+static NvBool
+_opEventLogEntryIsSimulated
+(
+    const OpEventLogEntry *pEntry
+)
+{
+    return REF_VAL(OPERATIONAL_EVENT_GROUP_ATTR_SIMULATED, pEntry->groupAttrs) ==
+           OPERATIONAL_EVENT_GROUP_ATTR_SIMULATED_TRUE;
+}
+
+static NvBool
+_opEventLogEntryMatchesDevice
+(
+    const OpEventLogEntry *pEntry,
+    const NvU8 *pDeviceUuid
+)
+{
+    if (pEntry->pEvents == NULL || pEntry->eventCount == 0)
+        return NV_FALSE;
+
+    // Entries currently group events from a single device; the first UUID
+    // identifies the retained entry's target GPU.
+    return portMemCmp(pEntry->pEvents[0].deviceUuid,
+                      pDeviceUuid,
+                      sizeof(pEntry->pEvents[0].deviceUuid)) == 0;
+}
+
+NV_STATUS
+opevtlogClearSimulated
+(
+    OpEventLog *pLog,
+    const NvU8 *pDeviceUuid,
+    NvU32 *pRemovedEntryCount
+)
+{
+    OpEventLogEntryList removedEntries;
+    NvBool bInUse = NV_FALSE;
+    NvU32 removedEntryCount = 0;
+
+    NV_ASSERT_OR_RETURN(pLog != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pDeviceUuid != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pRemovedEntryCount != NULL, NV_ERR_INVALID_POINTER);
+
+    *pRemovedEntryCount = 0;
+
+    if (pLog->pSpinlock == NULL || pLog->pPushMutex == NULL)
+        return NV_ERR_INVALID_STATE;
+
+    listInitIntrusive(&removedEntries);
+
+    portSyncMutexAcquire(pLog->pPushMutex);
+    portSyncSpinlockAcquire(pLog->pSpinlock);
+
+    {
+        OpEventLogEntryListIter it = listIterAll(&pLog->entries);
+        while (listIterNext(&it))
+        {
+            OpEventLogEntry *pEntry = it.pValue;
+
+            if (!_opEventLogEntryMatchesDevice(pEntry, pDeviceUuid) ||
+                !_opEventLogEntryIsSimulated(pEntry))
+                continue;
+
+            if (pEntry->refcount != 0 || pEntry->pendingBindCount != 0)
+            {
+                bInUse = NV_TRUE;
+                break;
+            }
+        }
+    }
+
+    //
+    // Test-only and bounded by OP_EVENT_LOG_MAX_ENTRIES. Restarting from the
+    // head after each removal avoids mutating through a live iterator while
+    // keeping the code simple.
+    //
+    while (!bInUse)
+    {
+        OpEventLogEntry *pRemove = NULL;
+        OpEventLogEntryListIter it = listIterAll(&pLog->entries);
+
+        while (listIterNext(&it))
+        {
+            OpEventLogEntry *pEntry = it.pValue;
+
+            if (_opEventLogEntryMatchesDevice(pEntry, pDeviceUuid) &&
+                _opEventLogEntryIsSimulated(pEntry))
+            {
+                pRemove = pEntry;
+                break;
+            }
+        }
+
+        if (pRemove == NULL)
+            break;
+
+        listRemove(&pLog->entries, pRemove);
+        pLog->entryCount--;
+        listAppendExisting(&removedEntries, pRemove);
+        removedEntryCount++;
+    }
+
+    portSyncSpinlockRelease(pLog->pSpinlock);
+    portSyncMutexRelease(pLog->pPushMutex);
+
+    if (bInUse)
+    {
+        return NV_ERR_STATE_IN_USE;
+    }
+
+    for (;;)
+    {
+        OpEventLogEntry *pEntry = listHead(&removedEntries);
+        if (pEntry == NULL)
+            break;
+
+        listRemove(&removedEntries, pEntry);
+        _opevtlogFreeEntry(pEntry);
+    }
+    listDestroy(&removedEntries);
+
+    *pRemovedEntryCount = removedEntryCount;
+    return NV_OK;
+}
+
 //
-// Best-effort OS log + OOBHUB fan-out for an inserted entry. Drives any
-// per-context emitToOsLogXid adapters, then builds a single CPER record
-// for the entry and routes the bytes to OS log and/or OOBHUB. UUID-to-pGpu
-// is resolved at emit time since entries persist past GPU detach.
+// Best-effort OS log + OOBHUB fan-out for an inserted entry. Drives
+// per-context emitToOsLogXid adapters, tagging simulated XID text, then builds
+// a single CPER record for the entry and routes the bytes to OS log and/or
+// OOBHUB. UUID-to-pGpu is resolved at emit time since entries persist past GPU
+// detach.
 //
 #define GOE_CPER_BUFFER_SIZE 2048U
 
@@ -1322,6 +1506,7 @@ _opEventLogEntryEmitToSystemSinks
     NvU32          recordSize  = 0;
     PORT_LOG_LEVEL level;
     const char    *pLogPrefix;
+    NvBool         bSimulated;
     NV_STATUS      status;
     KernelOob *pKernelOob = NULL;
 
@@ -1340,7 +1525,8 @@ _opEventLogEntryEmitToSystemSinks
     if (pGpu->pOsGpuInfo == NULL)
         return;
 
-    // Always emit entry Xids via contexts that implement emitToOsLogXid.
+    bSimulated = _opEventLogEntryIsSimulated(pEntry);
+
     for (eventIdx = 0; eventIdx < pEntry->eventCount; eventIdx++)
     {
         const OpEventLogEvent *pEv = &pEntry->pEvents[eventIdx];
@@ -1351,8 +1537,35 @@ _opEventLogEntryEmitToSystemSinks
             if (pCtx->pOutputAdapters == NULL)
                 continue;
             if (pCtx->pOutputAdapters->emitToOsLogXid != NULL)
-                pCtx->pOutputAdapters->emitToOsLogXid(pCtx, pGpu);
+                pCtx->pOutputAdapters->emitToOsLogXid(pCtx, pGpu, bSimulated);
         }
+    }
+
+    for (eventIdx = 0; eventIdx < pEntry->eventCount; eventIdx++)
+    {
+        const OpEventLogEvent *pEv = &pEntry->pEvents[eventIdx];
+        nv_gpu_op_event_t id = {0};
+
+        portMemCopy(id.device_uuid, sizeof(id.device_uuid),
+                    pEv->deviceUuid, sizeof(pEv->deviceUuid));
+        portMemCopy(id.module_sig, sizeof(id.module_sig),
+                    pEv->moduleSignature, sizeof(pEv->moduleSignature));
+        id.category         = pEv->category;
+        id.event_code       = pEv->eventCode;
+        id.severity         = pEv->severity;
+        id.scope            = pEv->scope;
+        id.originator       = pEv->originator;
+        id.attributes       = pEv->attributes;
+        id.log_level        = pEv->logLevel;
+        id.instance_id      = pEv->instanceId;
+        id.timestamp        = pEv->timestampUs;
+        id.module_instance  = pEv->moduleInstance;
+        id.chiplet_id       = pEv->chipletId;
+        id.mig_attribution  = pEv->migAttribution;
+        id.trace_id         = pEntry->traceId;
+        id.group_attributes = pEntry->groupAttrs;
+
+        osEmitTracepointGpuOpEvent(pGpu, &id);
     }
 
     //
@@ -1415,6 +1628,7 @@ NV_STATUS
 opevtlogAppendEventGroup
 (
     OpEventLog *pLog,
+    OBJGPU *pGpu,
     struct EventGroup *pEventGroup
 )
 {
@@ -1425,6 +1639,7 @@ opevtlogAppendEventGroup
     NV_STATUS status;
 
     NV_ASSERT_OR_RETURN(pLog != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_POINTER);
     NV_ASSERT_OR_RETURN(pEventGroup != NULL, NV_ERR_INVALID_POINTER);
 
     //
@@ -1462,6 +1677,8 @@ opevtlogAppendEventGroup
         portSyncMutexRelease(pLog->pPushMutex);
         return status;
     }
+
+    opEventLogEntryPersistent(pLog, pGpu, pEntry);
 
     //
     // Insert pinned (refcount=1) so the upcoming push cannot race
@@ -1501,9 +1718,9 @@ opevtlogAppendEventGroup
         // Drop the insert pin BEFORE releasing pPushMutex. If we released
         // the mutex first, a concurrent appender entering the eviction
         // decision in this window would see refcount == 1 and treat the
-        // just-delivered entry as ineligible — forcing a spurious overflow
+        // just-delivered entry as ineligible, forcing a spurious overflow
         // drop even though the entry has been fully consumed (in the
-        // best-effort sense — attempted to all binds).
+        // best-effort sense: attempted to all binds).
         //
         portSyncSpinlockAcquire(pLog->pSpinlock);
         pInserted->refcount--;
@@ -1605,7 +1822,7 @@ opevtlogUnregisterBind
 
         //
         // Clear pendingBindCount on entries this bind was still owing
-        // — must happen while pPushMutex is held so no concurrent push
+        // This must happen while pPushMutex is held so no concurrent push
         // can reference pBpToFree's state.
         //
         if (pBpToFree != NULL)

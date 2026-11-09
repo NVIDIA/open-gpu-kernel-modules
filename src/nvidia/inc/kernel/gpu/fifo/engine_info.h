@@ -101,6 +101,17 @@ typedef enum
     //
     ENGINE_INFO_TYPE_IS_PREEMPTABLE,
 
+    //
+    // 1 if the host RM has marked this engine's runlist as kernel-managed
+    // (see pKernelFifo->kernelManagedRunlistsMask, populated from the
+    // RMKernelRunlistsMask{,2} regkey). Conveyed to the vGPU guest via
+    // NV2080_CTRL_CMD_FIFO_GET_DEVICE_INFO_TABLE so the guest can build its
+    // own kernelManagedRunlistsMask in its own runlist-id space without an
+    // additional RPC. The host sets this slot in fifoFilterDeviceInfo_IMPL
+    // before VRLID renumbering overwrites ENGINE_INFO_TYPE_RUNLIST.
+    //
+    ENGINE_INFO_TYPE_IS_KERNEL_MANAGED,
+
     // This entry added to copy data at RMCTRL_EXPORT() call for Kernel RM
     ENGINE_INFO_TYPE_KERNEL_RM_MAX,
     // Used for iterating the engine info table by the index passed.

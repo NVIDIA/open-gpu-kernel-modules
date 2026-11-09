@@ -107,6 +107,7 @@ _kgraphicsInitRegistryOverrides(OBJGPU *pGpu, KernelGraphics *pKernelGraphics)
                 kgraphicsSetBug4208224WAREnabled(pGpu, pKernelGraphics, NV_TRUE);
             }
         }
+
     }
     return;
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,8 @@
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
 #include "kernel/mem_mgr/gpu_vaspace.h"
+#include "gpu/bus/kern_bus.h"
+#include "nvrm_registry.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "kernel/core/locks.h"
@@ -727,6 +729,8 @@ kgrctxIsValid_IMPL
 
     // TODO remove pKernelChannel from params
 
+    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_FALSE);
+
     if (RM_ENGINE_TYPE_IS_VALID(kchannelGetEngineType(pKernelChannel)) &&
         !RM_ENGINE_TYPE_IS_GR(kchannelGetEngineType(pKernelChannel)))
     {
@@ -939,8 +943,8 @@ kgrctxGetCtxBufferInfo_IMPL
     NV2080_CTRL_GR_CTX_BUFFER_INFO *pCtxBufferInfo
 )
 {
-    MEMORY_DESCRIPTOR *pMemDescArray[3 + GR_GLOBALCTX_BUFFER_COUNT];
-    NvU32 bufferExternalId[3 + GR_GLOBALCTX_BUFFER_COUNT];
+    MEMORY_DESCRIPTOR *pMemDescArray[GR_BUFFER_COUNT];
+    NvU32 bufferExternalId[GR_BUFFER_COUNT];
     NvU32 memdescCount;
     NvU32 firstGlobalBuffer;
     NvU32 i;
@@ -1035,8 +1039,8 @@ kgrctxGetCtxBufferPtes_IMPL
     NvU32 numPages;
     NvU32 bufferCount;
     NvU32 i;
-    MEMORY_DESCRIPTOR *pMemDescArray[3 + GR_GLOBALCTX_BUFFER_COUNT];
-    NvU32 bufferExternalId[3 + GR_GLOBALCTX_BUFFER_COUNT];
+    MEMORY_DESCRIPTOR *pMemDescArray[GR_BUFFER_COUNT];
+    NvU32 bufferExternalId[GR_BUFFER_COUNT];
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         kgrctxGetCtxBuffers(pGpu, pKernelGraphicsContext, pKernelGraphics,
@@ -3614,6 +3618,11 @@ shrkgrctxConstructUnicast_IMPL
     pKernelGraphicsContextUnicast->bSupportsPerSubctxHeader =
         kgraphicsIsPerSubcontextContextHeaderSupported(pGpu, pKernelGraphics);
 
+    pKernelGraphicsContextUnicast->gfxpCtxswMode = NV2080_CTRL_SET_CTXSW_PREEMPTION_MODE_GFX_WFI;
+    pKernelGraphicsContextUnicast->cilpCtxswMode = NV2080_CTRL_SET_CTXSW_PREEMPTION_MODE_COMPUTE_WFI;
+
+    mapInitIntrusive(&pKernelGraphicsContextUnicast->subcontextMap);
+
     return NV_OK;
 }
 
@@ -3683,6 +3692,7 @@ shrkgrctxDestructUnicast_IMPL
     vaListDestroy(&pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.vAddrList);
     vaListDestroy(&pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.vAddrList);
     vaListDestroy(&pKernelGraphicsContextUnicast->setupCtxswBuffer.vAddrList);
+    mapDestroy(&pKernelGraphicsContextUnicast->subcontextMap);
 }
 
 /*!
@@ -3754,4 +3764,343 @@ void shrkgrctxDetach_IMPL
             kgrctxUnmapBuffers_HAL(pGpu, pKernelGraphicsContext, pKernelGraphicsContextUnicast, pKernelChannel);
     }
     SLI_LOOP_END;
+}
+/*!
+ * @brief Allocate the GR per-subcontext header
+ *
+ * The context header (NV_CTXSW_MAIN_* defines) has the global context specific info.
+ * It hold the VA of various GR context buffers (patch, zcull, pm etc),
+ * as well as various config data. The context header occupies the first n bytes
+ * in the main context buffer.
+ *
+ * With VOLTA with per-subcontext(a.k.a VEID) header enabled, the VA info is moved to
+ * the per-subcontext header. The per-subcontext header can be separate from the main
+ * context buffer. It has same format as the main header; but is only used to store the
+ * per-subcontext context buffer VAs. The config data is still stored in the main context
+ * header itself. Currently, the per-subcontext headers are located at the end of the main
+ * context buffer for easy tracking. In the future, we may allocate separate memory for it.
+ *
+ * Refer to the Volta Subcontexts Functional Description doc (Section 1.4.4 Context Header)
+ * for the detailed descrition of the per-subcontext header.
+ */
+static NV_STATUS
+_kgrctxAllocSubctxHeader
+(
+    OBJGPU               *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    NvU32                 veid,
+    MEMORY_DESCRIPTOR    *pEngCtxMemDesc,
+    NvBool                bVirtualContext
+)
+{
+    KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
+    KernelGraphicsSubcontext     *pKernelGraphicsSubcontext;
+    NV_STATUS                     status = NV_OK;
+    KernelFifo                   *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+    NvU64                         offset;
+    const NvU64                   size = RM_PAGE_SIZE;
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+    NV_ASSERT_OR_RETURN(pEngCtxMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    NV_ASSERT_OK_OR_RETURN(
+        kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast));
+
+    pKernelGraphicsSubcontext = kgrctxGetSubcontext(pGpu, pKernelGraphicsContext, veid);
+    NV_ASSERT_OR_RETURN(pKernelGraphicsSubcontext != NULL, NV_ERR_INVALID_STATE);
+
+    //
+    // Currently, space for subctx headers are allocated after the context buffer.
+    // We index it based on the subctx ID.
+    // (!bVirtualContext) check is to handle virtual context test in MODS
+    //
+    offset = 0;
+    if (pKernelGraphicsContextUnicast->bSupportsPerSubctxHeader && !bVirtualContext)
+    {
+        NvU64 totalSize = size * kfifoGetMaxSubcontext_HAL(pGpu, pKernelFifo, NV_FALSE);
+        offset = (memdescGetSize(pEngCtxMemDesc) - totalSize) + (veid * size);
+    }
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        memdescCreateSubMem(&pKernelGraphicsSubcontext->pHeaderMemdesc, pEngCtxMemDesc, pGpu, offset, size));
+
+    NV_PRINTF(LEVEL_INFO,
+              "Allocated Context Header for GPU 0x%x, PA: 0x%llx\n",
+              pGpu->gpuInstance,
+              memdescGetPhysAddr(memdescGetMemDescFromGpu(pKernelGraphicsSubcontext->pHeaderMemdesc, pGpu), AT_GPU, 0));
+
+    pKernelGraphicsContextUnicast->validSubcontextMask |= NVBIT64(veid);
+    return status;
+}
+
+/*!
+ * @brief Free the subcontext context header
+ */
+static void
+_kgrctxFreeSubctxHeader
+(
+    OBJGPU          *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    NvU32            veid
+)
+{
+    KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
+    KernelGraphicsSubcontext *pKernelGraphicsSubcontext;
+    NV_STATUS status;
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    NV_ASSERT_OK_OR_ELSE(status,
+        kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast),
+        return;);
+
+    pKernelGraphicsSubcontext = kgrctxGetSubcontext(pGpu, pKernelGraphicsContext, veid);
+    NV_ASSERT_OR_RETURN_VOID(pKernelGraphicsSubcontext != NULL);
+
+    NV_ASSERT(pKernelGraphicsSubcontext->pHeaderMemdesc != NULL);
+
+    NV_PRINTF(LEVEL_INFO,
+              "Freeing Context Header for GPU 0x%x veid: 0x%x, PA: 0x%llx\n",
+              pGpu->gpuInstance,
+              veid,
+              memdescGetPhysAddr(memdescGetMemDescFromGpu(pKernelGraphicsSubcontext->pHeaderMemdesc, pGpu), AT_GPU, 0));
+
+    memdescFree(pKernelGraphicsSubcontext->pHeaderMemdesc);
+    memdescDestroy(pKernelGraphicsSubcontext->pHeaderMemdesc);
+    pKernelGraphicsSubcontext->pHeaderMemdesc = NULL;
+
+    pKernelGraphicsContextUnicast->validSubcontextMask &= (~NVBIT64(veid));
+}
+
+NV_STATUS
+kgrctxGetSubctxHeaderVa_IMPL
+(
+    OBJGPU                *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    KernelChannel         *pKernelChannel,
+    OBJVASPACE            *pVAS,
+    NvU32                  veid,
+    NvU64                 *pSubctxHdrVa
+)
+{
+    KernelGraphicsContextUnicast       *pKernelGraphicsContextUnicast;
+    KernelGraphicsSubcontext           *pKernelGraphicsSubcontext;
+    NV_STATUS                           status = NV_OK;
+    ENGINE_CTX_DESCRIPTOR              *pEngCtx;
+    MEMORY_DESCRIPTOR                  *pEngCtxMemDesc;
+    NvBool                              bVirtualContext = NV_FALSE;
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    NV_ASSERT_OK_OR_RETURN(
+        kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast));
+
+    pKernelGraphicsSubcontext = kgrctxGetSubcontext(pGpu, pKernelGraphicsContext, veid);
+    if (pKernelGraphicsSubcontext->pHeaderMemdesc != NULL)
+    {
+        *pSubctxHdrVa = pKernelGraphicsSubcontext->vaddr;
+        return NV_OK;
+    }
+
+    pEngCtx = pKernelChannel->pKernelChannelGroup->ppEngCtxDesc[gpumgrGetSubDeviceInstanceFromGpu(pGpu)];
+
+    pEngCtxMemDesc = pEngCtx ? memdescGetMemDescFromGpu(pEngCtx->pMemDesc, pGpu) : NULL;
+    NV_ASSERT_OR_RETURN(pEngCtxMemDesc != NULL, NV_ERR_INVALID_STATE);
+
+    if (memdescGetAddressSpace(pEngCtxMemDesc) == ADDR_VIRTUAL)
+    {
+        //
+        // Virtual Context
+        // We don't yet support per-subctx tracking for the main context buffer for VC.
+        // VC support is tracked in bug 1764102.
+        //
+        pEngCtxMemDesc = pKernelGraphicsContextUnicast->pCtxPhysMemDesc;
+        bVirtualContext = NV_TRUE;
+    }
+
+    NV_ASSERT(kgrctxGetSubctxHeader(pGpu, pKernelGraphicsContext, veid) == NULL);
+
+    NV_ASSERT_OK_OR_RETURN(
+        _kgrctxAllocSubctxHeader(pGpu, pKernelGraphicsContext, veid, pEngCtxMemDesc, bVirtualContext));
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+        kgrctxInitSubctxHeaderVa(pGpu, pKernelGraphicsContext, pKernelChannel, pSubctxHdrVa),
+        fail);
+
+    pKernelGraphicsSubcontext = kgrctxGetSubcontext(pGpu, pKernelGraphicsContext, veid);
+    NV_ASSERT_OR_ELSE(pKernelGraphicsSubcontext != NULL,
+                      status = NV_ERR_INSUFFICIENT_RESOURCES;
+                      goto fail;);
+    pKernelGraphicsSubcontext->vaddr = *pSubctxHdrVa;
+
+    NV_PRINTF(LEVEL_INFO,
+        "Context Header VA ALLOCATED for GRCTX " FMT_CHANNEL_DEBUG_TAG " vaddr: 0x%llx\n",
+        kchannelGetDebugTag(pKernelChannel),
+        *pSubctxHdrVa);
+
+    return status;
+
+fail:
+    _kgrctxFreeSubctxHeader(pGpu, pKernelGraphicsContext, veid);
+    return status;
+}
+
+/*! Get the subctx corresponding to this veid */
+KernelGraphicsSubcontext *
+kgrctxGetSubcontext_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    NvU32 veid
+)
+{
+    KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
+    NV_STATUS status;
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    NV_ASSERT_OK_OR_ELSE(status,
+        kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast),
+        return NULL);
+
+    return mapFind(&pKernelGraphicsContextUnicast->subcontextMap, veid);
+}
+
+/*!
+ * @brief Get the subcontext header memdesc for this context/subctxId
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelGraphicsContext
+ * @param[in] veid              Subcontext ID
+ *
+ * @returns the subcontext header memdesc pointer
+ */
+MEMORY_DESCRIPTOR *
+kgrctxGetSubctxHeader_IMPL
+(
+    OBJGPU                *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    NvU32                  veid
+)
+{
+    KernelGraphicsSubcontext *pKernelGraphicsSubcontext;
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    pKernelGraphicsSubcontext = kgrctxGetSubcontext(pGpu, pKernelGraphicsContext, veid);
+
+    if (pKernelGraphicsSubcontext == NULL)
+        return NULL;
+
+    return pKernelGraphicsSubcontext->pHeaderMemdesc;
+}
+
+/*!
+ * @brief Init the subctx header VA
+ */
+NV_STATUS
+kgrctxInitSubctxHeaderVa_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    KernelChannel *pKernelChannel,
+    NvU64 *pSubctxHdrVa
+)
+{
+    KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
+    ENGINE_CTX_DESCRIPTOR        *pEngCtx;
+    MEMORY_DESCRIPTOR            *pEngCtxMemDesc;
+    MEMORY_DESCRIPTOR            *pSubctxHdrMemDesc;
+    NvU64                         ctxBufVa;
+
+    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    NV_ASSERT_OK_OR_RETURN(
+        kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast));
+
+    pEngCtx = pKernelChannel->pKernelChannelGroup->ppEngCtxDesc[gpumgrGetSubDeviceInstanceFromGpu(pGpu)];
+
+    pEngCtxMemDesc = pEngCtx ? memdescGetMemDescFromGpu(pEngCtx->pMemDesc, pGpu) : NULL;
+    NV_ASSERT_OR_RETURN(pEngCtxMemDesc != NULL, NV_ERR_INVALID_STATE);
+
+    NV_ASSERT_OK_OR_RETURN(vaListFindVa(&pEngCtx->vaList, pKernelChannel->pVAS, &ctxBufVa));
+
+    pSubctxHdrMemDesc = kgrctxGetSubctxHeader(pGpu, pKernelGraphicsContext, kchannelGetSubctxId(pKernelChannel));
+    NV_ASSERT_OR_RETURN(pSubctxHdrMemDesc != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+
+    // Per-veid headers enabled
+    if (pSubctxHdrMemDesc->subMemOffset != 0)
+    {
+        NvU64 vaddr = 0;
+        KernelGraphicsSubcontext *pVeid0Subcontext = kgrctxGetSubcontext(pGpu, pKernelGraphicsContext, 0);
+
+        NV_ASSERT(pKernelGraphicsContextUnicast->bSupportsPerSubctxHeader &&
+                  !(memdescGetAddressSpace(pEngCtxMemDesc) == ADDR_VIRTUAL));
+
+        //
+        // Bug 4500380: ZCULL memory transactions only go through VEID0.
+        // Always program the zcull ctxsw buffer with VEID0's ZCULL VA if it exists.
+        // Note that this address may not be in the target subctx VAS.
+        //
+        if ((pVeid0Subcontext != NULL) && (pVeid0Subcontext->pVAS != NULL) &&
+            (vaListFindVa(&pKernelGraphicsContextUnicast->zcullCtxswBuffer.vAddrList,
+                          pVeid0Subcontext->pVAS, &vaddr) != NV_OK))
+        {
+            vaddr = 0;
+        }
+
+        NV_ASSERT_OK_OR_RETURN(
+            kgrctxInitSubctxHeader_HAL(pGpu, pKernelGraphicsContext, pSubctxHdrMemDesc, ctxBufVa, vaddr));
+    }
+
+    if (pSubctxHdrVa != NULL)
+    {
+        *pSubctxHdrVa = ctxBufVa + pSubctxHdrMemDesc->subMemOffset;
+    }
+
+    return NV_OK;
+}
+
+void
+kgrctxFreeSubctxHeaderVa_IMPL
+(
+    OBJGPU          *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    NvU32            veid
+)
+{
+    KernelGraphicsSubcontext *pKernelGraphicsSubcontext = kgrctxGetSubcontext(pGpu, pKernelGraphicsContext, veid);
+
+    // Already freed
+    if (pKernelGraphicsSubcontext == NULL || pKernelGraphicsSubcontext->pHeaderMemdesc == NULL)
+        return;
+
+    _kgrctxFreeSubctxHeader(pGpu, pKernelGraphicsContext, veid);
+}
+
+/*!
+ * @brief Free all subctx header VAs for this context
+ */
+void
+kgrctxFreeSubctxHeaders_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext
+)
+{
+    KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
+    NvU32 veid;
+    NV_STATUS status;
+
+    NV_ASSERT_OK_OR_ELSE(status,
+        kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast),
+        return; );
+
+    FOR_EACH_INDEX_IN_MASK(64, veid, pKernelGraphicsContextUnicast->validSubcontextMask)
+    {
+        kgrctxFreeSubctxHeaderVa(pGpu, pKernelGraphicsContext, veid);
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
 }

@@ -505,6 +505,15 @@ void cperNvidiaEventDumpRecordHeader
                cperNvidiaCreatorIdToString(&pHdr->creatorId));
     CPER_PRINT(pDev, level, seq, pLogPrefix, "event severity: %s",
                cperSeverityToString((NV_CPER_SEVERITY)pHdr->errorSeverity));
+    if (pHdr->flags != 0)
+    {
+        CPER_PRINT(pDev, level, seq, pLogPrefix,
+                   "record flags: 0x%x%s%s%s",
+                   pHdr->flags,
+                   (pHdr->flags & NV_CPER_RECORD_FLAG_RECOVERED) ? " RECOVERED" : "",
+                   (pHdr->flags & NV_CPER_RECORD_FLAG_PREVERR) ? " PREVERR" : "",
+                   (pHdr->flags & NV_CPER_RECORD_FLAG_SIMULATED) ? " SIMULATED" : "");
+    }
 }
 
 void cperNvidiaEventDumpSection

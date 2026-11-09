@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2025 NVIDIA Corporation
+    Copyright (c) 2015-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -275,6 +275,7 @@ void uvm_hal_hopper_host_set_gpfifo_pushbuffer_segment_base(NvU64 *fifo_entry, N
 
 typedef void (*uvm_hal_host_write_gpu_put_t)(uvm_channel_t *channel, NvU32 gpu_put);
 void uvm_hal_turing_host_write_gpu_put(uvm_channel_t *channel, NvU32 gpu_put);
+void uvm_hal_blackwell_host_write_gpu_put(uvm_channel_t *channel, NvU32 gpu_put);
 
 // Return the current GPU time in nanoseconds
 typedef NvU64 (*uvm_hal_get_time_t)(uvm_gpu_t *gpu);
@@ -574,6 +575,9 @@ void uvm_hal_turing_host_clear_faulted_channel_register_unsupported(uvm_user_cha
                                                                     const uvm_fault_buffer_entry_t *buffer_entry);
 void uvm_hal_ampere_host_clear_faulted_channel_register(uvm_user_channel_t *user_channel,
                                                         const uvm_fault_buffer_entry_t *buffer_entry);
+
+void uvm_hal_blackwell_host_clear_faulted_channel_register(uvm_user_channel_t *user_channel,
+                                                           const uvm_fault_buffer_entry_t *buffer_entry);
 
 typedef void (*uvm_hal_host_clear_faulted_channel_sw_method_t)(uvm_push_t *push,
                                                                uvm_user_channel_t *user_channel,

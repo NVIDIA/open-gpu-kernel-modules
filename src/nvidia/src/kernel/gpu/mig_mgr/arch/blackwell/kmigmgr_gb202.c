@@ -137,8 +137,10 @@ s_kmigmgrIsSingleSliceConfig_GB202
     NvBool isSingleSliceProfile = NV_FALSE;
     NvU32 actualMigCount = 0;
     NvU32 i;
+    NvU32 maxGRs;
+    maxGRs = RM_ENGINE_TYPE_GR_SIZE;
 
-    for (i = 0; i < RM_ENGINE_TYPE_GR_SIZE; ++i)
+    for (i = 0; i < maxGRs; ++i)
     {
         if (gpuCheckEngine_HAL(pGpu, ENG_GR(i)))
         {

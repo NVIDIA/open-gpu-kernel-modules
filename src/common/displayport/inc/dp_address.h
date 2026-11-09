@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -279,10 +279,41 @@ namespace DisplayPort
             return (NvU32 *)&buffer[0];
         }
 
+        //
+        // Pack address into NvU64 for printf without %s.
+        // Byte layout: [hop0][hop1][hop2][hop3][hop4][hop5][_][_]
+        // Unused hops filled with 0xFF.
+        // Use with DP_ADDR_FMT / DP_ADDR_ARGS macros.
+        //
+        NvU64 pack() const
+        {
+            NvU64 val = 0;
+            for (unsigned i = 0; i < 6; i++)
+                val |= ((NvU64)(i < hops ? (hop[i] & 0xffu) : 0xffu)) << ((7 - i) * 8);
+            return val;
+        }
+
     private:
         unsigned hop[maxHops];
         unsigned hops;
     };
 }
+
+//
+// Print an Address as dot-separated hops via NvU64 pack().
+// Usage:
+//   NvU64 packedAddr = someAddress.pack();
+//   DP_PRINTF(level, "device " DP_ADDR_FMT, DP_ADDR_ARGS(packedAddr));
+// Output example: "device a.2.ff.ff.ff.ff" means port a.2 with unused hops as 0xff.
+//
+#define DP_ADDR_FMT  "%x.%x.%x.%x.%x.%x"
+
+#define DP_ADDR_ARGS(p)                       \
+    (unsigned)(((p) >> 56) & 0xff),           \
+    (unsigned)(((p) >> 48) & 0xff),           \
+    (unsigned)(((p) >> 40) & 0xff),           \
+    (unsigned)(((p) >> 32) & 0xff),           \
+    (unsigned)(((p) >> 24) & 0xff),           \
+    (unsigned)(((p) >> 16) & 0xff)
 
 #endif //INCLUDED_DP_ADDRESS_H

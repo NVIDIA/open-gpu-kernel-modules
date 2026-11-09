@@ -46,6 +46,7 @@ typedef enum NV_RATS_RECORD_CLASS {
 } NV_RATS_RECORD_CLASS;
 
 #define NV_RATS_MAX_BACKTRACES_PER_RECORD 4
+#define NV_RATS_MAX_BACKTRACE_DEPTH       12
 
 typedef struct NV_RATS_RECORD_V2 {
     NV_RATS_RECORD_CLASS recordClass;
@@ -66,9 +67,8 @@ typedef struct NV_RATS_RECORD_V2 {
             NvU8 threadId;
             NvU8 partitionId;
             NvU8 reserved8;
-            NvU16 libosSeqNo;
-            NvU16 reserved16;
-            NvU64 info;
+            NvU32 info32;
+            NvU64 info64;
             NvU64 timeStamp;
         } libosTrace;
         struct {
@@ -99,7 +99,7 @@ typedef struct NV_RATS_VGPU_GSP_TRACING_BUFFER_V1{
     NvU32 read;
     NvU32 write;
 
-    NvU64 lastReadTimestamp;
+    NvU64 lastReadTimestampNs;
 
     NV_RATS_RECORD *buffer;
 } NV_RATS_VGPU_GSP_TRACING_BUFFER_V1;

@@ -37,6 +37,10 @@
 *
 ****************************************************************************/
 
+#include <cpuopsys.h>
+
+#if NVCPU_IS_X86_64
+
 #include "x86emu/x86emui.h"
 #ifndef NO_SYS_HEADERS
 #include <stdarg.h>
@@ -545,3 +549,4 @@ int X86EMU_trace_off(void)
 
 #endif /* X86EMU_DEBUG */
 
+#endif /* NVCPU_IS_X86_64 */

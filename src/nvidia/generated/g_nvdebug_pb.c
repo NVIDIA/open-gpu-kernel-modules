@@ -206,6 +206,18 @@ const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo[] = {
         PRB_MAYBE_FIELD_NAME("resserv_info")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
+    {
+        14,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_OOMREPORT,
+        0,
+        PRB_MAYBE_FIELD_NAME("oom_report")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
 };
 
 // 'GpuInfo' field defaults
@@ -270,6 +282,30 @@ const PRB_FIELD_DESC prb_fields_nvdebug_gpuinfo[] = {
         NVDEBUG_ENG_KERNELNVLINK,
         0,
         PRB_MAYBE_FIELD_NAME("eng_kernel_nvlink")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        26,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_ENG_HANGDEBUG,
+        0,
+        PRB_MAYBE_FIELD_NAME("eng_hang_debug")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        27,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_ENG_NVLINKREMAPTABLE,
+        0,
+        PRB_MAYBE_FIELD_NAME("eng_nvlink_remap_table")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
 };
@@ -914,6 +950,84 @@ const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver[] = {
         PRB_MAYBE_FIELD_NAME("client_info")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
+    {
+        4,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLASSHISTENTRY,
+        0,
+        PRB_MAYBE_FIELD_NAME("class_histogram")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        5,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_RESOURCESERVER_PIDSUMMARYENTRY,
+        0,
+        PRB_MAYBE_FIELD_NAME("pid_summary")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
+// 'OomReport' field defaults
+
+// 'OomReport' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_oomreport[] = {
+    {
+        1,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("oom_count")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("oom_requested_size")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS,
+        0,
+        PRB_MAYBE_FIELD_NAME("malloc_heap")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        4,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSHEAPSTATS,
+        0,
+        PRB_MAYBE_FIELD_NAME("libos_heap")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
 };
 
 // 'ClientInfo' field defaults
@@ -994,6 +1108,78 @@ const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_clientinfo[] =
     },
 };
 
+// 'ClassHistEntry' field defaults
+
+// 'ClassHistEntry' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_classhistentry[] = {
+    {
+        1,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("class_id")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("count")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
+// 'PidSummaryEntry' field defaults
+
+// 'PidSummaryEntry' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_pidsummaryentry[] = {
+    {
+        1,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("pid")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("clients")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("resources")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
 // 'ClientAllocation' field defaults
 
 // 'ClientAllocation' field descriptors
@@ -1048,15 +1234,279 @@ const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_clientinfo_cli
     },
 };
 
+// 'MallocHeapStats' field defaults
+
+// 'MallocHeapStats' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats[] = {
+    {
+        1,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("heap_size")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("free_size")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("largest_free_chunk")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        4,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("frag_pct")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        5,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS,
+        0,
+        PRB_MAYBE_FIELD_NAME("active")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        6,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS,
+        0,
+        PRB_MAYBE_FIELD_NAME("total")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        7,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_OOMREPORT_MALLOCHEAPSTATS_ALLOCATORSTATS,
+        0,
+        PRB_MAYBE_FIELD_NAME("peak")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
+// 'LibosPoolStats' field defaults
+
+// 'LibosPoolStats' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_oomreport_libospoolstats[] = {
+    {
+        1,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("pool_index")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("allocations")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("peak_allocations")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        4,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("object_size")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        5,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("used_bytes")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
+// 'LibosHeapStats' field defaults
+
+// 'LibosHeapStats' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_oomreport_libosheapstats[] = {
+    {
+        1,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("total_size")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("pool_count")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_OOMREPORT_LIBOSPOOLSTATS,
+        0,
+        PRB_MAYBE_FIELD_NAME("pool")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        4,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("total_pool_used")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
+// 'AllocatorStats' field defaults
+
+// 'AllocatorStats' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats_allocatorstats[] = {
+    {
+        1,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("num_allocations")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("allocated_size")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("useful_size")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        4,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("meta_size")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
 // Message descriptors
 const PRB_MSG_DESC prb_messages_nvdebug[] = {
     {
-        13,
+        14,
         prb_fields_nvdebug_systeminfo,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo")
     },
     {
-        5,
+        7,
         prb_fields_nvdebug_gpuinfo,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.GpuInfo")
     },
@@ -1111,9 +1561,14 @@ const PRB_MSG_DESC prb_messages_nvdebug[] = {
         PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.TimeInfo")
     },
     {
-        3,
+        5,
         prb_fields_nvdebug_systeminfo_resourceserver,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.ResourceServer")
+    },
+    {
+        4,
+        prb_fields_nvdebug_systeminfo_oomreport,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.OomReport")
     },
     {
         6,
@@ -1121,9 +1576,39 @@ const PRB_MSG_DESC prb_messages_nvdebug[] = {
         PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.ResourceServer.ClientInfo")
     },
     {
+        2,
+        prb_fields_nvdebug_systeminfo_resourceserver_classhistentry,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.ResourceServer.ClassHistEntry")
+    },
+    {
+        3,
+        prb_fields_nvdebug_systeminfo_resourceserver_pidsummaryentry,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.ResourceServer.PidSummaryEntry")
+    },
+    {
         4,
         prb_fields_nvdebug_systeminfo_resourceserver_clientinfo_clientallocation,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.ResourceServer.ClientInfo.ClientAllocation")
+    },
+    {
+        7,
+        prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.OomReport.MallocHeapStats")
+    },
+    {
+        5,
+        prb_fields_nvdebug_systeminfo_oomreport_libospoolstats,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.OomReport.LibosPoolStats")
+    },
+    {
+        4,
+        prb_fields_nvdebug_systeminfo_oomreport_libosheapstats,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.OomReport.LibosHeapStats")
+    },
+    {
+        4,
+        prb_fields_nvdebug_systeminfo_oomreport_mallocheapstats_allocatorstats,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.OomReport.MallocHeapStats.AllocatorStats")
     },
 };
 

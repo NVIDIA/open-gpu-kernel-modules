@@ -49,6 +49,25 @@ namespace DisplayPort
     #define DEVICE_OUI_SIZE       3
     #define DSC_CAPS_SIZE         16
     #define PCLK_MHZ_TO_HZ        1000000U
+    #define HDMI2_MAX_TMDS_CLK_RATE_HZ  600000000ULL
+
+    #define CTA861_EXT_TAG                      0x02
+    #define CTA861_EXT_TAG_OFFSET               0x00
+    #define CTA861_EXT_REVISION_OFFSET          0x01
+    #define CTA861_EXT_MIN_REVISION             0x03
+    #define CTA861_EXT_DTD_START_OFFSET         0x02
+    #define CTA861_DATA_BLOCK_START             0x04
+    #define CTA861_DATA_BLOCK_TAG_SHIFT         5
+    #define CTA861_DATA_BLOCK_LEN_MASK          0x1FU
+    #define CTA861_DATA_BLOCK_TAG_VENDOR        0x03
+    #define CTA861_VSDB_OUI_SIZE                3
+    #define CTA861_VSDB_OUI_HDMI_FORUM          0xC45DD8U
+    #define CTA861_VSDB_OUI_HDMI_LLC            0x000C03U
+    #define HF_VSDB_MAX_TMDS_RATE_OFFSET        4
+    #define HF_VSDB_MIN_PAYLOAD_SIZE            5
+    #define HDMI_VSDB_MAX_TMDS_CLK_OFFSET       6
+    #define HDMI_VSDB_MIN_PAYLOAD_SIZE          7
+    #define EDID_TMDS_RATE_UNIT_HZ              5000000ULL
     struct GroupImpl;
     struct ConnectorImpl;
     class DeviceHDCPDetection;

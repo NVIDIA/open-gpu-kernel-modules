@@ -25,12 +25,33 @@
 
 #include "diagnostics/op_event.h"
 #include "diagnostics/op_event_log.h"
+#include "events/event_defs.h"
 #include "libraries/cper/cper.h"
 #include "libraries/cper/gpu_cper.h"
+#include "nvport/memory.h"
 #include "class/cl90cd.h"
 #include "class/cl90d0.h"
 #include "nvport/nvport.h"
 #include "utils/nvassert.h"
+
+#define OP_EVENT_LOG_GOE_PROTOBUF_SUPPORTED 0
+
+#if OP_EVENT_LOG_GOE_PROTOBUF_SUPPORTED
+#include "gpu/gpu.h"
+#include "gpu/inforom/inforom.h"
+#include "inforom/ifrgel.h"
+#include "lib/protobuf/prb.h"
+#include "lib/protobuf/prb_util.h"
+#include "g_events_gpu_pb.h"
+
+#define OP_EVENT_LOG_GOE_SCHEMA_VERSION                       1U
+#define OP_EVENT_LOG_GOE_RECORD_BUFFER_SIZE                   INFOROM_GEL_OBJECT_V1_00_DATA_SIZE
+// Covers record metadata and the maximum number of context wrappers.
+#define OP_EVENT_LOG_GOE_RECORD_OVERHEAD_MAX_SIZE             1536U
+#define OP_EVENT_LOG_GOE_CONTEXT_PAYLOAD_MAX_SIZE             4096U
+#define OP_EVENT_LOG_GOE_CONTEXT_PAYLOAD_BUDGET               16384U
+#define OP_EVENT_LOG_GOE_CONTEXT_MAX_COUNT                     32U
+#endif
 
 //
 // Walk an event's context chain to render the per-context GOE vardata.
@@ -64,6 +85,7 @@ _walkGoeContextsVardata
     {
         const EventContextOutputAdapters *pAdapters = pCtx->pOutputAdapters;
         NV_OPERATIONAL_EVENT_CONTEXT *pOutputCtx;
+        EventBufferOpEventCtxInfo contextInfo = {0};
         NvU32 outputSize;
         NvU32 ctxSize = 0;
         NvU32 padded;
@@ -97,10 +119,11 @@ _walkGoeContextsVardata
         }
 
         status = pAdapters->serializeToEventBufferOpEventCtx(
-            pCtx, pOutputCtx, outputSize, &ctxSize);
+            pCtx, pOutputCtx, outputSize, &contextInfo);
         if (status != NV_OK)
             return status;
 
+        ctxSize = contextInfo.wireSize;
         padded = NV_ALIGN_UP(ctxSize, NV_EVENT_VARDATA_GRANULARITY);
         if (padded > vardataCap - offset)
             return NV_ERR_BUFFER_TOO_SMALL;
@@ -146,6 +169,35 @@ _gpuOpEventCperSeverity
     }
 }
 
+static NvU32
+_opEventGroupAttrsToCperRecordFlags
+(
+    NvU8 groupAttrs
+)
+{
+    NvU32 recordFlags = 0;
+
+    if (REF_VAL(OPERATIONAL_EVENT_GROUP_ATTR_RECOVERED, groupAttrs) ==
+        OPERATIONAL_EVENT_GROUP_ATTR_RECOVERED_TRUE)
+    {
+        recordFlags |= NV_CPER_RECORD_FLAG_RECOVERED;
+    }
+
+    if (REF_VAL(OPERATIONAL_EVENT_GROUP_ATTR_PREVERR, groupAttrs) ==
+        OPERATIONAL_EVENT_GROUP_ATTR_PREVERR_TRUE)
+    {
+        recordFlags |= NV_CPER_RECORD_FLAG_PREVERR;
+    }
+
+    if (REF_VAL(OPERATIONAL_EVENT_GROUP_ATTR_SIMULATED, groupAttrs) ==
+        OPERATIONAL_EVENT_GROUP_ATTR_SIMULATED_TRUE)
+    {
+        recordFlags |= NV_CPER_RECORD_FLAG_SIMULATED;
+    }
+
+    return recordFlags;
+}
+
 static const OpEventLogEvent *
 _opEventLogEntryGetIndexedEvent
 (
@@ -166,6 +218,313 @@ _opEventLogEntryGetIndexedEvent
 
     return &pEntry->pEvents[eventIndex];
 }
+
+#if OP_EVENT_LOG_GOE_PROTOBUF_SUPPORTED
+static NV_STATUS
+_opEventLogEntryRenderGoeContext
+(
+    PRB_ENCODER        *pPrbEnc,
+    EventContextHeader *pCtx,
+    NvU32              *pSkippedContexts,
+    NvU32              *pPayloadBudget,
+    NvBool             *pTruncated
+)
+{
+    const EventContextOutputAdapters *pAdapters;
+    NvU8                             *pPayload = NULL;
+    NvU32                             wireSize = 0;
+    NvU32                             contextType = 0;
+    NvU32                             dataFormatVersion = 0;
+    NvU32                             dataSize = 0;
+    EventBufferOpEventCtxInfo         eventBufferInfo = {0};
+    NvBool                            bUseProtobuf = NV_FALSE;
+    NvBool                            bHaveContextMetadata = NV_FALSE;
+    NvBool                            bPayloadTruncated = NV_FALSE;
+    NvU8                              startingDepth;
+    NV_STATUS                         status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pPrbEnc != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pCtx != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pSkippedContexts != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pPayloadBudget != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pTruncated != NULL, NV_ERR_INVALID_POINTER);
+
+    startingDepth = prbEncNestingLevel(pPrbEnc);
+    pAdapters = pCtx->pOutputAdapters;
+    if (pAdapters == NULL)
+    {
+        (*pSkippedContexts)++;
+        *pTruncated = NV_TRUE;
+        return NV_OK;
+    }
+
+    if (pAdapters->serializeToProtobuf != NULL)
+    {
+        PRB_ENCODER countEnc;
+        void       *pEncoded;
+
+        prbEncStartCount(&countEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_CONTEXT,
+                         OP_EVENT_LOG_GOE_CONTEXT_PAYLOAD_MAX_SIZE);
+        status = pAdapters->serializeToProtobuf(
+            pCtx, &countEnc, &contextType, &dataFormatVersion);
+        wireSize = prbEncFinish(&countEnc, &pEncoded);
+        if (status == NV_OK)
+        {
+            bUseProtobuf = NV_TRUE;
+            bHaveContextMetadata = NV_TRUE;
+            dataSize = pCtx->dataSize;
+        }
+        else
+        {
+            status = NV_OK;
+            wireSize = 0;
+        }
+    }
+
+    if (!bUseProtobuf)
+    {
+        if (pAdapters->serializeToEventBufferOpEventCtx == NULL)
+        {
+            (*pSkippedContexts)++;
+            *pTruncated = NV_TRUE;
+            return NV_OK;
+        }
+
+        status = pAdapters->serializeToEventBufferOpEventCtx(
+            pCtx, NULL, 0, &eventBufferInfo);
+        if (status != NV_OK)
+        {
+            (*pSkippedContexts)++;
+            *pTruncated = NV_TRUE;
+            return NV_OK;
+        }
+
+        wireSize = eventBufferInfo.wireSize;
+        contextType = eventBufferInfo.contextType;
+        dataFormatVersion = eventBufferInfo.dataFormatVersion;
+        dataSize = eventBufferInfo.dataSize;
+        bHaveContextMetadata = NV_TRUE;
+    }
+
+    if ((wireSize > OP_EVENT_LOG_GOE_CONTEXT_PAYLOAD_MAX_SIZE) ||
+        (wireSize > *pPayloadBudget))
+    {
+        bPayloadTruncated = NV_TRUE;
+        *pTruncated = NV_TRUE;
+    }
+    else if (!bUseProtobuf && wireSize != 0)
+    {
+        pPayload = portMemAllocStackOrHeap(wireSize);
+        if (pPayload == NULL)
+            return NV_ERR_NO_MEMORY;
+
+        status = pAdapters->serializeToEventBufferOpEventCtx(
+            pCtx, (NV_OPERATIONAL_EVENT_CONTEXT *)pPayload,
+            wireSize, &eventBufferInfo);
+
+        if ((status != NV_OK) || (eventBufferInfo.wireSize != wireSize))
+        {
+            (*pSkippedContexts)++;
+            *pTruncated = NV_TRUE;
+            status = NV_OK;
+            goto cleanup;
+        }
+
+        *pPayloadBudget -= wireSize;
+    }
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncNestedStart(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_CONTEXT),
+        cleanup);
+
+    if (bUseProtobuf && !bPayloadTruncated)
+    {
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+            pAdapters->serializeToProtobuf(
+                pCtx, pPrbEnc, &contextType, &dataFormatVersion),
+            cleanup);
+        *pPayloadBudget -= wireSize;
+    }
+    else if (!bUseProtobuf)
+    {
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+            prbEncNestedStart(
+                pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_CONTEXT_OPAQUE_EVENT_BUFFER),
+            cleanup);
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+            prbEncAddUInt32(
+                pPrbEnc,
+                GPUEVENTS_OPAQUEEVENTBUFFERCONTEXT_WIRE_SIZE,
+                wireSize),
+            cleanup);
+
+        if (pPayload != NULL)
+        {
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+                prbEncAddBytes(
+                    pPrbEnc,
+                    GPUEVENTS_OPAQUEEVENTBUFFERCONTEXT_PAYLOAD,
+                    (const NvU8 *)pPayload, wireSize),
+                cleanup);
+        }
+
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+            prbEncNestedEnd(pPrbEnc), cleanup);
+    }
+
+    if (bHaveContextMetadata)
+    {
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+            prbEncAddUInt32(pPrbEnc,
+                            GPUEVENTS_GPUOPERATIONALEVENTRECORD_CONTEXT_CONTEXT_TYPE,
+                            contextType),
+            cleanup);
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+            prbEncAddUInt32(pPrbEnc,
+                            GPUEVENTS_GPUOPERATIONALEVENTRECORD_CONTEXT_DATA_FORMAT_VERSION,
+                            dataFormatVersion),
+            cleanup);
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+            prbEncAddUInt32(pPrbEnc,
+                            GPUEVENTS_GPUOPERATIONALEVENTRECORD_CONTEXT_DATA_SIZE,
+                            dataSize),
+            cleanup);
+    }
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddBool(pPrbEnc,
+                      GPUEVENTS_GPUOPERATIONALEVENTRECORD_CONTEXT_PAYLOAD_TRUNCATED,
+                      bPayloadTruncated),
+        cleanup);
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE, prbEncNestedEnd(pPrbEnc), cleanup);
+
+cleanup:
+    portMemFreeStackOrHeap(pPayload);
+    NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_NOTICE,
+        prbEncUnwindNesting(pPrbEnc, startingDepth));
+
+    return status;
+}
+
+static NV_STATUS
+_opEventLogEntryRenderGoeEvent
+(
+    PRB_ENCODER              *pPrbEnc,
+    const OpEventLogEvent    *pEv,
+    NvU32                     recordBufferCap,
+    NvU32                    *pSkippedContexts,
+    NvBool                   *pTruncated
+)
+{
+    EventContextHeader *pCtx;
+    NvU32               contextCount = 0;
+    NvU32               payloadBudget =
+        (recordBufferCap > OP_EVENT_LOG_GOE_RECORD_OVERHEAD_MAX_SIZE) ?
+            NV_MIN(OP_EVENT_LOG_GOE_CONTEXT_PAYLOAD_BUDGET,
+                   recordBufferCap -
+                       OP_EVENT_LOG_GOE_RECORD_OVERHEAD_MAX_SIZE) :
+            0;
+    NvU8               startingDepth = prbEncNestingLevel(pPrbEnc);
+    NV_STATUS          status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pPrbEnc != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pEv != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pSkippedContexts != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pTruncated != NULL, NV_ERR_INVALID_POINTER);
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncNestedStart(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_GROUP_EVENT),
+        cleanup);
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_CATEGORY, pEv->category),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_EVENT_CODE, pEv->eventCode),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddBytes(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_MODULE_SIGNATURE,
+                       (const NvU8 *)pEv->moduleSignature,
+                       sizeof(pEv->moduleSignature)),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_SEVERITY, pEv->severity),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_ATTRIBUTES, pEv->attributes),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_LOG_LEVEL, pEv->logLevel),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt64(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_INSTANCE_ID, pEv->instanceId),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt64(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_TIMESTAMP_US, pEv->timestampUs),
+        cleanup);
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_SCOPE, pEv->scope),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_ORIGINATOR, pEv->originator),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc,
+                        GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_REPORTING_SOURCE,
+                        pEv->reportingSource),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt64(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_PDI, pEv->pdi),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddBytes(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_DEVICE_UUID,
+                       pEv->deviceUuid, sizeof(pEv->deviceUuid)),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc,
+                        GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_MODULE_INSTANCE,
+                        pEv->moduleInstance),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_CHIPLET_ID, pEv->chipletId),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc,
+                        GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_MIG_ATTRIBUTION,
+                        pEv->migAttribution),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(pPrbEnc,
+                        GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_PRODUCER_GROUP_INDEX,
+                        pEv->producerGroupIndex),
+        cleanup);
+
+    for (pCtx = pEv->pCtxChainHead; pCtx != NULL; pCtx = pCtx->pNext)
+    {
+        if (contextCount++ >= OP_EVENT_LOG_GOE_CONTEXT_MAX_COUNT)
+        {
+            (*pSkippedContexts)++;
+            *pTruncated = NV_TRUE;
+            continue;
+        }
+
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+            _opEventLogEntryRenderGoeContext(pPrbEnc, pCtx, pSkippedContexts,
+                                              &payloadBudget, pTruncated),
+            cleanup);
+    }
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE, prbEncNestedEnd(pPrbEnc), cleanup);
+
+cleanup:
+    NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_NOTICE,
+        prbEncUnwindNesting(pPrbEnc, startingDepth));
+
+    return status;
+}
+#endif // OP_EVENT_LOG_GOE_PROTOBUF_SUPPORTED
 
 static NV_STATUS
 _opEventLogEntryRenderCperSubset
@@ -204,6 +563,7 @@ _opEventLogEntryRenderCperSubset
     initParams.pPartitionId      = NULL;
     initParams.timestampUs       = pFirst->timestampUs;
     initParams.recordId          = pEntry->groupCursor;
+    initParams.recordFlags       = _opEventGroupAttrsToCperRecordFlags(pEntry->groupAttrs);
     initParams.bTimestampPrecise = pEntry->desc.bTimestampPrecise;
     initParams.sectionCount      = (NvU16)eventIndexCount;
 
@@ -261,6 +621,218 @@ _opEventLogEntryRenderCperSubset
     }
 
     return cperGetRecordSize(pBuffer, bufferCap, pRecordSize);
+}
+
+NV_STATUS
+opEventLogEntryRenderGoeProtobufEvent
+(
+    const struct OpEventLogEntry *pEntry,
+    NvU32                         eventIndex,
+    NvU8                         *pBuffer,
+    NvU32                         bufferCap,
+    NvU32                        *pRecordSize,
+    NvBool                       *pTruncated
+)
+{
+#if OP_EVENT_LOG_GOE_PROTOBUF_SUPPORTED
+    PRB_ENCODER prbEnc;
+    NvU32       skippedContextCount = 0;
+    NvU8        startingDepth;
+    void       *pEncoded = NULL;
+    NvU32       encodedSize;
+    NV_STATUS   status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pEntry != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pBuffer != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pRecordSize != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pTruncated != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pEntry->pEvents != NULL && pEntry->eventCount > 0,
+                        NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(eventIndex < pEntry->eventCount, NV_ERR_INVALID_ARGUMENT);
+
+    *pRecordSize = 0;
+    *pTruncated = NV_FALSE;
+
+    prbEncStart(&prbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD, pBuffer, bufferCap, NULL);
+    startingDepth = prbEncNestingLevel(&prbEnc);
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(&prbEnc,
+                        GPUEVENTS_GPUOPERATIONALEVENTRECORD_SCHEMA_VERSION,
+                        OP_EVENT_LOG_GOE_SCHEMA_VERSION),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncNestedStart(&prbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_EVENT_GROUP),
+        cleanup);
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt64(&prbEnc,
+                        GPUEVENTS_GPUOPERATIONALEVENTRECORD_GROUP_GROUP_CURSOR,
+                        pEntry->groupCursor),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt64(&prbEnc, GPUEVENTS_GPUOPERATIONALEVENTRECORD_GROUP_TRACE_ID, pEntry->traceId),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(&prbEnc,
+                        GPUEVENTS_GPUOPERATIONALEVENTRECORD_GROUP_GROUP_ATTRIBUTES,
+                        pEntry->groupAttrs),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(&prbEnc,
+                        GPUEVENTS_GPUOPERATIONALEVENTRECORD_GROUP_EVENT_COUNT,
+                        pEntry->eventCount),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(&prbEnc,
+                        GPUEVENTS_GPUOPERATIONALEVENTRECORD_GROUP_PRODUCER_GROUP_SIZE,
+                        pEntry->producerGroupSize),
+        cleanup);
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        _opEventLogEntryRenderGoeEvent(&prbEnc,
+                                       &pEntry->pEvents[eventIndex],
+                                       bufferCap,
+                                       &skippedContextCount,
+                                       pTruncated),
+        cleanup);
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE,
+        prbEncAddUInt32(&prbEnc,
+                        GPUEVENTS_GPUOPERATIONALEVENTRECORD_GROUP_SKIPPED_CONTEXT_COUNT,
+                        skippedContextCount),
+        cleanup);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_NOTICE, prbEncNestedEnd(&prbEnc), cleanup);
+
+cleanup:
+    NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_NOTICE,
+        prbEncUnwindNesting(&prbEnc, startingDepth));
+    encodedSize = prbEncFinish(&prbEnc, &pEncoded);
+
+    if (status != NV_OK)
+        return status;
+
+    if (encodedSize > bufferCap)
+        return NV_ERR_BUFFER_TOO_SMALL;
+
+    *pRecordSize = encodedSize;
+    return NV_OK;
+#else
+    (void)pEntry;
+    (void)eventIndex;
+    (void)pBuffer;
+    (void)bufferCap;
+    (void)pRecordSize;
+    (void)pTruncated;
+
+    return NV_ERR_NOT_SUPPORTED;
+#endif
+}
+
+#if OP_EVENT_LOG_GOE_PROTOBUF_SUPPORTED
+typedef struct OP_EVENT_LOG_GOE_RENDER_CONTEXT
+{
+    const OpEventLogEntry *pEntry;
+    NvU32                  eventIndex;
+} OP_EVENT_LOG_GOE_RENDER_CONTEXT;
+
+static NV_STATUS
+_opEventLogEntryRenderGoeRecord
+(
+    void   *pContext,
+    NvU8   *pBuffer,
+    NvU32   bufferSize,
+    NvU32  *pRecordSize,
+    NvBool *pTruncated
+)
+{
+    const OP_EVENT_LOG_GOE_RENDER_CONTEXT *pRenderContext = pContext;
+
+    NV_ASSERT_OR_RETURN(pRenderContext != NULL, NV_ERR_INVALID_POINTER);
+
+    return opEventLogEntryRenderGoeProtobufEvent(
+        pRenderContext->pEntry,
+        pRenderContext->eventIndex,
+        pBuffer,
+        bufferSize,
+        pRecordSize,
+        pTruncated);
+}
+#endif
+
+void
+opEventLogEntryPersistent
+(
+    struct OpEventLog *pLog,
+    OBJGPU *pGpu,
+    const struct OpEventLogEntry *pEntry
+)
+{
+#if OP_EVENT_LOG_GOE_PROTOBUF_SUPPORTED
+    OBJINFOROM *pInforom;
+    NvU8       *pBuffer = NULL;
+    NvU32       eventIndex;
+    NvBool      bSimulated;
+
+    NV_ASSERT_OR_RETURN_VOID(pLog != NULL);
+    NV_ASSERT_OR_RETURN_VOID(pGpu != NULL);
+    NV_ASSERT_OR_RETURN_VOID(pEntry != NULL);
+
+    pInforom = GPU_GET_INFOROM(pGpu);
+    if (pInforom == NULL)
+        return;
+    if (IS_GSP_CLIENT(pGpu))
+        return;
+
+    pBuffer = opevtlogGetRenderScratch(
+        pLog, OP_EVENT_LOG_GOE_RECORD_BUFFER_SIZE);
+    if (pBuffer == NULL)
+        return;
+
+    bSimulated =
+        REF_VAL(OPERATIONAL_EVENT_GROUP_ATTR_SIMULATED, pEntry->groupAttrs) ==
+        OPERATIONAL_EVENT_GROUP_ATTR_SIMULATED_TRUE;
+
+    for (eventIndex = 0; eventIndex < pEntry->eventCount; eventIndex++)
+    {
+        const OpEventLogEvent *pEvent = &pEntry->pEvents[eventIndex];
+        OP_EVENT_LOG_GOE_RENDER_CONTEXT renderContext =
+        {
+            .pEntry = pEntry,
+            .eventIndex = eventIndex,
+        };
+        INFOROM_GEL_RECORD_REQUEST request =
+        {
+            .pRender = _opEventLogEntryRenderGoeRecord,
+            .pRenderContext = &renderContext,
+            .pRenderBuffer = pBuffer,
+            .renderBufferSize = OP_EVENT_LOG_GOE_RECORD_BUFFER_SIZE,
+            .timestampUs = pEvent->timestampUs,
+            .goeSchemaVersion = OP_EVENT_LOG_GOE_SCHEMA_VERSION,
+            .severity = pEvent->severity,
+            .bSimulated = bSimulated,
+            .bQueueFlush = eventIndex == (pEntry->eventCount - 1),
+        };
+        NV_STATUS status;
+
+        status = inforomGelPersistRecord_HAL(
+            pGpu, pInforom, &request);
+        if (status == NV_ERR_NOT_SUPPORTED)
+            break;
+
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_NOTICE,
+                      "GEL InfoROM persistence failed for event %u "
+                      "(status=0x%x)\n",
+                      eventIndex, status);
+        }
+    }
+#else
+    (void)pLog;
+    (void)pGpu;
+    (void)pEntry;
+#endif
 }
 
 NV_STATUS

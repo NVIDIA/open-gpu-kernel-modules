@@ -295,10 +295,17 @@ void NVRM_PRINTF_FUNCTION(const char *file,
 #define NV_PRINTF_ENABLED NV_PRINTF_STRINGS_ALLOWED
 #endif
 
+/* if log level is defined in RM top level makefile, use it,
+ * otherwise use default level, LEVEL_NOTICE
+ * if strings are allowed i.e. debug, use LEVEL_INFO
+ * if strings are not allowed, i.e. release, use LEVEL_NOTICE
+ */
+#ifndef NV_PRINTF_LEVEL
 #if NV_PRINTF_STRINGS_ALLOWED
 #define NV_PRINTF_LEVEL  LEVEL_INFO
 #else
 #define NV_PRINTF_LEVEL  LEVEL_NOTICE
+#endif
 #endif
 
 /**

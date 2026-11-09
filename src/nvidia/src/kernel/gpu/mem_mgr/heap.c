@@ -47,7 +47,6 @@
 #include "virtualization/hypervisor/hypervisor.h"
 #include "gpu/device/device.h"
 #include "kernel/gpu/intr/intr.h"
-#include "platform/sli/sli.h"
 
 typedef enum
 {
@@ -614,9 +613,10 @@ NV_STATUS heapInitInternal_IMPL
         (memmgrIsPmaInitialized(pMemoryManager)))
     {
         MEMORY_DESCRIPTOR *pMemDesc = NULL;
-        NvBool bProtected = NV_FALSE;
+        NvBool bCprMemEnabled = NV_FALSE;
 
-    bProtected = gpuIsCCFeatureEnabled(pGpu);
+    bCprMemEnabled = gpuIsCCFeatureEnabled(pGpu);
+    bCprMemEnabled = bCprMemEnabled || gpuIsTdispFeatureEnabled(pGpu);
         status = heapReserveRegion(
             pMemoryManager,
             pHeap,
@@ -624,7 +624,7 @@ NV_STATUS heapInitInternal_IMPL
             size,
             &pMemDesc,
             NV_FALSE,
-            bProtected);
+            bCprMemEnabled);
 
         if (status != NV_OK || pMemDesc == NULL)
         {
@@ -1367,7 +1367,7 @@ NV_STATUS heapAlloc_IMPL
     NV_ASSERT_OR_RETURN(
         (memmgrAllocGetAddrSpace(GPU_GET_MEMORY_MANAGER(pGpu), pVidHeapAlloc->flags, pVidHeapAlloc->attr)
             == ADDR_FBMEM) &&
-        (pAllocRequest->pPmaAllocInfo[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] == NULL),
+        (pAllocRequest->pPmaAllocInfo == NULL),
         NV_ERR_INVALID_ARGUMENT);
 
     if (pVidHeapAlloc->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE)
@@ -1586,7 +1586,9 @@ NV_STATUS heapAlloc_IMPL
         }
         else
         {
-            NV_ASSERT(pMemoryManager->Ram.numFBRegionPriority > 0);
+            NV_ASSERT_OR_ELSE(pMemoryManager->Ram.numFBRegionPriority > 0,
+                              status = NV_ERR_INVALID_DATA;
+                              goto return_early;);
 
             if (FLD_TEST_DRF(OS32, _ATTR2, _PRIORITY, _LOW, pFbAllocInfo->pageFormat->attr2) ||
                 (pMemoryManager->bPreferSlowRegion &&
@@ -2135,13 +2137,6 @@ NV_STATUS heapReference_IMPL
         if (0 != pMemDesc->pPmaAllocInfo->refCount)
         {
             pMemDesc->pPmaAllocInfo->refCount++;
-            if (IsSLIEnabled(pGpu) &&
-                (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM))
-            {                        //
-                memdescAddRef(pMemDesc); // Otherwise we have a fake parent descriptor removed with existing submem descriptors.
-                                     // In SLI only (not fully understood yet!). In non SLI, that memAddref() causes a memleak.
-                                     //
-            }
         }
         return NV_OK;
     }
@@ -2163,13 +2158,6 @@ NV_STATUS heapReference_IMPL
     }
 
     pBlock->refCount++;
-    if (IsSLIEnabled(pGpu) &&
-        (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM))
-    {                        //
-        memdescAddRef(pMemDesc); // Otherwise we have a fake parent descriptor removed with existing submem descriptors.
-                             // In SLI only (not fully understood yet!). In non SLI, that memAddref() causes a memleak.
-                             //
-    }
     return NV_OK;
 }
 
@@ -4261,3 +4249,4 @@ NV_STATUS heapResize_IMPL
     }
     return status;
 }
+

@@ -29,12 +29,19 @@
 #include "class/cl00de.h"
 
 #include "gpu/timer/tmr.h"
+#include "containers/list.h"
 
 // ****************************************************************************
 //                          Type definitions
 // ****************************************************************************
 typedef struct RusdQueryCache RUSD_QUERY_CACHE;
 typedef struct RusdStaticQueryCache RUSD_STATIC_QUERY_CACHE;
+
+// Forward declaration of the RUSD resource class (see gpu_user_shared_data.h)
+struct GpuUserSharedData;
+
+// Per-GPU list of RUSD objects (stores object pointers; managed in gpu_user_shared_data.c).
+MAKE_LIST(GpuUserSharedDataList, struct GpuUserSharedData*);
 
 typedef struct GpuSharedDataMap {
     MEMORY_DESCRIPTOR *pMemDesc;
@@ -45,6 +52,13 @@ typedef struct GpuSharedDataMap {
     NvU32 defaultPollingIntervalMs;
     NvU32 pollingIntervalMs;
     NvBool bPollIntervalOverridden;
+
+    //
+    // GPU-local list of RM_USER_SHARED_DATA (RUSD) objects. The poll mask /
+    // interval are aggregated by walking this list. Access is serialized by the
+    // GPU lock, held on the RUSD alloc/free/control paths that mutate or read it.
+    //
+    GpuUserSharedDataList rusdObjList;
 
     TMR_EVENT *pRusdRefreshTmrEvent;
 

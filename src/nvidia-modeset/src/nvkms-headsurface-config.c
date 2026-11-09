@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -247,6 +247,7 @@ static NvBool HsConfigUpdateOneHead(
     nvAssert((viewPortOut.y + viewPortOut.height) <= size.height);
 
     pChannelConfig->state = state;
+    pChannelConfig->yuv420Mode = pTimings->yuv420Mode;
 
     pChannelConfig->frameSize = size;
     pChannelConfig->viewPortOut = viewPortOut;
@@ -432,8 +433,6 @@ static NvBool HsConfigInitModesetOneHead(
     pChannelConfig->viewPortIn.width = pViewPortSizeIn->width;
     pChannelConfig->viewPortIn.height = pViewPortSizeIn->height;
 
-    pChannelConfig->yuv420 = (pTimings->yuv420Mode == NV_YUV420_MODE_SW);
-
     pChannelConfig->blendAfterWarp = pHSParams->blendAfterWarp;
     pChannelConfig->pixelShift = pHSParams->pixelShift;
     pChannelConfig->resamplingMethod = pHSParams->resamplingMethod;
@@ -525,10 +524,7 @@ static NvBool HsConfigInitModesetOneHead(
 }
 
 /*!
- * Validate the requested headSurface configuration.
- *
- * If the configuration is valid return TRUE.
- * Otherwise, assign pReplyHead->status and return FALSE.
+ * Return the validation status for the requested headSurface configuration.
  *
  * The general rules for when to use which status:
  *
@@ -540,13 +536,14 @@ static NvBool HsConfigInitModesetOneHead(
  *
  * UNSUPPORTED_HEAD_SURFACE_FEATURE is reported if the requested configuration
  * is not supported on the current GPU (Quadro checks, and similar).
+ *
+ * yuv420Mode is the head's YUV 4:2:0 disposition as resolved by
+ * nvGetHwModeTimings().
  */
-static NvBool HsConfigValidate(
-    const NVDevEvoRec *pDevEvo,
+static enum NvKmsSetModeOneHeadStatus HsConfigGetValidationStatus(
     const struct NvKmsSetModeOneHeadRequest *pRequestHead,
-    struct NvKmsSetModeOneHeadReply *pReplyHead)
+    const enum NvYuv420Mode yuv420Mode)
 {
-    const NvModeTimings *pModeTimings = &pRequestHead->mode.timings;
     const struct NvKmsSetModeHeadSurfaceParams *p = &pRequestHead->headSurface;
 
     /*
@@ -566,7 +563,7 @@ static NvBool HsConfigValidate(
      * Check warp&blend feature compatibility.
      */
     if (UsesWarpAndBlend(pRequestHead)) {
-        if (pModeTimings->yuv420Mode == NV_YUV420_MODE_SW) {
+        if (yuv420Mode == NV_YUV420_MODE_SW) {
             goto failUnsupportedCombo;
         }
     }
@@ -592,7 +589,7 @@ static NvBool HsConfigValidate(
             goto failUnsupportedCombo;
         }
 
-        if (pModeTimings->yuv420Mode == NV_YUV420_MODE_SW) {
+        if (yuv420Mode == NV_YUV420_MODE_SW) {
             goto failUnsupportedCombo;
         }
     }
@@ -630,7 +627,7 @@ static NvBool HsConfigValidate(
             goto failUnsupportedCombo;
         }
 
-        if (pModeTimings->yuv420Mode == NV_YUV420_MODE_SW) {
+        if (yuv420Mode == NV_YUV420_MODE_SW) {
             goto failUnsupportedCombo;
         }
 
@@ -648,17 +645,30 @@ static NvBool HsConfigValidate(
         goto failUnsupportedCombo;
     }
 
-    return TRUE;
+    return NVKMS_SET_MODE_ONE_HEAD_STATUS_SUCCESS;
 
 failInvalid:
 
-    pReplyHead->status = NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_HEAD_SURFACE;
-    return FALSE;
+    return NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_HEAD_SURFACE;
 
 failUnsupportedCombo:
 
-    pReplyHead->status =
-        NVKMS_SET_MODE_ONE_HEAD_STATUS_UNSUPPORTED_HEAD_SURFACE_COMBO;
+    return NVKMS_SET_MODE_ONE_HEAD_STATUS_UNSUPPORTED_HEAD_SURFACE_COMBO;
+}
+
+static NvBool HsConfigValidate(
+    const struct NvKmsSetModeOneHeadRequest *pRequestHead,
+    const enum NvYuv420Mode yuv420Mode,
+    struct NvKmsSetModeOneHeadReply *pReplyHead)
+{
+    enum NvKmsSetModeOneHeadStatus status =
+        HsConfigGetValidationStatus(pRequestHead, yuv420Mode);
+
+    if (status == NVKMS_SET_MODE_ONE_HEAD_STATUS_SUCCESS) {
+        return TRUE;
+    }
+
+    pReplyHead->status = status;
     return FALSE;
 }
 
@@ -822,7 +832,10 @@ NvBool nvHsConfigInitModeset(
                 continue;
             }
 
-            if (!HsConfigValidate(pDevEvo, pRequestHead, pReplyHead)) {
+            if (pRequestHead->yuv420Mode.specified &&
+                pRequestHead->yuv420Mode.val == NV_YUV420_MODE_SW) {
+                pReplyHead->status =
+                    NVKMS_SET_MODE_ONE_HEAD_STATUS_UNSUPPORTED_HEAD_SURFACE_COMBO;
                 return FALSE;
             }
 
@@ -831,12 +844,22 @@ NvBool nvHsConfigInitModeset(
                               sizeof(*pTimings));
             nvkms_memset(pTimings, 0, sizeof(*pTimings));
 
-            if (!nvGetHwModeTimings(pDispEvo, apiHead, pRequestHead,
+            if (!nvGetHwModeTimings(pDispEvo, pRequestHead,
                                     pTimings, NULL /* pDpyColor */,
                                     NULL /* pInfoFrameCtrl */,
                                     NULL /* pVSInfoFrameCtrl */,
                                     NULL /* pEmpInfoFrameCtrl */)) {
                 nvPreallocRelease(pDevEvo, PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS);
+                return FALSE;
+            }
+
+            nvAssert(!pRequestHead->yuv420Mode.specified ||
+                     pTimings->yuv420Mode == pRequestHead->yuv420Mode.val);
+
+            if (!HsConfigValidate(pRequestHead, pTimings->yuv420Mode,
+                                  pReplyHead)) {
+                nvPreallocRelease(pDevEvo,
+                                  PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS);
                 return FALSE;
             }
 
@@ -964,6 +987,12 @@ NvBool nvHsConfigInitModeset(
 
             state = NVKMS_HEAD_SURFACE_CONFIG_STATE_PARTIAL_HEAD_SURFACE;
 done:
+            if ((state == NVKMS_HEAD_SURFACE_CONFIG_STATE_NO_HEAD_SURFACE) &&
+                !pRequestHead->yuv420Mode.specified &&
+                pTimings->yuv420Mode == NV_YUV420_MODE_HW) {
+                state = NVKMS_HEAD_SURFACE_CONFIG_STATE_MAYBE_HEAD_SURFACE;
+            }
+
             ret = HsConfigInitModesetOneHead(pDevEvo,
                                              state,
                                              eyeMask,
@@ -1178,8 +1207,9 @@ void nvHsConfigInitSwapGroup(
  * display hardware for ViewPortOut ==> Raster scaling.
  *
  * Demote one of the heads along the path MAYBE_HEAD_SURFACE ->
- * PARTIAL_HEAD_SURFACE -> FULL_HEAD_SURFACE, so that the caller can try the
- * modeset again.
+ * PARTIAL_HEAD_SURFACE -> FULL_HEAD_SURFACE, or retry an auto-selected HW
+ * YUV420 head as SW YUV420 once it is already FULL_HEAD_SURFACE, so that the
+ * caller can try the modeset again.
  *
  * \param[in]      pDevEvo    The device.
  * \param[in]      pRequest   The requested configuration from the client.
@@ -1196,7 +1226,7 @@ NvBool nvHsConfigDowngrade(
     NvU32 dispIndex, apiHead, try;
     NVDispEvoPtr pDispEvo;
 
-    for (try = 0; try < 2; try++) {
+    for (try = 0; try < 3; try++) {
 
         FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
 
@@ -1208,6 +1238,7 @@ NvBool nvHsConfigDowngrade(
 
                 NVHsConfigState state =
                     NVKMS_HEAD_SURFACE_CONFIG_STATE_NO_HEAD_SURFACE;
+                NvBool swYuv420Fallback = FALSE;
 
                 if (!HsConfigHeadRequested(pRequest, dispIndex, apiHead)) {
                     continue;
@@ -1241,30 +1272,70 @@ NvBool nvHsConfigDowngrade(
                     state = NVKMS_HEAD_SURFACE_CONFIG_STATE_FULL_HEAD_SURFACE;
                 }
 
+                if ((try == 2) &&
+                    pChannelConfig->state ==
+                        NVKMS_HEAD_SURFACE_CONFIG_STATE_FULL_HEAD_SURFACE &&
+                    !pRequestHead->yuv420Mode.specified &&
+                    pChannelConfig->yuv420Mode == NV_YUV420_MODE_HW) {
+                    state = NVKMS_HEAD_SURFACE_CONFIG_STATE_FULL_HEAD_SURFACE;
+                    swYuv420Fallback = TRUE;
+                }
+
                 if (state != NVKMS_HEAD_SURFACE_CONFIG_STATE_NO_HEAD_SURFACE) {
-                    NvU32 ret;
-                    const struct NvKmsSetModeHeadSurfaceParams *p =
-                        &pRequest->disp[dispIndex].head[apiHead].headSurface;
+                    NvBool ret;
+                    struct NvKmsSetModeOneHeadRequest *pDowngradeRequestHead =
+                        nvPreallocGet(pDevEvo,
+                                      PREALLOC_TYPE_HS_DOWNGRADE_ONE_HEAD_MODESET_REQUEST,
+                                      sizeof(*pDowngradeRequestHead));
                     NVHwModeTimingsEvo *pTimings =
                         nvPreallocGet(pDevEvo, PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS,
                                       sizeof(*pTimings));
+
+                    *pDowngradeRequestHead = *pRequestHead;
+
+                    if (swYuv420Fallback) {
+                        pDowngradeRequestHead->yuv420Mode.val = NV_YUV420_MODE_SW;
+                        pDowngradeRequestHead->yuv420Mode.specified = TRUE;
+                    }
+
                     nvkms_memset(pTimings, 0, sizeof(*pTimings));
 
-                    if (!nvGetHwModeTimings(pDispEvo, apiHead, pRequestHead,
-                                            pTimings, NULL /* pDpyColor */,
+                    if (!nvGetHwModeTimings(pDispEvo,
+                                            pDowngradeRequestHead, pTimings,
+                                            NULL /* pDpyColor */,
                                             NULL /* pInfoFrameCtrl */,
                                             NULL /* pVSInfoFrameCtrl */,
                                             NULL /* pEmpInfoFrameCtrl */)) {
-                        nvPreallocRelease(pDevEvo, PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS);
+                        nvPreallocRelease(pDevEvo,
+                            PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS);
+                        nvPreallocRelease(pDevEvo,
+                            PREALLOC_TYPE_HS_DOWNGRADE_ONE_HEAD_MODESET_REQUEST);
+
+                        if (swYuv420Fallback) {
+                            continue;
+                        }
                         return FALSE;
+                    }
+
+                    if (swYuv420Fallback &&
+                        HsConfigGetValidationStatus(pDowngradeRequestHead,
+                                                    pTimings->yuv420Mode) !=
+                            NVKMS_SET_MODE_ONE_HEAD_STATUS_SUCCESS) {
+                        nvPreallocRelease(pDevEvo,
+                            PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS);
+                        nvPreallocRelease(pDevEvo,
+                            PREALLOC_TYPE_HS_DOWNGRADE_ONE_HEAD_MODESET_REQUEST);
+                        continue;
                     }
 
                     ret = HsConfigUpdateOneHead(state,
                                                 pTimings,
-                                                p,
+                                                &pDowngradeRequestHead->headSurface,
                                                 pChannelConfig);
 
                     nvPreallocRelease(pDevEvo, PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS);
+                    nvPreallocRelease(pDevEvo,
+                        PREALLOC_TYPE_HS_DOWNGRADE_ONE_HEAD_MODESET_REQUEST);
 
                     return ret;
                 }
@@ -1402,7 +1473,8 @@ static NVHsSurfacePtr HsConfigAllocSurfacesOneSurface(
             };
 
             nvHs3dClearSurface(pHsChannel, pSurface, surfaceRect,
-                               pHsConfigOneHead->channelConfig.yuv420);
+                               pHsConfigOneHead->channelConfig.yuv420Mode ==
+                                   NV_YUV420_MODE_SW);
         }
     }
 
@@ -1882,7 +1954,6 @@ static void HsMainLayerFlip(
     const NVDispEvoRec *pDispEvo = pHsChannel->pDispEvo;
     NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     const NvU32 apiHead = pHsChannel->apiHead;
-    const NvU32 sd = pDispEvo->displayOwner;
     NvBool ret;
     NvU8 eye;
     struct NvKmsFlipCommonParams *pParamsOneHead;
@@ -1895,7 +1966,6 @@ static void HsMainLayerFlip(
 
     nvkms_memset(pFlipHead, 0, sizeof(*pFlipHead));
 
-    pFlipHead->sd = sd;
     pFlipHead->head = apiHead;
     pParamsOneHead = &pFlipHead->flip;
 
@@ -2633,6 +2703,14 @@ NvBool nvHsConfigPatchSetModeRequest(const NVDevEvoRec *pDevEvo,
 
             HsConfigPatchRequestedViewPortOneHead(pDispEvo, pRequestHead,
                                                   pHsConfigOneHead);
+
+            if (!pRequestHead->yuv420Mode.specified) {
+                pRequestHead->yuv420Mode.val = pChannelConfig->yuv420Mode;
+                pRequestHead->yuv420Mode.specified = TRUE;
+            } else {
+                nvAssert(pChannelConfig->yuv420Mode ==
+                            pRequestHead->yuv420Mode.val);
+            }
         }
     }
 

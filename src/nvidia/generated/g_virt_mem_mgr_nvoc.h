@@ -124,14 +124,14 @@ NV_STATUS __nvoc_objCreate_OBJVMM(OBJVMM**, Dynamic*, NvU32);
 
 
 // Wrapper macros for implementation functions
-NV_STATUS vmmCreateVaspace_IMPL(struct OBJVMM *pVmm, NvU32 _class, NvU32 vaspaceId, NvU32 gpuMask, NvU64 vaStart, NvU64 vaLimit, NvU64 vaInternalStart, NvU64 vaInternalEnd, struct OBJVASPACE *pPteSpaceMap, NvU32 flags, struct OBJVASPACE **ppVAS);
+NV_STATUS vmmCreateVaspace_IMPL(struct OBJVMM *pVmm, NvU32 _class, NvU32 vaspaceId, struct OBJGPU *pGpu, NvU64 vaStart, NvU64 vaLimit, NvU64 vaInternalStart, NvU64 vaInternalEnd, struct OBJVASPACE *pPteSpaceMap, NvU32 flags, struct OBJVASPACE **ppVAS);
 #ifdef __nvoc_virt_mem_mgr_h_disabled
-static inline NV_STATUS vmmCreateVaspace(struct OBJVMM *pVmm, NvU32 _class, NvU32 vaspaceId, NvU32 gpuMask, NvU64 vaStart, NvU64 vaLimit, NvU64 vaInternalStart, NvU64 vaInternalEnd, struct OBJVASPACE *pPteSpaceMap, NvU32 flags, struct OBJVASPACE **ppVAS) {
+static inline NV_STATUS vmmCreateVaspace(struct OBJVMM *pVmm, NvU32 _class, NvU32 vaspaceId, struct OBJGPU *pGpu, NvU64 vaStart, NvU64 vaLimit, NvU64 vaInternalStart, NvU64 vaInternalEnd, struct OBJVASPACE *pPteSpaceMap, NvU32 flags, struct OBJVASPACE **ppVAS) {
     NV_ASSERT_FAILED_PRECOMP("OBJVMM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else // __nvoc_virt_mem_mgr_h_disabled
-#define vmmCreateVaspace(pVmm, _class, vaspaceId, gpuMask, vaStart, vaLimit, vaInternalStart, vaInternalEnd, pPteSpaceMap, flags, ppVAS) vmmCreateVaspace_IMPL(pVmm, _class, vaspaceId, gpuMask, vaStart, vaLimit, vaInternalStart, vaInternalEnd, pPteSpaceMap, flags, ppVAS)
+#define vmmCreateVaspace(pVmm, _class, vaspaceId, pGpu, vaStart, vaLimit, vaInternalStart, vaInternalEnd, pPteSpaceMap, flags, ppVAS) vmmCreateVaspace_IMPL(pVmm, _class, vaspaceId, pGpu, vaStart, vaLimit, vaInternalStart, vaInternalEnd, pPteSpaceMap, flags, ppVAS)
 #endif // __nvoc_virt_mem_mgr_h_disabled
 
 void vmmDestroyVaspace_IMPL(struct OBJVMM *pVmm, struct OBJVASPACE *pVAS);

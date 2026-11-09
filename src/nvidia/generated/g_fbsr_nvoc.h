@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -143,6 +143,7 @@ struct OBJFBSR {
     NvU64 sysOffset;
     NvU32 numRegions;
     NvBool bOperationFailed;
+    NvBool bSysMemLocked;
     NvBool bValid;
     NvBool bInitialized;
     NvBool bRawModeWasEnabled;
@@ -311,10 +312,6 @@ static inline NV_STATUS fbsrBegin_395e98(struct OBJGPU *pGpu, struct OBJFBSR *pF
 
 static inline NV_STATUS fbsrEnd_395e98(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr){
     return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline void fbsrCopyMemoryMemDesc_f2d351(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVidMemDesc){
-    NV_ASSERT_PRECOMP(0);
 }
 
 static inline NV_STATUS fbsrExecuteSaveRestore_395e98(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr){

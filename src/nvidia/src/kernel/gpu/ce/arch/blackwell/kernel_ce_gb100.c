@@ -26,7 +26,7 @@
 #include "kernel/gpu/ce/kernel_ce.h"
 #include "kernel/gpu/ce/kernel_ce_private.h"
 #include "kernel/gpu/bif/kernel_bif.h"
-#include "published/blackwell/gb100/dev_ce_base.h"
+#include "published/blackwell/gb100/dev_ce_zb.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 
 // Defines for PCE-LCE mapping algorithm
@@ -53,7 +53,7 @@
  * @param[in] pGpu  OBJGPU pointer
  * @param[in] pCe   OBJCE pointer
  *
- * @return  NV_CE_PCE2LCE_CONFIG__SIZE_1
+ * @return  NV_CE_ZB_PCE2LCE_CONFIG__SIZE_1
  *
  */
 NvU32
@@ -62,7 +62,7 @@ kceGetPce2lceConfigSize1_GB100
     KernelCE *pKCe
 )
 {
-    return NV_CE_PCE2LCE_CONFIG__SIZE_1;
+    return NV_CE_ZB_PCE2LCE_CONFIG__SIZE_1;
 }
 
 /*!
@@ -79,7 +79,7 @@ kceGetGrceConfigSize1_GB100
     KernelCE *pKCe
 )
 {
-    return (pKCe->shimInstance == 0) ? NV_CE_GRCE_CONFIG__SIZE_1 : 0;
+    return (pKCe->shimInstance == 0) ? NV_CE_ZB_GRCE_CONFIG__SIZE_1 : 0;
 }
 
 /*!
@@ -969,6 +969,9 @@ kceMapPceLceForNvlinkPeers_GB100
 
                 numPcesAssigned = 0;
 
+                NV_ASSERT_OR_RETURN(pKCe->nvlinkNumPeers != 0, NV_ERR_INVALID_STATE);
+                NV_ASSERT_OR_RETURN((numPcesPerLce / pKCe->nvlinkNumPeers) > 0, NV_ERR_INVALID_STATE);
+
                 while (numPcesAssigned < (numPcesPerLce / pKCe->nvlinkNumPeers))
                 {
                     bAtleastOnePceAssigned = NV_FALSE;
@@ -1092,8 +1095,8 @@ kceMapPceLceForGRCE_GB100
             {
                 pKCeIter->pPceLceMap[pceIndex]                  = lceIndex;
                 pAvailablePceMaskForConnectingHub[hshubIndex]  &= ~(NVBIT(pceIndex));
-                pLocalGrceMap[grceIdx]                          = DRF_NUM(_CE, _GRCE_CONFIG, _SHARED, 0) |
-                                                                  DRF_DEF(_CE, _GRCE_CONFIG, _SHARED_LCE, _NONE);
+                pLocalGrceMap[grceIdx]                          = DRF_NUM(_CE_ZB, _GRCE_CONFIG, _SHARED, 0) |
+                                                                  DRF_DEF(_CE_ZB, _GRCE_CONFIG, _SHARED_LCE, _NONE);
 
                  NV_PRINTF(LEVEL_INFO, "GRCE is not shared and mapped to LCE Index: 0.\n");
             }
@@ -1123,8 +1126,8 @@ kceMapPceLceForGRCE_GB100
                 }
             }
 
-            pLocalGrceMap[grceIdx] = DRF_NUM(_CE, _GRCE_CONFIG, _SHARED, 1) |
-                                     DRF_NUM(_CE, _GRCE_CONFIG, _SHARED_LCE, lceIndex);
+            pLocalGrceMap[grceIdx] = DRF_NUM(_CE_ZB, _GRCE_CONFIG, _SHARED, 1) |
+                                     DRF_NUM(_CE_ZB, _GRCE_CONFIG, _SHARED_LCE, lceIndex);
         }
     }
     KCE_ITER_END;

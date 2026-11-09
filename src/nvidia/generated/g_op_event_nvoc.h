@@ -56,6 +56,7 @@ extern "C" {
 #include "cper/gpu_cper.h"
 #include "nvoc/event.h"
 #include "events/event_defs.h"
+#include "lib/protobuf/prb.h"
 
 typedef struct EventContextHeader EventContextHeader;
 
@@ -68,23 +69,52 @@ typedef struct OBJGPU OBJGPU;
 
 
 
+// Metadata is returned by both size-only and rendering calls.
+typedef struct
+{
+    NvU32 wireSize;
+    NvU32 contextType;
+    NvU32 dataFormatVersion;
+    NvU32 dataSize;
+} EventBufferOpEventCtxInfo;
+
 typedef struct
 {
     /* -------------------------------------- Serializers -------------------------------------- */
     NV_STATUS (*serializeToEventBufferOpEventCtx)(EventContextHeader *pContext,
                                                   NV_OPERATIONAL_EVENT_CONTEXT *pOutput,
-                                                  NvU32 outputSize, NvU32 *pBytesWritten);
+                                                  NvU32 outputSize,
+                                                  EventBufferOpEventCtxInfo *pInfo);
+
+    // Adds exactly one typed payload field to a GPU operational event record context.
+    NV_STATUS (*serializeToProtobuf)(EventContextHeader *pContext,
+                                     PRB_ENCODER *pPrbEnc,
+                                     NvU32 *pContextType,
+                                     NvU32 *pDataFormatVersion);
 
     NV_STATUS (*serializeToCperEventCtx)(EventContextHeader *pContext,
                                          NV_CPER_NV_EVENT_SECTION_STATE *pState);
 
     /* --------------------------------------- Emitters ---------------------------------------- */
-    void (*emitToOsLogXid)(EventContextHeader *pContext, struct OBJGPU *pGpu);
+    void (*emitToOsLogXid)(EventContextHeader *pContext, struct OBJGPU *pGpu,
+                           NvBool bSimulated);
 
     NV_STATUS (*emitToOsLogCper)(EventContextHeader *pContext,
                                  PORT_DEVICE *pDevice, PORT_LOG_LEVEL level, NvU32 seq,
                                  const char *pLogPrefix);
 } EventContextOutputAdapters;
+
+#define OP_EVENT_XID_LOG(pGpu, bSimulated, num, fmt, ...)                       \
+    do {                                                                        \
+        if (bSimulated)                                                         \
+        {                                                                       \
+            NV_ERROR_LOG((pGpu), (num), fmt " [SIMULATED]", ##__VA_ARGS__);    \
+        }                                                                       \
+        else                                                                    \
+        {                                                                       \
+            NV_ERROR_LOG((pGpu), (num), fmt, ##__VA_ARGS__);                    \
+        }                                                                       \
+    } while (0)
 
 struct EventContextHeader
 {

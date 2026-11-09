@@ -41,17 +41,6 @@ void __nvoc_down_thunk_KernelPmu_engstateStateDestroy(struct OBJGPU *pGpu, struc
 NV_STATUS __nvoc_down_thunk_KernelPmu_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPmu);    // this
 
 // Up-thunk(s) to bridge KernelPmu methods to ancestors (if any)
-void __nvoc_up_thunk_OBJENGSTATE_kpmuInitMissing(struct OBJGPU *pGpu, struct KernelPmu *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePreInitLocked(struct OBJGPU *pGpu, struct KernelPmu *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelPmu *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStateInitUnlocked(struct OBJGPU *pGpu, struct KernelPmu *pEngstate);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePreLoad(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStateLoad(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePostLoad(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePreUnload(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStateUnload(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3);    // this
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePostUnload(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3);    // this
-NvBool __nvoc_up_thunk_OBJENGSTATE_kpmuIsPresent(struct OBJGPU *pGpu, struct KernelPmu *pEngstate);    // this
 
 // Class-specific details for KernelPmu
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelPmu = 
@@ -69,7 +58,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelPmu =
 };
 
 
-// Metadata with per-class RTTI and vtable with ancestor(s)
+// Metadata with per-class RTTI with ancestor(s)
 static const struct NVOC_METADATA__KernelPmu __nvoc_metadata__KernelPmu = {
     .rtti.pClassDef = &__nvoc_class_def_KernelPmu,    // (kpmu) this
     .rtti.dtor      = &__nvoc_dtor_KernelPmu,
@@ -81,33 +70,21 @@ static const struct NVOC_METADATA__KernelPmu __nvoc_metadata__KernelPmu = {
     .metadata__OBJENGSTATE.metadata__Object.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__OBJENGSTATE.metadata__Object.rtti.offset    = NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
 
-    .vtable.__kpmuConstructEngine__ = &kpmuConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelPmu_engstateConstructEngine,    // virtual
-    .vtable.__kpmuStateDestroy__ = &kpmuStateDestroy_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateDestroy__ = &__nvoc_down_thunk_KernelPmu_engstateStateDestroy,    // virtual
-    .vtable.__kpmuStateInitLocked__ = &kpmuStateInitLocked_IMPL,    // virtual override (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &__nvoc_down_thunk_KernelPmu_engstateStateInitLocked,    // virtual
-    .vtable.__kpmuInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kpmuInitMissing,    // virtual inherited (engstate) base (engstate)
+    .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
-    .vtable.__kpmuStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kpmuStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
-    .vtable.__kpmuStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kpmuStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .vtable.__kpmuStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kpmuStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
-    .vtable.__kpmuStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kpmuStatePreLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
-    .vtable.__kpmuStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kpmuStateLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
-    .vtable.__kpmuStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kpmuStatePostLoad,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
-    .vtable.__kpmuStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kpmuStatePreUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
-    .vtable.__kpmuStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kpmuStateUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
-    .vtable.__kpmuStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kpmuStatePostUnload,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
-    .vtable.__kpmuIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kpmuIsPresent,    // virtual inherited (engstate) base (engstate)
     .metadata__OBJENGSTATE.vtable.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
 };
 
@@ -126,75 +103,17 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelPmu = {
 
 // kpmuConstructEngine: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelPmu_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPmu, ENGDESCRIPTOR engDesc) {
-    return kpmuConstructEngine(pGpu, (struct KernelPmu *)(((unsigned char *) pKernelPmu) - NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)), engDesc);
+    return kpmuConstructEngine_IMPL(pGpu, (struct KernelPmu *)(((unsigned char *) pKernelPmu) - NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)), engDesc);
 }
 
 // kpmuStateDestroy: virtual override (engstate) base (engstate)
 void __nvoc_down_thunk_KernelPmu_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPmu) {
-    kpmuStateDestroy(pGpu, (struct KernelPmu *)(((unsigned char *) pKernelPmu) - NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)));
+    kpmuStateDestroy_IMPL(pGpu, (struct KernelPmu *)(((unsigned char *) pKernelPmu) - NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)));
 }
 
 // kpmuStateInitLocked: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_KernelPmu_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPmu) {
-    return kpmuStateInitLocked(pGpu, (struct KernelPmu *)(((unsigned char *) pKernelPmu) - NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)));
-}
-
-
-// 11 up-thunk(s) defined to bridge methods in KernelPmu to superclasses
-
-// kpmuInitMissing: virtual inherited (engstate) base (engstate)
-void __nvoc_up_thunk_OBJENGSTATE_kpmuInitMissing(struct OBJGPU *pGpu, struct KernelPmu *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)));
-}
-
-// kpmuStatePreInitLocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePreInitLocked(struct OBJGPU *pGpu, struct KernelPmu *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)));
-}
-
-// kpmuStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelPmu *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)));
-}
-
-// kpmuStateInitUnlocked: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStateInitUnlocked(struct OBJGPU *pGpu, struct KernelPmu *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)));
-}
-
-// kpmuStatePreLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePreLoad(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kpmuStateLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStateLoad(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kpmuStatePostLoad: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePostLoad(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kpmuStatePreUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePreUnload(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kpmuStateUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStateUnload(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
-    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kpmuStatePostUnload: virtual inherited (engstate) base (engstate)
-NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kpmuStatePostUnload(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)), arg3);
-}
-
-// kpmuIsPresent: virtual inherited (engstate) base (engstate)
-NvBool __nvoc_up_thunk_OBJENGSTATE_kpmuIsPresent(struct OBJGPU *pGpu, struct KernelPmu *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)));
+    return kpmuStateInitLocked_IMPL(pGpu, (struct KernelPmu *)(((unsigned char *) pKernelPmu) - NV_OFFSETOF(KernelPmu, __nvoc_base_OBJENGSTATE)));
 }
 
 
@@ -258,24 +177,38 @@ static void __nvoc_init_funcTable_KernelPmu_1(KernelPmu *pThis, GpuHalspecOwner 
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
-    // kpmuGetIsSelfInit -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
-        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000030ffUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+    // kpmuReservedMemoryBackingStoreSizeGet -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006000UL) )) /* ChipHal: GR100 | GR102 */ 
     {
-        pThis->__kpmuGetIsSelfInit__ = &kpmuGetIsSelfInit_e661f0;
+        pThis->__kpmuReservedMemoryBackingStoreSizeGet__ = &kpmuReservedMemoryBackingStoreSizeGet_3c0c39;
     }
-    // default
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
+             ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000ffUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C */ 
+    {
+        pThis->__kpmuReservedMemoryBackingStoreSizeGet__ = &kpmuReservedMemoryBackingStoreSizeGet_bdab1d;
+    }
     else
     {
-        pThis->__kpmuGetIsSelfInit__ = &kpmuGetIsSelfInit_d69453;
+        pThis->__kpmuReservedMemoryBackingStoreSizeGet__ = &kpmuReservedMemoryBackingStoreSizeGet_b2b553;
     }
-} // End __nvoc_init_funcTable_KernelPmu_1 with approximately 2 basic block(s).
+
+    // kpmuComputeReservedMemoryOffset -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x98000000UL) ) ||
+        ( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000060ffUL) )) /* ChipHal: GB100 | GB102 | GB110 | GB112 | GB202 | GB203 | GB205 | GB206 | GB207 | GB20B | GB20C | GR100 | GR102 */ 
+    {
+        pThis->__kpmuComputeReservedMemoryOffset__ = &kpmuComputeReservedMemoryOffset_GB100;
+    }
+    else
+    {
+        pThis->__kpmuComputeReservedMemoryOffset__ = &kpmuComputeReservedMemoryOffset_b2b553;
+    }
+} // End __nvoc_init_funcTable_KernelPmu_1 with approximately 5 basic block(s).
 
 
-// Initialize vtable(s) for 15 virtual method(s).
+// Initialize vtable(s) for 2 virtual method(s).
 void __nvoc_init_funcTable_KernelPmu(KernelPmu *pThis, GpuHalspecOwner *pGpuhalspecowner) {
 
-    // Initialize vtable(s) with 1 per-object function pointer(s).
+    // Initialize vtable(s) with 2 per-object function pointer(s).
     __nvoc_init_funcTable_KernelPmu_1(pThis, pGpuhalspecowner);
 }
 

@@ -252,6 +252,8 @@ typedef struct
     // write-through cache the invalidation could be done by RM at map time
     // however this introduces overhead during performance sensitive sections.
     bool need_l2_invalidate_at_unmap;
+
+    // Ensure uvm_ext_gpu_map_split() is updated when new fields are added.
 } uvm_ext_gpu_map_t;
 
 struct uvm_va_range_struct
