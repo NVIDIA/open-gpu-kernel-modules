@@ -5730,7 +5730,7 @@ rm_nvpcf_resample_power_budget
         if (!notedLimitation)
         {
             notedLimitation = NV_TRUE;
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_INFO,
                       "NVRM: NVPCF resample skipped; no RM client. An unbound NPCF is not repaired by this path.\n");
         }
         return NV_FALSE;
@@ -5745,7 +5745,7 @@ rm_nvpcf_resample_power_budget
         if (!notedLimitation)
         {
             notedLimitation = NV_TRUE;
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_INFO,
                       "NVRM: NVPCF resample failed. Invalid SBIOS data or an unbound NPCF is not repaired by repeating this read.\n");
         }
         return NV_FALSE;
@@ -5756,7 +5756,7 @@ rm_nvpcf_resample_power_budget
         coalesced++;
         if (coalesced == 1)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_INFO,
                       "NVRM: NVPCF 0xC0 coalesced; budget unchanged ctgp %d mW tppOff %d mW\n",
                       params.ctgpOffsetmW, params.targetTppOffsetmW);
         }
@@ -5765,13 +5765,13 @@ rm_nvpcf_resample_power_budget
 
     if (coalesced != 0)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "NVRM: NVPCF budget changed after %u coalesced 0xC0 version 0x%x ctgp %d mW tppOff %d mW\n",
                   coalesced, params.version, params.ctgpOffsetmW, params.targetTppOffsetmW);
     }
     else
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "NVRM: NVPCF resample version 0x%x ctgp %d mW tppOff %d mW\n",
                   params.version, params.ctgpOffsetmW, params.targetTppOffsetmW);
     }
