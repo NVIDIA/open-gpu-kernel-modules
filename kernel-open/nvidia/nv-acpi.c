@@ -867,12 +867,13 @@ NV_STATUS NV_API_CALL nv_acpi_ddc_method(
     }
 
     //
-    // As per ACPI Spec 3.0:
-    // ARG0 = 0x1 for 128 bytes edid buffer
-    // ARG0 = 0x2 for 256 bytes edid buffer
+    // ARG0 is the EDID size in 128-byte blocks. Some firmware returns a
+    // non-buffer object unless ARG0 matches the panel's block count, so try
+    // up to 4 blocks (512 bytes) and keep only a buffer result, the same way
+    // Linux acpi_video_get_edid() does.
     //
 
-    largestEdidSize = bReadMultiBlock ? 2 : 1;
+    largestEdidSize = bReadMultiBlock ? 4 : 1;
 
     for (i = largestEdidSize; i >= 1; i--)
     {
@@ -884,7 +885,10 @@ NV_STATUS NV_API_CALL nv_acpi_ddc_method(
         status = acpi_evaluate_object(lcd_dev_handle, "_DDC", &input, &output);
         if (ACPI_SUCCESS(status)) {
             ddc = output.pointer;
-            break;
+            if (ddc && (ddc->type == ACPI_TYPE_BUFFER) && (ddc->buffer.length > 0))
+                break;
+            kfree(ddc);
+            ddc = NULL;
         }
     }
 
