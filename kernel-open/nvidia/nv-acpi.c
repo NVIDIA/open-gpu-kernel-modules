@@ -360,8 +360,19 @@ acpi_status nv_acpi_find_methods(
 
     if (!acpi_get_handle(handle, "NPCF", &method_handle))
     {
+        acpi_object_type nvpcf_type = ACPI_TYPE_ANY;
+
         nvpcf_handle = method_handle;
-        nvpcf_device_handle = handle;
+        /*
+         * Bind the notifier to the NPCF device. ASL Notify cannot target
+         * a method. If this node is not a device, keep the parent handle
+         * so the old behaviour stays.
+         */
+        if (ACPI_SUCCESS(acpi_get_type(method_handle, &nvpcf_type)) &&
+            (nvpcf_type == ACPI_TYPE_DEVICE))
+            nvpcf_device_handle = method_handle;
+        else
+            nvpcf_device_handle = handle;
     }
 
     return 0;
