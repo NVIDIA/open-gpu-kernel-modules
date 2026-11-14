@@ -717,6 +717,13 @@ nv_module_exit(nv_stack_t *sp)
 {
     nv_module_state_exit(sp);
 
+    /*
+     * Adapter shutdown does not wait for the NVPCF work item. Wait here,
+     * before the RM is torn down. No RM locks are held, and the API lock
+     * still exists.
+     */
+    nv_acpi_nvpcf_work_cancel();
+
     rm_shutdown_rm(sp);
 
     nv_destroy_rsync_info();
@@ -4802,6 +4809,13 @@ nvidia_suspend(
     struct pci_dev *pci_dev = NULL;
     nv_linux_state_t *nvl;
     nv_state_t *nv;
+
+    /*
+     * GSP samples NVPCF again during resume and can latch the boot budget.
+     * Forget the pre-suspend sample so the resume 0xC0 wakes nvidia-powerd
+     * even when the published numbers did not change.
+     */
+    rm_nvpcf_drop_cached_budget();
 
     if (dev_is_pci(dev))
     {

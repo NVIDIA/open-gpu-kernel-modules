@@ -5638,6 +5638,175 @@ NvBool NV_API_CALL rm_is_altstack_in_use(void)
 #endif
 }
 
+/*
+ * Notify(NPCF, 0xC0) is also raised on resume and on battery ticks that
+ * republish the same budget. The ACPI handler queues one work item, so a
+ * burst collapses to one sample. Compare that sample with the last one
+ * and do not wake clients for a duplicate.
+ *
+ * A failed read still wakes clients. NVPCF 1.x and 3.x do not answer the
+ * 2.x dynamic query, and the previous driver woke clients on every 0xC0.
+ * An unbound NPCF node, or an SBIOS query that returns invalid data, is
+ * not repaired by repeating the read.
+ */
+static NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS rm_nvpcf_lastBudget;
+static NvBool rm_nvpcf_haveLastBudget;
+static NvBool rm_nvpcf_haveVersion;
+static NvU8   rm_nvpcf_version;
+static NvU32  rm_nvpcf_coalesced;
+static NvBool rm_nvpcf_loggedNoClient;
+static NvBool rm_nvpcf_loggedStaticFailure;
+static NvBool rm_nvpcf_loggedDynamicFailure;
+
+void NV_API_CALL rm_nvpcf_drop_cached_budget(void)
+{
+    rm_nvpcf_haveLastBudget = NV_FALSE;
+    rm_nvpcf_haveVersion = NV_FALSE;
+    rm_nvpcf_version = 0;
+    rm_nvpcf_coalesced = 0;
+    portMemSet(&rm_nvpcf_lastBudget, 0, sizeof(rm_nvpcf_lastBudget));
+}
+
+static NvBool
+rm_nvpcf_same_budget
+(
+    const NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pA,
+    const NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pB
+)
+{
+    return (pA->version == pB->version) &&
+           (pA->ctgpOffsetmW == pB->ctgpOffsetmW) &&
+           (pA->targetTppOffsetmW == pB->targetTppOffsetmW) &&
+           (pA->maxOutputOffsetmW == pB->maxOutputOffsetmW) &&
+           (pA->minOutputOffsetmW == pB->minOutputOffsetmW) &&
+           (pA->ctgpBattOffsetmW == pB->ctgpBattOffsetmW) &&
+           (pA->targetTppBattOffsetmW == pB->targetTppBattOffsetmW) &&
+           (pA->maxOutputBattOffsetmW == pB->maxOutputBattOffsetmW) &&
+           (pA->minOutputBattOffsetmW == pB->minOutputBattOffsetmW) &&
+           (pA->bEnableForAC == pB->bEnableForAC) &&
+           (pA->bEnableForDC == pB->bEnableForDC) &&
+           (pA->tpp == pB->tpp) &&
+           (pA->ratedTgp == pB->ratedTgp) &&
+           (pA->dcRosReserveOverridemW == pB->dcRosReserveOverridemW) &&
+           (pA->dcTspLongTimescaleLimitOverridemA ==
+                pB->dcTspLongTimescaleLimitOverridemA) &&
+           (pA->dcTspShortTimescaleLimitOverridemA ==
+                pB->dcTspShortTimescaleLimitOverridemA);
+}
+
+static NV_STATUS
+rm_nvpcf_control
+(
+    nv_state_t *nv,
+    NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    if (nv->rmapi.hClient == 0)
+        return NV_ERR_INVALID_STATE;
+
+    return pRmApi->Control(pRmApi,
+                           nv->rmapi.hClient,
+                           nv->rmapi.hClient,
+                           NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO,
+                           pParams,
+                           sizeof(*pParams));
+}
+
+/* NV_TRUE when clients should be woken. A failed read returns NV_TRUE. */
+static NvBool
+rm_nvpcf_resample_power_budget
+(
+    OBJGPU *pGpu,
+    nv_state_t *nv
+)
+{
+    NV0000_CTRL_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS params;
+    NV_STATUS status;
+    NvU8 version;
+
+    if (nv->rmapi.hClient == 0)
+    {
+        if (!rm_nvpcf_loggedNoClient)
+        {
+            rm_nvpcf_loggedNoClient = NV_TRUE;
+            NV_PRINTF(LEVEL_INFO,
+                      "NVPCF resample skipped; no RM client. Waking clients anyway.\n");
+        }
+        return NV_TRUE;
+    }
+
+    if (!rm_nvpcf_haveVersion)
+    {
+        portMemSet(&params, 0, sizeof(params));
+        params.gpuId = pGpu->gpuId;
+        params.subFunc = NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_STATIC_CASE;
+        status = rm_nvpcf_control(nv, &params);
+        if ((status != NV_OK) || (params.version == 0))
+        {
+            if (!rm_nvpcf_loggedStaticFailure)
+            {
+                rm_nvpcf_loggedStaticFailure = NV_TRUE;
+                NV_PRINTF(LEVEL_INFO,
+                          "NVPCF static table read failed. Waking clients anyway.\n");
+            }
+            return NV_TRUE;
+        }
+        rm_nvpcf_version = params.version;
+        rm_nvpcf_haveVersion = NV_TRUE;
+    }
+    version = rm_nvpcf_version;
+
+    portMemSet(&params, 0, sizeof(params));
+    params.gpuId = pGpu->gpuId;
+    params.subFunc = NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DYNAMIC_CASE;
+    params.version = version;
+    status = rm_nvpcf_control(nv, &params);
+    if (status != NV_OK)
+    {
+        if (!rm_nvpcf_loggedDynamicFailure)
+        {
+            rm_nvpcf_loggedDynamicFailure = NV_TRUE;
+            NV_PRINTF(LEVEL_INFO,
+                      "NVPCF dynamic budget read failed. Waking clients anyway.\n");
+        }
+        return NV_TRUE;
+    }
+
+    if (rm_nvpcf_haveLastBudget &&
+        rm_nvpcf_same_budget(&params, &rm_nvpcf_lastBudget))
+    {
+        rm_nvpcf_coalesced++;
+        if (rm_nvpcf_coalesced == 1)
+        {
+            NV_PRINTF(LEVEL_INFO,
+                      "NVPCF 0xC0 coalesced; budget unchanged ctgp %d mW tppOff %d mW\n",
+                      params.ctgpOffsetmW, params.targetTppOffsetmW);
+        }
+        return NV_FALSE;
+    }
+
+    if (rm_nvpcf_coalesced != 0)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "NVPCF budget changed after %u coalesced 0xC0 version 0x%x ctgp %d mW tppOff %d mW\n",
+                  rm_nvpcf_coalesced, params.version, params.ctgpOffsetmW,
+                  params.targetTppOffsetmW);
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "NVPCF resample version 0x%x ctgp %d mW tppOff %d mW\n",
+                  params.version, params.ctgpOffsetmW, params.targetTppOffsetmW);
+    }
+
+    rm_nvpcf_lastBudget = params;
+    rm_nvpcf_haveLastBudget = NV_TRUE;
+    rm_nvpcf_coalesced = 0;
+    return NV_TRUE;
+}
+
 void NV_API_CALL rm_acpi_nvpcf_notify(
     nvidia_stack_t *sp
 )
@@ -5657,14 +5826,31 @@ void NV_API_CALL rm_acpi_nvpcf_notify(
         if (pGpu != NULL)
         {
             nv_state_t *nv = NV_GET_NV_STATE(pGpu);
-            if ((rmStatus = os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE)) ==
-                                                                         NV_OK)
+            NvBool wakeClients = NV_TRUE;
+
+            // LOCK: acquire GPU lock
+            if ((rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE,
+                                              RM_LOCK_MODULES_EVENT)) == NV_OK)
             {
-               gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS,
-                                       NULL, 0, 0, 0);
+                /*
+                 * Read ACPI before taking a runtime-PM reference. An
+                 * unchanged budget must not wake a runtime-suspended GPU.
+                 */
+                wakeClients = rm_nvpcf_resample_power_budget(pGpu, nv);
+                // UNLOCK: release GPU lock
+                rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
             }
-            os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
+
+            if (wakeClients &&
+                ((rmStatus = os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE)) ==
+                                                                         NV_OK))
+            {
+                gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS,
+                                        NULL, 0, 0, 0);
+                os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
+            }
         }
+        // UNLOCK: release API lock
         rmapiLockRelease();
     }
 

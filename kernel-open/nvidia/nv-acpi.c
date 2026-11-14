@@ -28,6 +28,8 @@
 #include "nv-reg.h"
 
 #include <linux/acpi.h>
+#include <linux/spinlock.h>
+#include <linux/workqueue.h>
 #include <acpi/video.h>
 
 #if defined(NV_LINUX_ACPI_EVENTS_SUPPORTED)
@@ -66,6 +68,11 @@ static acpi_handle nvpcf_device_handle = NULL;
 static nv_acpi_t  *nvpcf_nv_acpi_object = NULL;
 
 #define ACPI_NVPCF_EVENT_CHANGE    0xC0
+
+static DEFINE_SPINLOCK(nvpcf_notify_lock);
+static bool nvpcf_notify_dead;
+static void nv_acpi_nvpcf_work(struct work_struct *work);
+static DECLARE_WORK(nvpcf_notify_work, nv_acpi_nvpcf_work);
 
 /*
  * This callback will be invoked by the acpi_notifier_call_chain()
@@ -144,18 +151,44 @@ static void nv_acpi_powersource_hotplug_event(acpi_handle handle, u32 event_type
     }
 }
 
+static void nv_acpi_nvpcf_work(struct work_struct *work)
+{
+    nvidia_stack_t *sp = NULL;
+
+    (void)work;
+
+    /*
+     * A Notify raised from inside _DSM is sampled again and coalesced
+     * by rm_nvpcf_same_budget() when the budget did not change.
+     */
+    if (nv_kmem_cache_alloc_stack(&sp) != 0)
+        return;
+
+    rm_acpi_nvpcf_notify(sp);
+    nv_kmem_cache_free_stack(sp);
+}
+
 static void nv_acpi_nvpcf_event(acpi_handle handle, u32 event_type, void *data)
 {
-    nv_acpi_t *pNvAcpiObject = data;
+    unsigned long flags;
 
-    if (event_type == ACPI_NVPCF_EVENT_CHANGE)
-    {
-        rm_acpi_nvpcf_notify(pNvAcpiObject->sp);
-    }
-    else
+    (void)handle;
+    (void)data;
+
+    if (event_type != ACPI_NVPCF_EVENT_CHANGE)
     {
         nv_printf(NV_DBG_INFO,"NVRM: %s: NVPCF event 0x%x is not supported\n", __FUNCTION__, event_type);
+        return;
     }
+
+    /*
+     * schedule_work() is a no-op while this item is already queued, so a
+     * burst of 0xC0 notifies becomes one sample.
+     */
+    spin_lock_irqsave(&nvpcf_notify_lock, flags);
+    if (!nvpcf_notify_dead)
+        schedule_work(&nvpcf_notify_work);
+    spin_unlock_irqrestore(&nvpcf_notify_lock, flags);
 }
 
 /*
@@ -327,6 +360,15 @@ void NV_API_CALL nv_acpi_methods_init(NvU32 *handlesPresent)
 
     if (nvpcf_handle && (nvpcf_nv_acpi_object == NULL))
     {
+        unsigned long flags;
+
+        /*
+         * Install on the NPCF device. _DSM is hard-coded to
+         * \_SB.NPCF._DSM, so that device is what receives Notify 0xC0.
+         */
+        spin_lock_irqsave(&nvpcf_notify_lock, flags);
+        nvpcf_notify_dead = false;
+        spin_unlock_irqrestore(&nvpcf_notify_lock, flags);
         nvpcf_nv_acpi_object = nv_install_notifier(nvpcf_device_handle, nv_acpi_nvpcf_event, NULL);
     }
 
@@ -394,12 +436,39 @@ void NV_API_CALL nv_acpi_methods_uninit(void)
 
     if (nvpcf_nv_acpi_object != NULL)
     {
+        unsigned long flags;
+
+        spin_lock_irqsave(&nvpcf_notify_lock, flags);
+        nvpcf_notify_dead = true;
+        spin_unlock_irqrestore(&nvpcf_notify_lock, flags);
+        /*
+         * Do not wait. Shutdown already holds the locks this work takes,
+         * and nvpcf_notify_dead blocks a new queue.
+         */
+        cancel_work(&nvpcf_notify_work);
+
         nv_uninstall_notifier(nvpcf_nv_acpi_object, nv_acpi_nvpcf_event);
 
         nvpcf_handle = NULL;
         nvpcf_device_handle = NULL;
         nvpcf_nv_acpi_object = NULL;
+        rm_nvpcf_drop_cached_budget();
     }
+}
+
+/*
+ * Called from module exit before the RM is torn down. No RM locks are
+ * held. Adapter shutdown only cancel_work()s, because it holds the
+ * locks this work takes.
+ */
+void NV_API_CALL nv_acpi_nvpcf_work_cancel(void)
+{
+    unsigned long flags;
+
+    spin_lock_irqsave(&nvpcf_notify_lock, flags);
+    nvpcf_notify_dead = true;
+    spin_unlock_irqrestore(&nvpcf_notify_lock, flags);
+    cancel_work_sync(&nvpcf_notify_work);
 }
 
 static NV_STATUS nv_acpi_extract_integer(
@@ -1443,6 +1512,10 @@ void NV_API_CALL nv_acpi_methods_init(NvU32 *handlePresent)
 void NV_API_CALL nv_acpi_methods_uninit(void)
 {
     return;
+}
+
+void NV_API_CALL nv_acpi_nvpcf_work_cancel(void)
+{
 }
 
 NV_STATUS NV_API_CALL nv_acpi_method(
