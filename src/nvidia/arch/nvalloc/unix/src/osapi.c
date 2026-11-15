@@ -24,6 +24,7 @@
 
 
 
+#ifndef NVPCF_HOST_TEST
 #include <nv_ref.h>
 #include <nv.h>
 #include <nv_escape.h>
@@ -5638,6 +5639,10 @@ NvBool NV_API_CALL rm_is_altstack_in_use(void)
 #endif
 }
 
+#else
+#include "host_os_stubs.h"
+#endif
+
 /*
  * Notify(NPCF, 0xC0) is also raised on resume and on battery ticks that
  * republish the same budget. The ACPI handler queues one work item, so a
@@ -5858,6 +5863,7 @@ void NV_API_CALL rm_acpi_nvpcf_notify(
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
 
+#ifndef NVPCF_HOST_TEST
 static void rm_notify_gpu_addition_removal_helper(
     nv_state_t *nv,
     NvBool bBind)
@@ -6008,3 +6014,4 @@ rm_pmu_perfmon_get_load_exit:
 
     return status;
 }
+#endif
