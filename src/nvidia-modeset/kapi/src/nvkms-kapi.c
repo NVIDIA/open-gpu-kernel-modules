@@ -610,6 +610,10 @@ done:
 
 static void FreeDevice(struct NvKmsKapiDevice *device)
 {
+    if (device == NULL) {
+        return;
+    }
+
     /* Free NVKMS objects allocated for NvKmsKapiDevice */
 
     KmsFreeDevice(device);
@@ -928,14 +932,14 @@ static struct NvKmsKapiDevice* AllocateDevice
         nvKmsKapiLogDebug(
             "Failed to allocate semaphore for NvKmsKapiDevice of GPU ID 0x%08x",
             params->gpuId);
-        goto failed;
+        goto failed_before_gpu_open;
     }
 
     /* Raise the reference count of gpu. */
 
     if (!nvkms_open_gpu(params->gpuId, NV_TRUE /* reset_aware */)) {
         nvKmsKapiLogDebug("Failed to open GPU ID 0x%08x", params->gpuId);
-        goto failed;
+        goto failed_before_gpu_open;
     }
 
     device->gpuId = params->gpuId;
@@ -972,6 +976,16 @@ static struct NvKmsKapiDevice* AllocateDevice
 failed:
 
     FreeDevice(device);
+
+    return NULL;
+
+failed_before_gpu_open:
+
+    /* No GPU reference or RM/NVKMS objects have been acquired yet. */
+    if (device->pSema != NULL) {
+        nvkms_sema_free(device->pSema);
+    }
+    nvKmsKapiFree(device);
 
     return NULL;
 }
