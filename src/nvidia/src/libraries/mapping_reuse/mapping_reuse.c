@@ -128,6 +128,11 @@ reusemappingdbUnmap
             mapRemove(&(pReuseMappingDb->virtualMap), pEntry);
             mapRemove(pPhysicalMap, pEntry);
 
+            if (mapCount(pPhysicalMap) == 0)
+            {
+                mapRemove(&(pReuseMappingDb->allocCtxPhysicalMap), pPhysicalMap);
+            }
+
             pReuseMappingDb->pUnmapCb(pReuseMappingDb->pGlobalCtx, pEntryAllocCtx, revRange);
             PORT_FREE(pReuseMappingDb->pAllocator, pEntry);
         }
@@ -201,24 +206,29 @@ reusemappingdbMap
     NvU64 cachingFlags
 )
 {
-    ReuseMappingDbPhysicalMap *pPhysicalMap;
+    ReuseMappingDbPhysicalMap *pPhysicalMap = NULL;
     ReuseMappingDbToken token;
     NvBool bNoReuse = !!(cachingFlags & REUSE_MAPPING_DB_MAP_FLAGS_NO_REUSE);
     NvBool bSingleRange = !!(cachingFlags & REUSE_MAPPING_DB_MAP_FLAGS_SINGLE_RANGE);
     NvBool bAddToMap = !bNoReuse;
     NV_STATUS status = NV_OK;
 
+    pMemoryArea->pRanges = NULL;
+    pMemoryArea->numRanges = 0;
+
     // TODO: Remove when we support multi-range reuse
     NV_ASSERT_OR_RETURN( bSingleRange || bNoReuse, NV_ERR_NOT_SUPPORTED);
 
-    pPhysicalMap = mapFind(&(pReuseMappingDb->allocCtxPhysicalMap), (NvU64) pAllocCtx);
-    
-    // We don't currently have any mappings for this alloc context, create new map
-    if (pPhysicalMap == NULL)
+    // Untracked mappings do not need an allocation-context map.
+    if (!bNoReuse)
     {
-        pPhysicalMap = mapInsertNew(&(pReuseMappingDb->allocCtxPhysicalMap), (NvU64) pAllocCtx);
-        mapInitIntrusive(pPhysicalMap);
-        NV_ASSERT_OR_RETURN(pPhysicalMap != NULL, NV_ERR_NO_MEMORY);
+        pPhysicalMap = mapFind(&(pReuseMappingDb->allocCtxPhysicalMap), (NvU64) pAllocCtx);
+        if (pPhysicalMap == NULL)
+        {
+            pPhysicalMap = mapInsertNew(&(pReuseMappingDb->allocCtxPhysicalMap), (NvU64) pAllocCtx);
+            NV_ASSERT_OR_RETURN(pPhysicalMap != NULL, NV_ERR_NO_MEMORY);
+            mapInitIntrusive(pPhysicalMap);
+        }
     }
 
     if (!bNoReuse && bSingleRange)
@@ -253,11 +263,11 @@ reusemappingdbMap
                     // Only return exact match
                     if (physRange.start == range.start && physRange.size == range.size)
                     {
-                        pMemoryArea->numRanges = 1;
-                        pEntry->refCount++;
                         pMemoryArea->pRanges = PORT_ALLOC(pReuseMappingDb->pAllocator, sizeof(MemoryRange));
                         NV_ASSERT_OR_RETURN(pMemoryArea->pRanges != NULL, NV_ERR_NO_MEMORY);
                         pMemoryArea->pRanges[0] = mrangeMake(virtualOffset, range.size);
+                        pMemoryArea->numRanges = 1;
+                        pEntry->refCount++;
                         return NV_OK;
                     }
                 }
@@ -270,7 +280,7 @@ reusemappingdbMap
     token.pList = NULL;
 
     // Get new mappings, added to linked list
-    NV_ASSERT_OK_OR_GOTO(status, pReuseMappingDb->pMapCb(pReuseMappingDb->pGlobalCtx, pAllocCtx,
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_INFO, pReuseMappingDb->pMapCb(pReuseMappingDb->pGlobalCtx, pAllocCtx,
                                      range, cachingFlags, &token, _reusemappingdbAddMappingCallback), err_unmap);
     
     pMemoryArea->pRanges = PORT_ALLOC(pReuseMappingDb->pAllocator, sizeof(MemoryRange) * token.numNewEntries);
@@ -319,6 +329,12 @@ err_unmap:
             mrangeMake(token.pList->newMappingNode.virtualOffset, token.pList->size));
         token.pList = token.pList->newMappingNode.pNextEntry;
         PORT_FREE(pReuseMappingDb->pAllocator, pCur);
+    }
+
+    // A failed mapping must not leave an empty map keyed by a dead alloc context.
+    if (pPhysicalMap != NULL && mapCount(pPhysicalMap) == 0)
+    {
+        mapRemove(&(pReuseMappingDb->allocCtxPhysicalMap), pPhysicalMap);
     }
     return status;
 }
