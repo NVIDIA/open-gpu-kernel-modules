@@ -131,12 +131,18 @@ pmaPrintBlockStatus(PMA_PAGESTATUS blockStatus)
 void
 pmaRegionPrint(PMA *pPma, PMA_REGION_DESCRIPTOR *pRegion, void *pMap)
 {
+#if NV_PRINTF_ENABLED
     NvU32 i;
     PMA_PAGESTATUS currStatus, blockStatus = STATE_FREE;
     NvU64 addrBase, addrLimit, numFrames, blockStart = 0;
 
     NV_ASSERT(pRegion != NULL);
     NV_ASSERT(pMap != NULL);
+
+    if (DBG_RMMSG_CHECK(LEVEL_INFO) == 0)
+    {
+        return;
+    }
 
     (void)blockStart; //Silence the compiler
 
@@ -167,6 +173,7 @@ pmaRegionPrint(PMA *pPma, PMA_REGION_DESCRIPTOR *pRegion, void *pMap)
     }
     NV_PRINTF(LEVEL_INFO, "%8llx..%8x: ", blockStart, i-1);
     pmaPrintBlockStatus(blockStatus);
+#endif // NV_PRINTF_ENABLED
 }
 
 NvBool
