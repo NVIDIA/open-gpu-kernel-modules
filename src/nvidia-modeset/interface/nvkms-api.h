@@ -3303,6 +3303,22 @@ struct NvKmsEventDpyCpTopologyChanged  {
     const void *topology;
 };
 
+/*!
+ * NVKMS_EVENT_TYPE_DPY_LINK_RETRAIN_REQUIRED
+ *
+ * Generated when a dpy that is driving an active head has lost its link
+ * without any change to the dpy's EDID or mode list (for example, an HDMI
+ * FRL sink that was power-cycled while the head stayed active), so the
+ * client must perform a full modeset of the head to retrain the link.
+ *
+ * This event is only available to kernel-space clients.
+ */
+
+struct NvKmsEventDpyLinkRetrainRequired {
+    NvKmsDeviceHandle deviceHandle;
+    NVDpyId dpyId;
+};
+
 struct NvKmsEvent {
     enum NvKmsEventType eventType;
     union {
@@ -3314,6 +3330,7 @@ struct NvKmsEvent {
         struct NvKmsEventFlipOccurred flipOccurred;
         struct NvKmsEventDpyCpChanged dpyCpChanged;
         struct NvKmsEventDpyCpTopologyChanged dpyCpTopologyChanged;
+        struct NvKmsEventDpyLinkRetrainRequired dpyLinkRetrainRequired;
     } u;
 };
 

@@ -2407,6 +2407,21 @@ typedef struct _NVDpyEvoRec {
         HDMI_SINK_CAPS sinkCaps;
         NvBool reassessFrlLinkCaps             : 1;
         NvU8 scdcSrcTestConfig;
+
+        /*
+         * Last successfully assessed FRL caps, used to restore the current
+         * caps when a fresh FRL assessment fails and the EDID is unchanged
+         * (see nvDpyFrlRestoreLastGoodCaps).
+         */
+        struct {
+            NvBool valid;
+            HDMI_SRC_CAPS srcCaps;
+            HDMI_SINK_CAPS sinkCaps;
+            NvU32 maxPixelClockKHz;
+            NvU32 maxSingleLinkPixelClockKHz;
+            size_t edidLength;
+            NvU8 edidBuffer[NVKMS_EDID_BUFFER_SIZE];
+        } lastGoodFrlCaps;
     } hdmi;
 
     struct {
