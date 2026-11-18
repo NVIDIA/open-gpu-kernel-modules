@@ -116,6 +116,9 @@ struct nv_drm_color_pipeline {
     /** @name: Pipeline name exposed to userspace */
     const char *name;
 
+    /** @first: First colorop; its ID names the pipeline in COLOR_PIPELINE */
+    struct nv_drm_colorop *first;
+
     /** @fmt_ctm: 3x4 matrix colorop for FMT (YUV to RGB) conversion (FMT) */
     struct nv_drm_colorop *fmt_ctm;
 

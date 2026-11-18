@@ -943,10 +943,25 @@ static NvBool UpdateLayerFlipEvoHwStateCommon(
             pParams->layer[layer].fmtOverride.matrix;
     }
 
+    /*
+     * The FMT stage is bypassed for FP16 input, so on an FP16 surface an FMT
+     * matrix other than identity would be ignored. Check the resulting state,
+     * since the matrix and the surface may each come from an earlier flip.
+     */
+    if ((pHwState->pSurfaceEvo[NVKMS_LEFT] != NULL) &&
+        ((pHwState->pSurfaceEvo[NVKMS_LEFT]->format ==
+          NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) ||
+         (pHwState->pSurfaceEvo[NVKMS_LEFT]->format ==
+          NvKmsSurfaceMemoryFormatRF16GF16BF16XF16)) &&
+        pHwState->fmtOverride.enabled &&
+        !nvIsCscMatrixIdentity(&pHwState->fmtOverride.matrix)) {
+        return FALSE;
+    }
+
     if (pParams->layer[layer].csc00Override.specified) {
         // CSC00 is only available on layers that support ICtCp.
         if (!pDevEvo->caps.layerCaps[layer].supportsICtCp &&
-            pHwState->csc00Override.enabled &&
+            pParams->layer[layer].csc00Override.enabled &&
             !nvIsCscMatrixIdentity(&pParams->layer[layer].csc00Override.matrix)) {
             return FALSE;
         }
@@ -959,7 +974,7 @@ static NvBool UpdateLayerFlipEvoHwStateCommon(
     if (pParams->layer[layer].csc01Override.specified) {
         // CSC01 is only available on layers that support ICtCp.
         if (!pDevEvo->caps.layerCaps[layer].supportsICtCp &&
-            pHwState->csc01Override.enabled &&
+            pParams->layer[layer].csc01Override.enabled &&
             !nvIsCscMatrixIdentity(&pParams->layer[layer].csc01Override.matrix)) {
             return FALSE;
         }
@@ -972,7 +987,7 @@ static NvBool UpdateLayerFlipEvoHwStateCommon(
     if (pParams->layer[layer].csc10Override.specified) {
         // CSC10 is only available on layers that support ICtCp.
         if (!pDevEvo->caps.layerCaps[layer].supportsICtCp &&
-            pHwState->csc10Override.enabled &&
+            pParams->layer[layer].csc10Override.enabled &&
             !nvIsCscMatrixIdentity(&pParams->layer[layer].csc10Override.matrix)) {
             return FALSE;
         }

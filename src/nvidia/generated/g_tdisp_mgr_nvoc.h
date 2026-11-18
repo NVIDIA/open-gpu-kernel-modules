@@ -91,7 +91,8 @@ struct TdispMgr {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct TdispMgr *__nvoc_pbase_TdispMgr;    // tdispmgr
 
-    // Vtable with 3 per-object function pointers
+    // Vtable with 4 per-object function pointers
+    NV_STATUS (*__tdispmgrDisableBar1__)(struct OBJGPU *, struct TdispMgr * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__tdispmgrTriggerTdispUnload__)(struct OBJGPU *, struct TdispMgr * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__tdispmgrProceedTdispUnload__)(struct OBJGPU *, struct TdispMgr * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__tdispmgrWaitForTdispUnload__)(struct OBJGPU *, struct TdispMgr * /*this*/);  // halified (2 hals) body
@@ -100,7 +101,7 @@ struct TdispMgr {
     NvBool PDB_PROP_TDISPMGR_TDISP_SUPPORTED;
     NvBool PDB_PROP_TDISPMGR_TDISP_ENABLED;
     NvBool PDB_PROP_TDISPMGR_TDISP_IDE_TRAFFIC_DISABLED;
-    NvBool PDB_PROP_TDISPMGR_TDISP_BAR1_VALIDATION_SKIPPED;
+    NvBool PDB_PROP_TDISPMGR_TDISP_BAR1_DISABLED;
     NvBool PDB_PROP_TDISPMGR_TDISP_QUAL_MODE_ENABLED;
 //  NvBool PDB_PROP_TDISPMGR_IS_MISSING inherited from OBJENGSTATE
 
@@ -141,8 +142,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_TdispMgr;
 #define PDB_PROP_TDISPMGR_TDISP_ENABLED_BASE_NAME PDB_PROP_TDISPMGR_TDISP_ENABLED
 #define PDB_PROP_TDISPMGR_TDISP_IDE_TRAFFIC_DISABLED_BASE_CAST
 #define PDB_PROP_TDISPMGR_TDISP_IDE_TRAFFIC_DISABLED_BASE_NAME PDB_PROP_TDISPMGR_TDISP_IDE_TRAFFIC_DISABLED
-#define PDB_PROP_TDISPMGR_TDISP_BAR1_VALIDATION_SKIPPED_BASE_CAST
-#define PDB_PROP_TDISPMGR_TDISP_BAR1_VALIDATION_SKIPPED_BASE_NAME PDB_PROP_TDISPMGR_TDISP_BAR1_VALIDATION_SKIPPED
+#define PDB_PROP_TDISPMGR_TDISP_BAR1_DISABLED_BASE_CAST
+#define PDB_PROP_TDISPMGR_TDISP_BAR1_DISABLED_BASE_NAME PDB_PROP_TDISPMGR_TDISP_BAR1_DISABLED
 #define PDB_PROP_TDISPMGR_TDISP_QUAL_MODE_ENABLED_BASE_CAST
 #define PDB_PROP_TDISPMGR_TDISP_QUAL_MODE_ENABLED_BASE_NAME PDB_PROP_TDISPMGR_TDISP_QUAL_MODE_ENABLED
 #define PDB_PROP_TDISPMGR_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
@@ -167,14 +168,14 @@ static inline NvBool tdispmgrIsTdispIdeTrafficDisabled(struct OBJGPU *pGpu, stru
 #define tdispmgrIsTdispIdeTrafficDisabled(pGpu, pTdispMgr) tdispmgrIsTdispIdeTrafficDisabled_IMPL(pGpu, pTdispMgr)
 #endif // __nvoc_tdisp_mgr_h_disabled
 
-NvBool tdispmgrIsTdispBar1ValidationSkipped_IMPL(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr);
+NvBool tdispmgrIsBar1Disabled_IMPL(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr);
 #ifdef __nvoc_tdisp_mgr_h_disabled
-static inline NvBool tdispmgrIsTdispBar1ValidationSkipped(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr) {
+static inline NvBool tdispmgrIsBar1Disabled(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr) {
     NV_ASSERT_FAILED_PRECOMP("TdispMgr was disabled!");
     return NV_FALSE;
 }
 #else // __nvoc_tdisp_mgr_h_disabled
-#define tdispmgrIsTdispBar1ValidationSkipped(pGpu, pTdispMgr) tdispmgrIsTdispBar1ValidationSkipped_IMPL(pGpu, pTdispMgr)
+#define tdispmgrIsBar1Disabled(pGpu, pTdispMgr) tdispmgrIsBar1Disabled_IMPL(pGpu, pTdispMgr)
 #endif // __nvoc_tdisp_mgr_h_disabled
 
 NvBool tdispmgrIsTdispQualModeEnabled_IMPL(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr);
@@ -236,10 +237,15 @@ static inline NV_STATUS tdispmgrVerifyDeviceCert(struct OBJGPU *pGpu, struct Tdi
 // Wrapper macros for halified functions
 #define tdispmgrConstructEngine_FNPTR(pTdispMgr) pTdispMgr->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__
 #define tdispmgrConstructEngine(pGpu, pTdispMgr, engDesc) tdispmgrConstructEngine_DISPATCH(pGpu, pTdispMgr, engDesc)
+#define tdispmgrStateInitLocked_FNPTR(pTdispMgr) pTdispMgr->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__
+#define tdispmgrStateInitLocked(pGpu, pTdispMgr) tdispmgrStateInitLocked_DISPATCH(pGpu, pTdispMgr)
 #define tdispmgrMnocMctpConfiguration_HAL(pGpu, pTdispMgr) tdispmgrMnocMctpConfiguration(pGpu, pTdispMgr)
 #define tdispmgrIsGpuTrusted_HAL(pGpu, pTdispMgr) tdispmgrIsGpuTrusted(pGpu, pTdispMgr)
 #define tdispmgrIsTsmFspOnlyBoot_HAL(pGpu, pTdispMgr) tdispmgrIsTsmFspOnlyBoot(pGpu, pTdispMgr)
 #define tdispmgrIsTsmGspRmBoot_HAL(pGpu, pTdispMgr) tdispmgrIsTsmGspRmBoot(pGpu, pTdispMgr)
+#define tdispmgrDisableBar1_FNPTR(pTdispMgr) pTdispMgr->__tdispmgrDisableBar1__
+#define tdispmgrDisableBar1(pGpu, pTdispMgr) tdispmgrDisableBar1_DISPATCH(pGpu, pTdispMgr)
+#define tdispmgrDisableBar1_HAL(pGpu, pTdispMgr) tdispmgrDisableBar1_DISPATCH(pGpu, pTdispMgr)
 #define tdispmgrTriggerTdispUnload_FNPTR(pTdispMgr) pTdispMgr->__tdispmgrTriggerTdispUnload__
 #define tdispmgrTriggerTdispUnload(pGpu, pTdispMgr) tdispmgrTriggerTdispUnload_DISPATCH(pGpu, pTdispMgr)
 #define tdispmgrTriggerTdispUnload_HAL(pGpu, pTdispMgr) tdispmgrTriggerTdispUnload_DISPATCH(pGpu, pTdispMgr)
@@ -260,8 +266,6 @@ static inline NV_STATUS tdispmgrVerifyDeviceCert(struct OBJGPU *pGpu, struct Tdi
 #define tdispmgrStatePreInitLocked(pGpu, pEngstate) tdispmgrStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define tdispmgrStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__
 #define tdispmgrStatePreInitUnlocked(pGpu, pEngstate) tdispmgrStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define tdispmgrStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__
-#define tdispmgrStateInitLocked(pGpu, pEngstate) tdispmgrStateInitLocked_DISPATCH(pGpu, pEngstate)
 #define tdispmgrStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitUnlocked__
 #define tdispmgrStateInitUnlocked(pGpu, pEngstate) tdispmgrStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define tdispmgrStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreLoad__
@@ -284,6 +288,14 @@ static inline NV_STATUS tdispmgrVerifyDeviceCert(struct OBJGPU *pGpu, struct Tdi
 // Dispatch functions
 static inline NV_STATUS tdispmgrConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr, ENGDESCRIPTOR engDesc) {
     return pTdispMgr->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateConstructEngine__(pGpu, staticCast(pTdispMgr, OBJENGSTATE), engDesc);
+}
+
+static inline NV_STATUS tdispmgrStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr) {
+    return pTdispMgr->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pTdispMgr, OBJENGSTATE));
+}
+
+static inline NV_STATUS tdispmgrDisableBar1_DISPATCH(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr) {
+    return pTdispMgr->__tdispmgrDisableBar1__(pGpu, pTdispMgr);
 }
 
 static inline NV_STATUS tdispmgrTriggerTdispUnload_DISPATCH(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr) {
@@ -316,10 +328,6 @@ static inline NV_STATUS tdispmgrStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu,
 
 static inline NV_STATUS tdispmgrStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct TdispMgr *pEngstate) {
     return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStatePreInitUnlocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
-}
-
-static inline NV_STATUS tdispmgrStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct TdispMgr *pEngstate) {
-    return pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_metadata_ptr->vtable.__engstateStateInitLocked__(pGpu, staticCast(pEngstate, OBJENGSTATE));
 }
 
 static inline NV_STATUS tdispmgrStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct TdispMgr *pEngstate) {
@@ -361,6 +369,8 @@ static inline NvBool tdispmgrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct Tdis
 // Virtual method declarations and/or inline definitions
 NV_STATUS tdispmgrConstructEngine_IMPL(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr, ENGDESCRIPTOR engDesc);
 
+NV_STATUS tdispmgrStateInitLocked_IMPL(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr);
+
 // Exported method declarations and/or inline definitions
 // HAL method declarations without bodies
 NV_STATUS tdispmgrMnocMctpConfiguration_GB100(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr);
@@ -370,6 +380,8 @@ NvBool tdispmgrIsGpuTrusted_KERNEL(struct OBJGPU *pGpu, struct TdispMgr *pTdispM
 NvBool tdispmgrIsTsmFspOnlyBoot_KERNEL(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr);
 
 NvBool tdispmgrIsTsmGspRmBoot_KERNEL(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr);
+
+NV_STATUS tdispmgrDisableBar1_GR100(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr);
 
 NV_STATUS tdispmgrTriggerTdispUnload_GR100(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr);
 
@@ -382,6 +394,10 @@ NV_STATUS tdispmgrVerifyDeviceCert_KERNEL(struct OBJGPU *pGpu, struct TdispMgr *
 // Inline HAL method definitions
 static inline NV_STATUS tdispmgrMnocMctpConfiguration_f4f420(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr){
     __builtin_unreachable();
+}
+
+static inline NV_STATUS tdispmgrDisableBar1_ac1694(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr){
+    return NV_OK;
 }
 
 static inline NV_STATUS tdispmgrTriggerTdispUnload_395e98(struct OBJGPU *pGpu, struct TdispMgr *pTdispMgr){

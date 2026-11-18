@@ -1229,6 +1229,7 @@ plane_req_config_update(struct drm_plane *plane,
     struct nv_drm_plane_state *nv_drm_plane_state =
         to_nv_drm_plane_state(plane_state);
     bool matrix_overrides_changed = 0;
+    bool ilut_rebuilt = false;
 
     if (plane_state->fb == NULL) {
         plane_req_config_disable(req_config);
@@ -1539,6 +1540,7 @@ plane_req_config_update(struct drm_plane *plane,
     req_config->flags.matrixOverridesChanged = matrix_overrides_changed;
 
     if (nv_drm_plane_state->degamma_changed || crtc_state->color_mgmt_changed) {
+        ilut_rebuilt = true;
         if (nv_drm_plane_state->degamma_drm_lut_surface != NULL) {
             kref_put(&nv_drm_plane_state->degamma_drm_lut_surface->base.refcount,
                      release_drm_lut_surface);
@@ -1563,13 +1565,14 @@ plane_req_config_update(struct drm_plane *plane,
     }
 
     /*
-     * Send ILUT configuration to NVKMS if:
-     * - degamma properties changed, OR
+     * Update the ILUT configuration if:
+     * - the ILUT surface was rebuilt above (degamma properties or the CRTC
+     *   color management changed), OR
      * - plane is being re-enabled and old req_config had ILUT disabled
      *   but DRM plane state has ILUT (blob ID didn't change, but NVKMS
      *   needs to be notified)
      */
-    if (nv_drm_plane_state->degamma_changed ||
+    if (ilut_rebuilt ||
         (!old_config.ilut.enabled && (nv_drm_plane_state->degamma_drm_lut_surface != NULL))) {
 
         if (nv_drm_plane_state->degamma_drm_lut_surface != NULL) {
@@ -1589,6 +1592,16 @@ plane_req_config_update(struct drm_plane *plane,
             req_config->config.ilut.lutEntries = 0;
         }
         req_config->flags.ilutChanged = NV_TRUE;
+    } else {
+        /*
+         * Keep describing the unchanged ILUT: a modeset specifies every layer
+         * field from this request, so leaving it out would disable it.
+         */
+        req_config->config.ilut.enabled     = old_config.ilut.enabled;
+        req_config->config.ilut.lutSurface  = old_config.ilut.lutSurface;
+        req_config->config.ilut.offset      = old_config.ilut.offset;
+        req_config->config.ilut.vssSegments = old_config.ilut.vssSegments;
+        req_config->config.ilut.lutEntries  = old_config.ilut.lutEntries;
     }
 
     if (nv_drm_plane_state->tmo_changed) {
@@ -1613,7 +1626,7 @@ plane_req_config_update(struct drm_plane *plane,
         nv_drm_plane_state->tmo_sat_corr_enable;
 
     /*
-     * Send TMO configuration to NVKMS if:
+     * Update the TMO configuration if:
      * - tmo properties changed, OR
      * - plane is being re-enabled and old req_config had TMO disabled
      *   but DRM plane state has TMO (blob ID didn't change, but NVKMS
@@ -1639,6 +1652,18 @@ plane_req_config_update(struct drm_plane *plane,
             req_config->config.tmo.lutEntries = 0;
         }
         req_config->flags.tmoChanged = NV_TRUE;
+    } else {
+        /*
+         * Keep describing the unchanged TMO LUT: a modeset specifies every
+         * layer field from this request, so leaving it out would disable it.
+         * Only the LUT description is carried; the SAT-CORR fields above
+         * come from the plane state on every commit.
+         */
+        req_config->config.tmo.enabled     = old_config.tmo.enabled;
+        req_config->config.tmo.lutSurface  = old_config.tmo.lutSurface;
+        req_config->config.tmo.offset      = old_config.tmo.offset;
+        req_config->config.tmo.vssSegments = old_config.tmo.vssSegments;
+        req_config->config.tmo.lutEntries  = old_config.tmo.lutEntries;
     }
 
     if (nv_drm_plane_state->precomp_color_passthrough_changed) {
@@ -2208,6 +2233,12 @@ static inline struct nv_drm_plane_state *nv_drm_plane_state_alloc(void)
     return nv_plane_state;
 }
 
+static void nv_drm_plane_atomic_destroy_state(
+    struct drm_plane *plane, struct drm_plane_state *state);
+
+static void nv_drm_atomic_crtc_destroy_state(struct drm_crtc *crtc,
+                                             struct drm_crtc_state *state);
+
 #if defined(NV_DRM_PLANE_FUNCS_HAS_ATOMIC_CREATE_STATE)
 /**
  * nv_drm_plane_atomic_create_state - plane state creation hook
@@ -2246,6 +2277,11 @@ static void nv_drm_plane_atomic_reset(struct drm_plane *plane)
 
     if (!nv_plane_state) {
         return;
+    }
+
+    if (plane->state != NULL) {
+        nv_drm_plane_atomic_destroy_state(plane, plane->state);
+        plane->state = NULL;
     }
 
     drm_atomic_helper_plane_reset(plane);
@@ -2491,6 +2527,11 @@ static void nv_drm_atomic_crtc_reset(struct drm_crtc *crtc)
 
     if (!nv_state) {
         return;
+    }
+
+    if (crtc->state != NULL) {
+        nv_drm_atomic_crtc_destroy_state(crtc, crtc->state);
+        crtc->state = NULL;
     }
 
     drm_atomic_helper_crtc_reset(crtc);

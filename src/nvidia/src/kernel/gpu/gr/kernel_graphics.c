@@ -2670,9 +2670,6 @@ void kgraphicsFreeGlobalCtxBuffers_IMPL
 
     pCtxBuffers = &pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid];
 
-    if (!pCtxBuffers->bAllocated)
-        return;
-
     FOR_EACH_IN_ENUM(GR_GLOBALCTX_BUFFER, buff)
     {
         if (pCtxBuffers->memDesc[buff] != NULL)

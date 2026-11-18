@@ -1639,6 +1639,8 @@ static struct NvKmsKapiMemory* AllocateMemory
         return NULL;
     }
 
+    nvkms_lock_pm_from_kapi();
+
     allocSucceeded =
         params->useVideoMemory
             ? nvKmsKapiAllocateVideoMemory(device, hRmHandle, params->layout,
@@ -1647,6 +1649,9 @@ static struct NvKmsKapiMemory* AllocateMemory
             : nvKmsKapiAllocateSystemMemory(device, hRmHandle, params->layout,
                                             params->size, params->type,
                                             params->compressible);
+
+    nvkms_unlock_pm_from_kapi();
+
     if (!allocSucceeded) {
         nvKmsKapiFreeRmHandle(device, hRmHandle);
         FreeMemory(device, memory);
@@ -1735,11 +1740,15 @@ static struct NvKmsKapiMemory* ImportMemory
     importParams.object.data.rmObject.hParent = device->hRmDevice;
     importParams.object.data.rmObject.hObject = hMemory;
 
+    nvkms_lock_pm_from_kapi();
+
     ret = nvRmApiControl(device->hRmClient,
                          device->hRmClient,
                          NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_FROM_FD,
                          &importParams,
                          sizeof(importParams));
+
+    nvkms_unlock_pm_from_kapi();
 
     if (ret != NVOS_STATUS_SUCCESS) {
         nvKmsKapiLogDeviceDebug(
@@ -1768,11 +1777,15 @@ static struct NvKmsKapiMemory* ImportMemory
         surfaceInfoParams.surfaceInfoListSize = 1;
         surfaceInfoParams.surfaceInfoList = (NvP64)&surfaceInfo;
 
+        nvkms_lock_pm_from_kapi();
+
         ret = nvRmApiControl(device->hRmClient,
                              memory->hRmHandle,
                              NV0041_CTRL_CMD_GET_SURFACE_INFO,
                              &surfaceInfoParams,
                              sizeof(surfaceInfoParams));
+
+        nvkms_unlock_pm_from_kapi();
 
         if (ret != NVOS_STATUS_SUCCESS) {
             nvKmsKapiLogDeviceDebug(
@@ -1918,11 +1931,15 @@ static NvBool ExportMemory
     exportParams.object.data.rmObject.hParent = device->hRmDevice;
     exportParams.object.data.rmObject.hObject = memory->hRmHandle;
 
+    nvkms_lock_pm_from_kapi();
+
     ret = nvRmApiControl(device->hRmClient,
                          device->hRmClient,
                          NV0000_CTRL_CMD_OS_UNIX_EXPORT_OBJECT_TO_FD,
                          &exportParams,
                          sizeof(exportParams));
+
+    nvkms_unlock_pm_from_kapi();
 
     if (ret != NVOS_STATUS_SUCCESS) {
         nvKmsKapiLogDeviceDebug(

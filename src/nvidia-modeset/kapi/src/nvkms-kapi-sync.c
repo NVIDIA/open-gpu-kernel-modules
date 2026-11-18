@@ -149,11 +149,16 @@ struct NvKmsKapiChannelEvent* nvKmsKapiAllocateChannelEvent
         eventParams.notifyIndex = 0;
         eventParams.data = NV_PTR_TO_NvP64(&cb->rmCallback);
 
+        nvkms_lock_pm_from_kapi();
+
         ret = nvRmApiAlloc(device->hRmClient,
                            cb->nvKmsParams.hChannels[i],
                            cb->hCallbacks[i],
                            NV01_EVENT_KERNEL_CALLBACK_EX,
                            &eventParams);
+
+        nvkms_unlock_pm_from_kapi();
+
         if (ret != NVOS_STATUS_SUCCESS) {
             nvKmsKapiLogDeviceDebug(device,
                                     "Failed to allocate event callback for channel 0x%x",
@@ -240,12 +245,16 @@ nvKmsKapiImportSemaphoreSurface
         goto fail;
     }
 
+    nvkms_lock_pm_from_kapi();
+
     ret = nvRmApiDupObject2(device->hRmClient,
                             device->hRmSubDevice,
                             &ss->hSemaphoreSurface,
                             p.hClient,
                             p.hSemaphoreSurface,
                             0);
+
+    nvkms_unlock_pm_from_kapi();
 
     if (ret != NVOS_STATUS_SUCCESS) {
         nvKmsKapiLogDeviceDebug(
@@ -255,11 +264,15 @@ nvKmsKapiImportSemaphoreSurface
         goto fail;
     }
 
+    nvkms_lock_pm_from_kapi();
+
     ret = nvRmApiControl(device->hRmClient,
                          ss->hSemaphoreSurface,
                          NV_SEMAPHORE_SURFACE_CTRL_CMD_REF_MEMORY,
                          &refParams,
                          sizeof(refParams));
+
+    nvkms_unlock_pm_from_kapi();
 
     if (ret != NVOS_STATUS_SUCCESS) {
         nvKmsKapiLogDeviceDebug(
@@ -272,6 +285,8 @@ nvKmsKapiImportSemaphoreSurface
     ss->hSemaphoreMem = refParams.hSemaphoreMem;
     ss->hMaxSubmittedMem = refParams.hMaxSubmittedMem;
 
+    nvkms_lock_pm_from_kapi();
+
     ret = nvRmApiMapMemory(device->hRmClient,
                            device->hRmDevice,
                            ss->hSemaphoreMem,
@@ -279,6 +294,8 @@ nvKmsKapiImportSemaphoreSurface
                            p.semaphoreSurfaceSize,
                            pSemaphoreMap,
                            0);
+
+    nvkms_unlock_pm_from_kapi();
 
     if (ret != NVOS_STATUS_SUCCESS) {
         nvKmsKapiLogDeviceDebug(
@@ -290,6 +307,8 @@ nvKmsKapiImportSemaphoreSurface
 
     if (ss->hMaxSubmittedMem != NV01_NULL_OBJECT) {
         if (ss->hMaxSubmittedMem != ss->hSemaphoreMem) {
+            nvkms_lock_pm_from_kapi();
+
             ret = nvRmApiMapMemory(device->hRmClient,
                                    device->hRmDevice,
                                    ss->hMaxSubmittedMem,
@@ -297,6 +316,9 @@ nvKmsKapiImportSemaphoreSurface
                                    p.semaphoreSurfaceSize,
                                    pMaxSubmittedMap,
                                    0);
+
+            nvkms_unlock_pm_from_kapi();
+
             if (ret != NVOS_STATUS_SUCCESS) {
                 nvKmsKapiLogDeviceDebug(
                     device,
@@ -315,6 +337,8 @@ nvKmsKapiImportSemaphoreSurface
 
 fail:
     if (ss && ss->hSemaphoreSurface) {
+        nvkms_lock_pm_from_kapi();
+
         if ((ss->hMaxSubmittedMem != NV01_NULL_OBJECT) &&
             (ss->hMaxSubmittedMem != ss->hSemaphoreMem)) {
             nvRmApiFree(device->hRmClient,
@@ -331,6 +355,8 @@ fail:
         nvRmApiFree(device->hRmClient,
                     device->hRmDevice,
                     ss->hSemaphoreSurface);
+
+        nvkms_unlock_pm_from_kapi();
     }
     nvKmsKapiFree(ss);
     return NULL;

@@ -127,7 +127,8 @@ const struct
     {NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_NO_VCPF_WAR,   &dpRegkeyDatabase.bDisableDpMstTunnelingNoVcpfWar,    DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_FEC,           &dpRegkeyDatabase.bDisableDpMstTunnelingFec,          DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_DISABLE_DP_TUN_LTTPR_CAPS_CHUNK_READ_WAR, &dpRegkeyDatabase.bDisableDpTunLttprCapsChunkRead,  DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DISABLE_DP_TUN_DIA_DPCD_REV_WAR,          &dpRegkeyDatabase.bDisableDpTunDiaDpcdRevWar,         DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_DISABLE_DP_TUN_DIA_DPCD_REV_WAR,        &dpRegkeyDatabase.bDisableDpTunDiaDpcdRevWar,         DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_SKIP_DP_LINK_ASSESS,                    &dpRegkeyDatabase.bSkipDpLinkAssess,                  DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :

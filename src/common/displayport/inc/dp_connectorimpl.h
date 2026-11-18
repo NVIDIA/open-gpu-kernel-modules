@@ -142,6 +142,7 @@ namespace DisplayPort
         bool    bFromResumeToNAB;               // True if from resume to NAB, WAR flag for unblocking GA1.5
         bool    bAttachOnResume;                // True if notifyLongPulse is called for resume (reboot/S3/S4)
         bool    bSkipAssessLinkForEDP;          // Skip assessLink() for eDP. Assuming max is reachable.
+        bool    bSkipDpLinkAssess;              // Skip assessLink() via regkey. Assuming max is reachable.
         bool    bPConConnected;                 // HDMI2.1-Protocol Converter (Support SRC control mode) connected.
         bool    bSkipAssessLinkForPCon;         // Skip assessLink() for PCON. DD will call assessFRLLink later.
         bool    bHdcpAuthOnlyOnDemand;          // True if only initiate Hdcp authentication on demand and MST won't auto-trigger authenticate at device attach.

@@ -388,6 +388,8 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugWriteBatchMemory(struct KernelSMDeb
 
 
 // Wrapper macros for halified functions
+#define ksmdbgssnControl_Prologue_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
+#define ksmdbgssnControl_Prologue(pKernelSMDebuggerSession, pCallContext, pParams) ksmdbgssnControl_Prologue_DISPATCH(pKernelSMDebuggerSession, pCallContext, pParams)
 #define ksmdbgssnInternalControlForward_FNPTR(arg_this) arg_this->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__
 #define ksmdbgssnInternalControlForward(arg_this, command, pParams, size) ksmdbgssnInternalControlForward_DISPATCH(arg_this, command, pParams, size)
 #define ksmdbgssnGetInternalObjectHandle_FNPTR(arg_this) arg_this->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresGetInternalObjectHandle__
@@ -419,8 +421,6 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugWriteBatchMemory(struct KernelSMDeb
 #define ksmdbgssnControlSerialization_Prologue(pResource, pCallContext, pParams) ksmdbgssnControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ksmdbgssnControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__
 #define ksmdbgssnControlSerialization_Epilogue(pResource, pCallContext, pParams) ksmdbgssnControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define ksmdbgssnControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__
-#define ksmdbgssnControl_Prologue(pResource, pCallContext, pParams) ksmdbgssnControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ksmdbgssnControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Epilogue__
 #define ksmdbgssnControl_Epilogue(pResource, pCallContext, pParams) ksmdbgssnControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define ksmdbgssnCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
@@ -453,6 +453,10 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugWriteBatchMemory(struct KernelSMDeb
 #define ksmdbgssnGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) ksmdbgssnGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
+static inline NV_STATUS ksmdbgssnControl_Prologue_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pKernelSMDebuggerSession->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pKernelSMDebuggerSession, RsResource), pCallContext, pParams);
+}
+
 static inline NV_STATUS ksmdbgssnInternalControlForward_DISPATCH(struct KernelSMDebuggerSession *arg_this, NvU32 command, void *pParams, NvU32 size) {
     return arg_this->__nvoc_base_GpuResource.__nvoc_metadata_ptr->vtable.__gpuresInternalControlForward__(staticCast(arg_this, GpuResource), command, pParams, size);
 }
@@ -511,10 +515,6 @@ static inline NV_STATUS ksmdbgssnControlSerialization_Prologue_DISPATCH(struct K
 
 static inline void ksmdbgssnControlSerialization_Epilogue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControlSerialization_Epilogue__(staticCast(pResource, RsResource), pCallContext, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnControl_Prologue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resControl_Prologue__(staticCast(pResource, RsResource), pCallContext, pParams);
 }
 
 static inline void ksmdbgssnControl_Epilogue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -578,6 +578,8 @@ static inline NV_STATUS ksmdbgssnGetOrAllocNotifShare_DISPATCH(struct KernelSMDe
 }
 
 // Virtual method declarations and/or inline definitions
+NV_STATUS ksmdbgssnControl_Prologue_IMPL(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
 NV_STATUS ksmdbgssnInternalControlForward_IMPL(struct KernelSMDebuggerSession *arg_this, NvU32 command, void *pParams, NvU32 size);
 
 NvHandle ksmdbgssnGetInternalObjectHandle_IMPL(struct KernelSMDebuggerSession *arg_this);

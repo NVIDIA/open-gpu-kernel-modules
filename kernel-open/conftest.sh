@@ -582,6 +582,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_LIST_IS_FIRST_PRESENT" "" "functions"
         ;;
 
+        vma_is_hugetlb)
+            #
+            # Determine if the vma_is_hugetlb() function is present.
+            #
+            # Renamed from is_vm_hugetlb_page to vma_is_hugetlb by commit
+            # f4e6fe618ad6 ("mm: rename is_vm_hugetlb_page() to vma_is_hugetlb()") in
+            # v7.4 (2026-09-20).
+            #
+            CODE="
+            #include <linux/hugetlb.h>
+            void conftest_vma_is_hugetlb(void) {
+                vma_is_hugetlb();
+            }"
+
+            compile_check_conftest "$CODE" "NV_VMA_IS_HUGETLB_PRESENT" "" "functions"
+        ;;
+
         set_pages_uc)
             #
             # Determine if the set_pages_uc() function is present.
@@ -4554,7 +4571,11 @@ compile_test() {
             # in v6.11.
             #
             CODE="
+            #if defined(NV_DRM_CLIENTS_DRM_FBDEV_HELPER_H_PRESENT)
+            #include <drm/clients/drm_fbdev_helper.h>
+            #else
             #include <drm/drm_fb_helper.h>
+            #endif
             #if defined(NV_DRM_DRM_FBDEV_GENERIC_H_PRESENT)
             #include <drm/drm_fbdev_generic.h>
             #endif
@@ -4574,7 +4595,11 @@ compile_test() {
             # 1000634477d8 ("drm/fbdev-ttm:Convert to client-setup") in v6.13.
             #
             CODE="
+            #if defined(NV_DRM_CLIENTS_DRM_FBDEV_HELPER_H_PRESENT)
+            #include <drm/clients/drm_fbdev_helper.h>
+            #else
             #include <drm/drm_fb_helper.h>
+            #endif
             #if defined(NV_DRM_DRM_FBDEV_TTM_H_PRESENT)
             #include <drm/drm_fbdev_ttm.h>
             #endif
@@ -4596,7 +4621,11 @@ compile_test() {
             # in linux-next b86711c6d6e2.
             #
             CODE="
+            #if defined(NV_DRM_CLIENTS_DRM_FBDEV_HELPER_H_PRESENT)
+            #include <drm/clients/drm_fbdev_helper.h>
+            #else
             #include <drm/drm_fb_helper.h>
+            #endif
             #if defined(NV_DRM_DRM_CLIENT_SETUP_H_PRESENT)
             #include <drm/drm_client_setup.h>
             #elif defined(NV_DRM_CLIENTS_DRM_CLIENT_SETUP_H_PRESENT)

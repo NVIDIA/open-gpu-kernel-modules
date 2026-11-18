@@ -93,6 +93,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       hdcpCpIrqRxStatusRetries(0),
       bFromResumeToNAB(false),
       bAttachOnResume(false),
+      bSkipDpLinkAssess(false),
       bHdcpAuthOnlyOnDemand(true),
       bMstRestoreHdcpStateAtAttach(true),
       bHdcpStrmEncrEnblOnlyOnDemand(false),
@@ -262,6 +263,7 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bDisableFecOnEdp                   = dpRegkeyDatabase.bDisableFecOnEdp;
     this->bDisableDpMstTunnelingNoVcpfWar    = dpRegkeyDatabase.bDisableDpMstTunnelingNoVcpfWar;
     this->bDisableDpMstTunnelingFec          = dpRegkeyDatabase.bDisableDpMstTunnelingFec;
+    this->bSkipDpLinkAssess                  = dpRegkeyDatabase.bSkipDpLinkAssess;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -569,19 +571,7 @@ void ConnectorImpl::processNewDevice(const ProcessNewDeviceParams &params)
     {
         case DISPLAY_PORT:
         case DISPLAY_PORT_PLUSPLUS: // DP port that supports DP and TMDS
-            if (existingDev &&
-                existingDev->connectorType == connectorHDMI)
-            {
-                connector = connectorHDMI;
-            }
-            else if(device.peerDevice == Dongle)
-            {
-                connector = connectorHDMI;
-            }
-            else
-            {
-                connector = connectorDisplayPort;
-            }
+            connector = connectorDisplayPort;
             break;
         case ANALOG_VGA:
             connector = connectorVGA;
@@ -598,6 +588,18 @@ void ConnectorImpl::processNewDevice(const ProcessNewDeviceParams &params)
         case WITHOUT_EDID:
             connector = connectorDisplayPort;
             break;
+    }
+
+    //
+    // When existingDev is on DP++ port but is an HDMI sink, there
+    // is no need to create a new device. The same existingDev can be used.
+    //
+    ConnectorType matchConnector = connector;
+    if (existingDev &&
+        existingDev->connectorType == connectorHDMI &&
+        (portType == DISPLAY_PORT || portType == DISPLAY_PORT_PLUSPLUS))
+    {
+        matchConnector = connectorHDMI;
     }
 
     // Dongle in SST mode.
@@ -619,7 +621,7 @@ void ConnectorImpl::processNewDevice(const ProcessNewDeviceParams &params)
              existingDev->rawEDID != edid ||
              existingDev->processedEdid != processedEdid ||
              existingDev->displayId2x != displayId2x ||
-             existingDev->connectorType != connector ||
+             existingDev->connectorType != matchConnector ||
              existingDev->multistream != isMultistream ||
              existingDev->complianceDeviceEdidReadTest != isCompliance ||
              existingDev->maxTmdsClkRate != maxTmdsClkRate ||
@@ -880,8 +882,15 @@ create:
 
     if (newDev->peerDevice == Dongle)
     {
-        // For Dongle, we need to read detailed port caps if DPCD access is available on DP 1.4+.
-        if (newDev->isAtLeastVersion(1,4))
+        //
+        // For Dongle, we need to read detailed port caps if DPCD access is
+        // available. DPCD 00080h is not revision gated. The 4 byte per port
+        // detailed form is advertised by DETAILED_CAP_INFO_AVAILABLE
+        // (00005h bit 4) and is only mandatory from DPCD r1.4, so gate on
+        // that bit rather than on the revision. A LAM DPCD revision of 0.0
+        // means the dongle has no DPCD access at all.
+        //
+        if ((newDev->dpcdRevisionMajor != 0) && hasLegacyDownstreamPort(newDev))
         {
             newDev->getPCONCaps(&(newDev->pconCaps));
         }
@@ -1794,6 +1803,29 @@ static bool isModeWithinPconLimits(const DeviceImpl * dev,
     return true;
 }
 
+//
+// MAX_UNCOMPRESSED_PIXEL_RATE is a per-sink DPCD cap. For MST, apply it to
+// the compound-query target group (leaf sinks).
+//
+static bool doesMstTargetAllowUncompressedPixelRate(Group *target, NvU64 pixelClockHz)
+{
+    if (!target)
+    {
+        return true;
+    }
+
+    for (Device *d = target->enumDevices(0); d != NULL; d = target->enumDevices(d))
+    {
+        DeviceImpl *dev = (DeviceImpl *)d;
+        if (!dev->isPixelClockWithinMaxUncompressedRate(pixelClockHz))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool ConnectorImpl::compoundQueryAttachMST(Group * target,
                                            const DpModesetParams &modesetParams,         // Modeset info
                                            DscParams *pDscParams,                        // DSC parameters
@@ -1809,6 +1841,9 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
         SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_ZERO_VALUE_PARAMS)
         return false;
     }
+
+    const bool bAllowUncompressed =
+        doesMstTargetAllowUncompressedPixelRate(target, modesetParams.modesetInfo.pixelClockHz);
 
     // Reject a mode the downstream HDMI port cannot clock out. Nothing is
     // accumulated yet, so this needs no rollback. Bug 6546550.
@@ -1856,8 +1891,20 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
             localInfo.localModesetInfo = modesetParams.modesetInfo;
         }
 
-        compoundQueryResult = compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
-                                                            pDscParams, pErrorCode);
+        //
+        // MSTGeneric after a declined-DSC attempt is an uncompressed retry.
+        // So, we should take into account if this uncompressed pixel clock
+        // is allowed by sink.
+        //
+        if (!pDscParams->bEnableDsc && !bAllowUncompressed)
+        {
+            compoundQueryResult = false;
+        }
+        else
+        {
+            compoundQueryResult = compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
+                                                                pDscParams, pErrorCode);
+        }
         //
         // compoundQueryAttachMST Generic might fail due to the insufficient bandwidth ,
         // We only check whether bpp can be fit in the available bandwidth based on the tranied link config in compoundQueryAttachMSTDsc function.
@@ -1887,20 +1934,24 @@ bool ConnectorImpl::compoundQueryAttachMST(Group * target,
             // does not clear. See bug 6112174.
             //
             if (!pDscParams->bEnableDsc)
+            {
+                if (!bAllowUncompressed)
+                {
+                    compoundQueryResult = false;
+                    return false;
+                }
                 localInfo.localModesetInfo = modesetParams.modesetInfo;
+            }
             return compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
                                                  pDscParams, pErrorCode);
         }
         return compoundQueryResult;
     }
 
-    DeviceImpl * nativeDev = this->findDeviceInList(Address());
-    if (nativeDev && nativeDev->getMaxUncompressedPixelRateValid())
+    if (!bAllowUncompressed)
     {
-        if ((nativeDev->getMaxUncompressedPixelRate()*PCLK_MHZ_TO_HZ) < modesetParams.modesetInfo.pixelClockHz)
-        {
-            return false;
-        }
+        compoundQueryResult = false;
+        return false;
     }
 
     return compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
@@ -2421,6 +2472,45 @@ bool ConnectorImpl::compoundQueryAttachSSTIsDscPossible
     return  false;
 }
 
+//
+// The LG 27GN950 cannot reliably handle DSC at bitsPerPixelX16 = 128
+// (8 bpp) for 4K 160 Hz over DP tunneling, causing flicker. Use 148
+// (9.25 bpp) for this mode to avoid flicker; retain 128 for other modes.
+//
+static NvU32 getDscBppDpTunnelingForLg27Gn950
+(
+    const DeviceImpl *pNativeDev,
+    const ModesetInfo &modesetInfo
+)
+{
+    const NvU32 defaultDscBppX16 = MAX_DSC_COMPRESSION_BPPX16;
+
+    if ((modesetInfo.surfaceWidth != 3840U) ||
+        (modesetInfo.surfaceHeight != 2160U))
+    {
+        return defaultDscBppX16;
+    }
+
+    const NvU64 totalPixels =
+        (NvU64)modesetInfo.rasterWidth * modesetInfo.rasterHeight;
+
+    if (totalPixels == 0U)
+    {
+        return defaultDscBppX16;
+    }
+
+    const NvU64 refreshRateMilliHz =
+        (modesetInfo.pixelClockHz * 1000ULL) / totalPixels;
+
+    if ((refreshRateMilliHz >= 159000ULL) &&
+        (refreshRateMilliHz <= 161000ULL))
+    {
+        return pNativeDev->processedEdid.WARData.minDscBppX16ForDpTunneling;
+    }
+
+    return defaultDscBppX16;
+}
+
 bool ConnectorImpl::compoundQueryAttachSSTDsc
 (
     const DpModesetParams &modesetParams,
@@ -2477,7 +2567,8 @@ bool ConnectorImpl::compoundQueryAttachSSTDsc
     }
 
     //
-    // Always force max DSC compression (8bpp) for DP Tunneling SST DSC use case.
+    // Force max DSC compression (8bpp) for DP Tunneling SST DSC use case,
+    // except when a panel-specific stable BPP is required.
     // And reduce available BW based on below table
     //     4L: <= 88.23%
     //     2L: <= 81.34%
@@ -2487,10 +2578,15 @@ bool ConnectorImpl::compoundQueryAttachSSTDsc
     //
     if (hal->isDpInTunnelingSupported() && main->isDpTunnelingHwBugWarEnabled())
     {
-        NvU64 bwRestriction = 0U;
-
-        // Force compression to max
+        // Force compression to max unless the LG panel requires a BPP floor.
         pDscParams->bitsPerPixelX16 = MAX_DSC_COMPRESSION_BPPX16;
+
+        if (nativeDev->processedEdid.WARFlags.bApplyDscMinBppForDpTunneling)
+        {
+            pDscParams->bitsPerPixelX16 = getDscBppDpTunnelingForLg27Gn950(nativeDev,modesetParams.modesetInfo);
+        }
+
+        NvU64 bwRestriction = 0U;
 
         if (lc.lanes == 4U)
         {
@@ -2572,64 +2668,7 @@ bool ConnectorImpl::compoundQueryAttachSSTDsc
             //
             bIsModeSupported = getValidLowestLinkConfig(lc, lowestSelected, localModesetInfo, pDscParams);
 
-            //
-            // If lowest link config is 128b/132b, then we check if bpp
-            // can be optimized such that link rate can be minimized to 8b/10b.
-            //
-            if (this->bEnable128b132bDSCLnkCfgReduction &&
-                bIsModeSupported &&
-                lowestSelected.bIs128b132bChannelCoding &&
-                !pDscParams->bitsPerPixelX16)
-            {
-                unsigned          i;
-                LinkConfiguration selectedConfig;
-                NVT_STATUS        ppsStatusLoop;
-                unsigned          bppx16;
-                NvU32             sliceCountMask;
-                unsigned          PPS_Local[DSC_MAX_PPS_SIZE_DWORD];
-                dpMemZero(PPS_Local, sizeof(unsigned) * DSC_MAX_PPS_SIZE_DWORD);
 
-                for (i = 0; i < numPossibleLnkCfg; i++)
-                {
-                    if (this->allPossibleLinkCfgs[i].bIs128b132bChannelCoding)
-                    {
-                        continue;
-                    }
-
-                    selectedConfig                          = this->allPossibleLinkCfgs[i];
-                    selectedConfig.enableFEC(nativeDev->isFECSupported());
-                    availableBandwidthBitsPerSecond         = selectedConfig.convertMinRateToDataRate() * 8 * selectedConfig.lanes;
-                    warData.dpData.linkRateHz               = selectedConfig.peakRate;
-                    warData.dpData.bIs128b132bChannelCoding = false;
-                    warData.dpData.laneCount                = selectedConfig.lanes;
-
-                    bppx16                                  = 0U;
-                    sliceCountMask                          = 0U;
-                    ppsStatusLoop                           = DSC_GeneratePPSWithSliceCountMask(&dscInfo,
-                                                                                                &modesetInfoDSC,
-                                                                                                &warData,
-                                                                                                availableBandwidthBitsPerSecond,
-                                                                                                (NvU32*)(PPS_Local),
-                                                                                                (NvU32*)(&bppx16),
-                                                                                                &sliceCountMask,
-                                                                                                NULL);
-
-                    localModesetInfo.depth = bppx16;
-
-                    if (ppsStatusLoop == NVT_STATUS_SUCCESS &&
-                        willLinkSupportModeSST(selectedConfig, localModesetInfo, pDscParams))
-                    {
-                        break;
-                    }
-                }
-
-                if (i != numPossibleLnkCfg)
-                {
-                    pDscParams->sliceCountMask = sliceCountMask;
-                    bitsPerPixelX16            = bppx16;
-                    dpMemCopy(PPS, PPS_Local, sizeof(unsigned) * DSC_MAX_PPS_SIZE_DWORD);
-                }
-            }
         }
 
         localModesetInfo.depth = bitsPerPixelX16;
@@ -2746,15 +2785,8 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
     }
     else
     {
-        NvBool bMaxUncompressedPixelRateCheck = true;
-
-        if (nativeDev->getMaxUncompressedPixelRateValid())
-        {
-            if ((nativeDev->getMaxUncompressedPixelRate()*PCLK_MHZ_TO_HZ) < modesetParams.modesetInfo.pixelClockHz)
-            {
-                bMaxUncompressedPixelRateCheck = false;
-            }
-        }
+        NvBool bMaxUncompressedPixelRateCheck =
+            nativeDev->isPixelClockWithinMaxUncompressedRate(modesetParams.modesetInfo.pixelClockHz);
 
         if ((lc.peakRate == dp2LinkRate_8_10Gbps) &&
             (main->isAvoidHBR3WAREnabled()) &&
@@ -5764,13 +5796,15 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
     _maxLinkConfig.multistream = this->linkUseMultistream();
 
     //
-    // Bug 1545352: This is done to avoid shutting down a display for freeing up a SOR for LT,
-    // when no SOR is assigned properly to the connector. It can happen when more
-    // than max supported number of display(s) is connected.
-    // It came as a requirement from some clients to avoid glitches when shutting
-    // down a display to make SOR availability for those monitors.
+    // Skip assessLink() and assume max link config is reachable when:
+    // - Bug 1545352: No SOR is assigned to this connector. Performing LT here
+    //   would force shutting down another display to free a SOR, which can
+    //   happen when more than the max supported number of displays is
+    //   connected. Some clients require skipping LT to avoid that glitch.
+    //   Mark linkGuessed so assessment can be retried once a SOR is assigned.
+    // - SKIP_DP_LINK_ASSESS (bSkipDpLinkAssess): Skip link assessment by regkey.
     //
-    if (main->getSorIndex() == DP_INVALID_SOR_INDEX)
+    if ((main->getSorIndex() == DP_INVALID_SOR_INDEX) || this->bSkipDpLinkAssess)
     {
         highestAssessedLC = _maxLinkConfig;
         linkGuessed = true;
@@ -9395,7 +9429,8 @@ bool ConnectorImpl::setPreferredLinkConfig(LinkConfiguration & lc, bool commit,
     dev = enumDevices(0);
     DeviceImpl * nativeDev = (DeviceImpl *)dev;
 
-    if (this->linkUseMultistream() && activeLinkConfig.isValid() && !activeGroups.isEmpty())
+    if ((commit || force) &&
+        this->linkUseMultistream() && activeLinkConfig.isValid() && !activeGroups.isEmpty())
     {
         DP_PRINTF(DP_ERROR, "DPCONN> Link config should not be changed without stream detach when there are active streams in MST mode");
         return false;

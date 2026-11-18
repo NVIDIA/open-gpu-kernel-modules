@@ -1655,6 +1655,16 @@ NvBool nvkms_ioctl_from_kapi
     return ret;
 }
 
+void nvkms_lock_pm_from_kapi(void)
+{
+    nvkms_read_lock_pm_lock();
+}
+
+void nvkms_unlock_pm_from_kapi(void)
+{
+    nvkms_read_unlock_pm_lock();
+}
+
 /*************************************************************************
  * APIs for locking.
  *************************************************************************/

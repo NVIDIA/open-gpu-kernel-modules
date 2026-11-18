@@ -372,6 +372,17 @@ NvBool nvkms_ioctl_from_kapi_try_pmlock
 );
 
 /*!
+ * Acquire/release the power management read lock around KAPI paths that
+ * call RM directly instead of going through nvkms_ioctl_from_kapi(), so
+ * that they cannot reach RM while the system is suspended and the PM
+ * lock is held for write.  Callers must not already hold the PM lock and
+ * must be able to sleep; on Linux the wait is freezable.  On platforms
+ * without a PM lock these are no-ops.
+ */
+void nvkms_lock_pm_from_kapi(void);
+void nvkms_unlock_pm_from_kapi(void);
+
+/*!
  * APIs for locking.
  */
 

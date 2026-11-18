@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2025 NVIDIA Corporation
+    Copyright (c) 2015-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -22,6 +22,7 @@
 *******************************************************************************/
 
 #include "uvm_api.h"
+#include "uvm_forward_decl.h"
 #include "uvm_global.h"
 #include "uvm_gpu_replayable_faults.h"
 #include "uvm_tools_init.h"
@@ -670,25 +671,40 @@ static struct vm_operations_struct uvm_vm_ops_semaphore_pool =
     .fault        = uvm_vm_fault_sigbus_entry,
 };
 
+static bool va_range_matches_vma(uvm_va_range_t *va_range, struct vm_area_struct *vma)
+{
+    return va_range->node.start == vma->vm_start && va_range->node.end + 1 == vma->vm_end;
+}
+
 static void uvm_vm_open_device_p2p(struct vm_area_struct *vma)
 {
     struct vm_area_struct *origin_vma = (struct vm_area_struct *)vma->vm_private_data;
     uvm_va_space_t *va_space = uvm_va_space_get(origin_vma->vm_file);
-    uvm_va_range_t *va_range;
     bool is_fork = (vma->vm_mm != origin_vma->vm_mm);
+    struct uvm_va_range_device_p2p_struct *p2p_range;
+    uvm_va_range_t *va_range;
+    bool range_valid = false;
 
     uvm_record_lock_mmap_lock_write(current->mm);
 
     uvm_va_space_down_write(va_space);
 
+    // We need to be a little careful here because the backing va_range may
+    // have gone away due to UVM_FREE or removing a GPU from the va_space.
+    // VMAs can only be removed though a munmap() call so we might still hit
+    // this path even if the backing VMA has gone away. It's also possible the
+    // backing va_range may have been replaced with a different one so check
+    // for that too.
+    //
+    // In all these cases we just disable the VMA since there's nothing sensible
+    // for us to do.
     va_range = uvm_va_range_find(va_space, origin_vma->vm_start);
-    UVM_ASSERT(va_range);
-    UVM_ASSERT_MSG(va_range->type == UVM_VA_RANGE_TYPE_DEVICE_P2P &&
-                   va_range->node.start == origin_vma->vm_start &&
-                   va_range->node.end + 1 == origin_vma->vm_end,
-                   "origin vma [0x%llx, 0x%llx); va_range [0x%llx, 0x%llx) type %d\n",
-                   (NvU64)origin_vma->vm_start, (NvU64)origin_vma->vm_end, va_range->node.start,
-                   va_range->node.end + 1, va_range->type);
+    if (va_range && va_range->type == UVM_VA_RANGE_TYPE_DEVICE_P2P) {
+        p2p_range = uvm_va_range_to_device_p2p(va_range);
+
+        if (p2p_range->p2p_mem && va_range_matches_vma(va_range, vma))
+            range_valid = true;
+    }
 
     // Device P2P vmas do not have vma wrappers, but some functions will
     // assume vm_private_data is a wrapper.
@@ -697,19 +713,17 @@ static void uvm_vm_open_device_p2p(struct vm_area_struct *vma)
     nv_vm_flags_set(vma, VM_WIPEONFORK);
 #endif
 
-    if (is_fork) {
+    if (range_valid && is_fork) {
         // If we forked, leave the parent vma alone.
         uvm_disable_vma(vma);
 
         // uvm_disable_vma unmaps in the parent as well so remap the parent
-        uvm_va_range_device_p2p_map_cpu(va_range->va_space, origin_vma, uvm_va_range_to_device_p2p(va_range));
+        uvm_va_range_device_p2p_map_cpu(va_range->va_space, origin_vma, p2p_range);
     }
     else {
-        // mremap will free the backing pages via unmap so we can't support it.
         origin_vma->vm_private_data = NULL;
-        origin_vma->vm_ops = &uvm_vm_ops_disabled;
-        vma->vm_ops = &uvm_vm_ops_disabled;
-        unmap_mapping_range(va_space->mapping, va_range->node.start, uvm_va_range_size(va_range), 1);
+        uvm_disable_vma(origin_vma);
+        uvm_disable_vma(vma);
     }
 
     uvm_va_space_up_write(va_space);

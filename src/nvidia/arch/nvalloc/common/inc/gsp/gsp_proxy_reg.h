@@ -59,9 +59,14 @@
 #define NVGSP_PROXY_REG_TDISP_DISABLE_IDE_TRAFFIC_YES               0x00000001
 #define NVGSP_PROXY_REG_TDISP_DISABLE_IDE_TRAFFIC_NO                0x00000000
 
-#define NVGSP_PROXY_REG_TDISP_SKIP_BAR1_VALIDATION                  15:15
-#define NVGSP_PROXY_REG_TDISP_SKIP_BAR1_VALIDATION_YES              0x00000001
-#define NVGSP_PROXY_REG_TDISP_SKIP_BAR1_VALIDATION_NO               0x00000000
+// Debug override forwarding the RmTdispEnableBar1 regkey; the value field mirrors the
+// regkey (YES/NO) and a separate validity bit preserves the platform default when absent.
+#define NVGSP_PROXY_REG_TDISP_ENABLE_BAR1_OVERRIDE                  14:14
+#define NVGSP_PROXY_REG_TDISP_ENABLE_BAR1_OVERRIDE_NO               0x00000000
+#define NVGSP_PROXY_REG_TDISP_ENABLE_BAR1_OVERRIDE_YES              0x00000001
+#define NVGSP_PROXY_REG_TDISP_ENABLE_BAR1                           15:15
+#define NVGSP_PROXY_REG_TDISP_ENABLE_BAR1_YES                       0x00000001
+#define NVGSP_PROXY_REG_TDISP_ENABLE_BAR1_NO                        0x00000000
 
 #define NVGSP_PROXY_REG_NVLINK_ENCRYPTION_STANDALONE                11:11
 #define NVGSP_PROXY_REG_NVLINK_ENCRYPTION_STANDALONE_DISABLE        0x00000000

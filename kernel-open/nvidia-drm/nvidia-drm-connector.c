@@ -152,6 +152,8 @@ static void nv_drm_connector_destroy(struct drm_connector *connector)
         nv_drm_free(nv_connector->edid);
     }
 
+    drm_property_blob_put(nv_connector->hdcp_topology_blob);
+
     nv_drm_free(nv_connector);
 }
 
@@ -319,6 +321,10 @@ done:
     return status;
 }
 
+static void nv_drm_connector_atomic_destroy_state(
+            struct drm_connector *connector,
+            struct drm_connector_state *state);
+
 #if defined(NV_DRM_CONNECTOR_FUNCS_HAS_ATOMIC_CREATE_STATE)
 /**
  * nv_drm_connector_atomic_create_state - connector state creation hook
@@ -354,12 +360,9 @@ static void nv_drm_connector_reset(struct drm_connector *connector)
         return;
     }
 
-    if (connector->state)
-    {
-        struct nv_drm_connector_state *nv_drm_connector_state_old =
-                to_nv_drm_connector_state(connector->state);
-        __drm_atomic_helper_connector_destroy_state(connector->state);
-        nv_drm_free(nv_drm_connector_state_old);
+    if (connector->state != NULL) {
+        nv_drm_connector_atomic_destroy_state(connector, connector->state);
+        connector->state = NULL;
     }
 
     __drm_atomic_helper_connector_reset(connector, &nv_connector_state->base);
@@ -382,11 +385,6 @@ static struct drm_connector_state* nv_drm_connector_atomic_duplicate_state(struc
     nv_drm_new_connector_state->dithering_mode = nv_drm_old_connector_state->dithering_mode;
     nv_drm_new_connector_state->color_format = nv_drm_old_connector_state->color_format;
     nv_drm_new_connector_state->output_bpc = nv_drm_old_connector_state->output_bpc;
-    nv_drm_new_connector_state->hdcp_topology_blob = nv_drm_old_connector_state->hdcp_topology_blob;
-    if (nv_drm_new_connector_state->hdcp_topology_blob) {
-        drm_property_blob_get(nv_drm_new_connector_state->hdcp_topology_blob);
-    }
-
     nv_drm_new_connector_state->hdmi_vsif_metadata =
         nv_drm_old_connector_state->hdmi_vsif_metadata;
     if (nv_drm_new_connector_state->hdmi_vsif_metadata) {
@@ -407,7 +405,6 @@ static void nv_drm_connector_atomic_destroy_state(
            to_nv_drm_connector_state(state);
 
     __drm_atomic_helper_connector_destroy_state(state);
-    drm_property_blob_put(nv_drm_connector_state->hdcp_topology_blob);
 
     drm_property_blob_put(nv_drm_connector_state->hdmi_vsif_metadata);
 
@@ -1168,14 +1165,12 @@ int nv_drm_connector_update_topology_property(struct nv_drm_connector *nv_connec
 {
 #ifdef NV_DRM_SUPPORT_CONTENT_PROTECTION_PROPERTY
     struct drm_connector *connector = &nv_connector->base;
-    struct drm_connector_state *state = connector->state;
-    struct nv_drm_connector_state *nv_state = to_nv_drm_connector_state(state);
     struct drm_device *dev = connector->dev;
     struct nv_drm_device *nv_dev = to_nv_device(dev);
     int ret;
 
     ret = drm_property_replace_global_blob(dev,
-                                            &nv_state->hdcp_topology_blob,
+                                            &nv_connector->hdcp_topology_blob,
                                             NVKMS_HDCP_TOPOLOGY_SIZE,
                                             topology,
                                             &connector->base,

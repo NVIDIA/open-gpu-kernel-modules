@@ -937,14 +937,15 @@ bool ConnectorImpl2x::notifyAttachBegin(Group *target, const DpModesetParams &mo
                                       pixelClockHz, rasterWidth, rasterHeight,
                                       (rasterBlankStartX - rasterBlankEndX), modesetParams.modesetInfo.surfaceHeight,
                                       depth, rasterBlankStartX, rasterBlankEndX, bEnableDsc, modesetParams.modesetInfo.mode,
-                                      false, modesetParams.colorFormat);
+                                      false, dpColorFormat_YCbCr422_Native);
     }
     else
     {
         targetImpl->lastModesetInfo = ModesetInfo(twoChannelAudioHz, eightChannelAudioHz,
                                       pixelClockHz, rasterWidth, rasterHeight,
                                       (rasterBlankStartX - rasterBlankEndX), modesetParams.modesetInfo.surfaceHeight,
-                                      depth, rasterBlankStartX, rasterBlankEndX, bEnableDsc, modesetParams.modesetInfo.mode);
+                                      depth, rasterBlankStartX, rasterBlankEndX, bEnableDsc, modesetParams.modesetInfo.mode,
+                                      false, modesetParams.colorFormat);
     }
 
     targetImpl->headIndex = modesetParams.headIndex;

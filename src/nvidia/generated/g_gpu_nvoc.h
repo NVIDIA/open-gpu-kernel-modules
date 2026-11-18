@@ -5907,6 +5907,14 @@ static inline NV_STATUS gpuReadBusConfigReg_395e98(struct OBJGPU *pGpu, NvU32 in
     return NV_ERR_NOT_SUPPORTED;
 }
 
+static inline NV_STATUS gpuReadFunctionConfigReg_395e98(struct OBJGPU *pGpu, NvU32 function, NvU32 reg, NvU32 *data){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS gpuWriteFunctionConfigReg_395e98(struct OBJGPU *pGpu, NvU32 function, NvU32 reg, NvU32 data){
+    return NV_ERR_NOT_SUPPORTED;
+}
+
 static inline NV_STATUS gpuReadPassThruConfigReg_395e98(struct OBJGPU *pGpu, NvU32 index, NvU32 *data){
     return NV_ERR_NOT_SUPPORTED;
 }

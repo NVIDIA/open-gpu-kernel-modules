@@ -116,15 +116,26 @@ tdispmgrConstructEngine_IMPL
         }
     }
 
-    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_TDISP_SKIP_BAR1_VALIDATION, &data) == NV_OK) &&
-        (data == NV_REG_STR_RM_TDISP_SKIP_BAR1_VALIDATION_YES))
+    //
+    // Forward the BAR1 debug override to the FMC via the proxy regkeys. The doorbell
+    // property is resolved later in tdispmgrDisableBar1_HAL, once self-hosted mode is known.
+    //
+    pTdispMgr->gspProxyRegkeys =
+        FLD_SET_DRF(GSP, _PROXY_REG, _TDISP_ENABLE_BAR1_OVERRIDE, _NO, pTdispMgr->gspProxyRegkeys);
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_TDISP_ENABLE_BAR1, &data) == NV_OK)
     {
+        if ((data == NV_REG_STR_RM_TDISP_ENABLE_BAR1_NO) ||
+            (data == NV_REG_STR_RM_TDISP_ENABLE_BAR1_YES))
         {
-            NV_PRINTF(LEVEL_NOTICE, "TDISP BAR1 validation skipped via regkey override\n");
-            pTdispMgr->setProperty(pTdispMgr,
-                PDB_PROP_TDISPMGR_TDISP_BAR1_VALIDATION_SKIPPED, NV_TRUE);
-            pTdispMgr->gspProxyRegkeys |=
-                DRF_DEF(GSP, _PROXY_REG, _TDISP_SKIP_BAR1_VALIDATION, _YES);
+            pTdispMgr->gspProxyRegkeys =
+                FLD_SET_DRF(GSP, _PROXY_REG, _TDISP_ENABLE_BAR1_OVERRIDE, _YES, pTdispMgr->gspProxyRegkeys);
+            pTdispMgr->gspProxyRegkeys =
+                FLD_SET_DRF_NUM(GSP, _PROXY_REG, _TDISP_ENABLE_BAR1, data, pTdispMgr->gspProxyRegkeys);
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_WARNING, "Ignoring invalid RmTdispEnableBar1 value 0x%x\n", data);
         }
     }
 
@@ -154,6 +165,22 @@ tdispmgrConstructEngine_IMPL
             NV_PRINTF(LEVEL_ERROR, "SPDM object is NULL; TDISP cannot be enabled.\n");
             return NV_ERR_OBJECT_NOT_FOUND;
         }
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+tdispmgrStateInitLocked_IMPL
+(
+    OBJGPU   *pGpu,
+    TdispMgr *pTdispMgr
+)
+{
+    // Self-hosted mode is known by now (set in gpuStatePreInit), so resolve BAR1_DISABLED here.
+    if (pTdispMgr->getProperty(pTdispMgr, PDB_PROP_TDISPMGR_TDISP_ENABLED))
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, tdispmgrDisableBar1_HAL(pGpu, pTdispMgr));
     }
 
     return NV_OK;
@@ -225,10 +252,10 @@ tdispmgrIsTdispIdeTrafficDisabled_IMPL
 }
 
 /*!
- * @brief Check if TDISP BAR1 validation is skipped
+ * @brief Return the resolved BAR1 policy for the usermode doorbell path.
  */
 NvBool
-tdispmgrIsTdispBar1ValidationSkipped_IMPL
+tdispmgrIsBar1Disabled_IMPL
 (
     OBJGPU *pGpu,
     TdispMgr *pTdispMgr
@@ -236,8 +263,8 @@ tdispmgrIsTdispBar1ValidationSkipped_IMPL
 {
     if (pTdispMgr != NULL)
     {
-        return pTdispMgr->getProperty(pTdispMgr,
-            PDB_PROP_TDISPMGR_TDISP_BAR1_VALIDATION_SKIPPED);
+        return pTdispMgr->getProperty(pTdispMgr, PDB_PROP_TDISPMGR_TDISP_ENABLED) &&
+               pTdispMgr->getProperty(pTdispMgr, PDB_PROP_TDISPMGR_TDISP_BAR1_DISABLED);
     }
 
     return NV_FALSE;

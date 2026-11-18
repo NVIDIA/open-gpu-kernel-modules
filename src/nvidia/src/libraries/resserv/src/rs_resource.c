@@ -775,7 +775,9 @@ refAddDependant
 )
 {
     RsDependencyEdge *pDependencyEdge;
+    RsDependencyEdge *pNextEdge = NULL;
     RsRefDependencyListIter iter;
+    RsRefDependentListIter dependentIter;
 
     // dependencies are implicit between a parent resource reference and child resource reference
     if (refHasAncestor(pDependantRef, pResourceRef))
@@ -800,7 +802,22 @@ refAddDependant
     pDependencyEdge->pDependentRef = pDependantRef;
 
     listAppendExisting(&pDependantRef->depBackRefList, pDependencyEdge);
-    listAppendExisting(&pResourceRef->depRefList, pDependencyEdge);
+
+    // Preserve the multimap's class/handle iteration order for cascading frees.
+    dependentIter = listIterAll(&pResourceRef->depRefList);
+    while (listIterNext(&dependentIter))
+    {
+        RsResourceRef *pExistingRef = dependentIter.pValue->pDependentRef;
+
+        if ((pExistingRef->internalClassId > pDependantRef->internalClassId) ||
+            ((pExistingRef->internalClassId == pDependantRef->internalClassId) &&
+             (pExistingRef->hResource > pDependantRef->hResource)))
+        {
+            pNextEdge = dependentIter.pValue;
+            break;
+        }
+    }
+    listInsertExisting(&pResourceRef->depRefList, pNextEdge, pDependencyEdge);
 
     return NV_OK;
 }

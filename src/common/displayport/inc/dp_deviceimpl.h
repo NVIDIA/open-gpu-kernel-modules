@@ -520,6 +520,7 @@ namespace DisplayPort
         void   setMaxUncompressedPixelRateValid();
         NvBool getMaxUncompressedPixelRateValid();
         NvU64  getMaxUncompressedPixelRate();
+        NvBool isPixelClockWithinMaxUncompressedRate(NvU64 pixelClockHz);
         bool getFECSupport();
         NvBool isDSCPassThroughSupported();
         NvBool isDynamicPPSSupported();

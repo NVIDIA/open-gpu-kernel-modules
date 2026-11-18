@@ -94,6 +94,18 @@ static __always_inline bool nv_PageSwapCache(struct page *page)
 #endif
 }
 
+// The function is_vm_hugetlb_page() was renamed to vma_is_hugetlb() after
+// f4e6fe618ad6 ("mm: rename is_vm_hugetlb_page() to vma_is_hugetlb()") in
+// v7.4-rc1.
+static __always_inline bool nv_vma_is_hugetlb(struct vm_area_struct *vma)
+{
+#if defined(NV_VMA_IS_HUGETLB_PRESENT)
+    return vma_is_hugetlb(vma);
+#else
+    return is_vm_hugetlb_page(vma);
+#endif
+}
+
 typedef struct
 {
     uvm_processor_id_t processor_id;
@@ -577,8 +589,9 @@ static bool uvm_hmm_vma_is_valid(struct vm_area_struct *vma,
     // UVM doesn't support userfaultfd. hmm_range_fault() doesn't support
     // VM_IO or VM_PFNMAP VMAs. It also doesn't support VMAs without VM_READ
     // but we allow those VMAs to have policy set on them.
-    // migrate_vma_setup() doesn't support VM_SPECIAL VMAs but that is handled
-    // by uvm_hmm_must_use_sysmem() forcing residency to the CPU.
+    // migrate_vma_setup() doesn't support non-mergable, non-mlockable VMAs
+    // but they are handled by uvm_hmm_must_use_sysmem() forcing residency to
+    // the CPU.
     // We don't immediately cancel VM_IO/PFNMAP faults here though because we
     // allow them for GPUs with ATS, see the comment in hmm_make_resident_cpu().
     return vma &&
@@ -3413,9 +3426,10 @@ NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
     args->pgmap_owner = &g_uvm_global;
     args->fault_page = NULL;
 
-    // Note that migrate_vma_setup() doesn't handle file backed or VM_SPECIAL
-    // VMAs so if UvmMigrate() tries to migrate such a region, -EINVAL will
-    // be returned and we will only try to make the pages be CPU resident.
+    // Note that migrate_vma_setup() doesn't handle file backed or
+    // non-mergable, non-mlockable VMAs so if UvmMigrate() tries to migrate
+    // such a region, -EINVAL will be returned and we will only try to make
+    // the pages be CPU resident.
     ret = migrate_vma_setup_locked(args, va_block);
     if (ret) {
         if (va_block_retry && !list_empty(&va_block_retry->used_chunks))
@@ -4035,14 +4049,14 @@ bool uvm_hmm_must_use_sysmem(uvm_va_block_t *va_block,
     if (vma_has_cow_sharing(vma))
         return true;
 
-    // migrate_vma_setup() can't migrate VM_SPECIAL so we have to force GPU
-    // remote mapping.
+    // migrate_vma_setup() can't migrate non-mergable, non-mlockable VMAs
+    // so we have to force GPU remote mapping.
     // TODO: Bug 3660968: add support for file-backed migrations.
     // TODO: Bug 3368756: add support for transparent huge page migrations.
     return !vma_is_anonymous(vma) ||
-           (vma->vm_flags & VM_SPECIAL) ||
+           (vma->vm_flags & (VM_IO | VM_DONTEXPAND | VM_PFNMAP | VM_MIXEDMAP)) ||
            vma_is_dax(vma) ||
-           is_vm_hugetlb_page(vma);
+           nv_vma_is_hugetlb(vma);
 }
 
 static NV_STATUS hmm_ats_pte_snapshot_locked(uvm_va_block_t *va_block,

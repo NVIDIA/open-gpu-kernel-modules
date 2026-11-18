@@ -656,7 +656,10 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             else if (ProductID == 0x5B9A)
             {
                 this->WARFlags.bDisableDscMaxBppLimit = true;
+                this->WARFlags.bApplyDscMinBppForDpTunneling = true;
+                this->WARData.minDscBppX16ForDpTunneling = 148U;
                 DP_PRINTF(DP_NOTICE, "DP-WAR> Disable DSC max BPP limit of 16 for DSC.");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Apply minimum DSC BPP for LG 27GN950 in DP tunneling mode.");
             }
             else if (ProductID == 0x5CA7 || ProductID == 0x9E9D || ProductID == 0x9EA0 || ProductID == 0x9EA5 || ProductID == 0x5CB7 ||
                      ProductID == 0x9EA8 || ProductID == 0x9EAF || ProductID == 0x7846 || ProductID == 0x7849 || ProductID == 0x5CB5 ||

@@ -56,6 +56,14 @@ struct nv_drm_connector {
     enum NvKmsContentProtection cp;
     bool cp_event_pending;
 
+    /*
+     * The HDCP topology the display reported, named by id through the
+     * immutable NV_HDCP_TOPOLOGY property. The connector owns the one
+     * reference: NVKMS notifications replace the blob and the connector's
+     * destruction releases it. It is not atomic state.
+     */
+    struct drm_property_blob *hdcp_topology_blob;
+
     atomic_t connection_status_dirty;
 
     /**
@@ -91,7 +99,6 @@ struct nv_drm_connector_state {
        enum nv_drm_dithering_mode dithering_mode;
        enum nv_drm_connector_color_format color_format;
        enum nv_drm_connector_output_bpc output_bpc;
-       struct drm_property_blob *hdcp_topology_blob;
        struct drm_property_blob *hdmi_vsif_metadata;
        enum nv_drm_allm_mode allmMode;
 };

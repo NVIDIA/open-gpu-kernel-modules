@@ -76,6 +76,34 @@ _nv83deCtrlCmdFetchVAS(RsClient *pClient, NvU32 hChannel, OBJVASPACE **ppVASpace
     return NV_OK;
 }
 
+#if 1
+static NV_STATUS
+_nv83deCheckMemoryBacking
+(
+    MemoryManager     *pMemoryManager,
+    MEMORY_DESCRIPTOR *pMemDesc
+)
+{
+    MEMORY_DESCRIPTOR *pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
+    NV_ADDRESS_SPACE addressSpace = memdescGetAddressSpace(pRootMemDesc);
+    OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        (addressSpace == ADDR_SYSMEM) || (addressSpace == ADDR_FBMEM),
+        NV_ERR_INVALID_OBJECT_BUFFER);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        (addressSpace != ADDR_FBMEM) || (pRootMemDesc->pGpu == pGpu),
+        NV_ERR_INVALID_OBJECT_PARENT);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        memdescGetPhysAddr(pRootMemDesc, AT_GPU, 0) != memmgrGetInvalidOffset_HAL(pGpu, pMemoryManager),
+        NV_ERR_INVALID_OBJECT_BUFFER);
+
+    return NV_OK;
+}
+#endif // 1
+
 static NV_STATUS
 _nv8deCtrlCmdReadWriteSurface
 (
@@ -118,6 +146,13 @@ _nv8deCtrlCmdReadWriteSurface
                 CliGetDmaMappingInfo(pClient, RES_GET_PARENT_HANDLE(pKernelSMDebuggerSession),  pKernelChannel->hVASpace,
                                      virtAddr, &pDmaMappingInfo),
                 NV_ERR_INVALID_ARGUMENT);
+
+#if 1
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                _nv83deCheckMemoryBacking(pMemoryManager, pDmaMappingInfo->pMemDesc));
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                CliCheckDmaMappingAccess(pDmaMappingInfo, bWrite));
+#endif // 1
 
             NvU64 offsetInMapping = virtAddr - pDmaMappingInfo->DmaOffset;
             // Validate offset is within mapping bounds to prevent integer underflow
@@ -447,6 +482,14 @@ _nv83deCtrlCmdDebugAccessMemory
     pMemDesc = pMemory->pMemDesc;
     if (pMemDesc == NULL)
         return NV_ERR_INVALID_STATE;
+
+#if 1
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        _nv83deCheckMemoryBacking(GPU_GET_MEMORY_MANAGER(pTargetGpu), pMemDesc));
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        (accessType != GRDBG_MEM_ACCESS_TYPE_WRITE) || !memdescIsReadOnlyForDevice(pMemDesc),
+        NV_ERR_INSUFFICIENT_PERMISSIONS);
+#endif // 1
 
     // Sanity-check the requested size
     if ((length == 0) || (!portSafeAddU64(offset, length, &totalLength)))

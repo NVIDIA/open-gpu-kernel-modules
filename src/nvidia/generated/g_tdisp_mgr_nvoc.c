@@ -37,6 +37,7 @@ extern const struct NVOC_EXPORT_INFO __nvoc_export_info__TdispMgr;
 
 // Down-thunk(s) to bridge TdispMgr methods from ancestors (if any)
 NV_STATUS __nvoc_down_thunk_TdispMgr_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pTdispMgr, ENGDESCRIPTOR engDesc);    // this
+NV_STATUS __nvoc_down_thunk_TdispMgr_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pTdispMgr);    // this
 
 // Up-thunk(s) to bridge TdispMgr methods to ancestors (if any)
 
@@ -69,12 +70,12 @@ static const struct NVOC_METADATA__TdispMgr __nvoc_metadata__TdispMgr = {
     .metadata__OBJENGSTATE.metadata__Object.rtti.offset    = NV_OFFSETOF(TdispMgr, __nvoc_base_OBJENGSTATE.__nvoc_base_Object),
 
     .metadata__OBJENGSTATE.vtable.__engstateConstructEngine__ = &__nvoc_down_thunk_TdispMgr_engstateConstructEngine,    // virtual
+    .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &__nvoc_down_thunk_TdispMgr_engstateStateInitLocked,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateConstructApertures__ = &engstateConstructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateDestructApertures__ = &engstateDestructApertures_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
-    .metadata__OBJENGSTATE.vtable.__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
     .metadata__OBJENGSTATE.vtable.__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
@@ -97,11 +98,16 @@ const struct NVOC_CASTINFO __nvoc_castinfo__TdispMgr = {
     }
 };
 
-// 1 down-thunk(s) defined to bridge methods in TdispMgr from superclasses
+// 2 down-thunk(s) defined to bridge methods in TdispMgr from superclasses
 
 // tdispmgrConstructEngine: virtual override (engstate) base (engstate)
 NV_STATUS __nvoc_down_thunk_TdispMgr_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pTdispMgr, ENGDESCRIPTOR engDesc) {
     return tdispmgrConstructEngine_IMPL(pGpu, (struct TdispMgr *)(((unsigned char *) pTdispMgr) - NV_OFFSETOF(TdispMgr, __nvoc_base_OBJENGSTATE)), engDesc);
+}
+
+// tdispmgrStateInitLocked: virtual override (engstate) base (engstate)
+NV_STATUS __nvoc_down_thunk_TdispMgr_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pTdispMgr) {
+    return tdispmgrStateInitLocked_IMPL(pGpu, (struct TdispMgr *)(((unsigned char *) pTdispMgr) - NV_OFFSETOF(TdispMgr, __nvoc_base_OBJENGSTATE)));
 }
 
 
@@ -148,7 +154,7 @@ void __nvoc_init_dataField_TdispMgr(TdispMgr *pThis, GpuHalspecOwner *pGpuhalspe
     }
     pThis->setProperty(pThis, PDB_PROP_TDISPMGR_TDISP_ENABLED, NV_FALSE);
     pThis->setProperty(pThis, PDB_PROP_TDISPMGR_TDISP_IDE_TRAFFIC_DISABLED, NV_FALSE);
-    pThis->setProperty(pThis, PDB_PROP_TDISPMGR_TDISP_BAR1_VALIDATION_SKIPPED, NV_FALSE);
+    pThis->setProperty(pThis, PDB_PROP_TDISPMGR_TDISP_BAR1_DISABLED, NV_FALSE);
     pThis->setProperty(pThis, PDB_PROP_TDISPMGR_TDISP_QUAL_MODE_ENABLED, NV_FALSE);
 }
 
@@ -186,6 +192,17 @@ static void __nvoc_init_funcTable_TdispMgr_1(TdispMgr *pThis, GpuHalspecOwner *p
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
+    // tdispmgrDisableBar1 -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006000UL) )) /* ChipHal: GR100 | GR102 */ 
+    {
+        pThis->__tdispmgrDisableBar1__ = &tdispmgrDisableBar1_GR100;
+    }
+    // default
+    else
+    {
+        pThis->__tdispmgrDisableBar1__ = &tdispmgrDisableBar1_ac1694;
+    }
+
     // tdispmgrTriggerTdispUnload -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 2UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00006000UL) )) /* ChipHal: GR100 | GR102 */ 
     {
@@ -218,13 +235,13 @@ static void __nvoc_init_funcTable_TdispMgr_1(TdispMgr *pThis, GpuHalspecOwner *p
     {
         pThis->__tdispmgrWaitForTdispUnload__ = &tdispmgrWaitForTdispUnload_395e98;
     }
-} // End __nvoc_init_funcTable_TdispMgr_1 with approximately 6 basic block(s).
+} // End __nvoc_init_funcTable_TdispMgr_1 with approximately 8 basic block(s).
 
 
-// Initialize vtable(s) for 3 virtual method(s).
+// Initialize vtable(s) for 4 virtual method(s).
 void __nvoc_init_funcTable_TdispMgr(TdispMgr *pThis, GpuHalspecOwner *pGpuhalspecowner, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 3 per-object function pointer(s).
+    // Initialize vtable(s) with 4 per-object function pointer(s).
     __nvoc_init_funcTable_TdispMgr_1(pThis, pGpuhalspecowner, pRmhalspecowner);
 }
 

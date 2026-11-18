@@ -141,6 +141,9 @@
 //
 #define NV_DP_REGKEY_FORCE_NATIVE_DISPLAYID2X_READ         "FORCE_NATIVE_DISPLAYID2X_READ"
 
+// Skip DP link assessment; assume max link config is reachable
+#define NV_DP_REGKEY_SKIP_DP_LINK_ASSESS                      "SKIP_DP_LINK_ASSESS"
+
 // Disable NO_VCPF WAR for DP_MST Tunneling
 #define NV_DP_REGKEY_DISABLE_DP_MST_TUNNELING_NO_VCPF_WAR     "DISABLE_DP_MST_TUNNELING_NO_VCPF_WAR"
 
@@ -232,6 +235,7 @@ struct DP_REGKEY_DATABASE
     bool  bDisableDpMstTunnelingFec;
     bool  bDisableDpTunLttprCapsChunkRead;
     bool  bDisableDpTunDiaDpcdRevWar;
+    bool  bSkipDpLinkAssess;
 };
 
 extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;

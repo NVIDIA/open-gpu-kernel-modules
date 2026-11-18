@@ -199,6 +199,11 @@ kchannelCreateUserdMemDesc_GV100
     // Get the userd memdesc for the gpu
     pUserdMemDescForSubDev = memdescGetMemDescFromGpu(pUserdMemory->pMemDesc, pGpu);
 
+#if 1
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, !memdescIsReadOnlyForDevice(pUserdMemDescForSubDev),
+                       NV_ERR_INSUFFICIENT_PERMISSIONS);
+#endif // 1
+
     // check that the memory is not VPR
     if (memdescGetFlag(pUserdMemDescForSubDev, MEMDESC_ALLOC_FLAGS_PROTECTED))
     {

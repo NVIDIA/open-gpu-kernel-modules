@@ -260,6 +260,14 @@ subdeviceCtrlCmdEventSetSemaMemValidation_IMPL
 
     if (rmStatus == NV_OK)
     {
+#if 1
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, !memdescIsReadOnlyForDevice(pMemory->pMemDesc),
+                           NV_ERR_INSUFFICIENT_PERMISSIONS);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+            (pMemory->Length >= RM_PAGE_SIZE) && (memdescGetSize(pMemory->pMemDesc) >= RM_PAGE_SIZE),
+            NV_ERR_INVALID_LIMIT);
+#endif // 1
+
         pSemValue = (NvU32 *)NvP64_VALUE(memdescGetKernelMapping(pMemory->pMemDesc));
 
         if (pSemValue == NULL)

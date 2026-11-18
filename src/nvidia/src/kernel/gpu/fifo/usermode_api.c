@@ -67,9 +67,10 @@ usrmodeConstruct_IMPL
         bPrivMapping = pAllocParams->bPriv;
     }
 
-    // Force BAR0 doorbell when TDISP cannot rely on BAR1 mappings.
+    // Fall back to the BAR0 doorbell when BAR1 can't be used: IDE traffic disabled, or
+    // BAR1 dropped from the TDI (self-hosted TDISP, see tdispmgrIsBar1Disabled).
     if (tdispmgrIsTdispIdeTrafficDisabled(pGpu, pTdispMgr) ||
-        tdispmgrIsTdispBar1ValidationSkipped(pGpu, pTdispMgr))
+        tdispmgrIsBar1Disabled(pGpu, pTdispMgr))
     {
         bBar1Mapping = NV_FALSE;
         bPrivMapping = NV_FALSE;

@@ -38,9 +38,54 @@
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "os/os.h"
 #include "spdm/rmspdmtransport.h"
+#include "gsp/gsp_proxy_reg.h"
 
 #include "published/rubin/gr100/dev_gsp.h"
 #include "published/rubin/gr100/dev_vm.h"
+
+/*!
+ * @brief Resolve the kernel BAR1_DISABLED property for the usermode BAR0-doorbell path.
+ * Called from tdispmgrStateInitLocked, after GSP static info provides self-hosted mode.
+ */
+NV_STATUS
+tdispmgrDisableBar1_GR100
+(
+    OBJGPU   *pGpu,
+    TdispMgr *pTdispMgr
+)
+{
+    NvBool bAllowDebugOverride = IS_FMODEL(pGpu);
+    NvBool bBar1Disabled;
+
+    if (!gpuIsTdispFeatureEnabled(pGpu))
+    {
+        return NV_OK;
+    }
+
+    ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+
+    if (pConfCompute != NULL)
+    {
+        bAllowDebugOverride |= confComputeIsDebugModeEnabled_HAL(pGpu, pConfCompute);
+    }
+
+    //
+    // Match the FMC's self-hosted default, then apply the debug override so the
+    // doorbell uses BAR1 when it is reported and BAR0 when it is omitted.
+    //
+    bBar1Disabled = gpuIsSelfHosted(pGpu);
+
+    if (bAllowDebugOverride &&
+        FLD_TEST_DRF(GSP, _PROXY_REG, _TDISP_ENABLE_BAR1_OVERRIDE, _YES, pTdispMgr->gspProxyRegkeys))
+    {
+        bBar1Disabled = FLD_TEST_DRF(GSP, _PROXY_REG, _TDISP_ENABLE_BAR1, _NO,
+                                   pTdispMgr->gspProxyRegkeys);
+    }
+
+    pTdispMgr->setProperty(pTdispMgr, PDB_PROP_TDISPMGR_TDISP_BAR1_DISABLED, bBar1Disabled);
+
+    return NV_OK;
+}
 
 static NvBool
 _tdispmgrIsTdiInErrorState

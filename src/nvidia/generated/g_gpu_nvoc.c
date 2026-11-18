@@ -1398,7 +1398,7 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     }
     else
     {
-        // NVOC_UNREACHABLE, NULL-initialized.
+        pThis->__gpuReadFunctionConfigReg__ = &gpuReadFunctionConfigReg_395e98;
     }
 
     // gpuWriteFunctionConfigReg -- halified (2 hals) body
@@ -1408,7 +1408,7 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     }
     else
     {
-        // NVOC_UNREACHABLE, NULL-initialized.
+        pThis->__gpuWriteFunctionConfigReg__ = &gpuWriteFunctionConfigReg_395e98;
     }
 
     // gpuWriteFunctionConfigRegEx -- halified (2 hals) body

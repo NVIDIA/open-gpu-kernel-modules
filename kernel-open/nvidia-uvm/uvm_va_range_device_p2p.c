@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2025 NVIDIA Corporation
+    Copyright (c) 2025-2026 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -150,14 +150,15 @@ static void deinit_device_p2p_mem(uvm_device_p2p_mem_t *p2p_mem, struct list_hea
 
 void uvm_va_range_deinit_device_p2p(uvm_va_range_device_p2p_t *device_p2p_range, struct list_head *deferred_free_list)
 {
-    deinit_device_p2p_mem(device_p2p_range->p2p_mem, deferred_free_list);
+    if (device_p2p_range->p2p_mem)
+        deinit_device_p2p_mem(device_p2p_range->p2p_mem, deferred_free_list);
     device_p2p_range->p2p_mem = NULL;
+    device_p2p_range->gpu = NULL;
 }
 
 void uvm_va_range_destroy_device_p2p(uvm_va_range_device_p2p_t *device_p2p_range, struct list_head *deferred_free_list)
 {
-    if (device_p2p_range->p2p_mem)
-        uvm_va_range_deinit_device_p2p(device_p2p_range, deferred_free_list);
+    uvm_va_range_deinit_device_p2p(device_p2p_range, deferred_free_list);
     kmem_cache_free(g_uvm_va_range_device_p2p_cache, device_p2p_range);
 }
 
@@ -584,6 +585,12 @@ NV_STATUS uvm_va_range_device_p2p_map_cpu(uvm_va_space_t *va_space,
     uvm_device_p2p_mem_t *p2p_mem = device_p2p_range->p2p_mem;
 
     uvm_assert_mmap_lock_locked(vma->vm_mm);
+
+    // Check if the parent GPU was unregistered
+    if (!p2p_mem) {
+        status = NV_ERR_INVALID_STATE;
+        goto error;
+    }
 
     for (i = device_p2p_range->offset >> PAGE_SHIFT, va = vma->vm_start; va < vma->vm_end; i++, va += PAGE_SIZE) {
         struct page *page = p2p_mem_get_page(p2p_mem, i);

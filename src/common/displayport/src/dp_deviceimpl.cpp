@@ -1860,6 +1860,16 @@ NvU64 DeviceImpl::getMaxUncompressedPixelRate()
     return maxUncompressedPixelRate;
 }
 
+NvBool DeviceImpl::isPixelClockWithinMaxUncompressedRate(NvU64 pixelClockHz)
+{
+    if (!getMaxUncompressedPixelRateValid())
+    {
+        return true;
+    }
+
+    return ((getMaxUncompressedPixelRate() * PCLK_MHZ_TO_HZ) >= pixelClockHz);
+}
+
 bool DeviceImpl::isPanelReplaySupported()
 {
     return prCaps.bPanelReplaySupported;
@@ -3330,7 +3340,7 @@ bool DeviceImpl::getIgnoreMSACap()
         {
             if(FLD_TEST_DRF(_DPCD, _DOWN_STREAM_PORT, _MSA_TIMING_PAR_IGNORED, _YES, byte))
             {
-                if (this->parent && this->parent->isVirtualPeerDevice())
+                if (this->parent)
                 {
                     byte = 0;
                     size = 0;

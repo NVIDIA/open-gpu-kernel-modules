@@ -294,6 +294,7 @@ struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struc
 void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super
 NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
 NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NV_STATUS __nvoc_down_thunk_KernelSMDebuggerSession_resControl_Prologue(struct RsResource *pKernelSMDebuggerSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
 NV_STATUS __nvoc_down_thunk_KernelSMDebuggerSession_gpuresInternalControlForward(struct GpuResource *arg_this, NvU32 command, void *pParams, NvU32 size);    // this
 NvHandle __nvoc_down_thunk_KernelSMDebuggerSession_gpuresGetInternalObjectHandle(struct GpuResource *arg_this);    // this
 
@@ -1067,6 +1068,7 @@ static const struct NVOC_METADATA__KernelSMDebuggerSession __nvoc_metadata__Kern
     .metadata__Notifier.metadata__INotifier.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__Notifier.metadata__INotifier.rtti.offset    = NV_OFFSETOF(KernelSMDebuggerSession, __nvoc_base_Notifier.__nvoc_base_INotifier),
 
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_KernelSMDebuggerSession_resControl_Prologue,    // virtual
     .metadata__GpuResource.vtable.__gpuresInternalControlForward__ = &__nvoc_down_thunk_KernelSMDebuggerSession_gpuresInternalControlForward,    // virtual
     .metadata__GpuResource.vtable.__gpuresGetInternalObjectHandle__ = &__nvoc_down_thunk_KernelSMDebuggerSession_gpuresGetInternalObjectHandle,    // virtual
     .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
@@ -1081,7 +1083,6 @@ static const struct NVOC_METADATA__KernelSMDebuggerSession __nvoc_metadata__Kern
     .metadata__GpuResource.metadata__RmResource.vtable.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
     .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
     .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
     .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
     .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
     .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
@@ -1115,7 +1116,12 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelSMDebuggerSession = {
     }
 };
 
-// 2 down-thunk(s) defined to bridge methods in KernelSMDebuggerSession from superclasses
+// 3 down-thunk(s) defined to bridge methods in KernelSMDebuggerSession from superclasses
+
+// ksmdbgssnControl_Prologue: virtual override (res) base (gpures)
+NV_STATUS __nvoc_down_thunk_KernelSMDebuggerSession_resControl_Prologue(struct RsResource *pKernelSMDebuggerSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return ksmdbgssnControl_Prologue_IMPL((struct KernelSMDebuggerSession *)(((unsigned char *) pKernelSMDebuggerSession) - NV_OFFSETOF(KernelSMDebuggerSession, __nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource)), pCallContext, pParams);
+}
 
 // ksmdbgssnInternalControlForward: virtual override (gpures) base (gpures)
 NV_STATUS __nvoc_down_thunk_KernelSMDebuggerSession_gpuresInternalControlForward(struct GpuResource *arg_this, NvU32 command, void *pParams, NvU32 size) {

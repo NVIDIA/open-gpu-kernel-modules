@@ -64,7 +64,11 @@
 #endif
 
 #if defined(NV_DRM_FBDEV_AVAILABLE)
+#if defined(NV_DRM_CLIENTS_DRM_FBDEV_HELPER_H_PRESENT)
+#include <drm/clients/drm_fbdev_helper.h>
+#else
 #include <drm/drm_fb_helper.h>
+#endif
 #endif
 
 #if defined(NV_DRM_DRM_CLIENT_SETUP_H_PRESENT)

@@ -143,6 +143,7 @@ static void plane_destroy_pipeline_colorops(struct nv_drm_color_pipeline *pipeli
  * @plane: DRM plane
  * @include_ictcp: Whether to include ICtCp colorops
  * @include_ilut: Whether to include ILUT colorops (DEGAMMA_TF, DEGAMMA_LUT, DEGAMMA_MULTIPLIER)
+ * @include_fmt: Whether to include the FMT colorop (FMT_CTM)
  * @name: Pipeline name
  *
  * Returns: Allocated pipeline on success, ERR_PTR on failure
@@ -151,6 +152,7 @@ static struct nv_drm_color_pipeline *
 plane_build_single_pipeline(struct drm_plane *plane,
                             NvBool include_ictcp,
                             NvBool include_ilut,
+                            NvBool include_fmt,
                             const char *name)
 {
     struct nv_drm_plane *nv_plane = to_nv_plane(plane);
@@ -188,6 +190,8 @@ plane_build_single_pipeline(struct drm_plane *plane,
         } \
         if (prev_colorop) { \
             drm_colorop_set_next_property(prev_colorop, &pipeline->field->colorop); \
+        } else { \
+            pipeline->first = pipeline->field; \
         } \
         prev_colorop = &pipeline->field->colorop; \
     }
@@ -197,7 +201,7 @@ plane_build_single_pipeline(struct drm_plane *plane,
                    nv_drm_plane_colorop_ctm_3x4_init(dev, &pipeline->fmt_ctm->colorop, plane,
                                                      DRM_COLOROP_FLAG_ALLOW_BYPASS),
                    "FMT_CTM",
-                   NV_TRUE /* Always included */);
+                   include_fmt);
 
     /* 1. DEGAMMA_TF: 1D Curve for transfer function (ILUT) */
     CREATE_COLOROP(degamma_tf,
@@ -305,6 +309,10 @@ static int plane_update_state_from_colorops(struct drm_plane *plane,
     nv_colorop = container_of(plane_state->color_pipeline, struct nv_drm_colorop, colorop);
     pipeline = nv_colorop->pipeline;
 
+    /*
+     * A colorop the selected pipeline lacks counts as bypassed, so that
+     * nothing set through another pipeline stays applied after a switch.
+     */
 #define HANDLE_CTM(field, plane_state_field) \
     if (pipeline->field) { \
         NvBool replaced; \
@@ -321,6 +329,9 @@ static int plane_update_state_from_colorops(struct drm_plane *plane,
         } else { \
             nv_drm_atomic_replace_property_blob(&nv_plane_state->plane_state_field, NULL, &replaced); \
         } \
+    } else { \
+        nv_drm_atomic_replace_property_blob( \
+            &nv_plane_state->plane_state_field, NULL, NULL); \
     }
 
 #define HANDLE_LUT(field, plane_state_field, changed_field) \
@@ -344,6 +355,13 @@ static int plane_update_state_from_colorops(struct drm_plane *plane,
             if (replaced) { \
                 nv_plane_state->changed_field = NV_TRUE; \
             } \
+        } \
+    } else { \
+        NvBool replaced; \
+        nv_drm_atomic_replace_property_blob( \
+            &nv_plane_state->plane_state_field, NULL, &replaced); \
+        if (replaced) { \
+            nv_plane_state->changed_field = NV_TRUE; \
         } \
     }
 
@@ -383,6 +401,9 @@ static int plane_update_state_from_colorops(struct drm_plane *plane,
             pq_implicit_mult = 1;
         }
         WARN_ON_ONCE((pq_implicit_mult != 1) && !pipeline->degamma_multiplier);
+    } else if (nv_plane_state->degamma_tf != NV_DRM_TRANSFER_FUNCTION_DEFAULT) {
+        nv_plane_state->degamma_tf = NV_DRM_TRANSFER_FUNCTION_DEFAULT;
+        nv_plane_state->degamma_changed = NV_TRUE;
     }
 
     /* 2. Handle DEGAMMA_LUT (1D LUT) */
@@ -421,6 +442,9 @@ static int plane_update_state_from_colorops(struct drm_plane *plane,
             nv_plane_state->degamma_multiplier = new_mult;
             nv_plane_state->degamma_changed = NV_TRUE;
         }
+    } else if (nv_plane_state->degamma_multiplier != NV_DRM_S31_32_ONE) {
+        nv_plane_state->degamma_multiplier = NV_DRM_S31_32_ONE;
+        nv_plane_state->degamma_changed = NV_TRUE;
     }
 
     /* 4. Handle LMS_CTM (3x4 Matrix) */
@@ -451,10 +475,12 @@ int nv_drm_plane_create_color_pipelines(struct drm_plane *plane,
     int pipeline_count = 0;
     int ret;
 
-#define CREATE_PIPELINE(include_ictcp, include_ilut, name, condition) \
+#define CREATE_PIPELINE(include_ictcp, include_ilut, include_fmt, name, \
+                        condition) \
     if (condition) { \
         nv_plane->color_pipelines[pipeline_count] = \
-            plane_build_single_pipeline(plane, include_ictcp, include_ilut, name); \
+            plane_build_single_pipeline(plane, include_ictcp, include_ilut, \
+                                        include_fmt, name); \
         if (IS_ERR(nv_plane->color_pipelines[pipeline_count])) { \
             ret = PTR_ERR(nv_plane->color_pipelines[pipeline_count]); \
             nv_plane->color_pipelines[pipeline_count] = NULL; \
@@ -466,24 +492,31 @@ int nv_drm_plane_create_color_pipelines(struct drm_plane *plane,
     /* Create Full Pipeline if supported */
     CREATE_PIPELINE(NV_TRUE,  /* include_ictcp */
                     NV_TRUE,  /* include_ilut */
+                    NV_TRUE,  /* include_fmt */
                     "NVIDIA Full",
                     supportsICtCp);
 
     /* Create Lite Pipeline (always created) */
     CREATE_PIPELINE(NV_FALSE, /* include_ictcp */
                     NV_TRUE,  /* include_ilut */
+                    NV_TRUE,  /* include_fmt */
                     "NVIDIA Lite",
                     NV_TRUE);
 
-    /* Create Floating Point FB Full Pipeline if supported */
+    /*
+     * Create Floating Point FB Full Pipeline if supported. The floating point
+     * pipelines have no FMT_CTM, as the FMT stage is bypassed for FP16 input.
+     */
     CREATE_PIPELINE(NV_TRUE,  /* include_ictcp */
                     NV_FALSE, /* include_ilut */
+                    NV_FALSE, /* include_fmt */
                     "NVIDIA FP Full",
                     supportsICtCp);
 
     /* Create Floating Point FB Lite Pipeline (always created) */
     CREATE_PIPELINE(NV_FALSE, /* include_ictcp */
                     NV_FALSE, /* include_ilut */
+                    NV_FALSE, /* include_fmt */
                     "NVIDIA FP Lite",
                     NV_TRUE);
 
@@ -542,11 +575,8 @@ int nv_drm_plane_create_color_pipeline_property(struct drm_plane *plane)
             goto done;
         }
 
-        /* All pipelines must start with FMT CTM */
-        WARN_ON(pipeline->fmt_ctm == NULL);
-
-        /* Create enum entry pointing to the first colorop, the FMT CTM */
-        pipeline_enums[i].type = pipeline->fmt_ctm->colorop.base.id;
+        /* Create enum entry pointing to the pipeline's first colorop */
+        pipeline_enums[i].type = pipeline->first->colorop.base.id;
         pipeline_enums[i].name = pipeline->name;
     }
 
@@ -588,6 +618,10 @@ int nv_drm_plane_process_color_mgmt_state(struct drm_plane *plane,
     }
 
     if (clear_state) {
+        const struct nv_drm_plane_state *nv_old_plane_state =
+            to_nv_drm_plane_state(
+                drm_atomic_get_old_plane_state(plane_state->state, plane));
+
         drm_property_blob_put(nv_plane_state->fmt_ctm);
         nv_plane_state->fmt_ctm = NULL;
 
@@ -607,12 +641,22 @@ int nv_drm_plane_process_color_mgmt_state(struct drm_plane *plane,
         drm_property_blob_put(nv_plane_state->degamma_lut);
         nv_plane_state->degamma_lut = NULL;
         nv_plane_state->degamma_multiplier = NV_DRM_S31_32_ONE;
-        nv_plane_state->degamma_changed = true;
+        if ((nv_old_plane_state->degamma_tf != nv_plane_state->degamma_tf) ||
+            (nv_old_plane_state->degamma_lut !=
+             nv_plane_state->degamma_lut) ||
+            (nv_old_plane_state->degamma_multiplier !=
+             nv_plane_state->degamma_multiplier)) {
+            nv_plane_state->degamma_changed = true;
+        }
 
         drm_property_blob_put(nv_plane_state->tmo_lut);
         nv_plane_state->tmo_lut = NULL;
-        nv_plane_state->tmo_changed = true;
         nv_plane_state->tmo_sat_corr_enable = NV_DRM_TMO_SAT_CORR_ENABLE_DEFAULT;
+        if ((nv_old_plane_state->tmo_lut != nv_plane_state->tmo_lut) ||
+            (nv_old_plane_state->tmo_sat_corr_enable !=
+             nv_plane_state->tmo_sat_corr_enable)) {
+            nv_plane_state->tmo_changed = true;
+        }
     }
 
     /* If color pipeline is active, translate colorop state to nv_plane_state */

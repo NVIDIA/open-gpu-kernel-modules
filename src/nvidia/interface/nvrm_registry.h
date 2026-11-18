@@ -2883,13 +2883,14 @@
 //
 // Type: DWORD
 // Encoding:
-// 0 - Report BAR1 in the TDISP device interface report
-// 1 - Skip BAR1 in the TDISP device interface report
+// 0 - Omit BAR1 from the TDISP device interface report
+// 1 - Report BAR1 in the TDISP device interface report
+// Debug-only override, ignored in production. When unset, BAR1 is omitted on
+// supported self-hosted systems and reported otherwise.
 //
-#define NV_REG_STR_RM_TDISP_SKIP_BAR1_VALIDATION            "RmTdispSkipBar1Validation"
-#define NV_REG_STR_RM_TDISP_SKIP_BAR1_VALIDATION_NO         0x00000000
-#define NV_REG_STR_RM_TDISP_SKIP_BAR1_VALIDATION_YES        0x00000001
-#define NV_REG_STR_RM_TDISP_SKIP_BAR1_VALIDATION_DEFAULT    NV_REG_STR_RM_TDISP_SKIP_BAR1_VALIDATION_NO
+#define NV_REG_STR_RM_TDISP_ENABLE_BAR1             "RmTdispEnableBar1"
+#define NV_REG_STR_RM_TDISP_ENABLE_BAR1_NO          0x00000000
+#define NV_REG_STR_RM_TDISP_ENABLE_BAR1_YES         0x00000001
 
 //
 // Type: DWORD
