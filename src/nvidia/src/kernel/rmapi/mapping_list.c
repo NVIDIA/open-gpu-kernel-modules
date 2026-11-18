@@ -175,6 +175,7 @@ intermapRegisterDmaMapping
     NV_STATUS             rmStatus = NV_OK;
     PNODE                 pNode;
     NvU64 alignment = 0;
+    NvBool                bDevMemoryTableNodeInserted = NV_FALSE;
 
     //
     // OS46_FLAGS_DMA_UNICAST_REUSE_ALLOC asked for one more mapping of a VA that
@@ -255,6 +256,7 @@ intermapRegisterDmaMapping
         pVirtualMemory->devMemoryTableNode.Data = pVirtualMemory;
 
         NV_ASSERT_OK_OR_RETURN(btreeInsert(&pVirtualMemory->devMemoryTableNode, &pDevice->DevMemoryTable));
+        bDevMemoryTableNodeInserted = NV_TRUE;
     }
 
     // register the 'dmaOffset' list itself
@@ -265,7 +267,10 @@ intermapRegisterDmaMapping
                   "Failed to insert new mapping node for range 0x%llX-0x%llX!\n",
                   pNode->keyStart, pNode->keyEnd);
         DBG_BREAKPOINT();
-        btreeUnlink(&pVirtualMemory->devMemoryTableNode, &pDevice->DevMemoryTable);
+        if (bDevMemoryTableNodeInserted)
+        {
+            btreeUnlink(&pVirtualMemory->devMemoryTableNode, &pDevice->DevMemoryTable);
+        }
         portMemFree(pNode);
         return rmStatus;
     }
