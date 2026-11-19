@@ -223,6 +223,29 @@ rmapiGetInterface
     return &g_RmApiList[rmapiType];
 }
 
+NV_STATUS
+rmapiGetApiOrRtd3InternalInterface
+(
+    RM_API **ppRmApi
+)
+{
+    if (rmapiLockIsOwner())
+    {
+        *ppRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
+    }
+    else if (rmapiInRtd3PmPath())
+    {
+        *ppRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "Caller missing proper locks\n");
+        return NV_ERR_INVALID_LOCK_STATE;
+    }
+
+    return NV_OK;
+}
+
 static void
 _rmapiUnrefGpuAccessNeeded
 (

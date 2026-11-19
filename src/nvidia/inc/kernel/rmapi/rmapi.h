@@ -156,6 +156,17 @@ typedef enum
  */
 RM_API *rmapiGetInterface(RMAPI_TYPE rmapiType);
 
+/**
+ * Return the internal RMAPI interface appropriate for callers that normally
+ * hold the API lock but may run from the RTD3 PM path instead.
+ *
+ * RTD3 cannot acquire the API lock. Its allocation paths may temporarily
+ * release GPU locks, so interface selection does not imply GPU-lock ownership.
+ * Returns NV_ERR_INVALID_LOCK_STATE without modifying *ppRmApi when neither
+ * calling convention is satisfied.
+ */
+NV_STATUS rmapiGetApiOrRtd3InternalInterface(RM_API **ppRmApi);
+
 // Flags for RM_API::Alloc
 #define RMAPI_ALLOC_FLAGS_NONE                    0
 #define RMAPI_ALLOC_FLAGS_SKIP_RPC                NVBIT(0)
