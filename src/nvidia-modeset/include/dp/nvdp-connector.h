@@ -39,6 +39,9 @@ void nvDPNotifyLongPulse(NVConnectorEvoPtr pConnectorEvo,
 void nvDPSetClientForcedConnected(NVConnectorEvoPtr pConnectorEvo,
                         NvBool enabled);
 
+void nvDPSetMaxLinkRateLimit(NVConnectorEvoPtr pConnectorEvo,
+                             NvU32 linkRate10M);
+
 void nvDPNotifyShortPulse(NVDPLibConnectorPtr pNVDpLibConnector);
 
 void nvDPDestroyConnector(NVDPLibConnectorPtr pNVDpLibConnector);

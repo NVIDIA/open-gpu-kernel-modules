@@ -133,6 +133,35 @@ void nvDPNotifyLongPulse(NVConnectorEvoPtr pConnectorEvo,
 
 }
 
+/*!
+ * Limit the max link rate that the GPU supports on this connector.
+ *
+ * \param[in]  pConnectorEvo  The DisplayPort connector to limit.
+ * \param[in]  linkRate10M    The limit in units of 10Mbps, or 0 for no limit.
+ */
+void nvDPSetMaxLinkRateLimit(NVConnectorEvoPtr pConnectorEvo,
+                             NvU32 linkRate10M)
+{
+    NVDPLibConnectorPtr pNVDpLibConnector = pConnectorEvo->pDpLibConnector;
+
+    if (!pNVDpLibConnector || !pNVDpLibConnector->mainLink ||
+        !pNVDpLibConnector->connector) {
+        return;
+    }
+
+    if (!pNVDpLibConnector->mainLink->setMaxLinkRateLimit(linkRate10M)) {
+        // The limit is already in effect; nothing to do.
+        return;
+    }
+
+    //
+    // The GPU capabilities seen by the DP library changed: have it query them
+    // again.  If that changes the max link configuration of a plugged in sink,
+    // the library replugs the sink so that the link is assessed again.
+    //
+    pNVDpLibConnector->connector->notifyHBR2WAREngage();
+}
+
 void nvDPNotifyShortPulse(NVDPLibConnectorPtr pNVDpLibConnector)
 {
     DisplayPort::Connector *c = pNVDpLibConnector->connector;

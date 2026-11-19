@@ -146,6 +146,7 @@ EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
     this->initializeRegkeyDatabase();
     this->applyRegkeyOverrides();
 
+    _maxLinkRateLimit          = 0;
     _isDynamicMuxCapable       = false;
     _isLTPhyRepeaterSupported  = true;
     _rmPhyRepeaterCount        = 0;
@@ -328,6 +329,14 @@ bool EvoMainLink::queryGPUCapability()
         DP_ASSERT(0 && "Unable to get max link rate");
         // Assume that we can at least support RBR.
         _maxLinkRateSupportedGpu = dp2LinkRate_1_62Gbps;
+    }
+
+    // Apply the user configured limit only if it is lower than what the GPU supports.
+    if (_maxLinkRateLimit && (_maxLinkRateLimit < _maxLinkRateSupportedGpu))
+    {
+        DP_PRINTF(DP_NOTICE, "Limiting GPU max link rate from %u to %u (10Mbps)",
+                  _maxLinkRateSupportedGpu, _maxLinkRateLimit);
+        _maxLinkRateSupportedGpu = _maxLinkRateLimit;
     }
 
     if (!_isDscDisabledByRegkey)
@@ -1292,6 +1301,47 @@ void EvoMainLink::applyRegkeyOverrides()
     _isDownspreadDisabledByRegkey        = dpRegkeyDatabase.bDownspreadDisabled;
     _bAvoidHBR3DisabledByRegkey          = dpRegkeyDatabase.bDisableAvoidHBR3War;
     _bPollingDpMstDisabledByRegkey       = dpRegkeyDatabase.bDisablePollingForDpMstDetection;
+}
+
+//
+// Set an upper limit for the max link rate supported by the GPU. The limit
+// takes effect on the next queryGPUCapability() call, and only if it is lower
+// than what the GPU supports.
+//
+// linkRate10M    The limit in units of 10Mbps, 0 for no limit. It is rounded
+//                down to a standard link rate, so that a non-standard rate is
+//                never used for link training. A limit below RBR is ignored.
+//
+// Returns true if the limit changed.
+//
+bool EvoMainLink::setMaxLinkRateLimit(NvU32 linkRate10M)
+{
+    static const NvU32 standardLinkRates[] =
+    {
+        dp2LinkRate_20_0Gbps,
+        dp2LinkRate_13_5Gbps,
+        dp2LinkRate_10_0Gbps,
+        dp2LinkRate_8_10Gbps,
+        dp2LinkRate_5_40Gbps,
+        dp2LinkRate_2_70Gbps,
+        dp2LinkRate_1_62Gbps
+    };
+    NvU32 limit = 0;
+
+    for (NvU32 i = 0; i < sizeof(standardLinkRates)/sizeof(standardLinkRates[0]); i++)
+    {
+        if (standardLinkRates[i] <= linkRate10M)
+        {
+            limit = standardLinkRates[i];
+            break;
+        }
+    }
+
+    if (limit == _maxLinkRateLimit)
+        return false;
+
+    _maxLinkRateLimit = limit;
+    return true;
 }
 
 NvU32 EvoMainLink::getRegkeyValue(const char *key)

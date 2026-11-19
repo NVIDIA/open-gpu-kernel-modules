@@ -175,11 +175,92 @@ void nvkms_extcon_report_hdmi_audio(NvBool state)
 
 
 #if NVKMS_CONFIG_FILE_SUPPORTED
-/* This parameter is used to find the dpy override conf file */
+/*
+ * This parameter is used to find the nvidia-modeset configuration file, which
+ * holds per-display overrides.  The file is read once, when the module is
+ * loaded.
+ *
+ * The file is a list of whitespace-separated entries of the form
+ *
+ *     <option>.<target> = <value>
+ *
+ * Everything from a '#' to the end of the line is a comment.
+ *
+ * <target> selects the connectors that the entry applies to, and is either
+ *
+ *     <gpu>.<connector>    one connector of one GPU
+ *     all                  all the connectors of all the GPUs
+ *
+ * An entry for a specific connector takes precedence over an "all" entry with
+ * the same <option>, whatever their order in the file.
+ *
+ * <gpu> selects the GPU that drives the display, and is one of:
+ *
+ *     [dddd:bb:ss.f]   the PCI address of the GPU, in hexadecimal: domain,
+ *                      bus, slot and function, e.g. [0000:01:00.0]
+ *     tegra            the Tegra display device
+ *     rm-soc-disp      the RM SOC display device
+ *
+ * <connector> is the name of the connector in PROTOCOL-Index format, e.g.
+ * DP-0 or HDMI-1.
+ *
+ * <option> is one of:
+ *
+ *     override
+ *         Override the detection of the display.  <value> is either the
+ *         absolute path of a binary EDID file, an EDID as a string of ASCII
+ *         hex digits, or the word "disconnected".  With an EDID, the display
+ *         is treated as connected and that EDID is used for it.  Note that
+ *         with the "all" target, every connector of every GPU is treated as
+ *         connected to a display with that EDID.
+ *
+ *     dp_max_link_rate
+ *         Limit the maximum DisplayPort link rate that the GPU supports on
+ *         the connector.  <value> is a decimal number, in Mbps per lane.  The
+ *         standard link rates are:
+ *
+ *              1620   RBR         10000   UHBR10
+ *              2700   HBR         13500   UHBR13.5
+ *              5400   HBR2        20000   UHBR20
+ *              8100   HBR3
+ *
+ *         Any other value is rounded down to the next standard link rate, and
+ *         a value below 1620 is ignored.  The limit only ever lowers the link
+ *         rate: if the GPU does not support a link rate above the limit, the
+ *         entry has no effect.  It has no effect on non-DisplayPort
+ *         connectors either.  To exempt one connector from an "all" limit,
+ *         give it an entry of its own with a higher value, e.g. 20000.
+ *
+ * Example file:
+ *
+ *     # Do not go above HBR2 (5.4 Gbps per lane) on any DisplayPort connector
+ *     # of any GPU...
+ *     dp_max_link_rate.all = 5400
+ *
+ *     # ...except on the GPU at PCI address 0000:01:00.0: allow HBR3 on its
+ *     # first DisplayPort connector, and do not go above HBR on the second.
+ *     dp_max_link_rate.[0000:01:00.0].DP-0 = 8100
+ *     dp_max_link_rate.[0000:01:00.0].DP-1 = 2700
+ *
+ *     # Use a custom EDID for the display on the same first connector.
+ *     override.[0000:01:00.0].DP-0 = /lib/firmware/edid/custom.bin
+ *
+ * The module is then loaded with, e.g.:
+ *
+ *     modprobe nvidia-modeset config_file=/etc/nvidia/nvidia-modeset.conf
+ */
 #define NVKMS_CONF_FILE_SPECIFIED (nvkms_conf != NULL)
 
 MODULE_PARM_DESC(config_file,
-                 "Path to the nvidia-modeset configuration file (default: disabled)");
+                 "Path to the nvidia-modeset configuration file (default: disabled). "
+                 "Entries have the form <option>.<gpu>.<connector> = <value>, or "
+                 "<option>.all = <value> for all the connectors of all the GPUs, "
+                 "e.g. \"dp_max_link_rate.[0000:01:00.0].DP-0 = 5400\" limits the "
+                 "DisplayPort link rate of DP-0 on the GPU at that PCI address to "
+                 "5400 Mbps per lane, \"dp_max_link_rate.all = 5400\" does so for "
+                 "every DisplayPort connector, and "
+                 "\"override.[0000:01:00.0].DP-0 = /path/to/edid.bin\" overrides "
+                 "the EDID of DP-0");
 static char *nvkms_conf = NULL;
 module_param_named(config_file, nvkms_conf, charp, 0444);
 #endif

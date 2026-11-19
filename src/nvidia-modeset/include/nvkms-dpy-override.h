@@ -30,6 +30,14 @@
 extern "C" {
 #endif
 
+/*
+ * The GPU ID and display name of the display override that applies to all
+ * displays of all GPUs.  A display override for a specific GPU and display
+ * takes precedence over it.
+ */
+#define NV_DPY_OVERRIDE_ALL_GPU_ID  NV0000_CTRL_GPU_INVALID_ID
+#define NV_DPY_OVERRIDE_ALL_NAME    "all"
+
 typedef struct _DpyOverride {
     NVListRec entry;
 
@@ -38,6 +46,12 @@ typedef struct _DpyOverride {
 
     NvBool connected;
     NVEdidRec edid;
+
+    /*
+     * Upper limit for the DisplayPort link rate that the GPU supports on this
+     * connector, in units of 10Mbps.  0 means no limit.
+     */
+    NvU32 dpMaxLinkRate10M;
 } NVDpyOverrideRec, *NVDpyOverridePtr;
 
 NVDpyOverrideRec *nvCreateDpyOverride(NvU32 gpuId,
@@ -45,6 +59,12 @@ NVDpyOverrideRec *nvCreateDpyOverride(NvU32 gpuId,
                               NvBool connected,
                               const char *edid,
                               size_t edidSize);
+
+NvBool nvSetDpyOverrideDpMaxLinkRate(NvU32 gpuId,
+                                     const char *name,
+                                     NvU32 linkRate10M);
+
+NvU32 nvDpyEvoGetOverrideDpMaxLinkRate(const NVDpyEvoRec *pDpyEvo);
 
 void nvDeleteDpyOverride(NvU32 gpuId, const char *name);
 

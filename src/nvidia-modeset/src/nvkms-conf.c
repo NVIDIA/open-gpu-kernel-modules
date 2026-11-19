@@ -100,17 +100,42 @@ static size_t AsciiHexToBin(char *bin, const char *hex, size_t size)
     const char *value,                                      \
     nvkms_config_read_file_func_t readfile)
 
-SUBPARSER(override)
+/*
+ * Parse the key tail shared by the per-display entries: either
+ * "<gpu>.<display name>", e.g. "[0000:01:00.0].DP-0", or "all" for all the
+ * displays of all the GPUs.
+ *
+ * \param[in]   key     The key tail to parse.
+ * \param[out]  pGpuId  The ID of the designated GPU, as returned in
+ *                      nvkms_enumerate_gpus(), or NV_DPY_OVERRIDE_ALL_GPU_ID
+ *                      for "all".
+ * \param[out]  pName   The display name; points into key.
+ *                      NV_DPY_OVERRIDE_ALL_NAME for "all".
+ *
+ * \return  TRUE if the key was parsed successfully, FALSE otherwise.
+ */
+static NvBool ParseDpyKey(const char *key, NvU32 *pGpuId, const char **pName)
 {
     size_t i;
     size_t idLen = 0;
-    size_t valLen = nvkms_strlen(value);
 
     NvU32 gpuId = NV0000_CTRL_GPU_INVALID_ID;
-    const char *name = NULL;
 
     static nv_gpu_info_t devs[NV_MAX_GPUS];
-    NvU32 numdevs = nvkms_enumerate_gpus(devs);
+    NvU32 numdevs;
+
+    /*
+     * The displays aren't known yet when the configuration file is read, so
+     * "all" is kept as a single entry that is matched against the displays
+     * later on.
+     */
+    if (nvkms_strcmp(key, NV_DPY_OVERRIDE_ALL_NAME) == 0) {
+        *pGpuId = NV_DPY_OVERRIDE_ALL_GPU_ID;
+        *pName = key;
+        return TRUE;
+    }
+
+    numdevs = nvkms_enumerate_gpus(devs);
 
     if (key[0] == '[') {
         while (key[idLen] != 0 && key[idLen] != ']') {
@@ -216,7 +241,22 @@ SUBPARSER(override)
                  "Expected '.' followed by display name");
         return FALSE;
     }
-    name = key + (idLen + 1);
+    *pGpuId = gpuId;
+    *pName = key + (idLen + 1);
+
+    return TRUE;
+}
+
+SUBPARSER(override)
+{
+    size_t valLen = nvkms_strlen(value);
+
+    NvU32 gpuId = NV0000_CTRL_GPU_INVALID_ID;
+    const char *name = NULL;
+
+    if (!ParseDpyKey(key, &gpuId, &name)) {
+        return FALSE;
+    }
 
     /* Get the edid */
     if (value[0] == '"' && value[valLen - 1] == '"') {
@@ -264,6 +304,59 @@ SUBPARSER(override)
     return TRUE;
 }
 
+/*
+ * dp_max_link_rate.<gpu>.<display name> = <link rate in Mbps per lane>
+ *
+ * Limits the maximum DisplayPort link rate that the GPU supports on the
+ * connector, e.g.:
+ *
+ *     dp_max_link_rate.[0000:01:00.0].DP-0 = 5400
+ */
+SUBPARSER(dp_max_link_rate)
+{
+    size_t i;
+    size_t valLen = nvkms_strlen(value);
+    NvU32 linkRateMbps = 0;
+
+    NvU32 gpuId = NV0000_CTRL_GPU_INVALID_ID;
+    const char *name = NULL;
+
+    if (!ParseDpyKey(key, &gpuId, &name)) {
+        return FALSE;
+    }
+
+    if (valLen >= 2 && value[0] == '"' && value[valLen - 1] == '"') {
+        valLen -= 2;
+        value += 1;
+    }
+
+    /* Get the link rate: a decimal number of at most 9 digits */
+    if (valLen == 0 || valLen > 9) {
+        goto fail;
+    }
+
+    for (i = 0; i < valLen; i++) {
+        if (value[i] < '0' || value[i] > '9') {
+            goto fail;
+        }
+        linkRateMbps = (linkRateMbps * 10) + (value[i] - '0');
+    }
+
+    /* The link rate is tracked in units of 10Mbps */
+    if (!nvSetDpyOverrideDpMaxLinkRate(gpuId, name, linkRateMbps / 10)) {
+        nvClearDpyOverrides();
+        return FALSE;
+    }
+
+    return TRUE;
+
+fail:
+    nvEvoLog(EVO_LOG_WARN, "Error in dp_max_link_rate entry: "
+             "Expected a link rate in Mbps: %.*s", (int)valLen, value);
+    nvClearDpyOverrides();
+    return FALSE;
+}
+
 #undef SUBPARSER
 
 static NvBool Subparse(
@@ -276,6 +369,7 @@ static NvBool Subparse(
     return Subparser_ ## name(keytail, value, readfile); \
 }
     SUBPARSE(override);
+    SUBPARSE(dp_max_link_rate);
     nvEvoLog(EVO_LOG_WARN, "Error reading configuration file: "
              "Parser not found for key: %s.%s", keyhead, keytail);
     return FALSE;
