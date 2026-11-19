@@ -29,6 +29,7 @@
 #include "vgpu/vgpu_events.h"
 #include "gpu/fifo/kernel_fifo.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
+#include "mem_mgr/gpu_vaspace.h"
 #include "nvrm_registry.h"
 #include "kernel/virtualization/hypervisor/hypervisor.h"
 
@@ -733,6 +734,9 @@ _kbusUpdateStaticBar1VAMapping_TU102
     NvU64               offset;
     ADDRESS_TRANSLATION addressTranslation;
     NvU32               requestedKind;
+    NvU64               runLength;
+    NvBool              bInvalidatePending;
+    NV_STATUS           runStatus;
 
     NV_ASSERT_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK,
                         NV_ERR_INVALID_STATE);
@@ -815,13 +819,49 @@ _kbusUpdateStaticBar1VAMapping_TU102
         }
     }
 
-    for (offset = 0; offset < mapSize; offset += mapGranularity)
+    //
+    // Localized allocations are not marked contiguous, so mapGranularity falls
+    // back to pageSize and every 2MB page would take its own HAL call.  Since
+    // each call carries a full flush and TLB invalidate, a 1GB allocation pays
+    // that 512 times.  Coalesce physically adjacent pages into one run instead.
+    //
+    // The run is passed down as a count==1 page array, which bypasses the
+    // count>1 4K-contiguity check in dmaUpdateVASpace, so the adjacency test
+    // below is the only thing keeping the mapping correct.  It must compare
+    // real physical addresses, never assume the logical offsets advance.
+    //
+    // This loop also fixes how a mid-loop failure is reported.  It is not an
+    // unrelated cleanup: coalescing is what makes the failure worth reporting.
+    // Previously each iteration overwrote status, so only the last run
+    // decided the result, and a failure followed by a successful run returned
+    // NV_OK for a range that was only partly mapped.  That was survivable when
+    // each iteration covered a single page, because the damage was bounded at
+    // one 2MB page.  A coalesced run covers up to 32MB, so the same reporting
+    // rule would let one failure silently leave 16 times as much of the
+    // mapping unmapped while the caller believes the whole allocation is
+    // mapped and reads through it.
+    //
+    bInvalidatePending = NV_FALSE;
+
+    for (offset = 0; offset < mapSize; offset += runLength)
     {
         // Under static BAR1 mapping, BAR1 VA equal to fb physAddr plus startOffset
         // dmaUpdateVASpace_HAL sets localized bit based on the pageArray->bLocalized
-        physAddr = memdescGetPhysAddr(pMemDesc, addressTranslation, offset);
+        physAddr  = memdescGetPhysAddr(pMemDesc, addressTranslation, offset);
+        runLength = mapGranularity;
+
+        if (mapGranularity == pageSize)
+        {
+            while (((offset + runLength) < mapSize) &&
+                   (memdescGetPhysAddr(pMemDesc, addressTranslation, offset + runLength)
+                    == (physAddr + runLength)))
+            {
+                runLength += pageSize;
+            }
+        }
+
         vaLo     = physAddr + pKernelBus->bar1[gfid].staticBar1.startOffset;
-        vaHi     = vaLo + mapGranularity - 1;
+        vaHi     = vaLo + runLength - 1;
 
         //
         // Note: dmaUpdateVASpace_HAL uses lower level flags than NVOS46_FLAGS.
@@ -835,22 +875,56 @@ _kbusUpdateStaticBar1VAMapping_TU102
         pageArray.count = 1;
         pageArray.pData = &physAddr;
 
-        status = dmaUpdateVASpace_HAL(pGpu, pDma, pVAS,
-                                      pMemDesc, NULL,
-                                      vaLo, vaHi,
-                                      DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL |
-                                      DMA_UPDATE_VASPACE_FLAGS_ALLOW_REMAP,
-                                      &pageArray,
-                                      &comprInfo, 0,
-                                      NV_MMU_PTE_VALID_TRUE,
-                                      GMMU_APERTURE_VIDEO,
-                                      NV_FALSE,
-                                      BUS_INVALID_PEER,
-                                      NVLINK_INVALID_FABRIC_ADDR,
-                                      DMA_TLB_INVALIDATE,
-                                      NV_FALSE,
-                                      pageSize);
+        // Arm before the call: a failed walk may still have written PTEs.
+        bInvalidatePending = NV_TRUE;
 
+        runStatus = dmaUpdateVASpace_HAL(pGpu, pDma, pVAS,
+                                         pMemDesc, NULL,
+                                         vaLo, vaHi,
+                                         DMA_UPDATE_VASPACE_FLAGS_UPDATE_ALL |
+                                         DMA_UPDATE_VASPACE_FLAGS_ALLOW_REMAP,
+                                         &pageArray,
+                                         &comprInfo, 0,
+                                         NV_MMU_PTE_VALID_TRUE,
+                                         GMMU_APERTURE_VIDEO,
+                                         NV_FALSE,
+                                         BUS_INVALID_PEER,
+                                         NVLINK_INVALID_FABRIC_ADDR,
+                                         DMA_DEFER_TLB_INVALIDATE,
+                                         NV_FALSE,
+                                         pageSize);
+
+        //
+        // Keep the first failure, not the last.  The caller sees one status;
+        // with a per-run overwrite it sees whichever run failed last, which is
+        // NV_OK whenever the tail of the range succeeded.  Iteration continues
+        // so the rest of the range is still mapped, as the original did.
+        //
+        if ((NV_OK != runStatus) && (NV_OK == status))
+        {
+            status = runStatus;
+        }
+    }
+
+    //
+    // Invalidate once for all runs written above instead of once per run.
+    // fabric_vaspace.c defers the same way when it maps in several passes.
+    //
+    if (bInvalidatePending)
+    {
+        NV_STATUS tlbStatus;
+
+        kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY |
+                                        BUS_FLUSH_SYSTEM_MEMORY);
+        //
+        // PTE_DOWNGRADE is what dmaUpdateVASpace_GF100 picks for this update
+        // (no TLB_LOCK, not an unmap), so match it and keep the sysmembar it
+        // requires.
+        //
+        tlbStatus = gvaspaceInvalidateTlb(dynamicCast(pVAS, OBJGVASPACE), pGpu,
+                                          PTE_DOWNGRADE);
+        if (status == NV_OK)
+            status = tlbStatus;
     }
 
     if (status != NV_OK)
