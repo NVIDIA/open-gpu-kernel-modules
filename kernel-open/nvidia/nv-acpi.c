@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#ifndef NVPCF_HOST_TEST
 #define  __NO_VERSION__
 
 #include "os-interface.h"
@@ -28,20 +29,32 @@
 #include "nv-reg.h"
 
 #include <linux/acpi.h>
+#include <linux/spinlock.h>
+#include <linux/workqueue.h>
 #include <acpi/video.h>
+#else
+#include "host_acpi_stubs.h"
+#ifdef NVPCF_HOST_ACPI
+#define NV_LINUX_ACPI_EVENTS_SUPPORTED 1
+#endif
+#endif
 
 #if defined(NV_LINUX_ACPI_EVENTS_SUPPORTED)
+#ifndef NVPCF_HOST_TEST
 static NV_STATUS   nv_acpi_extract_integer (const union acpi_object *, void *, NvU32, NvU32 *);
 static NV_STATUS   nv_acpi_extract_buffer  (const union acpi_object *, void *, NvU32, NvU32 *);
 static NV_STATUS   nv_acpi_extract_package (const union acpi_object *, void *, NvU32, NvU32 *);
 static NV_STATUS   nv_acpi_extract_object  (const union acpi_object *, void *, NvU32, NvU32 *);
+#endif
 
 static void        nv_acpi_powersource_hotplug_event(acpi_handle, u32, void *);
 static void        nv_acpi_nvpcf_event     (acpi_handle, u32, void *);
 static acpi_status nv_acpi_find_methods    (acpi_handle, u32, void *, void **);
+#ifndef NVPCF_HOST_TEST
 static NV_STATUS   nv_acpi_nvif_method     (NvU32, NvU32, void *, NvU16, NvU32 *, void *, NvU16 *);
 
 static NV_STATUS   nv_acpi_wmmx_method     (NvU32, NvU8 *, NvU16 *);
+#endif
 
 static acpi_handle nvif_handle = NULL;
 static acpi_handle wmmx_handle = NULL;
@@ -51,7 +64,9 @@ static acpi_handle psr_handle = NULL;
 static acpi_handle psr_device_handle = NULL;
 static nv_acpi_t  *psr_nv_acpi_object = NULL;
 
+#ifndef NVPCF_HOST_TEST
 static NvBool battery_present = NV_FALSE;
+#endif
 
 #define BIX_BATTERY_TECHNOLOGY_OFFSET 0x4
 #define BIF_BATTERY_TECHNOLOGY_OFFSET 0x3
@@ -67,9 +82,15 @@ static nv_acpi_t  *nvpcf_nv_acpi_object = NULL;
 
 #define ACPI_NVPCF_EVENT_CHANGE    0xC0
 
+static DEFINE_SPINLOCK(nvpcf_notify_lock);
+static bool nvpcf_notify_dead;
+static void nv_acpi_nvpcf_work(struct work_struct *work);
+static DECLARE_WORK(nvpcf_notify_work, nv_acpi_nvpcf_work);
+
 /*
  * This callback will be invoked by the acpi_notifier_call_chain()
  */
+#ifndef NVPCF_HOST_TEST
 static int nv_acpi_notifier_call_chain_handler(
     struct notifier_block *nb,
     unsigned long val,
@@ -143,25 +164,53 @@ static void nv_acpi_powersource_hotplug_event(acpi_handle handle, u32 event_type
         rm_power_source_change_event(pNvAcpiObject->sp, !ac_plugged);
     }
 }
+#endif
+
+static void nv_acpi_nvpcf_work(struct work_struct *work)
+{
+    nvidia_stack_t *sp = NULL;
+
+    (void)work;
+
+    /*
+     * A Notify raised from inside _DSM is sampled again and coalesced
+     * by rm_nvpcf_same_budget() when the budget did not change.
+     */
+    if (nv_kmem_cache_alloc_stack(&sp) != 0)
+        return;
+
+    rm_acpi_nvpcf_notify(sp);
+    nv_kmem_cache_free_stack(sp);
+}
 
 static void nv_acpi_nvpcf_event(acpi_handle handle, u32 event_type, void *data)
 {
-    nv_acpi_t *pNvAcpiObject = data;
+    unsigned long flags;
 
-    if (event_type == ACPI_NVPCF_EVENT_CHANGE)
-    {
-        rm_acpi_nvpcf_notify(pNvAcpiObject->sp);
-    }
-    else
+    (void)handle;
+    (void)data;
+
+    if (event_type != ACPI_NVPCF_EVENT_CHANGE)
     {
         nv_printf(NV_DBG_INFO,"NVRM: %s: NVPCF event 0x%x is not supported\n", __FUNCTION__, event_type);
+        return;
     }
+
+    /*
+     * schedule_work() is a no-op while this item is already queued, so a
+     * burst of 0xC0 notifies becomes one sample.
+     */
+    spin_lock_irqsave(&nvpcf_notify_lock, flags);
+    if (!nvpcf_notify_dead)
+        schedule_work(&nvpcf_notify_work);
+    spin_unlock_irqrestore(&nvpcf_notify_lock, flags);
 }
 
 /*
  * End of ACPI event handler functions
  */
 
+#ifndef NVPCF_HOST_TEST
 /* Do the necessary allocations and install notifier "handler" on the device-node "device" */
 static nv_acpi_t* nv_install_notifier(
     struct acpi_handle *handle,
@@ -289,6 +338,7 @@ void nv_acpi_unregister_notifier(nv_linux_state_t *nvl)
         nvl->nv_acpi_object = NULL;
     }
 }
+#endif
 
 /*
  * acpi methods init function.
@@ -327,6 +377,15 @@ void NV_API_CALL nv_acpi_methods_init(NvU32 *handlesPresent)
 
     if (nvpcf_handle && (nvpcf_nv_acpi_object == NULL))
     {
+        unsigned long flags;
+
+        /*
+         * Install on the NPCF device. _DSM is hard-coded to
+         * \_SB.NPCF._DSM, so that device is what receives Notify 0xC0.
+         */
+        spin_lock_irqsave(&nvpcf_notify_lock, flags);
+        nvpcf_notify_dead = false;
+        spin_unlock_irqrestore(&nvpcf_notify_lock, flags);
         nvpcf_nv_acpi_object = nv_install_notifier(nvpcf_device_handle, nv_acpi_nvpcf_event, NULL);
     }
 
@@ -340,6 +399,9 @@ acpi_status nv_acpi_find_methods(
     void **dummy2
 )
 {
+    (void)nest_level;
+    (void)dummy1;
+    (void)dummy2;
     acpi_handle method_handle;
 
     if (!acpi_get_handle(handle, "NVIF", &method_handle))
@@ -360,8 +422,19 @@ acpi_status nv_acpi_find_methods(
 
     if (!acpi_get_handle(handle, "NPCF", &method_handle))
     {
+        acpi_object_type nvpcf_type = ACPI_TYPE_ANY;
+
         nvpcf_handle = method_handle;
-        nvpcf_device_handle = handle;
+        /*
+         * Bind the notifier to the NPCF device. ASL Notify cannot target
+         * a method. If this node is not a device, keep the parent handle
+         * so the old behaviour stays.
+         */
+        if (ACPI_SUCCESS(acpi_get_type(method_handle, &nvpcf_type)) &&
+            (nvpcf_type == ACPI_TYPE_DEVICE))
+            nvpcf_device_handle = method_handle;
+        else
+            nvpcf_device_handle = handle;
     }
 
     return 0;
@@ -383,14 +456,42 @@ void NV_API_CALL nv_acpi_methods_uninit(void)
 
     if (nvpcf_nv_acpi_object != NULL)
     {
+        unsigned long flags;
+
+        spin_lock_irqsave(&nvpcf_notify_lock, flags);
+        nvpcf_notify_dead = true;
+        spin_unlock_irqrestore(&nvpcf_notify_lock, flags);
+        /*
+         * Do not wait. Shutdown already holds the locks this work takes,
+         * and nvpcf_notify_dead blocks a new queue.
+         */
+        cancel_work(&nvpcf_notify_work);
+
         nv_uninstall_notifier(nvpcf_nv_acpi_object, nv_acpi_nvpcf_event);
 
         nvpcf_handle = NULL;
         nvpcf_device_handle = NULL;
         nvpcf_nv_acpi_object = NULL;
+        rm_nvpcf_drop_cached_budget();
     }
 }
 
+/*
+ * Called from module exit before the RM is torn down. No RM locks are
+ * held. Adapter shutdown only cancel_work()s, because it holds the
+ * locks this work takes.
+ */
+void NV_API_CALL nv_acpi_nvpcf_work_cancel(void)
+{
+    unsigned long flags;
+
+    spin_lock_irqsave(&nvpcf_notify_lock, flags);
+    nvpcf_notify_dead = true;
+    spin_unlock_irqrestore(&nvpcf_notify_lock, flags);
+    cancel_work_sync(&nvpcf_notify_work);
+}
+
+#ifndef NVPCF_HOST_TEST
 static NV_STATUS nv_acpi_extract_integer(
     const union acpi_object *acpi_object,
     void  *buffer,
@@ -1422,8 +1523,10 @@ NV_STATUS NV_API_CALL nv_acpi_d3cold_dsm_for_upstream_port(
     return rmStatus;
 }
 
+#endif /* NVPCF_HOST_TEST */
 #else // NV_LINUX_ACPI_EVENTS_SUPPORTED
 
+#ifndef NVPCF_HOST_TEST
 void NV_API_CALL nv_acpi_methods_init(NvU32 *handlePresent)
 {
     *handlePresent = 0;
@@ -1433,7 +1536,13 @@ void NV_API_CALL nv_acpi_methods_uninit(void)
 {
     return;
 }
+#endif
 
+void NV_API_CALL nv_acpi_nvpcf_work_cancel(void)
+{
+}
+
+#ifndef NVPCF_HOST_TEST
 NV_STATUS NV_API_CALL nv_acpi_method(
     NvU32 acpi_method,
     NvU32 function,
@@ -1539,4 +1648,5 @@ NvBool NV_API_CALL nv_acpi_is_battery_present(void)
 {
     return NV_FALSE;
 }
+#endif /* NVPCF_HOST_TEST */
 #endif

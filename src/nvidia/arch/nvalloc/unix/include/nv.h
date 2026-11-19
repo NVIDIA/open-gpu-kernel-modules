@@ -1019,6 +1019,7 @@ void   NV_API_CALL  nv_i2c_del_adapter           (nv_state_t *, void *);
 
 void   NV_API_CALL  nv_acpi_methods_init         (NvU32 *);
 void   NV_API_CALL  nv_acpi_methods_uninit       (void);
+void   NV_API_CALL  nv_acpi_nvpcf_work_cancel    (void);
 
 NV_STATUS  NV_API_CALL  nv_acpi_method           (NvU32, NvU32, NvU32, void *, NvU16, NvU32 *, void *, NvU16 *);
 NV_STATUS  NV_API_CALL  nv_acpi_d3cold_dsm_for_upstream_port (nv_state_t *, NvU8 *, NvU32, NvU32, NvU32 *);
@@ -1305,6 +1306,7 @@ void       NV_API_CALL rm_get_power_info(nvidia_stack_t *, nv_state_t *, nv_powe
 
 void       NV_API_CALL rm_acpi_notify(nvidia_stack_t *, nv_state_t *, NvU32);
 void       NV_API_CALL rm_acpi_nvpcf_notify(nvidia_stack_t *);
+void       NV_API_CALL rm_nvpcf_drop_cached_budget(void);
 
 NvBool     NV_API_CALL rm_is_altstack_in_use(void);
 

@@ -213,5 +213,6 @@
 --undefined=rm_disable_iomap_wc
 --undefined=rm_is_altstack_in_use
 --undefined=rm_acpi_nvpcf_notify
+--undefined=rm_nvpcf_drop_cached_budget
 --undefined=rm_notify_gpu_addition
 --undefined=rm_notify_gpu_removal

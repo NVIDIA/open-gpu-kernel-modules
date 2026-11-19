@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#ifndef NVPCF_HOST_TEST
 #include <linux/module.h>  // for MODULE_FIRMWARE
 
 // must precede "nv.h" and "nv-firmware.h" includes
@@ -712,10 +713,21 @@ exit:
     return rc;
 }
 
+#else
+#include "host_nv_stubs.h"
+#endif
+
 static void
 nv_module_exit(nv_stack_t *sp)
 {
     nv_module_state_exit(sp);
+
+    /*
+     * Adapter shutdown does not wait for the NVPCF work item. Wait here,
+     * before the RM is torn down. No RM locks are held, and the API lock
+     * still exists.
+     */
+    nv_acpi_nvpcf_work_cancel();
 
     rm_shutdown_rm(sp);
 
@@ -727,6 +739,7 @@ nv_module_exit(nv_stack_t *sp)
     nv_module_resources_exit(sp);
 }
 
+#ifndef NVPCF_HOST_TEST
 static int __init
 nv_module_init(nv_stack_t **sp)
 {
@@ -4602,7 +4615,10 @@ NvBool nvos_is_chipset_io_coherent(void)
 }
 #endif // NVCPU_IS_AARCH64
 
-#if defined(CONFIG_PM)
+#endif /* NVPCF_HOST_TEST */
+
+#if defined(CONFIG_PM) || defined(NVPCF_HOST_TEST)
+#ifndef NVPCF_HOST_TEST
 static NV_STATUS
 nv_power_management(
     nv_state_t *nv,
@@ -4791,6 +4807,8 @@ done:
     return status;
 }
 
+#endif
+
 static NV_STATUS
 nvidia_suspend(
     struct device *dev,
@@ -4799,10 +4817,20 @@ nvidia_suspend(
 )
 {
     NV_STATUS status = NV_OK;
+#ifndef NVPCF_HOST_TEST
     struct pci_dev *pci_dev = NULL;
     nv_linux_state_t *nvl;
     nv_state_t *nv;
+#endif
 
+    /*
+     * GSP samples NVPCF again during resume and can latch the boot budget.
+     * Forget the pre-suspend sample so the resume 0xC0 wakes nvidia-powerd
+     * even when the published numbers did not change.
+     */
+    rm_nvpcf_drop_cached_budget();
+
+#ifndef NVPCF_HOST_TEST
     if (dev_is_pci(dev))
     {
         pci_dev = to_pci_dev(dev);
@@ -4893,8 +4921,15 @@ done:
     up(&nvl->ldata_lock);
 
     return status;
+#else
+    (void)dev;
+    (void)pm_action;
+    (void)is_procfs_suspend;
+    return status;
+#endif
 }
 
+#ifndef NVPCF_HOST_TEST
 static NV_STATUS
 nvidia_resume(
     struct device *dev,
@@ -5418,8 +5453,10 @@ nv_pmops_runtime_resume_exit:
     return err;
 #endif
 }
+#endif /* NVPCF_HOST_TEST */
 #endif /* defined(CONFIG_PM) */
 
+#ifndef NVPCF_HOST_TEST
 nv_state_t* NV_API_CALL nv_get_adapter_state(
     NvU32 domain,
     NvU8  bus,
@@ -6797,3 +6834,4 @@ void NV_API_CALL nv_trigger_gpu_flr(nv_state_t *nv)
 
 module_init(nvidia_init_module);
 module_exit(nvidia_exit_module);
+#endif
