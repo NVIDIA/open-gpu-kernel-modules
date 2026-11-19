@@ -88,7 +88,7 @@ reusemappingdbUnmap
 {
     ReuseMappingDbEntry *pEntry = mapFindGEQ(&(pReuseMappingDb->virtualMap), range.start);
     NvU64 curOffset = range.start;
-    NvBool bFirstRange = NV_TRUE;
+    NvU64 unmapLimit = mrangeLimit(range);
 
     while (pEntry != NULL)
     {
@@ -100,14 +100,20 @@ reusemappingdbUnmap
         // Only unmap ranges contained within the desired unmap range
         if (!mrangeContains(range, revRange))
         {
-            if (bFirstRange)
+            //
+            // This entry is not ours to remove. Anything still left below it
+            // inside the requested range is untracked VA and must be released
+            // by the overhang unmap below. Clamp to this entry's start so that
+            // an entry straddling the end of the range is never unmapped from
+            // underneath its remaining references.
+            //
+            if (revOffset < unmapLimit)
             {
-                break;
+                unmapLimit = revOffset;
             }
-            return;
+            break;
         }
 
-        bFirstRange = NV_FALSE;
         curOffset = mrangeLimit(revRange);
 
         // Unmap any partial range not tracked by data structure
@@ -136,9 +142,9 @@ reusemappingdbUnmap
     }
 
     // Take care of any overhang.
-    if (mrangeLimit(range) != curOffset)
+    if (unmapLimit > curOffset)
     {
-        MemoryRange diffRange = mrangeMake(curOffset, mrangeLimit(range) - curOffset);
+        MemoryRange diffRange = mrangeMake(curOffset, unmapLimit - curOffset);
         pReuseMappingDb->pUnmapCb(pReuseMappingDb->pGlobalCtx, pAllocCtx, diffRange);
     }
 }
