@@ -5893,8 +5893,17 @@ void nvRmRegisterBacklight(NVDispEvoRec *pDispEvo)
         return;
     }
 
-    /* Find a display with a backlight */
+    /*
+     * Only register a backlight for an internal display that is connected to
+     * this GPU.  availableInternalDisplaysMask can include displays that are
+     * currently driven by another GPU in a hybrid configuration.
+     */
     displayMask = dispParams.availableInternalDisplaysMask;
+    if (displayMask != 0) {
+        displayMask &= nvDpyIdListToNvU32(nvRmGetConnectedDpys(
+            pDispEvo, nvNvU32ToDpyIdList(displayMask)));
+    }
+
     for (; displayMask; displayMask &= ~LOWESTBIT(displayMask))
     {
         NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS params = { 0 };
