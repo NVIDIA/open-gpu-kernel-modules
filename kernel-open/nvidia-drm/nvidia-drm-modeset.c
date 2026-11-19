@@ -48,6 +48,8 @@
 #endif
 
 #include <linux/dma-fence.h>
+#include <linux/mm.h>
+#include <linux/slab.h>
 
 struct nv_drm_atomic_state {
     struct NvKmsKapiRequestedModeSetConfig config;
@@ -63,12 +65,17 @@ static inline struct nv_drm_atomic_state *to_nv_atomic_state(
 nv_drm_atomic_state_base_t *
 nv_drm_atomic_state_alloc(struct drm_device *dev)
 {
+    /*
+     * The embedded modeset configuration can require a high-order allocation.
+     * Allow a vmalloc fallback to avoid invoking the OOM killer when physical
+     * memory is fragmented but enough individual pages are still available.
+     */
     struct nv_drm_atomic_state *nv_state =
-            nv_drm_calloc(1, sizeof(*nv_state));
+            kvzalloc(sizeof(*nv_state), GFP_KERNEL);
 
     if (nv_state == NULL ||
         nv_drm_atomic_state_base_init(dev, &nv_state->base) < 0) {
-        nv_drm_free(nv_state);
+        kvfree(nv_state);
         return NULL;
     }
 
@@ -85,7 +92,7 @@ void nv_drm_atomic_state_free(nv_drm_atomic_state_base_t *state)
     struct nv_drm_atomic_state *nv_state =
                     to_nv_atomic_state(state);
     nv_drm_atomic_state_base_default_release(state);
-    nv_drm_free(nv_state);
+    kvfree(nv_state);
 }
 
 /**
