@@ -552,6 +552,16 @@ objClInitPcieChipset(OBJGPU *pGpu, OBJCL *pCl)
         {
             return NV_ERR_GENERIC;
         }
+
+        //
+        // The chipset ID device is in PCI domain 0. On multi-segment systems the
+        // GPU can be in another domain, so cache domain 0 as well.
+        //
+        if ((domain != 0) &&
+            (clStoreBusTopologyCache(pGpu, pCl, 0, PCI_MAX_BUSES, pGpu->PDB_PROP_GPU_BUG_5395859_DFS_SCAN_PCIE_BUS) != NV_OK))
+        {
+            NV_PRINTF(LEVEL_WARNING, "Failed to cache PCI domain 0 bus topology\n");
+        }
     }
     else
     {
