@@ -852,11 +852,25 @@ NV_STATUS NV_API_CALL nv_acpi_ddc_method(
             case 0x0400:
             case 0xA420:
                 lcd_dev_handle = handle;
-                nv_printf(NV_DBG_INFO, "NVRM: %s Found LCD: %llx\n",
-                          __FUNCTION__, device_id);
                 break;
             default:
+                //
+                // ACPI Video Extensions, _DOD device attributes: bit 31 set
+                // selects the ACPI device ID scheme, and display type
+                // (bits 11:8) 4 is an internal digital flat panel.
+                //
+                if ((device_id & 0x80000000) &&
+                    (((device_id >> 8) & 0xf) == 0x4))
+                {
+                    lcd_dev_handle = handle;
+                }
                 break;
+        }
+
+        if (lcd_dev_handle != NULL)
+        {
+            nv_printf(NV_DBG_INFO, "NVRM: %s Found LCD: %llx\n",
+                      __FUNCTION__, device_id);
         }
     }
 
