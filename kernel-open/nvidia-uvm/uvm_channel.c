@@ -401,6 +401,43 @@ static bool test_claim_and_lock_channel(uvm_channel_t *channel,
     return false;
 }
 
+// Returns a channel that can satisfy the reserve, or NULL. Does not claim.
+static uvm_channel_t *channel_pick_least_busy_locked(uvm_channel_pool_t *pool,
+                                                     NvU32 num_gpfifo_entries,
+                                                     uvm_channel_reserve_type_t reserve_type,
+                                                     bool skip_locked_for_push)
+{
+    NvU32 n;
+    NvU32 best_available = 0;
+    uvm_channel_t *best = NULL;
+
+    uvm_channel_pool_assert_locked(pool);
+    UVM_ASSERT(!skip_locked_for_push || g_uvm_global.conf_computing_enabled);
+
+    for (n = 0; n < pool->num_channels; n++) {
+        NvU32 index = (pool->next_hint + n) % pool->num_channels;
+        uvm_channel_t *channel = &pool->channels[index];
+        NvU32 available;
+
+        if (skip_locked_for_push && uvm_channel_is_locked_for_push(channel))
+            continue;
+
+        if (reserve_type == UVM_CHANNEL_RESERVE_WITH_P2P && channel->suspended_p2p)
+            continue;
+
+        available = channel_get_available_gpfifo_entries(channel);
+        if (available < num_gpfifo_entries)
+            continue;
+
+        if (best == NULL || available > best_available) {
+            best = channel;
+            best_available = available;
+        }
+    }
+
+    return best;
+}
+
 // Reserve, or release, all channels in the given pool.
 //
 // One scenario where reservation of the entire pool is useful is key rotation,
@@ -512,7 +549,6 @@ static NV_STATUS channel_reserve_and_lock_in_pool(uvm_channel_pool_t *pool,
 {
     uvm_channel_t *channel;
     uvm_spin_loop_t spin;
-    NvU32 index;
     NV_STATUS status;
 
     UVM_ASSERT(pool);
@@ -529,20 +565,15 @@ static NV_STATUS channel_reserve_and_lock_in_pool(uvm_channel_pool_t *pool,
     // uvm_channel_end_push() routine.
     uvm_down(&pool->conf_computing.push_sem);
 
-    // At least one channel is unlocked. We check if any unlocked channel is
-    // available, i.e., if it has free GPFIFO entries.
-
+    // At least one channel is unlocked. Check if any unlocked channel has a
+    // free GPFIFO entry.
     channel_pool_lock(pool);
-
-    for_each_clear_bit(index, pool->conf_computing.push_locks, pool->num_channels) {
-        channel = &pool->channels[index];
-
-        if (try_claim_channel_locked(channel, 1, reserve_type)) {
-            lock_channel_for_push(channel);
-            goto done;
-        }
+    channel = channel_pick_least_busy_locked(pool, 1, reserve_type, true);
+    if (channel != NULL && try_claim_channel_locked(channel, 1, reserve_type)) {
+        lock_channel_for_push(channel);
+        pool->next_hint = (uvm_channel_index_in_pool(channel) + 1) % pool->num_channels;
+        goto done;
     }
-
     channel_pool_unlock(pool);
 
     // No channels are available. Update and check errors on all channels until
@@ -593,13 +624,15 @@ static NV_STATUS channel_reserve_in_pool(uvm_channel_pool_t *pool,
     if (g_uvm_global.conf_computing_enabled)
         return channel_reserve_and_lock_in_pool(pool, reserve_type, channel_out);
 
-    uvm_for_each_channel_in_pool(channel, pool) {
-        // TODO: Bug 1764953: Prefer idle/less busy channels
-        if (try_claim_channel(channel, 1, reserve_type)) {
-            *channel_out = channel;
-            return NV_OK;
-        }
+    channel_pool_lock(pool);
+    channel = channel_pick_least_busy_locked(pool, 1, reserve_type, false);
+    if (channel != NULL && try_claim_channel_locked(channel, 1, reserve_type)) {
+        pool->next_hint = (uvm_channel_index_in_pool(channel) + 1) % pool->num_channels;
+        channel_pool_unlock(pool);
+        *channel_out = channel;
+        return NV_OK;
     }
+    channel_pool_unlock(pool);
 
     uvm_spin_loop_init(&spin);
     while (1) {

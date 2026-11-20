@@ -977,6 +977,105 @@ error:
     return status;
 }
 
+// Concurrent uvm_push_begin calls on an idle multi-channel pool should reserve
+// distinct channels.
+static NV_STATUS test_least_busy_channel_reserve(uvm_va_space_t *va_space)
+{
+    NV_STATUS status = NV_OK;
+    uvm_push_t *pushes = NULL;
+    uvm_gpu_t *gpu = NULL;
+    NvU32 num_begun = 0;
+    NvU32 num_ended = 0;
+
+    uvm_thread_context_lock_disable_tracking();
+
+    for_each_va_space_gpu(gpu, va_space) {
+        uvm_channel_type_t channel_type;
+
+        // Nested begins are illegal with key rotation. Disable it for the
+        // duration of this GPU's concurrent pushes; a no-op when CC is off.
+        uvm_conf_computing_disable_key_rotation(gpu);
+
+        for (channel_type = 0; channel_type < UVM_CHANNEL_TYPE_COUNT; channel_type++) {
+            NvU32 i;
+            NvU32 num_pushes;
+            uvm_channel_t *channel;
+            uvm_channel_pool_t *pool = gpu->channel_manager->pool_to_use.default_for_type[channel_type];
+
+            // SEC2/WLC/LCIC defaults are NULL when Confidential Computing is off.
+            if (pool == NULL)
+                continue;
+
+            // Skip LCIC channels as those can't accept any pushes
+            if (uvm_channel_pool_is_lcic(pool))
+                continue;
+
+            if (pool->num_channels < 2)
+                continue;
+
+            num_pushes = pool->num_channels;
+
+            // Reclaim completed GPFIFO so available counts match an idle pool.
+            uvm_for_each_channel_in_pool(channel, pool)
+                TEST_NV_CHECK_GOTO(uvm_channel_wait(channel), error);
+
+            pushes = uvm_kvmalloc_zero(sizeof(*pushes) * num_pushes);
+            TEST_CHECK_GOTO(pushes != NULL, error);
+
+            num_begun = 0;
+            num_ended = 0;
+
+            for (i = 0; i < num_pushes; i++) {
+                uvm_push_t *push = &pushes[i];
+                status = uvm_push_begin(gpu->channel_manager, channel_type, push, "least-busy push %u", i);
+                TEST_NV_CHECK_GOTO(status, error);
+                num_begun++;
+            }
+
+            for (i = 0; i < num_pushes; i++) {
+                NvU32 j;
+
+                for (j = 0; j < i; j++)
+                    TEST_CHECK_GOTO(pushes[i].channel != pushes[j].channel, error);
+            }
+
+            for (i = 0; i < num_pushes; i++) {
+                uvm_push_t *push = &pushes[i];
+                status = uvm_push_end_and_wait(push);
+                num_ended++;
+                TEST_NV_CHECK_GOTO(status, error);
+            }
+
+            uvm_kvfree(pushes);
+            pushes = NULL;
+            num_begun = 0;
+            num_ended = 0;
+        }
+
+        uvm_conf_computing_enable_key_rotation(gpu);
+    }
+
+    uvm_thread_context_lock_enable_tracking();
+
+    return status;
+
+error:
+    if (pushes != NULL) {
+        NvU32 i;
+
+        for (i = num_ended; i < num_begun; i++)
+            uvm_push_end(&pushes[i]);
+    }
+
+    if (gpu != NULL)
+        uvm_conf_computing_enable_key_rotation(gpu);
+
+    uvm_thread_context_lock_enable_tracking();
+    uvm_kvfree(pushes);
+
+    return status;
+}
+
 static NV_STATUS test_channel_iv_rotation(uvm_va_space_t *va_space)
 {
     uvm_gpu_t *gpu;
@@ -1637,6 +1736,10 @@ NV_STATUS uvm_test_channel_sanity(UVM_TEST_CHANNEL_SANITY_PARAMS *params, struct
         goto done;
 
     status = test_conf_computing_channel_selection(va_space);
+    if (status != NV_OK)
+        goto done;
+
+    status = test_least_busy_channel_reserve(va_space);
     if (status != NV_OK)
         goto done;
 
