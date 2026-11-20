@@ -5296,8 +5296,14 @@ nvidia_transition_dynamic_power(
 
     if ((nv->flags & (NV_FLAG_INITIALIZED | NV_FLAG_PERSISTENT_SW_STATE)) == 0)
     {
+        dev_info(dev, "NVRM: [RTD3] transition_dynamic_power: %s skipped (not initialized)\n",
+                 enter ? "enter(suspend)" : "exit(resume)");
         return 0;
     }
+
+    dev_info(dev, "NVRM: [RTD3] transition_dynamic_power: %s begin, usage_count=%d\n",
+             enter ? "enter(suspend)" : "exit(resume)",
+             atomic_read(&dev->power.usage_count));
 
     if (nv_kmem_cache_alloc_stack(&sp) != 0)
     {
@@ -5307,6 +5313,9 @@ nvidia_transition_dynamic_power(
     status = rm_transition_dynamic_power(sp, nv, enter, &bTryAgain);
 
     nv_kmem_cache_free_stack(sp);
+
+    dev_info(dev, "NVRM: [RTD3] transition_dynamic_power: %s done, status=%d, bTryAgain=%d\n",
+             enter ? "enter(suspend)" : "exit(resume)", status, bTryAgain);
 
     if (bTryAgain)
     {
@@ -5328,6 +5337,9 @@ int nv_pmops_runtime_suspend(
     struct pci_dev *pci_dev = to_pci_dev(dev);
     nv_linux_state_t *nvl = pci_get_drvdata(pci_dev);
     nv_state_t *nv = NV_STATE_PTR(nvl);
+
+    dev_info(dev, "NVRM: [RTD3] pmops_runtime_suspend: entry, usage_count=%d\n",
+             atomic_read(&dev->power.usage_count));
 
 #if defined(CONFIG_PM_DEVFREQ)
     int (*suspend_devfreq_cb)(struct device *dev);
@@ -5367,9 +5379,11 @@ int nv_pmops_runtime_suspend(
         }
     }
 
+    dev_info(dev, "NVRM: [RTD3] pmops_runtime_suspend: exit ok, err=%d\n", err);
     return err;
 
 nv_pmops_runtime_suspend_exit:
+    dev_info(dev, "NVRM: [RTD3] pmops_runtime_suspend: exit error, err=%d\n", err);
 #if defined(CONFIG_PM_DEVFREQ)
     if (resume_devfreq_on_error && (resume_devfreq_cb != NULL))
     {
@@ -5391,6 +5405,9 @@ int nv_pmops_runtime_resume(
 
     nv_pci_tegra_boost_clocks(dev);
 #endif
+
+    dev_info(dev, "NVRM: [RTD3] pmops_runtime_resume: entry, usage_count=%d\n",
+             atomic_read(&dev->power.usage_count));
 
     err = nvidia_transition_dynamic_power(dev, NV_FALSE);
     if (err)
@@ -5761,6 +5778,8 @@ NV_STATUS NV_API_CALL nv_indicate_idle(
     char buf;
 
     pm_runtime_put_noidle(dev);
+    dev_info(dev, "NVRM: [RTD3] nv_indicate_idle: pm_runtime_put_noidle, usage_count=%d\n",
+             atomic_read(&dev->power.usage_count));
 
 #if defined(NV_SEQ_READ_ITER_PRESENT)
     {
@@ -5801,6 +5820,8 @@ NV_STATUS NV_API_CALL nv_indicate_not_idle(
     struct device *dev = nvl->dev;
 
     pm_runtime_get_noresume(dev);
+    dev_info(dev, "NVRM: [RTD3] nv_indicate_not_idle: pm_runtime_get_noresume, usage_count=%d\n",
+             atomic_read(&dev->power.usage_count));
 
     nvl->is_forced_shutdown = NV_TRUE;
     pci_bus_type.shutdown(dev);
@@ -6374,15 +6395,8 @@ void NV_API_CALL nv_allow_runtime_suspend
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     struct device    *dev = nvl->dev;
 
-    spin_lock_irq(&dev->power.lock);
-
-    if (dev->power.runtime_auto == false)
-    {
-        dev->power.runtime_auto = true;
-        atomic_add_unless(&dev->power.usage_count, -1, 0);
-    }
-
-    spin_unlock_irq(&dev->power.lock);
+    dev_info(dev, "NVRM: [RTD3] nv_allow_runtime_suspend: enabling runtime PM\n");
+    pm_runtime_allow(dev);
 #endif
 }
 
@@ -6395,15 +6409,8 @@ void NV_API_CALL nv_disallow_runtime_suspend
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     struct device    *dev = nvl->dev;
 
-    spin_lock_irq(&dev->power.lock);
-
-    if (dev->power.runtime_auto == true)
-    {
-        dev->power.runtime_auto = false;
-        atomic_inc(&dev->power.usage_count);
-    }
-
-    spin_unlock_irq(&dev->power.lock);
+    dev_info(dev, "NVRM: [RTD3] nv_disallow_runtime_suspend: disabling runtime PM\n");
+    pm_runtime_forbid(dev);
 #endif
 }
 
