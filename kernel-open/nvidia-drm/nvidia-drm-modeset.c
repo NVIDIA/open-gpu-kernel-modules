@@ -518,7 +518,14 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
 
         for_each_new_connector_in_state(state, connector, connector_state, j) {
             if (connector->state->content_protection == DRM_MODE_CONTENT_PROTECTION_DESIRED) {
+                /*
+                 * The commit already holds connection_mutex; cp_lock keeps
+                 * the content protection state consistent with the event
+                 * thread and content_protection_event_work.
+                 */
+                mutex_lock(&nv_dev->cp_lock);
                 nv_drm_connector_update_content_protection(to_nv_connector(connector));
+                mutex_unlock(&nv_dev->cp_lock);
             }
         }
     }

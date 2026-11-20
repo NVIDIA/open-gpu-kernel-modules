@@ -64,6 +64,13 @@ struct nv_drm_connector {
      */
     struct drm_property_blob *hdcp_topology_blob;
 
+    /*
+     * The most recent HDCP topology, recorded by the NVKMS event thread and
+     * published to the topology property by content_protection_event_work.
+     */
+    NvU8 cp_topology[NVKMS_HDCP_TOPOLOGY_SIZE];
+    bool cp_topology_pending;
+
     atomic_t connection_status_dirty;
 
     /**
