@@ -154,6 +154,23 @@ struct nv_drm_device {
 
     struct delayed_work hotplug_event_work;
     struct delayed_work content_protection_event_work;
+
+    /**
+     * @cp_lock:
+     *
+     * Protects the content protection fields of every nv_drm_connector
+     * (cp, cp_event_pending, cp_topology and cp_topology_pending).
+     *
+     * The NVKMS event thread records these fields and then queues
+     * content_protection_event_work, which publishes them.  The event thread
+     * must never wait for a DRM lock, because a blocking atomic commit can
+     * hold one while waiting for a flip event that only this thread delivers.
+     *
+     * Lock order: dev->mode_config.connection_mutex before cp_lock.  cp_lock
+     * is never held while waiting for a DRM lock.
+     */
+    struct mutex cp_lock;
+
     atomic_t enable_event_handling;
 
     /**

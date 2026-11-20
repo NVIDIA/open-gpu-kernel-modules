@@ -1111,8 +1111,9 @@ bool nv_drm_connector_revoke_permissions(struct drm_device *dev,
 }
 
 /*
- * The caller must hold dev->mode_config.mutex (for nv_connector->cp) and
- * dev->mode_config.connection_mutex (for calling drm_hdcp_update_content_protection).
+ * The caller must hold nv_drm_device::cp_lock (for nv_connector->cp) and
+ * dev->mode_config.connection_mutex (for calling
+ * drm_hdcp_update_content_protection).
  */
 void nv_drm_connector_update_content_protection(struct nv_drm_connector *nv_connector)
 {
@@ -1125,7 +1126,7 @@ void nv_drm_connector_update_content_protection(struct nv_drm_connector *nv_conn
     bool update_cp = false;
     unsigned int cp_val;
 
-    WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));
+    lockdep_assert_held(&to_nv_device(dev)->cp_lock);
     WARN_ON(!drm_modeset_is_locked(&dev->mode_config.connection_mutex));
 
     state = connector->state;
@@ -1160,6 +1161,11 @@ void nv_drm_connector_update_content_protection(struct nv_drm_connector *nv_conn
 #endif
 }
 
+/*
+ * The caller must hold dev->mode_config.connection_mutex (as does
+ * content_protection_event_work, the only caller).  The topology blob is
+ * owned by the connector and is not atomic state.
+ */
 int nv_drm_connector_update_topology_property(struct nv_drm_connector *nv_connector,
                                               const void *topology)
 {
@@ -1168,6 +1174,8 @@ int nv_drm_connector_update_topology_property(struct nv_drm_connector *nv_connec
     struct drm_device *dev = connector->dev;
     struct nv_drm_device *nv_dev = to_nv_device(dev);
     int ret;
+
+    WARN_ON(!drm_modeset_is_locked(&dev->mode_config.connection_mutex));
 
     ret = drm_property_replace_global_blob(dev,
                                             &nv_connector->hdcp_topology_blob,

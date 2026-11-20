@@ -814,13 +814,34 @@ static void nv_drm_handle_content_protection_event_work(struct work_struct *work
     struct drm_connector *connector;
     struct drm_connector_list_iter conn_iter;
 
-    mutex_lock(&dev->mode_config.mutex);
+    /*
+     * The NVKMS event thread only records display events; publishing them
+     * requires DRM locks and happens here.  connection_mutex is taken first
+     * and cp_lock second, matching the atomic commit path, which holds
+     * connection_mutex and takes cp_lock around the content protection
+     * update.
+     *
+     * Do not take mode_config.mutex here.  A blocking atomic commit can hold
+     * connection_mutex while it waits for the flip event that only the
+     * NVKMS event thread delivers, and that thread takes cp_lock in the
+     * display event handlers.  Taking mode_config.mutex in this work item
+     * would let the commit wait for an event thread that is itself waiting
+     * for this work item.
+     */
     drm_modeset_lock(&dev->mode_config.connection_mutex, NULL);
+    mutex_lock(&nv_dev->cp_lock);
 
     drm_connector_list_iter_begin(dev, &conn_iter);
 
     drm_for_each_connector_iter(connector, &conn_iter) {
         struct nv_drm_connector *nv_connector = to_nv_connector(connector);
+
+        if (nv_connector->cp_topology_pending) {
+            nv_connector->cp_topology_pending = false;
+            nv_drm_connector_update_topology_property(nv_connector,
+                                                      nv_connector->cp_topology);
+        }
+
         if (nv_connector->cp_event_pending) {
             nv_connector->cp_event_pending = false;
             nv_drm_connector_update_content_protection(nv_connector);
@@ -829,8 +850,8 @@ static void nv_drm_handle_content_protection_event_work(struct work_struct *work
 
     drm_connector_list_iter_end(&conn_iter);
 
+    mutex_unlock(&nv_dev->cp_lock);
     drm_modeset_unlock(&dev->mode_config.connection_mutex);
-    mutex_unlock(&dev->mode_config.mutex);
 }
 
 static int nv_drm_dev_load(struct drm_device *dev)
@@ -2200,6 +2221,7 @@ void nv_drm_register_drm_device(const struct NvKmsKapiGpuInfo *gpu_info)
     nv_dev->gpu_mig_device = gpu_info->migDevice;
 
     mutex_init(&nv_dev->lock);
+    mutex_init(&nv_dev->cp_lock);
 
     /* Allocate DRM device */
 
