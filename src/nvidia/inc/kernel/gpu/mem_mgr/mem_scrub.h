@@ -156,10 +156,11 @@ NV_STATUS scrubCheck(OBJMEMSCRUB *pScrubber, PSCRUB_NODE *ppList, NvU64 *size);
  * @param[in] chunkSize   NvU64 size of each page
  * @param[in] pPages     NvU64 array of base address
  * @param[in] pageCount  NvU64 number of pages
- * @param[out] ppList     SCRUB_NODE double pointer to hand off the list
- * @param[out] pSize      NvU64 pointer to store the size
+ * @param[out] ppList     SCRUB_NODE double pointer to hand off completed work
+ * @param[out] pSize      NvU64 pointer to store the completed work size
+ *                      Completed work may be returned on error.
  *
- * @returns NV_OK on success, NV_ERR_GENERIC on HW Failure
+ * @returns NV_OK on success, error status otherwise
  */
 
 NV_STATUS scrubSubmitPages(OBJMEMSCRUB *pScrubber, NvU64 chunkSize, NvU64* pages,
