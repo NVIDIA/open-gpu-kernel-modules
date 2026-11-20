@@ -282,7 +282,7 @@ typedef struct _tagNVHDMIPKT_CALLBACK
                         const char        *filename,
                         const char        *function,
                         unsigned int       line);
-} NVHDMIPKT_CALLBACK;
+} __no_const NVHDMIPKT_CALLBACK;
 
 
 /************************************************************************************************

@@ -37,7 +37,7 @@
  * [15:00]  Handle constant
  */
 
-#include <stddef.h>
+#include <nv_stddef.h>
 
 #include "unix_rm_handle.h"
 

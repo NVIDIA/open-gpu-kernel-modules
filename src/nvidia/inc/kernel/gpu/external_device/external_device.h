@@ -82,7 +82,7 @@ struct DACEXTERNALDEVICEIFACE
     void      (*Service)           (OBJGPU *, PDACEXTERNALDEVICE, NvU8, NvU8, NvU8, NvBool);
     NV_STATUS (*Watchdog)     (OBJGPU *, struct OBJTMR *, PDACEXTERNALDEVICE); // OBJTMR routine signature (TIMERPROC).
     NvBool    (*setI2cHandles)(OBJGPU *, DACEXTERNALDEVICE *);
-};
+} __mutable_const;
 
 struct DACEXTERNALDEVICE
 {

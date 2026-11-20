@@ -406,7 +406,7 @@ typedef struct
     MmuWalkCBFillEntries *FillEntries;
     MmuWalkCBCopyEntries *CopyEntries;
     MmuWalkCBWriteBuffer *WriteBuffer;
-} MMU_WALK_CALLBACKS;
+} __mutable_const MMU_WALK_CALLBACKS;
 
 /*!
  * Flags that affect walk library behavior.

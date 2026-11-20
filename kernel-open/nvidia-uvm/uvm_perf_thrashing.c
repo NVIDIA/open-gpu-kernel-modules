@@ -210,16 +210,16 @@ typedef struct
     struct proc_dir_entry *procfs_file;
 
     // Number of times thrashing is detected
-    atomic64_t num_thrashing;
+    atomic64_unchecked_t num_thrashing;
 
     // Number of times the processor was throttled while thrashing
-    atomic64_t num_throttle;
+    atomic64_unchecked_t num_throttle;
 
     // Number of times a page was pinned on this processor while thrashing
-    atomic64_t num_pin_local;
+    atomic64_unchecked_t num_pin_local;
 
     // Number of times a page was pinned on a different processor while thrashing
-    atomic64_t num_pin_remote;
+    atomic64_unchecked_t num_pin_remote;
 } processor_thrashing_stats_t;
 
 // Pre-allocated thrashing stats structure for the CPU. This is only valid if

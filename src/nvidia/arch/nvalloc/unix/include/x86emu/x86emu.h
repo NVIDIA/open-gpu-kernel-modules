@@ -152,8 +152,8 @@ extern X86EMU_intrFuncs _X86EMU_intrTab[256];
 extern "C" {                                    /* Use "C" linkage when in C++ mode */
 #endif
 
-void    X86EMU_setupMemFuncs(X86EMU_memFuncs *funcs);
-void    X86EMU_setupPioFuncs(X86EMU_pioFuncs *funcs);
+void    X86EMU_setupMemFuncs(const X86EMU_memFuncs *funcs);
+void    X86EMU_setupPioFuncs(const X86EMU_pioFuncs *funcs);
 void    X86EMU_setupIntrFuncs(X86EMU_intrFuncs funcs[]);
 void    X86EMU_prepareForInt(int num);
 

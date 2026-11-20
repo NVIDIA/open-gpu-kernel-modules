@@ -921,37 +921,37 @@ nvswitch_nxbar_handle_data2_lr10
 static
 NVSWITCH_DISCOVERY_HANDLERS_LR10 discovery_handlers_ptop_lr10 =
 {
-    &_nvswitch_ptop_parse_entry_lr10,
-    &_nvswitch_ptop_parse_enum_lr10,
-    &_nvswitch_ptop_handle_data1_lr10,
-    &_nvswitch_ptop_handle_data2_lr10
+    .parse_entry = _nvswitch_ptop_parse_entry_lr10,
+    .parse_enum = _nvswitch_ptop_parse_enum_lr10,
+    .handle_data1 = _nvswitch_ptop_handle_data1_lr10,
+    .handle_data2 = _nvswitch_ptop_handle_data2_lr10
 };
 
 static
 NVSWITCH_DISCOVERY_HANDLERS_LR10 discovery_handlers_npg_lr10 =
 {
-    &_nvswitch_npg_parse_entry_lr10,
-    &_nvswitch_npg_parse_enum_lr10,
-    &_nvswitch_npg_handle_data1_lr10,
-    &_nvswitch_npg_handle_data2_lr10
+    .parse_entry = _nvswitch_npg_parse_entry_lr10,
+    .parse_enum = _nvswitch_npg_parse_enum_lr10,
+    .handle_data1 = _nvswitch_npg_handle_data1_lr10,
+    .handle_data2 = _nvswitch_npg_handle_data2_lr10
 };
 
 static
 NVSWITCH_DISCOVERY_HANDLERS_LR10 discovery_handlers_nvlw_lr10 =
 {
-    &nvswitch_nvlw_parse_entry_lr10,
-    &nvswitch_nvlw_parse_enum_lr10,
-    &nvswitch_nvlw_handle_data1_lr10,
-    &nvswitch_nvlw_handle_data2_lr10
+    .parse_entry = nvswitch_nvlw_parse_entry_lr10,
+    .parse_enum = nvswitch_nvlw_parse_enum_lr10,
+    .handle_data1 = nvswitch_nvlw_handle_data1_lr10,
+    .handle_data2 = nvswitch_nvlw_handle_data2_lr10
 };
 
 static
 NVSWITCH_DISCOVERY_HANDLERS_LR10 discovery_handlers_nxbar_lr10 =
 {
-    &nvswitch_nxbar_parse_entry_lr10,
-    &nvswitch_nxbar_parse_enum_lr10,
-    &nvswitch_nxbar_handle_data1_lr10,
-    &nvswitch_nxbar_handle_data2_lr10
+    .parse_entry = nvswitch_nxbar_parse_entry_lr10,
+    .parse_enum = nvswitch_nxbar_parse_enum_lr10,
+    .handle_data1 = nvswitch_nxbar_handle_data1_lr10,
+    .handle_data2 = nvswitch_nxbar_handle_data2_lr10
 };
 
 //

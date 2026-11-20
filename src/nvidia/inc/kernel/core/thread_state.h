@@ -58,9 +58,7 @@ typedef struct THREAD_STATE_FREE_CALLBACK
 
 MAKE_LIST(THREAD_STATE_FREE_CB_LIST, THREAD_STATE_FREE_CALLBACK);
 
-typedef struct THREAD_STATE_NODE THREAD_STATE_NODE;
-
-struct THREAD_STATE_NODE
+typedef struct THREAD_STATE_NODE
 {
     OS_THREAD_HANDLE     threadId;
     /*!
@@ -90,7 +88,7 @@ struct THREAD_STATE_NODE
      * Only supported on non-ISR CPU RM paths.
      */
     THREAD_STATE_FREE_CB_LIST cbList;
-};
+} __nolocal THREAD_STATE_NODE;
 
 MAKE_INTRUSIVE_MAP(ThreadStateNodeMap, THREAD_STATE_NODE, node);
 

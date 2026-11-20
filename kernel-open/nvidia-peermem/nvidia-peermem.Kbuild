@@ -11,8 +11,10 @@ NVIDIA_PEERMEM_SOURCES += nvidia-peermem/nvidia-peermem.c
 
 NVIDIA_PEERMEM_OBJECTS = $(patsubst %.c,%.o,$(NVIDIA_PEERMEM_SOURCES))
 
+ifneq ($(NV_PREPARE_ONLY),1)
 obj-m += nvidia-peermem.o
 nvidia-peermem-y := $(NVIDIA_PEERMEM_OBJECTS)
+endif
 
 NVIDIA_PEERMEM_KO = nvidia-peermem/nvidia-peermem.ko
 
