@@ -23,7 +23,7 @@
 
 /* DisplayPort management routines */
 
-#include <stdarg.h>
+#include <nv_stdarg.h>
 
 #include "nvkms-utils.h"
 
