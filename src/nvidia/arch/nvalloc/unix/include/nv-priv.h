@@ -56,6 +56,8 @@ typedef struct nv_pm_state_s
 {
     NvU32  IntrEn;
     NvBool InHibernate;
+    NvBool DNotifierPending;
+    NvU32  DNotifierAuxPowerState;
 } nv_pm_state_t;
 
 /*

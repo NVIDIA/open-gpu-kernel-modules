@@ -129,6 +129,7 @@ void       RmFreeX86EmuState(OBJGPU *);
 NV_STATUS  RmPowerSourceChangeEvent(nv_state_t *, NvU32);
 
 void       RmRequestDNotifierState(nv_state_t *);
+void       RmApplyPendingDNotifierState(nv_state_t *);
 
 const NvU8 *RmGetGpuUuidRaw(nv_state_t *);
 
