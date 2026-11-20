@@ -2836,12 +2836,18 @@ static void UpdateWindowC3(NVEvoChannelPtr pChannel,
                            NVEvoChannelMask winImmInterlockMask,
                            NvBool transitionWAR,
                            NvU32 flipLockPin,
-                           NvBool releaseElv)
+                           NvBool releaseElv,
+                           NvBool winImmReleaseElv)
 {
     NvU32 head, interlockFlags = 0;
     NvU32 window, windowInterlockFlags = 0;
     NvU32 update = DRF_NUM(C37E, _UPDATE, _FLIP_LOCK_PIN, flipLockPin);
 
+    /*
+     * On active one-shot VRR heads, releaseElv may be FALSE when another
+     * mutually interlocked window on the same head already emits
+     * RELEASE_ELV_TRUE.
+     */
     update |= releaseElv ? DRF_DEF(C37E, _UPDATE, _RELEASE_ELV, _TRUE) : 0;
 
     if ((winImmInterlockMask & pChannel->channelMask) != 0) {
@@ -2857,10 +2863,6 @@ static void UpdateWindowC3(NVEvoChannelPtr pChannel,
     } else {
         update |= DRF_DEF(C37E, _UPDATE, _INTERLOCK_WITH_WIN_IMM, _DISABLE);
     }
-
-    // Nothing currently requires updating a window channel without releasing
-    // ELV.
-    nvAssert(releaseElv);
 
     if (FLD_TEST_DRF64(_EVO, _CHANNEL_MASK, _CORE, _ENABLE,
                        interlockChannelMask)) {
@@ -2913,7 +2915,7 @@ static void UpdateWindowC3(NVEvoChannelPtr pChannel,
     }
 
     UpdateWindowIMM(pChannel, winImmChannelMask,
-                    winImmInterlockMask, releaseElv);
+                    winImmInterlockMask, winImmReleaseElv);
 
     nvDmaKickoffEvo(pChannel);
 }
@@ -3049,7 +3051,8 @@ static NVEvoChannelMask ProcessFlipLockUpdates(
                            winImmChannelMask,
                            winImmInterlockMask,
                            transitionWAR,
-                           hwPin, TRUE /* releaseElv */);
+                           hwPin, TRUE /* releaseElv */,
+                           TRUE /* winImmReleaseElv */);
         } else {
             UpdateWindowIMM(pDevEvo->window[window], winImmChannelMask,
                             winImmInterlockMask, TRUE /* releaseElv */);
@@ -3063,9 +3066,100 @@ done:
     return handledMask;
 }
 
-void nvEvoUpdateC3(NVDevEvoPtr pDevEvo,
+static NvU32 GetVrrOneShotHeadMaskC3(const NVDevEvoRec *pDevEvo, NvU32 sd)
+{
+    NvU32 vrrOneShotHeadMask = 0;
+
+    if (pDevEvo->vrr.enabled && (pDevEvo->pDispEvo[sd] != NULL)) {
+        const NVDispEvoRec *pDispEvo = pDevEvo->pDispEvo[sd];
+        NvU32 apiHead;
+
+        for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+            if (pDispEvo->apiHeadState[apiHead].vrr.active) {
+                NvU32 head;
+                FOR_EACH_EVO_HW_HEAD_IN_MASK(
+                    pDispEvo->apiHeadState[apiHead].hwHeadsMask, head) {
+                    if ((head < pDevEvo->numHeads) &&
+                        (pDispEvo->headState[head].timings.vrr.type ==
+                         NVKMS_VRR_TYPE_GAMING)) {
+                        vrrOneShotHeadMask |= NVBIT(head);
+                    }
+                }
+            }
+        }
+    }
+
+    return vrrOneShotHeadMask;
+}
+
+static NVEvoChannelMask ComputeVrrReleaseElvMaskC3(
+    const NVDevEvoRec *pDevEvo,
+    NvU32 vrrOneShotHeadMask,
+    NVEvoChannelMask updateChannelMask,
+    NVEvoChannelMask coreInterlockMask,
+    NVEvoChannelMask *pVrrWinMask)
+{
+    NVEvoChannelMask releaseElvMask = updateChannelMask;
+    NVEvoChannelMask vrrWinMask = 0;
+    const NvBool hasInterlockedCore =
+        FLD_TEST_DRF64(_EVO, _CHANNEL_MASK, _CORE, _ENABLE, coreInterlockMask);
+    NvU32 interlockedVrrHeadMask = 0;
+    NvU32 head;
+
+    for (head = 0; head < pDevEvo->numHeads; head++) {
+        NVEvoChannelMask headInterlockedMask = 0;
+        NVEvoChannelMask firstInterlocked = 0;
+        NvU32 layer;
+
+        if ((vrrOneShotHeadMask & NVBIT(head)) == 0) {
+            continue;
+        }
+
+        for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+            const NVEvoChannel *pLayer = pDevEvo->head[head].layer[layer];
+            if (pLayer != NULL) {
+                const NVEvoChannelMask layerMask = pLayer->channelMask;
+                vrrWinMask |= layerMask;
+                if ((coreInterlockMask & layerMask) != 0) {
+                    headInterlockedMask |= layerMask;
+                    if (firstInterlocked == 0) {
+                        firstInterlocked = layerMask;
+                    }
+                }
+            }
+        }
+
+        /*
+         * Within an active one-shot VRR head's mutually interlocked window
+         * group, emit RELEASE_ELV_TRUE on only one window channel so one-shot
+         * VRR does not receive duplicate ELV releases. Non-interlocked
+         * channels and non-VRR heads' window channels retain stock releases.
+         */
+        if (firstInterlocked != 0) {
+            interlockedVrrHeadMask |= NVBIT(head);
+            releaseElvMask &= ~(headInterlockedMask & ~firstInterlocked);
+        }
+    }
+
+    /*
+     * Clear RELEASE_ELV_TRUE on an interlocked Core channel only when every
+     * active one-shot VRR head already has an interlocked window releasing
+     * ELV, so Core cannot starve any other stalled one-shot head (including
+     * notifier-only or device-global Core updates).
+     */
+    if (hasInterlockedCore &&
+        ((vrrOneShotHeadMask & ~interlockedVrrHeadMask) == 0)) {
+        releaseElvMask &= ~DRF_DEF64(_EVO, _CHANNEL_MASK, _CORE, _ENABLE);
+    }
+
+    *pVrrWinMask = vrrWinMask;
+    return releaseElvMask;
+}
+
+static void EvoUpdateC3(NVDevEvoPtr pDevEvo,
                         const NVEvoUpdateState *updateState,
-                        NvBool releaseElv)
+                        NvBool releaseElv,
+                        NvBool deduplicateVrrElv)
 {
     NvU32 sd, window;
 
@@ -3076,6 +3170,8 @@ void nvEvoUpdateC3(NVDevEvoPtr pDevEvo,
             updateState->subdev[sd].noCoreInterlockMask;
         NVEvoChannelMask coreInterlockMask =
             updateChannelMask & ~noCoreInterlockMask;
+        NVEvoChannelMask releaseElvMask;
+        NVEvoChannelMask vrrWinMask = 0;
         NvU32 flipLockPin = NVC37E_UPDATE_FLIP_LOCK_PIN_LOCK_PIN_NONE;
 
         if (updateState->subdev[sd].flipLockQualifyingMask) {
@@ -3093,13 +3189,32 @@ void nvEvoUpdateC3(NVDevEvoPtr pDevEvo,
             coreInterlockMask &= ~handledChannels;
         }
 
+        releaseElvMask = releaseElv ? updateChannelMask : 0;
+
+        if (releaseElv && deduplicateVrrElv) {
+            const NvU32 vrrOneShotHeadMask =
+                GetVrrOneShotHeadMaskC3(pDevEvo, sd);
+
+            if (vrrOneShotHeadMask != 0) {
+                releaseElvMask = ComputeVrrReleaseElvMaskC3(
+                    pDevEvo,
+                    vrrOneShotHeadMask,
+                    updateChannelMask,
+                    coreInterlockMask,
+                    &vrrWinMask);
+            }
+        }
+
         if (FLD_TEST_DRF64(_EVO, _CHANNEL_MASK, _CORE, _ENABLE,
                            updateChannelMask)) {
             const NVEvoChannelMask thisInterlockMask =
                 FLD_TEST_DRF64(_EVO, _CHANNEL_MASK, _CORE, _ENABLE,
                                coreInterlockMask) ? coreInterlockMask : 0;
+            const NvBool coreReleaseElv =
+                FLD_TEST_DRF64(_EVO, _CHANNEL_MASK, _CORE, _ENABLE,
+                               releaseElvMask);
             UpdateCoreC3(pDevEvo->core, thisInterlockMask, flipLockPin,
-                         releaseElv);
+                         coreReleaseElv);
         }
 
         for (window = 0; window < pDevEvo->numWindows; window++) {
@@ -3112,6 +3227,11 @@ void nvEvoUpdateC3(NVDevEvoPtr pDevEvo,
             if (updateChannelMask & windowMask) {
                 const NvBool transitionWAR =
                     (updateState->subdev[sd].flipTransitionWAR & windowMask) != 0;
+                const NvBool winReleaseElv =
+                    (releaseElvMask & windowMask) != 0;
+                const NvBool winImmReleaseElv =
+                    releaseElv &&
+                    ((vrrWinMask & winImmInterlockMask & windowMask) == 0);
                 NVEvoChannelMask thisInterlockMask =
                     FLD_IDX_TEST_DRF64(_EVO, _CHANNEL_MASK, _WINDOW, window, _ENABLE,
                                        coreInterlockMask) ? coreInterlockMask : 0;
@@ -3121,13 +3241,21 @@ void nvEvoUpdateC3(NVDevEvoPtr pDevEvo,
                                winImmInterlockMask,
                                transitionWAR,
                                flipLockPin,
-                               releaseElv);
+                               winReleaseElv,
+                               winImmReleaseElv);
             } else {
                 UpdateWindowIMM(pDevEvo->window[window], winImmChannelMask,
                                 winImmInterlockMask, releaseElv);
             }
         }
     }
+}
+
+void nvEvoUpdateC3(NVDevEvoPtr pDevEvo,
+                   const NVEvoUpdateState *updateState,
+                   NvBool releaseElv)
+{
+    EvoUpdateC3(pDevEvo, updateState, releaseElv, TRUE /* deduplicateVrrElv */);
 }
 
 /*!
@@ -6852,7 +6980,8 @@ static NvBool EvoForceIdleSatelliteChannelsWithAccel(
     }
 
     /* Push one update for all of the flips programmed above. */
-    nvEvoUpdateC3(pDevEvo, &updateState, TRUE /* releaseElv */);
+    EvoUpdateC3(pDevEvo, &updateState, TRUE /* releaseElv */,
+                FALSE /* deduplicateVrrElv */);
 
     for (window = 0; window < pDevEvo->numWindows; window++) {
         if (FLD_IDX_TEST_DRF64(_EVO, _CHANNEL_MASK, _WINDOW, window, _ENABLE,
