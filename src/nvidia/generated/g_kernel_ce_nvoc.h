@@ -205,6 +205,7 @@ struct KernelCE {
     NvU32 nvlinkNumPeers;
     NvBool bIsAutoConfigEnabled;
     NvBool bUseGen4Mapping;
+    NvBool bUseGen5Mapping;
     NvU32 ceCapsMask;
     NvBool bCcFipsSelfTestRequired;
 };
