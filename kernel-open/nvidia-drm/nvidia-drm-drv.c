@@ -1623,6 +1623,7 @@ static int nv_drm_revoke_modeset_permission(struct drm_device *dev,
     struct drm_connector *connector;
     struct drm_crtc *crtc;
     int ret = 0;
+    bool need_commit = false;
     struct drm_connector_list_iter conn_iter;
 #if NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT == 3
     struct drm_modeset_acquire_ctx ctx;
@@ -1655,6 +1656,7 @@ static int nv_drm_revoke_modeset_permission(struct drm_device *dev,
                 goto done;
             }
 
+            need_commit = true;
             // Continue trying to revoke as much as possible.
             nv_drm_connector_revoke_permissions(dev, nv_connector);
         }
@@ -1668,7 +1670,9 @@ static int nv_drm_revoke_modeset_permission(struct drm_device *dev,
         }
     }
 
-    ret = drm_atomic_commit(state);
+    if (need_commit) {
+        ret = drm_atomic_commit(state);
+    }
 done:
     nv_drm_atomic_state_base_put(state);
 
