@@ -67,7 +67,8 @@ static int nv_i2c_algo_master_xfer(struct i2c_adapter *adapter, struct i2c_msg m
             rmStatus = rm_i2c_transfer(sp, nv, (void *)adapter,
                                        (msgs[i].flags & I2C_M_RD) ?
                                            NV_I2C_CMD_READ : NV_I2C_CMD_WRITE,
-                                       (NvU8)(msgs[i].addr & 0x7f), 0,
+                                       (NvU8)(msgs[i].addr & 0x7f),
+                                       (NvU8)(((i + 1) < (unsigned int)num) ? 0x1 : 0x0),
                                        (NvU32)(msgs[i].len & 0xffffUL),
                                        (NvU8 *)msgs[i].buf);
         }
