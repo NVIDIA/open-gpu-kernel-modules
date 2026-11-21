@@ -1105,6 +1105,11 @@ static int __nv_drm_master_set(struct drm_device *dev,
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
 
+    /* The GPU may already be gone (hot-removed), so there is nothing to grab. */
+    if (nv_dev->pDevice == NULL) {
+        return -ENODEV;
+    }
+
     /*
      * If this device is driving a framebuffer, then nvidia-drm already has
      * modeset ownership. Otherwise, grab ownership now.
@@ -1189,6 +1194,15 @@ static
 void nv_drm_master_drop(struct drm_device *dev, struct drm_file *file_priv)
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
+
+    /*
+     * nv_drm_dev_unload() clears pDevice when the GPU is removed. A client
+     * such as kwin can still close its DRM file afterwards, and by then
+     * there is no NVKMS device left to release.
+     */
+    if (nv_dev->pDevice == NULL) {
+        return;
+    }
 
     nv_drm_revoke_modeset_permission(dev, file_priv, 0);
     nv_drm_revoke_sub_ownership(dev);
@@ -1693,7 +1707,7 @@ static int nv_drm_revoke_sub_ownership(struct drm_device *dev)
     mutex_lock(&dev->mode_config.mutex);
 #endif
 
-    if (!nv_dev->subOwnershipGranted) {
+    if (!nv_dev->subOwnershipGranted || nv_dev->pDevice == NULL) {
         goto done;
     }
 
