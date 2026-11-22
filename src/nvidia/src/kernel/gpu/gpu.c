@@ -138,6 +138,12 @@ static NV_STATUS gpuRemoveMissingEngines(OBJGPU *);
 
 // local static function
 static NV_STATUS _gpuChildrenPresentInit(OBJGPU *pGpu);
+#if RMCFG_FEATURE_KERNEL_RM && RMCFG_MODULE_KERNEL_GSP
+static NV_STATUS _gpuOobXidQueueConstruct(OBJGPU *pGpu);
+static void      _gpuOobXidQueueLoad(OBJGPU *pGpu);
+static void      _gpuOobXidQueueUnload(OBJGPU *pGpu);
+static void      _gpuOobXidQueueDestruct(OBJGPU *pGpu);
+#endif
 static NV_STATUS gpuCreateChildObjects(OBJGPU *, NvBool);
 static NV_STATUS gpuCreateObject(OBJGPU *pGpu, NVOC_CLASS_ID, NvU64, Dynamic **);
 static NV_STATUS gpuStatePreLoad(OBJGPU *, NvU32);
@@ -742,13 +748,22 @@ NV_STATUS gpuConstruct_IMPL
     NV_ASSERT_TRUE_OR_GOTO(status, pGpu->pSubdeviceBackReferencesLock != NULL,
         NV_ERR_NO_MEMORY, cleanup_osinfo);
 
+#if RMCFG_FEATURE_KERNEL_RM && RMCFG_MODULE_KERNEL_GSP
+    NV_ASSERT_OK_OR_GOTO(status, _gpuOobXidQueueConstruct(pGpu), cleanup_spinlock);
+    NV_ASSERT_OK_OR_GOTO(status, gpuEventBusConstruct(pGpu), cleanup_oob_xid_queue);
+#else
     NV_ASSERT_OK_OR_GOTO(status, gpuEventBusConstruct(pGpu), cleanup_spinlock);
+#endif
     NV_ASSERT_OK_OR_GOTO(status, gpuConstructPhysical(pGpu), cleanup_event_bus);
 
     return NV_OK;
 
 cleanup_event_bus:
     gpuEventBusDestruct(pGpu);
+#if RMCFG_FEATURE_KERNEL_RM && RMCFG_MODULE_KERNEL_GSP
+cleanup_oob_xid_queue:
+    _gpuOobXidQueueDestruct(pGpu);
+#endif
 cleanup_spinlock:
     portSyncSpinlockDestroy(pGpu->pSubdeviceBackReferencesLock);
     pGpu->pSubdeviceBackReferencesLock = NULL;
@@ -1644,6 +1659,10 @@ gpuDestruct_IMPL
     pGpu->maxSubdeviceBackReferences = 0;
     portSyncSpinlockDestroy(pGpu->pSubdeviceBackReferencesLock);
     pGpu->pSubdeviceBackReferencesLock = NULL;
+
+#if RMCFG_FEATURE_KERNEL_RM && RMCFG_MODULE_KERNEL_GSP
+    _gpuOobXidQueueDestruct(pGpu);
+#endif
 
     multimapDestroy(&pGpu->videoEventBufferBindingsUid);
 
@@ -2627,6 +2646,9 @@ gpuStateLoad_IMPL
         osGetPerformanceCounter(&startTimens));
 
     pGpu->registerAccess.regReadCount = pGpu->registerAccess.regWriteCount = 0;
+#if RMCFG_FEATURE_KERNEL_RM && RMCFG_MODULE_KERNEL_GSP
+    _gpuOobXidQueueLoad(pGpu);
+#endif
     RMTRACE_ENGINE_PROFILE_EVENT("gpuStateLoadStart", pGpu->gpuId, pGpu->registerAccess.regReadCount, pGpu->registerAccess.regWriteCount);
 
     _gpuDetectNvswitchSupport(pGpu);
@@ -3923,6 +3945,10 @@ gpuStateUnload_IMPL
     //
     if (IS_GSP_CLIENT(pGpu))
         gpuOpEventImportDestruct(pGpu);
+
+#if RMCFG_FEATURE_KERNEL_RM && RMCFG_MODULE_KERNEL_GSP
+    _gpuOobXidQueueUnload(pGpu);
+#endif
 
     // stop RUSD polling before unload
     gpuStopRusdPollingOnUnload(pGpu);
@@ -7749,6 +7775,625 @@ gpuSetPartitionErrorAttribution_KERNEL
     return NV_OK;
 }
 
+#if RMCFG_FEATURE_KERNEL_RM && RMCFG_MODULE_KERNEL_GSP
+
+#define GPU_OOB_XID_QUEUE_CAPACITY (8U)
+
+//
+// Per-GPU fixed ring buffer and single coalesced work item state for deferred
+// OOB XID GSP RPCs. Stored per gpuInstance to avoid modifying NVOC-generated
+// OBJGPU headers; can be moved directly onto OBJGPU when regenerating NVOC.
+//
+typedef struct
+{
+    PORT_SPINLOCK                          *pLock;
+    NvU32                                   gpuId;
+    NvU32                                   epoch;
+    NvU32                                   head;
+    NvU32                                   count;
+    NvBool                                  bUnloaded;
+    NvBool                                  bWorkItemPending;
+    NV2080_CTRL_INTERNAL_LOG_OOB_XID_PARAMS entries[GPU_OOB_XID_QUEUE_CAPACITY];
+} GPU_OOB_XID_QUEUE;
+
+static GPU_OOB_XID_QUEUE s_gpuOobXidQueues[NV_MAX_DEVICES];
+
+/*!
+ * @brief Construct the per-GPU deferred OOB XID queue and spinlock.
+ *
+ * Allocates the leaf spinlock protecting the fixed ring buffer and initializes
+ * queue state for this GPU instance.
+ *
+ * @param[in] pGpu  OBJGPU pointer
+ *
+ * @return NV_OK                    if initialized successfully
+ * @return NV_ERR_INVALID_ARGUMENT  if gpuInstance is out of range
+ * @return NV_ERR_NO_MEMORY         if spinlock allocation fails
+ */
+static NV_STATUS
+_gpuOobXidQueueConstruct
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32              gpuInstance = gpuGetInstance(pGpu);
+    GPU_OOB_XID_QUEUE *pQueue;
+
+    NV_ASSERT_OR_RETURN(gpuInstance < NV_MAX_DEVICES, NV_ERR_INVALID_ARGUMENT);
+
+    pQueue = &s_gpuOobXidQueues[gpuInstance];
+    if (pQueue->pLock == NULL)
+    {
+        pQueue->pLock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
+        if (pQueue->pLock == NULL)
+        {
+            return NV_ERR_NO_MEMORY;
+        }
+    }
+
+    portSyncSpinlockAcquire(pQueue->pLock);
+    pQueue->gpuId = pGpu->gpuId;
+    pQueue->head = 0U;
+    pQueue->count = 0U;
+    pQueue->bUnloaded = NV_FALSE;
+    pQueue->bWorkItemPending = NV_FALSE;
+    pQueue->epoch++;
+    portSyncSpinlockRelease(pQueue->pLock);
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Re-enable the per-GPU deferred OOB XID queue on GPU state load/resume.
+ *
+ * Refreshes gpuId and, when transitioning back from an unloaded state (such as
+ * S3/S4 or RTD3 runtime PM resume where the work queue is not flushed), clears
+ * any stale state and advances the queue epoch. Preserves current-boot XIDs
+ * deferred during gpuStatePreInit/gpuStateInit on initial boot.
+ *
+ * @param[in] pGpu  OBJGPU pointer
+ */
+static void
+_gpuOobXidQueueLoad
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32              gpuInstance = gpuGetInstance(pGpu);
+    GPU_OOB_XID_QUEUE *pQueue;
+
+    if (gpuInstance >= NV_MAX_DEVICES)
+    {
+        return;
+    }
+
+    pQueue = &s_gpuOobXidQueues[gpuInstance];
+    if (pQueue->pLock == NULL)
+    {
+        return;
+    }
+
+    portSyncSpinlockAcquire(pQueue->pLock);
+    pQueue->gpuId = pGpu->gpuId;
+    if (pQueue->bUnloaded)
+    {
+        pQueue->head = 0U;
+        pQueue->count = 0U;
+        pQueue->bWorkItemPending = NV_FALSE;
+        pQueue->bUnloaded = NV_FALSE;
+        pQueue->epoch++;
+    }
+    portSyncSpinlockRelease(pQueue->pLock);
+}
+
+/*!
+ * @brief Discard queued deferred OOB XID entries and mark the queue unloaded.
+ *
+ * Called during GPU state unload so stale pre-suspend work items (including
+ * under RTD3 runtime PM where the work queue is not flushed) are rejected
+ * cleanly and post-unload teardown paths (kgspUnloadRm, gpuStateDestroy)
+ * neither send synchronous OOB XID RPCs nor enqueue work items after
+ * adapter workqueue shutdown.
+ *
+ * @param[in] pGpu  OBJGPU pointer
+ */
+static void
+_gpuOobXidQueueUnload
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32              gpuInstance = gpuGetInstance(pGpu);
+    GPU_OOB_XID_QUEUE *pQueue;
+
+    if (gpuInstance >= NV_MAX_DEVICES)
+    {
+        return;
+    }
+
+    pQueue = &s_gpuOobXidQueues[gpuInstance];
+    if (pQueue->pLock == NULL)
+    {
+        return;
+    }
+
+    portSyncSpinlockAcquire(pQueue->pLock);
+    pQueue->head = 0U;
+    pQueue->count = 0U;
+    pQueue->bWorkItemPending = NV_FALSE;
+    pQueue->bUnloaded = NV_TRUE;
+    pQueue->epoch++;
+    portSyncSpinlockRelease(pQueue->pLock);
+}
+
+/*!
+ * @brief Tear down the per-GPU deferred OOB XID queue and destroy its spinlock.
+ *
+ * Called during GPU destruction while GPU locks are held and after the GPU is
+ * being detached so no concurrent OOB XID work item can access the lock.
+ *
+ * @param[in] pGpu  OBJGPU pointer
+ */
+static void
+_gpuOobXidQueueDestruct
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32              gpuInstance = gpuGetInstance(pGpu);
+    GPU_OOB_XID_QUEUE *pQueue;
+    PORT_SPINLOCK     *pLock;
+
+    if (gpuInstance >= NV_MAX_DEVICES)
+    {
+        return;
+    }
+
+    pQueue = &s_gpuOobXidQueues[gpuInstance];
+    pLock = pQueue->pLock;
+    if (pLock == NULL)
+    {
+        return;
+    }
+
+    portSyncSpinlockAcquire(pLock);
+    pQueue->gpuId = NV0000_CTRL_GPU_INVALID_ID;
+    pQueue->head = 0U;
+    pQueue->count = 0U;
+    pQueue->bWorkItemPending = NV_FALSE;
+    pQueue->bUnloaded = NV_TRUE;
+    pQueue->epoch++;
+    pQueue->pLock = NULL;
+    portSyncSpinlockRelease(pLock);
+
+    portSyncSpinlockDestroy(pLock);
+}
+
+/*!
+ * @brief Check whether the per-GPU deferred OOB XID queue is unloaded or absent.
+ *
+ * @param[in] pGpu  OBJGPU pointer
+ *
+ * @return NV_TRUE  if the queue is out of range, unconstructed, or unloaded
+ * @return NV_FALSE if the queue is active
+ */
+static NvBool
+_gpuIsOobXidQueueUnloaded
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32              gpuInstance = gpuGetInstance(pGpu);
+    GPU_OOB_XID_QUEUE *pQueue;
+    NvBool             bUnloaded;
+
+    if (gpuInstance >= NV_MAX_DEVICES)
+    {
+        return NV_TRUE;
+    }
+
+    pQueue = &s_gpuOobXidQueues[gpuInstance];
+    if (pQueue->pLock == NULL)
+    {
+        return NV_TRUE;
+    }
+
+    portSyncSpinlockAcquire(pQueue->pLock);
+    bUnloaded = pQueue->bUnloaded;
+    portSyncSpinlockRelease(pQueue->pLock);
+
+    return bUnloaded;
+}
+
+/*!
+ * @brief Clear remaining queued deferred OOB XID entries for a matching epoch.
+ *
+ * Invoked when the worker aborts draining due to GPU/GSP degradation or RPC
+ * timeout so subsequent queued items do not chain back-to-back timeouts.
+ *
+ * @param[in] pQueue         Per-GPU deferred OOB XID queue pointer
+ * @param[in] gpuId          Expected GPU ID
+ * @param[in] workItemEpoch  Expected queue epoch token
+ */
+static void
+_gpuAbortOobXidQueueDrain
+(
+    GPU_OOB_XID_QUEUE *pQueue,
+    NvU32              gpuId,
+    NvU32              workItemEpoch
+)
+{
+    if (pQueue->pLock == NULL)
+    {
+        return;
+    }
+
+    portSyncSpinlockAcquire(pQueue->pLock);
+    if ((pQueue->gpuId == gpuId) && (pQueue->epoch == workItemEpoch))
+    {
+        pQueue->head = 0U;
+        pQueue->count = 0U;
+        pQueue->bWorkItemPending = NV_FALSE;
+    }
+    portSyncSpinlockRelease(pQueue->pLock);
+}
+
+/*!
+ * @brief Check whether GSP is currently polling for an RPC response.
+ *
+ * @param[in] pGpu  OBJGPU pointer
+ *
+ * @return NV_TRUE  if KernelGsp is present and actively polling for an RPC
+ * @return NV_FALSE otherwise
+ */
+static NvBool
+_gpuIsPollingForRpcResponse
+(
+    OBJGPU *pGpu
+)
+{
+    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+
+    return ((pKernelGsp != NULL) && pKernelGsp->bPollingForRpcResponse);
+}
+
+/*!
+ * @brief Determine whether an XID message can be sent to GSP for OOB logging.
+ *
+ * Excludes XIDs and GPU/GSP states that indicate GSP communication is
+ * unavailable, has reached the fatal RPC timeout reset threshold, or is
+ * undergoing reset, TDR recovery, unload/teardown, shutdown, or suspend/
+ * hibernate entry. Allows logging during PM resume state load once GSP-RM is
+ * online via gpuIsGpuFullPowerForPmResume().
+ *
+ * @param[in] pGpu  OBJGPU pointer
+ * @param[in] xid   The XID number
+ *
+ * @return NV_TRUE  if sending NV2080_CTRL_CMD_INTERNAL_LOG_OOB_XID is permitted
+ * @return NV_FALSE otherwise
+ */
+static NvBool
+_gpuCanLogOobXidToGsp
+(
+    OBJGPU *pGpu,
+    NvU32   xid
+)
+{
+    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+    OBJRPC    *pRpc = (pKernelGsp != NULL) ? pKernelGsp->pRpc : NULL;
+    NvBool     bGspUnavailable = !IS_GSP_CLIENT(pGpu) ||
+                                 (pKernelGsp == NULL) ||
+                                 pKernelGsp->bFatalError ||
+                                 pKernelGsp->bGspRmUnloaded ||
+                                 pKernelGsp->bGspRmForceUnloaded ||
+                                 ((pRpc != NULL) &&
+                                  (pKernelGsp->gspRpcTimeoutGpuResetThreshold > 0U) &&
+                                  (pRpc->timeoutCount >= pKernelGsp->gspRpcTimeoutGpuResetThreshold));
+    NvBool     bPmSuspendEntry = pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH) &&
+                                 !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH);
+
+    // Exclude conditions that indicate issues with GSP communication.
+    if ((xid == GSP_ERROR) ||
+        (xid == GSP_RPC_TIMEOUT) ||
+        (xid == UNRECOVERABLE_ECC_ERROR_ESCAPE) ||
+        (xid == MEMORY_SUBSYSTEM_ERROR) ||
+        (xid == ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS) ||
+        (xid == SEC_FAULT_ERROR) ||
+        (xid == GPU_CONTAINMENT_ERROR) ||
+        (xid == GSP_OOM_ERROR) ||
+        API_GPU_IN_RESET_SANITY_CHECK(pGpu) ||
+        API_GPU_IN_RECOVERY_SANITY_CHECK(pGpu) ||
+        !pGpu->gspRmInitialized ||
+        gpuIsStateUnloading(pGpu) ||
+        _gpuIsOobXidQueueUnloaded(pGpu) ||
+        (pGpu->hInternalClient == NV01_NULL_OBJECT) ||
+        (pGpu->hInternalSubdevice == NV01_NULL_OBJECT) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_PREPARING_FULLCHIP_RESET) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST) ||
+        !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_CONNECTED) ||
+        bPmSuspendEntry ||
+        !gpuIsGpuFullPowerForPmResume(pGpu) ||
+        osIsGpuShutdown(pGpu) ||
+        bGspUnavailable)
+    {
+        return NV_FALSE;
+    }
+
+    return NV_TRUE;
+}
+
+/*!
+ * @brief Populate an NV2080_CTRL_INTERNAL_LOG_OOB_XID_PARAMS structure.
+ *
+ * Zero-initializes the entire structure (including trailing buffer and padding
+ * bytes), clamps the message length to the RPC buffer limit, copies the payload,
+ * and guarantees NUL termination.
+ *
+ * @param[out] pParams  Destination RPC parameter structure
+ * @param[in]  xid      The XID number
+ * @param[in]  message  Source text message
+ * @param[in]  len      Length, in bytes, of the text message, excluding NUL
+ */
+static void
+_gpuInitOobXidParams
+(
+    NV2080_CTRL_INTERNAL_LOG_OOB_XID_PARAMS *pParams,
+    NvU32                                    xid,
+    const char                              *message,
+    NvU32                                    len
+)
+{
+    // Copy the message into the RPC params, truncated to max RPC size, and
+    // always include a trailing NUL terminator.
+    len = NV_MIN(len, NV2080_INTERNAL_OOB_XID_MESSAGE_BUFFER_SIZE - 1);
+
+    portMemSet(pParams, 0, sizeof(*pParams));
+    pParams->xid = xid;
+    pParams->len = len;
+    if (len > 0U)
+    {
+        portMemCopy(pParams->message,
+                    NV2080_INTERNAL_OOB_XID_MESSAGE_BUFFER_SIZE,
+                    message,
+                    len);
+    }
+    pParams->message[len] = '\0';
+}
+
+/*!
+ * @brief Issue the internal GSP RM control RPC to log an XID message OOB.
+ *
+ * @param[in] pGpu     OBJGPU pointer
+ * @param[in] pParams  Populated NV2080_CTRL_INTERNAL_LOG_OOB_XID_PARAMS pointer
+ *
+ * @return NV_OK or the RM control error status returned by GSP
+ */
+static NV_STATUS
+_gpuSendOobXidRpc
+(
+    OBJGPU                                  *pGpu,
+    NV2080_CTRL_INTERNAL_LOG_OOB_XID_PARAMS *pParams
+)
+{
+    RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV_STATUS status;
+
+    NV_CHECK_OK(status, LEVEL_ERROR,
+                pRmApi->Control(pRmApi,
+                                pGpu->hInternalClient,
+                                pGpu->hInternalSubdevice,
+                                NV2080_CTRL_CMD_INTERNAL_LOG_OOB_XID,
+                                pParams,
+                                sizeof(*pParams)));
+
+    return status;
+}
+
+/*!
+ * @brief Work item callback to drain deferred OOB XID RPCs in process context.
+ *
+ * Validates GPU identity, unloaded state, and epoch under the per-GPU queue
+ * spinlock, then drains queued entries under the acquired GPU device lock in
+ * unicast mode. Aborts remaining queued entries immediately if the GPU/GSP
+ * degrades or an RPC times out so best-effort telemetry cannot chain
+ * multi-second stalls.
+ *
+ * @param[in] gpuInstance  GPU instance index
+ * @param[in] pArgs        Queue epoch token encoded as void * (not freed)
+ */
+static void
+_gpuLogOobXidMessageWorkItem
+(
+    NvU32  gpuInstance,
+    void  *pArgs
+)
+{
+    OBJGPU            *pGpu = gpumgrGetGpu(gpuInstance);
+    GPU_OOB_XID_QUEUE *pQueue;
+    NvU32              workItemEpoch = (NvU32)(NvUPtr)pArgs;
+
+    if ((pGpu == NULL) || (gpuInstance >= NV_MAX_DEVICES))
+    {
+        return;
+    }
+
+    pQueue = &s_gpuOobXidQueues[gpuInstance];
+    if (pQueue->pLock == NULL)
+    {
+        return;
+    }
+
+    for (;;)
+    {
+        NV2080_CTRL_INTERNAL_LOG_OOB_XID_PARAMS entry;
+        NvBool                                  bBcState;
+        NV_STATUS                               status;
+
+        portSyncSpinlockAcquire(pQueue->pLock);
+
+        if ((pQueue->gpuId != pGpu->gpuId) ||
+            (pQueue->epoch != workItemEpoch) ||
+            pQueue->bUnloaded)
+        {
+            portSyncSpinlockRelease(pQueue->pLock);
+            return;
+        }
+
+        if (pQueue->count == 0U)
+        {
+            pQueue->bWorkItemPending = NV_FALSE;
+            portSyncSpinlockRelease(pQueue->pLock);
+            return;
+        }
+
+        entry = pQueue->entries[pQueue->head];
+        pQueue->head = (pQueue->head + 1U) % GPU_OOB_XID_QUEUE_CAPACITY;
+        pQueue->count--;
+        portSyncSpinlockRelease(pQueue->pLock);
+
+        //
+        // Require full-power sanity in the deferred worker (intentionally
+        // skipping mid-resume partial-engine-load windows) along with GSP
+        // availability and non-recursive polling checks.
+        //
+        if (!FULL_GPU_SANITY_CHECK(pGpu) ||
+            !_gpuCanLogOobXidToGsp(pGpu, entry.xid) ||
+            _gpuIsPollingForRpcResponse(pGpu))
+        {
+            _gpuAbortOobXidQueueDrain(pQueue, pGpu->gpuId, workItemEpoch);
+            return;
+        }
+
+        // Enforce unicast mode for proprietary SLI builds before sending RPC.
+        bBcState = gpumgrGetBcEnabledStatus(pGpu);
+        gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
+        status = _gpuSendOobXidRpc(pGpu, &entry);
+        gpumgrSetBcEnabledStatus(pGpu, bBcState);
+
+        if ((status == NV_ERR_TIMEOUT) ||
+            (status == NV_ERR_RESET_REQUIRED) ||
+            (status == NV_ERR_GPU_IS_LOST) ||
+            (status == NV_ERR_GPU_IN_FULLCHIP_RESET) ||
+            (status == NV_ERR_GPU_NOT_FULL_POWER))
+        {
+            _gpuAbortOobXidQueueDrain(pQueue, pGpu->gpuId, workItemEpoch);
+            return;
+        }
+    }
+}
+
+/*!
+ * @brief Enqueue an OOB XID payload into the per-GPU ring and schedule a
+ *        single coalesced work item if one is not already pending.
+ *
+ * Performs zero heap allocations, uses a leaf spinlock to guard ring updates,
+ * and avoids acquiring the global RM API lock in steady state once the GPU is
+ * loaded.
+ *
+ * @param[in] pGpu     OBJGPU pointer
+ * @param[in] xid      The XID number
+ * @param[in] message  Source text message
+ * @param[in] len      Length, in bytes, of the text message, excluding NUL
+ */
+static void
+_gpuDeferOobXidMessage
+(
+    OBJGPU     *pGpu,
+    NvU32       xid,
+    const char *message,
+    NvU32       len
+)
+{
+    NvU32              gpuInstance = gpuGetInstance(pGpu);
+    GPU_OOB_XID_QUEUE *pQueue;
+    NvBool             bDropped = NV_FALSE;
+    NvBool             bNeedQueue = NV_FALSE;
+    NvU32              workItemEpoch = 0U;
+
+    if (gpuInstance >= NV_MAX_DEVICES)
+    {
+        return;
+    }
+
+    pQueue = &s_gpuOobXidQueues[gpuInstance];
+    if (pQueue->pLock == NULL)
+    {
+        return;
+    }
+
+    portSyncSpinlockAcquire(pQueue->pLock);
+
+    if ((pQueue->gpuId != pGpu->gpuId) || pQueue->bUnloaded)
+    {
+        portSyncSpinlockRelease(pQueue->pLock);
+        return;
+    }
+
+    if (pQueue->count < GPU_OOB_XID_QUEUE_CAPACITY)
+    {
+        NvU32 tail = (pQueue->head + pQueue->count) % GPU_OOB_XID_QUEUE_CAPACITY;
+
+        _gpuInitOobXidParams(&pQueue->entries[tail], xid, message, len);
+        pQueue->count++;
+
+        if (!pQueue->bWorkItemPending)
+        {
+            pQueue->bWorkItemPending = NV_TRUE;
+            workItemEpoch = pQueue->epoch;
+            bNeedQueue = NV_TRUE;
+        }
+    }
+    else
+    {
+        bDropped = NV_TRUE;
+    }
+
+    portSyncSpinlockRelease(pQueue->pLock);
+
+    if (bDropped)
+    {
+        NV_PRINTF(LEVEL_WARNING,
+                  "Dropping deferred OOB XID %u logging: pending ring full\n",
+                  xid);
+        return;
+    }
+
+    if (bNeedQueue)
+    {
+        OsQueueWorkItemFlags flags = { 0 };
+        NV_STATUS            status;
+
+        //
+        // Avoid taking the global RM API lock in steady state (when
+        // WORKITEM_FLAGS_API_LOCK_READ_ONLY escalates to the global API write
+        // lock), while keeping READ_ONLY prior to state load so deferred work
+        // serializes behind RmInitAdapter / rm_power_management's API lock.
+        //
+        flags.apiLock              = gpuIsStateLoaded(pGpu) ?
+                                         WORKITEM_FLAGS_API_LOCK_NOT_ACQUIRED :
+                                         WORKITEM_FLAGS_API_LOCK_READ_ONLY;
+        flags.bLockGpuGroupDevice  = NV_TRUE;
+        flags.bRequiresGpu         = NV_TRUE;
+        flags.bDontFreeParams      = NV_TRUE;
+        flags.bFallbackToDpc       = NV_TRUE;
+
+        status = osQueueWorkItem(pGpu,
+                                 _gpuLogOobXidMessageWorkItem,
+                                 (void *)(NvUPtr)workItemEpoch,
+                                 flags);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Failed to queue OOB XID %u logging work item: 0x%x\n",
+                      xid,
+                      status);
+            _gpuAbortOobXidQueueDrain(pQueue, pGpu->gpuId, workItemEpoch);
+        }
+    }
+}
+
+#endif // RMCFG_FEATURE_KERNEL_RM && RMCFG_MODULE_KERNEL_GSP
+
 /*!
  * @brief This function logs an XID message to OOB by sending an RPC message to the GSP.
  *
@@ -7770,19 +8415,15 @@ gpuLogOobXidMessage_KERNEL
     NvU32        len
 )
 {
-    RM_API                                 *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NV_STATUS                               status;
-    NvBool                                  bGspFatalError = NV_FALSE;
-    NV2080_CTRL_INTERNAL_LOG_OOB_XID_PARAMS params = {0};
-    KernelGsp                              *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+    KernelOob *pKernelOob;
 
-    if (pKernelGsp != NULL)
+    if ((pGpu == NULL) || (message == NULL))
     {
-        bGspFatalError = pKernelGsp->bFatalError;
+        return;
     }
 
     // Kernel-RM can send XID events OOB itself now. Limited to select GSP-related XIDs for first release.
-    KernelOob *pKernelOob = GPU_GET_KERNEL_OOB(pGpu);
+    pKernelOob = GPU_GET_KERNEL_OOB(pGpu);
     if ((pKernelOob != NULL) &&
         ((xid == GSP_ERROR) || (xid == GSP_RPC_TIMEOUT) ||
          (xid == UNRECOVERABLE_ECC_ERROR_ESCAPE) || (xid == MEMORY_SUBSYSTEM_ERROR)))
@@ -7790,37 +8431,57 @@ gpuLogOobXidMessage_KERNEL
         koobLogMessageCommon(pGpu, pKernelOob, xid, len, (NvU8 *)message);
     }
 
-    // Exclude conditions that indicate issues with GSP communication.
-    if ((xid == GSP_ERROR) ||
-        (xid == GSP_RPC_TIMEOUT) ||
-        (xid == UNRECOVERABLE_ECC_ERROR_ESCAPE) ||
-        (xid == MEMORY_SUBSYSTEM_ERROR) ||
-        (xid == ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS) ||
-        API_GPU_IN_RESET_SANITY_CHECK(pGpu) ||
-        !pGpu->gspRmInitialized ||
-        pGpu->getProperty(pGpu, PDB_PROP_GPU_PREPARING_FULLCHIP_RESET) ||
-        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST) ||
-        !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_CONNECTED) ||
-        bGspFatalError)
+#if RMCFG_FEATURE_KERNEL_RM && RMCFG_MODULE_KERNEL_GSP
     {
-        return;
+        NvU32    gpuInstance = gpuGetInstance(pGpu);
+        GPU_MASK gpuMask = 0;
+        NvBool   bDeferToWorkItem;
+
+        //
+        // Skip best-effort GSP OOB XID logging if gpuInstance is out of range,
+        // in hardirq / Windows DIRQL, or when the caller does not own at least
+        // this GPU's subdevice lock (preventing NVBIT UB, spinlock/DIRQL
+        // hazards, and races with adapter teardown).
+        //
+        if ((gpuInstance >= NV_MAX_DEVICES) ||
+            osIsISR() ||
+            !rmGpuGroupLockIsOwner(gpuInstance, GPU_LOCK_GRP_SUBDEVICE, &gpuMask))
+        {
+            return;
+        }
+
+        if (!_gpuCanLogOobXidToGsp(pGpu, xid))
+        {
+            return;
+        }
+
+        //
+        // Defer the blocking GSP RPC to a workitem when invoked at raised IRQL
+        // (e.g. from softirq/timer callbacks such as kwdtWatchdogCallbackVblankRecovery),
+        // without owning the full GPU device lock (e.g. SLI subdevice lock), in
+        // broadcast mode, or while already polling for a GSP RPC response, as
+        // synchronous RPCs must neither sleep/yield in atomic context, acquire
+        // locks unexpectedly, nor poll recursively.
+        //
+        bDeferToWorkItem = osIsRaisedIRQL() ||
+                           !rmDeviceGpuLockIsOwner(gpuInstance) ||
+                           gpumgrGetBcEnabledStatus(pGpu) ||
+                           _gpuIsPollingForRpcResponse(pGpu);
+
+        if (bDeferToWorkItem)
+        {
+            _gpuDeferOobXidMessage(pGpu, xid, message, len);
+            return;
+        }
+
+        {
+            NV2080_CTRL_INTERNAL_LOG_OOB_XID_PARAMS params;
+
+            _gpuInitOobXidParams(&params, xid, message, len);
+            (void)_gpuSendOobXidRpc(pGpu, &params);
+        }
     }
-
-    // Copy the message into the RPC params, truncated to max RPC size, but
-    // always include a tailing NULL terminator.
-    len = NV_MIN(len, NV2080_INTERNAL_OOB_XID_MESSAGE_BUFFER_SIZE - 1);
-    params.message[len] = '\0';
-    params.xid = xid;
-    params.len = len;
-    portMemCopy(params.message, NV2080_INTERNAL_OOB_XID_MESSAGE_BUFFER_SIZE, message, len);
-
-    NV_CHECK_OK(status, LEVEL_ERROR,
-                pRmApi->Control(pRmApi,
-                                pGpu->hInternalClient,
-                                pGpu->hInternalSubdevice,
-                                NV2080_CTRL_CMD_INTERNAL_LOG_OOB_XID,
-                                &params,
-                                sizeof(params)));
+#endif // RMCFG_FEATURE_KERNEL_RM && RMCFG_MODULE_KERNEL_GSP
 }
 
 NvBool
