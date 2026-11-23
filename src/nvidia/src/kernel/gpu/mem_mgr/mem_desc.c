@@ -3897,6 +3897,42 @@ NvBool memdescGetFlag
     return !!(pMemDesc->_flags & flag);
 }
 
+#if 1
+/*!
+ * @brief Check device write protection on a descriptor and its backing descriptors.
+ *
+ * @param[in]  pMemDesc    Memory descriptor pointer
+ * @param[in]  pGpu        GPU whose backing descriptor is checked
+ *
+ * @returns whether memdesc is readonly
+ */
+NvBool
+memdescIsReadOnlyForDevice
+(
+    MEMORY_DESCRIPTOR *pMemDesc,
+    OBJGPU            *pGpu
+)
+{
+    for (; pMemDesc != NULL; pMemDesc = pMemDesc->_pParentDescriptor)
+    {
+        pMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
+        if (pMemDesc == NULL)
+        {
+            return NV_TRUE;
+        }
+
+        if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_DEVICE_READ_ONLY) ||
+            (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_EXT_PAGE_ARRAY_MEM) &&
+             memdescGetFlag(pMemDesc, MEMDESC_FLAGS_USER_READ_ONLY)))
+        {
+            return NV_TRUE;
+        }
+    }
+
+    return NV_FALSE;
+}
+#endif
+
 /*!
  *  @brief Set value of specified flag
  *

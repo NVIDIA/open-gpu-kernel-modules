@@ -249,6 +249,7 @@ struct KernelSMDebuggerSession {
 
 // Vtable with 30 per-class function pointers
 struct NVOC_VTABLE__KernelSMDebuggerSession {
+    NV_STATUS (*__ksmdbgssnControl_Prologue__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (gpures)
     NV_STATUS (*__ksmdbgssnInternalControlForward__)(struct KernelSMDebuggerSession * /*this*/, NvU32, void *, NvU32);  // virtual override (gpures) base (gpures)
     NvHandle (*__ksmdbgssnGetInternalObjectHandle__)(struct KernelSMDebuggerSession * /*this*/);  // virtual override (gpures) base (gpures)
     NV_STATUS (*__ksmdbgssnControl__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
@@ -263,7 +264,6 @@ struct NVOC_VTABLE__KernelSMDebuggerSession {
     NV_STATUS (*__ksmdbgssnGetMemoryMappingDescriptor__)(struct KernelSMDebuggerSession * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
     NV_STATUS (*__ksmdbgssnControlSerialization_Prologue__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
     void (*__ksmdbgssnControlSerialization_Epilogue__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__ksmdbgssnControl_Prologue__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
     void (*__ksmdbgssnControl_Epilogue__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
     NvBool (*__ksmdbgssnCanCopy__)(struct KernelSMDebuggerSession * /*this*/);  // virtual inherited (res) base (gpures)
     NV_STATUS (*__ksmdbgssnIsDuplicate__)(struct KernelSMDebuggerSession * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
@@ -432,6 +432,8 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugWriteBatchMemory(struct KernelSMDeb
 
 
 // Wrapper macros for halified functions
+#define ksmdbgssnControl_Prologue_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__nvoc_metadata_ptr->vtable.__ksmdbgssnControl_Prologue__
+#define ksmdbgssnControl_Prologue(pKernelSMDebuggerSession, pCallContext, pParams) ksmdbgssnControl_Prologue_DISPATCH(pKernelSMDebuggerSession, pCallContext, pParams)
 #define ksmdbgssnInternalControlForward_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__ksmdbgssnInternalControlForward__
 #define ksmdbgssnInternalControlForward(arg_this, command, pParams, size) ksmdbgssnInternalControlForward_DISPATCH(arg_this, command, pParams, size)
 #define ksmdbgssnGetInternalObjectHandle_FNPTR(arg_this) arg_this->__nvoc_metadata_ptr->vtable.__ksmdbgssnGetInternalObjectHandle__
@@ -463,8 +465,6 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugWriteBatchMemory(struct KernelSMDeb
 #define ksmdbgssnControlSerialization_Prologue(pResource, pCallContext, pParams) ksmdbgssnControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ksmdbgssnControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControlSerialization_Epilogue__
 #define ksmdbgssnControlSerialization_Epilogue(pResource, pCallContext, pParams) ksmdbgssnControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define ksmdbgssnControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Prologue__
-#define ksmdbgssnControl_Prologue(pResource, pCallContext, pParams) ksmdbgssnControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ksmdbgssnControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_metadata_ptr->vtable.__rmresControl_Epilogue__
 #define ksmdbgssnControl_Epilogue(pResource, pCallContext, pParams) ksmdbgssnControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define ksmdbgssnCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_metadata_ptr->vtable.__resCanCopy__
@@ -497,6 +497,10 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugWriteBatchMemory(struct KernelSMDeb
 #define ksmdbgssnGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) ksmdbgssnGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
+static inline NV_STATUS ksmdbgssnControl_Prologue_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pKernelSMDebuggerSession->__nvoc_metadata_ptr->vtable.__ksmdbgssnControl_Prologue__(pKernelSMDebuggerSession, pCallContext, pParams);
+}
+
 static inline NV_STATUS ksmdbgssnInternalControlForward_DISPATCH(struct KernelSMDebuggerSession *arg_this, NvU32 command, void *pParams, NvU32 size) {
     return arg_this->__nvoc_metadata_ptr->vtable.__ksmdbgssnInternalControlForward__(arg_this, command, pParams, size);
 }
@@ -555,10 +559,6 @@ static inline NV_STATUS ksmdbgssnControlSerialization_Prologue_DISPATCH(struct K
 
 static inline void ksmdbgssnControlSerialization_Epilogue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__nvoc_metadata_ptr->vtable.__ksmdbgssnControlSerialization_Epilogue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS ksmdbgssnControl_Prologue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__nvoc_metadata_ptr->vtable.__ksmdbgssnControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void ksmdbgssnControl_Epilogue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -622,6 +622,8 @@ static inline NV_STATUS ksmdbgssnGetOrAllocNotifShare_DISPATCH(struct KernelSMDe
 }
 
 // Virtual method declarations and/or inline definitions
+NV_STATUS ksmdbgssnControl_Prologue_IMPL(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
 NV_STATUS ksmdbgssnInternalControlForward_IMPL(struct KernelSMDebuggerSession *arg_this, NvU32 command, void *pParams, NvU32 size);
 
 NvHandle ksmdbgssnGetInternalObjectHandle_IMPL(struct KernelSMDebuggerSession *arg_this);

@@ -528,6 +528,11 @@ kchannelConstruct_IMPL
             &pKernelChannel->errorContextType,
             &pErrorContextRef,
             &pKernelChannel->errorContextOffset);
+#if 1
+        // vGPU notifier handles can refer to guest-only objects.
+        NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR,
+            notifierStatus != NV_ERR_INSUFFICIENT_PERMISSIONS, notifierStatus, cleanup);
+#endif
         NV_ASSERT_OK(notifierStatus);
         if (notifierStatus == NV_OK)
         {
@@ -554,6 +559,10 @@ kchannelConstruct_IMPL
             &pKernelChannel->eccErrorContextType,
             &pEccErrorContextRef,
             &pKernelChannel->eccErrorContextOffset);
+#if 1
+        NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR,
+            notifierStatus != NV_ERR_INSUFFICIENT_PERMISSIONS, notifierStatus, cleanup);
+#endif
         NV_ASSERT_OK(notifierStatus);
         if (notifierStatus == NV_OK)
         {
@@ -1962,7 +1971,11 @@ kchannelGetNotifierInfo
                 RES_GET_HANDLE(pDevice),
                 RES_GET_HANDLE(pMemory),
                 notifyGpuVA,
+#if 1
+                NVBIT(gpuGetInstance(pGpu)),
+#else
                 gpumgrGetDeviceGpuMask(pGpu->deviceInstance),
+#endif
                 &pDmaMappingInfo);
 
             if (!bFound)
@@ -1971,6 +1984,11 @@ kchannelGetNotifierInfo
                           "Cannot find DMA mapping for GPU_VA notifier\n");
                 return NV_ERR_INVALID_STATE;
             }
+
+#if 1
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                CliCheckDmaMappingAccess(pDmaMappingInfo, pGpu, NV_TRUE));
+#endif
 
             offset = notifyGpuVA - pDmaMappingInfo->DmaOffset;
             if (offset + sizeof(NOTIFICATION) > pDmaMappingInfo->pMemDesc->Size)
@@ -2004,6 +2022,10 @@ kchannelGetNotifierInfo
         }
         else
         {
+#if 1
+            NV_CHECK_OR_RETURN(LEVEL_ERROR, !memdescIsReadOnlyForDevice(pMemory->pMemDesc, pGpu),
+                               NV_ERR_INSUFFICIENT_PERMISSIONS);
+#endif
             *ppMemDesc = pMemory->pMemDesc;
             *pNotifierType = ERROR_NOTIFIER_TYPE_MEMORY;
             *ppNotifierRef = RES_GET_REF(pMemory);
@@ -2013,6 +2035,11 @@ kchannelGetNotifierInfo
 
     if (ctxdmaGetByHandle(pRsClient, hErrorContext, &pContextDma) == NV_OK)
     {
+#if 1
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+            !pContextDma->bReadOnly && !memdescIsReadOnlyForDevice(pContextDma->pMemDesc, pGpu),
+            NV_ERR_INSUFFICIENT_PERMISSIONS);
+#endif
         *ppMemDesc = pContextDma->pMemDesc;
         *pNotifierType = ERROR_NOTIFIER_TYPE_CTXDMA;
         *ppNotifierRef = RES_GET_REF(pContextDma);

@@ -1173,6 +1173,7 @@ void memdescSetDestroyCallbackList(MEMORY_DESCRIPTOR *pMemDesc, MEM_DESC_DESTROY
 NvU64 memdescGetGuestId(MEMORY_DESCRIPTOR *pMemDesc);
 void memdescSetGuestId(MEMORY_DESCRIPTOR *pMemDesc, NvU64 guestId);
 NvBool memdescGetFlag(MEMORY_DESCRIPTOR *pMemDesc, NvU64 flag);
+NvBool memdescIsReadOnlyForDevice(MEMORY_DESCRIPTOR *pMemDesc, OBJGPU *pGpu);
 void memdescSetFlag(MEMORY_DESCRIPTOR *pMemDesc, NvU64 flag, NvBool bValue);
 void *memdescGetMemData(MEMORY_DESCRIPTOR *pMemDesc);
 void memdescSetMemData(MEMORY_DESCRIPTOR *pMemDesc, void *pMemData, MEM_DATA_RELEASE_CALL_BACK *pMemDataReleaseCallback);

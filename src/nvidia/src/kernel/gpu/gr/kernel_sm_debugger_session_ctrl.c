@@ -76,6 +76,40 @@ _nv83deCtrlCmdFetchVAS(RsClient *pClient, NvU32 hChannel, OBJVASPACE **ppVASpace
     return NV_OK;
 }
 
+#if 1
+static NV_STATUS
+_nv83deCheckMemoryBacking
+(
+    MemoryManager     *pMemoryManager,
+    MEMORY_DESCRIPTOR *pMemDesc
+)
+{
+    MEMORY_DESCRIPTOR *pRootMemDesc;
+    NV_ADDRESS_SPACE addressSpace;
+    OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
+
+    pMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pMemDesc != NULL, NV_ERR_INVALID_OBJECT_BUFFER);
+
+    pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
+    addressSpace = memdescGetAddressSpace(pRootMemDesc);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        (addressSpace == ADDR_SYSMEM) || (addressSpace == ADDR_FBMEM),
+        NV_ERR_INVALID_OBJECT_BUFFER);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        (addressSpace != ADDR_FBMEM) || (pRootMemDesc->pGpu == pGpu),
+        NV_ERR_INVALID_OBJECT_PARENT);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        memdescGetPhysAddr(pRootMemDesc, AT_GPU, 0) != memmgrGetInvalidOffset_HAL(pGpu, pMemoryManager),
+        NV_ERR_INVALID_OBJECT_BUFFER);
+
+    return NV_OK;
+}
+#endif
+
 static NV_STATUS
 _nv8deCtrlCmdReadWriteSurface
 (
@@ -114,10 +148,24 @@ _nv8deCtrlCmdReadWriteSurface
             NvU64 curSize = bufSize;
 
             // The memory has to be mapped in a single in a single call by the same client
+#if 1
+            NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                CliGetDmaMappingInfo(pClient, RES_GET_PARENT_HANDLE(pKernelSMDebuggerSession),  pKernelChannel->hVASpace,
+                                     virtAddr, NVBIT(gpuGetInstance(pGpu)), &pDmaMappingInfo),
+                NV_ERR_INVALID_ARGUMENT);
+#else
             NV_CHECK_OR_RETURN(LEVEL_ERROR,
                 CliGetDmaMappingInfo(pClient, RES_GET_PARENT_HANDLE(pKernelSMDebuggerSession),  pKernelChannel->hVASpace,
                                      virtAddr, gpumgrGetDeviceGpuMask(pGpu->deviceInstance), &pDmaMappingInfo),
                 NV_ERR_INVALID_ARGUMENT);
+#endif
+
+#if 1
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                _nv83deCheckMemoryBacking(pMemoryManager, pDmaMappingInfo->pMemDesc));
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                CliCheckDmaMappingAccess(pDmaMappingInfo, pGpu, bWrite));
+#endif
 
             NvU64 offsetInMapping = virtAddr - pDmaMappingInfo->DmaOffset;
             // Validate offset is within mapping bounds to prevent integer underflow
@@ -447,6 +495,14 @@ _nv83deCtrlCmdDebugAccessMemory
     pMemDesc = pMemory->pMemDesc;
     if (pMemDesc == NULL)
         return NV_ERR_INVALID_STATE;
+
+#if 1
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        _nv83deCheckMemoryBacking(GPU_GET_MEMORY_MANAGER(pTargetGpu), pMemDesc));
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        (accessType != GRDBG_MEM_ACCESS_TYPE_WRITE) || !memdescIsReadOnlyForDevice(pMemDesc, pTargetGpu),
+        NV_ERR_INSUFFICIENT_PERMISSIONS);
+#endif
 
     // Sanity-check the requested size
     if ((length == 0) || (!portSafeAddU64(offset, length, &totalLength)))

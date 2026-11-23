@@ -125,6 +125,37 @@ CliUpdateMemoryMappingInfo
 //                              Device Memory Mappings
 // ****************************************************************************
 
+
+#if 1
+//
+// CliCheckDmaMappingAccess - Preserve DMA mapping permissions when RM accesses the backing directly
+//
+static inline NV_STATUS
+CliCheckDmaMappingAccess
+(
+    CLI_DMA_MAPPING_INFO *pDmaMappingInfo,
+    OBJGPU              *pGpu,
+    NvBool               bWrite
+)
+{
+    if (bWrite)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+            !memdescIsReadOnlyForDevice(pDmaMappingInfo->pMemDesc, pGpu) &&
+            !FLD_TEST_DRF(OS46, _FLAGS, _ACCESS, _READ_ONLY, pDmaMappingInfo->Flags),
+            NV_ERR_INSUFFICIENT_PERMISSIONS);
+    }
+    else
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+            !FLD_TEST_DRF(OS46, _FLAGS, _ACCESS, _WRITE_ONLY, pDmaMappingInfo->Flags),
+            NV_ERR_INSUFFICIENT_PERMISSIONS);
+    }
+
+    return NV_OK;
+}
+#endif
+
 //
 // CliUpdateDeviceMemoryMapping - Fill in RsCpuMapping fields for device memory mappings
 //
