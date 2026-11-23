@@ -57,6 +57,7 @@ NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR en
 
     pKCe->bIsAutoConfigEnabled = NV_TRUE;
     pKCe->bUseGen4Mapping = NV_FALSE;
+    pKCe->bUseGen5Mapping = NV_FALSE;
     pKCe->ceCapsMask = 0;
     NvU32 data32 = 0;
     if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CE_ENABLE_AUTO_CONFIG, &data32) == NV_OK) &&
@@ -71,6 +72,12 @@ NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR en
     {
         NV_PRINTF(LEVEL_INFO, "GEN4 mapping will use a HSHUB PCE (if available) for PCIe!\n");
         pKCe->bUseGen4Mapping = NV_TRUE;
+    }
+
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CE_USE_GEN5_MAPPING, &data32) == NV_OK) &&
+        (data32 == NV_REG_STR_RM_CE_USE_GEN5_MAPPING_TRUE))
+    {
+        pKCe->bUseGen5Mapping = NV_TRUE;
     }
 
     // OBJCE::isPresent would compute this first
@@ -1014,6 +1021,11 @@ kceGetPceConfigForLceType_IMPL
         else
         {
             pceConfigParams.metadataForLceType = UNKNOWN_PCIE_GEN_SPEED;
+        }
+
+        if ((pceConfigParams.metadataForLceType == UNKNOWN_PCIE_GEN_SPEED) && pKCe->bUseGen5Mapping)
+        {
+            pceConfigParams.metadataForLceType = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN5;
         }
     }
 
