@@ -381,6 +381,7 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_QUERY_EGM_STATE,              uvm_test_query_egm_state);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_LAZY_FREE_SET_DELAY,      uvm_test_pmm_lazy_free_set_delay);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_EVICT_TEMP_PINNED,        uvm_test_pmm_evict_temp_pinned);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_INJECT_MIGRATION_EVENT,       uvm_test_inject_migration_event);
     }
 
     return -EINVAL;

@@ -943,6 +943,10 @@ struct uvm_gpu_struct
     // Placeholder for per-GPU performance heuristics information
     uvm_perf_module_data_desc_t perf_modules_data[UVM_PERF_MODULE_TYPE_COUNT];
 
+    // Dynamic Migration Threshold state. NULL when the feature is disabled or
+    // the GPU is not eligible.
+    uvm_perf_dynamic_threshold_t *dynamic_threshold;
+
     // Force pushbuffer's GPU VA to be >= 1TB; used only for testing purposes.
     bool uvm_test_force_upper_pushbuffer_segment;
 

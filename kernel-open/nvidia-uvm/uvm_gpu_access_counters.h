@@ -93,4 +93,13 @@ NV_STATUS uvm_test_set_ignore_access_counters(UVM_TEST_SET_IGNORE_ACCESS_COUNTER
 NV_STATUS uvm_test_query_access_counters(UVM_TEST_QUERY_ACCESS_COUNTERS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_drain_access_counters(UVM_TEST_DRAIN_ACCESS_COUNTERS_PARAMS *params, struct file *filp);
 
+// Return the threshold configured when the module was loaded.
+NvU32 uvm_gpu_access_counters_get_default_threshold(void);
+
+// Update the access-counter threshold for the given GPU without clearing
+// counters or queued notifications. Return NV_ERR_INVALID_STATE if no
+// notification buffer of the GPU is active, and NV_ERR_IN_USE if an
+// access-counter test owns the configuration.
+NV_STATUS uvm_gpu_access_counters_reconfigure_threshold_gpu(uvm_gpu_t *gpu, NvU32 new_threshold);
+
 #endif // __UVM_GPU_ACCESS_COUNTERS_H__

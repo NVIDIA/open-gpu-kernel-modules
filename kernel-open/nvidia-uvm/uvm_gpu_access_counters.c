@@ -2410,8 +2410,109 @@ NV_STATUS uvm_test_query_access_counters(UVM_TEST_QUERY_ACCESS_COUNTERS_PARAMS *
     params->num_notification_buffers = gpu->parent->rm_info.accessCntrBufferCount;
     params->num_notification_entries = buffer_size / gpu->parent->access_counter_buffer_hal->entry_size(gpu->parent);
 
+    // All notification buffers of a GPU are enabled together and are expected
+    // to use the same threshold. Report the threshold of buffer 0 and check
+    // that the other enabled buffers match it.
+    params->threshold = 0;
+    uvm_mutex_lock(&gpu->parent->access_counters.enablement_lock);
+    for (index = 0; index < gpu->parent->rm_info.accessCntrBufferCount; index++) {
+        uvm_access_counter_buffer_t *buffer;
+
+        buffer = parent_gpu_access_counter_buffer_get(gpu->parent, index);
+
+        uvm_access_counters_isr_lock(buffer);
+        if (gpu->parent->isr.access_counters[index].handling_ref_count != 0) {
+            if (index == 0)
+                params->threshold = buffer->current_config.threshold;
+            else if (params->threshold != buffer->current_config.threshold)
+                status = NV_ERR_INVALID_STATE;
+        }
+        uvm_access_counters_isr_unlock(buffer);
+    }
+    uvm_mutex_unlock(&gpu->parent->access_counters.enablement_lock);
+
 exit_release_gpu:
     uvm_gpu_release(gpu);
 
+    return status;
+}
+
+NvU32 uvm_gpu_access_counters_get_default_threshold(void)
+{
+    return g_default_config.threshold;
+}
+
+NV_STATUS uvm_gpu_access_counters_reconfigure_threshold_gpu(uvm_gpu_t *gpu, NvU32 new_threshold)
+{
+    uvm_parent_gpu_t *parent_gpu;
+    NvU32 index;
+    NV_STATUS status = NV_ERR_INVALID_STATE;
+
+    if (!gpu)
+        return NV_ERR_INVALID_DEVICE;
+    if (new_threshold < UVM_PERF_ACCESS_COUNTER_THRESHOLD_MIN ||
+        new_threshold > UVM_PERF_ACCESS_COUNTER_THRESHOLD_MAX)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    parent_gpu = gpu->parent;
+    if (!parent_gpu->access_counters_supported || !parent_gpu->access_counters.buffer ||
+        parent_gpu->smc.enabled)
+        return NV_ERR_NOT_SUPPORTED;
+
+    uvm_mutex_lock(&parent_gpu->access_counters.enablement_lock);
+
+    // A multi-die GPU may expose multiple access-counter buffers.
+    for (index = 0; index < parent_gpu->rm_info.accessCntrBufferCount; ++index) {
+        uvm_access_counter_buffer_t *buffer;
+
+        buffer = parent_gpu_access_counter_buffer_get(parent_gpu, index);
+
+        uvm_access_counters_isr_lock(buffer);
+        // Skip inactive notification buffers.
+        if (parent_gpu->isr.access_counters[index].handling_ref_count == 0) {
+            uvm_access_counters_isr_unlock(buffer);
+            continue;
+        }
+
+        // Leave the configuration alone while an access-counter test owns it.
+        if (buffer->test.reconfiguration_owner) {
+            uvm_access_counters_isr_unlock(buffer);
+            status = NV_ERR_IN_USE;
+            break;
+        }
+
+        status = NV_OK;
+        if (buffer->current_config.threshold != new_threshold) {
+            UvmGpuAccessCntrConfig config = {};
+
+            // Reconfigure without disabling. Repeated enable calls are safe.
+            // UVM ownership, counts, and queued notifications are preserved.
+            config.granularity = buffer->current_config.rm.granularity;
+            config.threshold = new_threshold;
+            status = uvm_rm_locked_call(nvUvmInterfaceEnableAccessCntr(parent_gpu->rm_device,
+                                                                      &buffer->rm_info,
+                                                                      &config));
+            if (status == NV_OK) {
+                buffer->current_config.threshold = new_threshold;
+            }
+            else {
+                // Keep servicing notifications after a failed update. Mark
+                // the current threshold as unknown (0) so the next update
+                // retries.
+                buffer->current_config.threshold = 0;
+                UVM_ERR_PRINT_ALWAYS_RL("Failed to update access-counter threshold: %s, GPU %s, "
+                                        "buffer %u, threshold %u\n",
+                                        nvstatusToString(status),
+                                        uvm_gpu_name(gpu),
+                                        index,
+                                        new_threshold);
+            }
+        }
+        uvm_access_counters_isr_unlock(buffer);
+        if (status != NV_OK)
+            break;
+    }
+
+    uvm_mutex_unlock(&parent_gpu->access_counters.enablement_lock);
     return status;
 }

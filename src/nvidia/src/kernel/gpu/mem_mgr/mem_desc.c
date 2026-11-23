@@ -3499,6 +3499,34 @@ NvBool memdescGetFlag
     return !!(pMemDesc->_flags & flag);
 }
 
+#if 1
+/*!
+ * @brief Check device write protection on a descriptor and its backing descriptors.
+ *
+ * @param[in]  pMemDesc    Memory descriptor pointer
+ *
+ * @returns whether memdesc is readonly
+ */
+NvBool
+memdescIsReadOnlyForDevice
+(
+    MEMORY_DESCRIPTOR *pMemDesc
+)
+{
+    for (; pMemDesc != NULL; pMemDesc = pMemDesc->_pParentDescriptor)
+    {
+        if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_DEVICE_READ_ONLY) ||
+            (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_EXT_PAGE_ARRAY_MEM) &&
+             memdescGetFlag(pMemDesc, MEMDESC_FLAGS_USER_READ_ONLY)))
+        {
+            return NV_TRUE;
+        }
+    }
+
+    return NV_FALSE;
+}
+#endif
+
 /*!
  *  @brief Set value of specified flag
  *

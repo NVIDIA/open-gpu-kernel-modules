@@ -26,6 +26,7 @@
 #include "uvm_perf_thrashing.h"
 #include "uvm_perf_prefetch.h"
 #include "uvm_gpu_access_counters.h"
+#include "uvm_perf_dynamic_threshold.h"
 #include "uvm_va_space.h"
 
 NV_STATUS uvm_perf_heuristics_init(void)
@@ -44,6 +45,10 @@ NV_STATUS uvm_perf_heuristics_init(void)
     if (status != NV_OK)
         return status;
 
+    status = uvm_perf_dynamic_threshold_init();
+    if (status != NV_OK)
+        return status;
+
     return NV_OK;
 }
 
@@ -55,15 +60,22 @@ void uvm_perf_heuristics_exit(void)
 
 NV_STATUS uvm_perf_heuristics_add_gpu(uvm_gpu_t *gpu)
 {
+    NV_STATUS status;
+
     uvm_assert_mutex_locked(&g_uvm_global.global_lock);
 
-    return uvm_perf_thrashing_add_gpu(gpu);
+    status = uvm_perf_thrashing_add_gpu(gpu);
+    if (status != NV_OK)
+        return status;
+
+    return uvm_perf_dynamic_threshold_add_gpu(gpu);
 }
 
 void uvm_perf_heuristics_remove_gpu(uvm_gpu_t *gpu)
 {
     uvm_assert_mutex_locked(&g_uvm_global.global_lock);
 
+    uvm_perf_dynamic_threshold_remove_gpu(gpu);
     uvm_perf_thrashing_remove_gpu(gpu);
 }
 
@@ -75,6 +87,10 @@ NV_STATUS uvm_perf_heuristics_load(uvm_va_space_t *va_space)
     if (status != NV_OK)
         return status;
     status = uvm_perf_access_counters_load(va_space);
+    if (status != NV_OK)
+        return status;
+
+    status = uvm_perf_dynamic_threshold_load(va_space);
     if (status != NV_OK)
         return status;
 

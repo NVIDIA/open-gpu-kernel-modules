@@ -135,6 +135,7 @@ NV_STATUS uvm_test_pmm_lazy_free_set_delay(UVM_TEST_PMM_LAZY_FREE_SET_DELAY_PARA
 NV_STATUS uvm_test_pmm_evict_temp_pinned(UVM_TEST_PMM_EVICT_TEMP_PINNED_PARAMS *params, struct file *filp);
 
 NV_STATUS uvm_test_perf_events_sanity(UVM_TEST_PERF_EVENTS_SANITY_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_inject_migration_event(UVM_TEST_INJECT_MIGRATION_EVENT_PARAMS *params, struct file *filp);
 
 NV_STATUS uvm_test_perf_module_sanity(UVM_TEST_PERF_MODULE_SANITY_PARAMS *params, struct file *filp);
 

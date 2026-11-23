@@ -79,6 +79,7 @@ typedef struct uvm_thread_context_struct uvm_thread_context_t;
 typedef struct uvm_thread_context_wrapper_struct uvm_thread_context_wrapper_t;
 
 typedef struct uvm_perf_module_struct uvm_perf_module_t;
+typedef struct uvm_perf_dynamic_threshold_struct uvm_perf_dynamic_threshold_t;
 
 typedef struct uvm_page_table_range_vec_struct uvm_page_table_range_vec_t;
 typedef struct uvm_page_table_range_struct uvm_page_table_range_t;

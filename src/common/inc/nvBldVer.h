@@ -43,11 +43,11 @@
 #endif
 
 #if defined(NV_LINUX) || defined(NV_BSD) || defined(NV_SUNOS)
-#define NV_BUILD_BRANCH_VERSION         "rel/gpu_drv/r620/r621_02-172"
-#define NV_BUILD_CHANGELIST_NUM         (39260241)
+#define NV_BUILD_BRANCH_VERSION         "rel/gpu_drv/r620/r621_02-176"
+#define NV_BUILD_CHANGELIST_NUM         (39357055)
 #define NV_BUILD_TYPE                   "Official"
-#define NV_BUILD_NAME                   "rel/gpu_drv/r620/r621_02-172"
-#define NV_LAST_OFFICIAL_CHANGELIST_NUM (39260241)
+#define NV_BUILD_NAME                   "rel/gpu_drv/r620/r621_02-176"
+#define NV_LAST_OFFICIAL_CHANGELIST_NUM (39357055)
 
 #else     /* Windows builds */
 #define NV_BUILD_BRANCH_VERSION         "r621_02-4"

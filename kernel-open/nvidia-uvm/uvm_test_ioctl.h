@@ -1515,6 +1515,10 @@ typedef struct
     NvProcessorUuid gpu_uuid;               // In
     NvU8 num_notification_buffers;          // Out
     NvU32 num_notification_entries;         // Out
+    NvU32 threshold;                        // Out: current threshold of the
+                                            // enabled notification buffers,
+                                            // 0 if none is enabled or the
+                                            // last update failed
 
     NV_STATUS rmStatus;                     // Out
 } UVM_TEST_QUERY_ACCESS_COUNTERS_PARAMS;
@@ -1660,6 +1664,27 @@ typedef struct
     NvProcessorUuid gpu_uuid;   // In
     NV_STATUS       rmStatus;   // Out
 } UVM_TEST_PMM_EVICT_TEMP_PINNED_PARAMS;
+
+// Report a synthetic CPU-to-GPU migration event. Nothing is actually
+// migrated. Tests use this to see how the dynamic threshold adjustment reacts
+// to different kinds of migration traffic. cause is one of:
+//  UvmEventMigrationCauseAccessCounters: access counter migration.
+//  UvmEventMigrationCausePrefetch: prefetch issued while servicing access
+//                                  counter notifications.
+//  UvmEventMigrationCauseCoherence: migration caused by a page fault.
+//
+// Error returns:
+// NV_ERR_NOT_SUPPORTED
+//  - The dynamic threshold adjustment is disabled, or access counter
+//    migrations are disabled in the VA space.
+#define UVM_TEST_INJECT_MIGRATION_EVENT                  UVM_TEST_IOCTL_BASE(122)
+typedef struct
+{
+    NvProcessorUuid gpu_uuid;                   // In
+    NvU64           bytes NV_ALIGN_BYTES(8);    // In
+    NvU32           cause;                      // In: UvmEventMigrationCause
+    NV_STATUS       rmStatus;                   // Out: set by the ioctl dispatcher
+} UVM_TEST_INJECT_MIGRATION_EVENT_PARAMS;
 
 #ifdef __cplusplus
 }

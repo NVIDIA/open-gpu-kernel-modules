@@ -85,6 +85,7 @@ NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_hmm.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_perf_heuristics.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_perf_thrashing.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_perf_prefetch.c
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_perf_dynamic_threshold.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_ats.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_ats_faults.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_ats_sva.c
