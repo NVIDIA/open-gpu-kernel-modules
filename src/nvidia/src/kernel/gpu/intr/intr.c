@@ -96,6 +96,26 @@ static void _stuckIntrNewGeneration(void)
     }
 }
 
+//
+// Remove from pEngines the engines that have been declared stuck in the
+// current generation.  Callers that keep servicing for as long as anything is
+// pending use this to avoid spinning on an interrupt its handler cannot clear.
+//
+static void _intrClearStuckEngines(Intr *pIntr, MC_ENGINE_BITVECTOR *pEngines)
+{
+    NvU32 engineIdx;
+
+    FOR_EACH_IN_BITVECTOR(pEngines, engineIdx)
+    {
+        if ((stuckIntr[engineIdx].intrGeneration == stuckIntrGeneration) &&
+            (stuckIntr[engineIdx].intrCount > pIntr->intrStuckThreshold))
+        {
+            bitVectorClr(pEngines, engineIdx);
+        }
+    }
+    FOR_EACH_IN_BITVECTOR_END();
+}
+
 NV_STATUS
 intrGetSubtreeRange_IMPL
 (
@@ -1424,6 +1444,14 @@ void intrProcessDPCQueue_IMPL
             // Process all exceptions as required
             //
             intrGetPendingStall_HAL(pGpu, pIntr, &pendingEngines, NULL /* threadstate */);
+
+            //
+            // _intrServiceStallExactList() has given up on any engine it
+            // declared stuck.  Do not queue such an engine again, or this
+            // loop never terminates while its interrupt stays pending.
+            //
+            _intrClearStuckEngines(pIntr, &pendingEngines);
+
             if (!bitVectorTestAllCleared(&pendingEngines))
             {
                 nextEngine = bitVectorCountTrailingZeros(&pendingEngines);
@@ -1481,6 +1509,38 @@ intrReenableIntrMask_IMPL
     }
 }
 
+/*!
+ * @brief Mask the display interrupt after it has been declared stuck.
+ *
+ * Used instead of intrReenableIntrMask() for a display interrupt that its
+ * handler cannot clear.  The interrupt is enabled again the next time the
+ * GPUs lock is acquired outside of the ISR.
+ *
+ * @param[in]  pGpu         OBJGPU pointer
+ * @param[in]  pIntr        Intr pointer
+ */
+static void
+_intrMaskStuckDisplayIntr
+(
+    OBJGPU            *pGpu,
+    Intr              *pIntr
+)
+{
+    //
+    // Without intr mask locking nothing would enable the interrupt again, so
+    // only mask it when that mechanism is in use.
+    //
+    if (pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING) &&
+        pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_TOP_EN_FOR_VBLANK_HANDLING))
+    {
+        NvU64 oldIrql = rmIntrMaskLockAcquire(pGpu);
+
+        intrSetDisplayInterruptEnable_HAL(pGpu, pIntr, NV_FALSE, NULL /* threadstate */);
+
+        rmIntrMaskLockRelease(pGpu, oldIrql);
+    }
+}
+
 static void
 _intrLogLongRunningInterrupts(Intr *pIntr)
 {
@@ -1517,6 +1577,7 @@ _intrServiceStallExactList
     NvU32  intr;
     NvBool bHandled;
     NvBool bIntrStuck = NV_FALSE;
+    NvBool bDispStuck = NV_FALSE;
     NvBool bPending   = NV_FALSE;
     InterruptTable    *pIntrTable;
     InterruptTableIter iter;
@@ -1576,6 +1637,11 @@ _intrServiceStallExactList
                                         "Stuck interrupt detected for mcEngine %u\n",
                                         engineIdx);
                             bIntrStuck = NV_TRUE;
+                            if ((engineIdx == MC_ENGINE_IDX_DISP) ||
+                                (engineIdx == MC_ENGINE_IDX_DISP_LOW))
+                            {
+                                bDispStuck = NV_TRUE;
+                            }
                             NV_ASSERT(0);
                         }
                     }
@@ -1595,7 +1661,20 @@ _intrServiceStallExactList
 
     if (bitVectorTest(pEngines, MC_ENGINE_IDX_DISP) || bitVectorTest(pEngines, MC_ENGINE_IDX_DISP_LOW))
     {
-        intrReenableIntrMask(pGpu, pIntr);
+        if (bDispStuck)
+        {
+            //
+            // The display handler keeps returning the same pending value
+            // without clearing it.  Re-arming the interrupt here makes it
+            // fire again as soon as we return, so that bailing out below
+            // achieves nothing.  Leave it masked instead.
+            //
+            _intrMaskStuckDisplayIntr(pGpu, pIntr);
+        }
+        else
+        {
+            intrReenableIntrMask(pGpu, pIntr);
+        }
     }
 
     if (bIntrStuck)
