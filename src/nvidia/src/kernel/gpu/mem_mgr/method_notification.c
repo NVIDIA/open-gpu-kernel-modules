@@ -101,6 +101,12 @@ static NV_STATUS notifyWriteNotifier
         return status;
     }
 
+#if 1
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        !NotifyXlate->bReadOnly && !memdescIsReadOnlyForDevice(NotifyXlate->pMemDesc, pGpu),
+        NV_ERR_INSUFFICIENT_PERMISSIONS);
+#endif
+
     notifyFillNOTIFICATION(pGpu, pNotifyBuffer, Info32, Info16,
                            CompletionStatus, TimeSupplied, Time);
     return status;
@@ -313,13 +319,22 @@ NV_STATUS notifyFillNotifierGPUVATimestamp
                                   RES_GET_HANDLE(pDevice),
                                   hMemoryCtx,
                                   notifyGPUVA,
+#if 1
+                                  NVBIT(gpuGetInstance(pGpu)),
+#else
                                   gpumgrGetDeviceGpuMask(pGpu->deviceInstance),
+#endif
                                   &pDmaMappingInfo);
     if (!bFound)
     {
         NV_PRINTF(LEVEL_ERROR, "Can't find mapping; notifier not written\n");
         return NV_ERR_INVALID_ADDRESS;
     }
+
+#if 1
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        CliCheckDmaMappingAccess(pDmaMappingInfo, pGpu, NV_TRUE));
+#endif
 
     offset = notifyGPUVA - pDmaMappingInfo->DmaOffset;
     if ((offset + sizeof(NOTIFICATION)) > pDmaMappingInfo->pMemDesc->Size)
@@ -444,6 +459,11 @@ NV_STATUS notifyFillNotifierMemoryTimestamp
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     TRANSFER_SURFACE surf = {0};
+
+#if 1
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, !memdescIsReadOnlyForDevice(pMemory->pMemDesc, pGpu),
+                       NV_ERR_INSUFFICIENT_PERMISSIONS);
+#endif
 
     //
     // Check if there's already a CPU mapping we can use. If not, attempt to
@@ -582,13 +602,22 @@ NV_STATUS semaphoreFillGPUVATimestamp
                                   RES_GET_HANDLE(pDevice),
                                   hMemCtx,
                                   semaphoreGPUVA,
+#if 1
+                                  NVBIT(gpuGetInstance(pGpu)),
+#else
                                   gpumgrGetDeviceGpuMask(pGpu->deviceInstance),
+#endif
                                   &pDmaMappingInfo);
     if (!bFound)
     {
         NV_PRINTF(LEVEL_ERROR, "Can't find mapping; semaphore not released\n");
         return NV_ERR_INVALID_ADDRESS;
     }
+
+#if 1
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        CliCheckDmaMappingAccess(pDmaMappingInfo, pGpu, NV_TRUE));
+#endif
 
     offset = semaphoreGPUVA - pDmaMappingInfo->DmaOffset;
     if ((offset + sizeof(NvGpuSemaphore)) > pDmaMappingInfo->pMemDesc->Size)

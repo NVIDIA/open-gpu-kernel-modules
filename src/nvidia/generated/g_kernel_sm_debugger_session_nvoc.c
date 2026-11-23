@@ -273,6 +273,7 @@ struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struc
 void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super
 NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
 NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NV_STATUS __nvoc_down_thunk_KernelSMDebuggerSession_rmresControl_Prologue(struct RmResource *pKernelSMDebuggerSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
 NV_STATUS __nvoc_down_thunk_KernelSMDebuggerSession_gpuresInternalControlForward(struct GpuResource *arg_this, NvU32 command, void *pParams, NvU32 size);    // this
 NvHandle __nvoc_down_thunk_KernelSMDebuggerSession_gpuresGetInternalObjectHandle(struct GpuResource *arg_this);    // this
 
@@ -318,7 +319,6 @@ NV_STATUS __nvoc_up_thunk_RmResource_ksmdbgssnCheckMemInterUnmap(struct KernelSM
 NV_STATUS __nvoc_up_thunk_RmResource_ksmdbgssnGetMemoryMappingDescriptor(struct KernelSMDebuggerSession *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
 NV_STATUS __nvoc_up_thunk_RmResource_ksmdbgssnControlSerialization_Prologue(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
 void __nvoc_up_thunk_RmResource_ksmdbgssnControlSerialization_Epilogue(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
-NV_STATUS __nvoc_up_thunk_RmResource_ksmdbgssnControl_Prologue(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
 void __nvoc_up_thunk_RmResource_ksmdbgssnControl_Epilogue(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
 NvBool __nvoc_up_thunk_RsResource_ksmdbgssnCanCopy(struct KernelSMDebuggerSession *pResource);    // this
 NV_STATUS __nvoc_up_thunk_RsResource_ksmdbgssnIsDuplicate(struct KernelSMDebuggerSession *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
@@ -853,6 +853,10 @@ static const struct NVOC_METADATA__KernelSMDebuggerSession __nvoc_metadata__Kern
     .metadata__Notifier.metadata__INotifier.rtti.dtor      = &__nvoc_destructFromBase,
     .metadata__Notifier.metadata__INotifier.rtti.offset    = NV_OFFSETOF(KernelSMDebuggerSession, __nvoc_base_Notifier.__nvoc_base_INotifier),
 
+    .vtable.__ksmdbgssnControl_Prologue__ = &ksmdbgssnControl_Prologue_IMPL,    // virtual override (res) base (gpures)
+    .metadata__GpuResource.vtable.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Prologue__ = &__nvoc_down_thunk_KernelSMDebuggerSession_rmresControl_Prologue,    // virtual override (res) base (res)
+    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
     .vtable.__ksmdbgssnInternalControlForward__ = &ksmdbgssnInternalControlForward_IMPL,    // virtual override (gpures) base (gpures)
     .metadata__GpuResource.vtable.__gpuresInternalControlForward__ = &__nvoc_down_thunk_KernelSMDebuggerSession_gpuresInternalControlForward,    // virtual
     .vtable.__ksmdbgssnGetInternalObjectHandle__ = &ksmdbgssnGetInternalObjectHandle_IMPL,    // virtual override (gpures) base (gpures)
@@ -898,10 +902,6 @@ static const struct NVOC_METADATA__KernelSMDebuggerSession __nvoc_metadata__Kern
     .metadata__GpuResource.vtable.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
     .metadata__GpuResource.metadata__RmResource.vtable.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
     .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
-    .vtable.__ksmdbgssnControl_Prologue__ = &__nvoc_up_thunk_RmResource_ksmdbgssnControl_Prologue,    // virtual inherited (rmres) base (gpures)
-    .metadata__GpuResource.vtable.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
-    .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
-    .metadata__GpuResource.metadata__RmResource.metadata__RsResource.vtable.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
     .vtable.__ksmdbgssnControl_Epilogue__ = &__nvoc_up_thunk_RmResource_ksmdbgssnControl_Epilogue,    // virtual inherited (rmres) base (gpures)
     .metadata__GpuResource.vtable.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
     .metadata__GpuResource.metadata__RmResource.vtable.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
@@ -975,7 +975,12 @@ const struct NVOC_CASTINFO __nvoc_castinfo__KernelSMDebuggerSession = {
     }
 };
 
-// 2 down-thunk(s) defined to bridge methods in KernelSMDebuggerSession from superclasses
+// 3 down-thunk(s) defined to bridge methods in KernelSMDebuggerSession from superclasses
+
+// ksmdbgssnControl_Prologue: virtual override (res) base (gpures)
+NV_STATUS __nvoc_down_thunk_KernelSMDebuggerSession_rmresControl_Prologue(struct RmResource *pKernelSMDebuggerSession, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return ksmdbgssnControl_Prologue((struct KernelSMDebuggerSession *)(((unsigned char *) pKernelSMDebuggerSession) - NV_OFFSETOF(KernelSMDebuggerSession, __nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
+}
 
 // ksmdbgssnInternalControlForward: virtual override (gpures) base (gpures)
 NV_STATUS __nvoc_down_thunk_KernelSMDebuggerSession_gpuresInternalControlForward(struct GpuResource *arg_this, NvU32 command, void *pParams, NvU32 size) {
@@ -988,7 +993,7 @@ NvHandle __nvoc_down_thunk_KernelSMDebuggerSession_gpuresGetInternalObjectHandle
 }
 
 
-// 28 up-thunk(s) defined to bridge methods in KernelSMDebuggerSession to superclasses
+// 27 up-thunk(s) defined to bridge methods in KernelSMDebuggerSession to superclasses
 
 // ksmdbgssnControl: virtual inherited (gpures) base (gpures)
 NV_STATUS __nvoc_up_thunk_GpuResource_ksmdbgssnControl(struct KernelSMDebuggerSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -1048,11 +1053,6 @@ NV_STATUS __nvoc_up_thunk_RmResource_ksmdbgssnControlSerialization_Prologue(stru
 // ksmdbgssnControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
 void __nvoc_up_thunk_RmResource_ksmdbgssnControlSerialization_Epilogue(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(KernelSMDebuggerSession, __nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
-}
-
-// ksmdbgssnControl_Prologue: virtual inherited (rmres) base (gpures)
-NV_STATUS __nvoc_up_thunk_RmResource_ksmdbgssnControl_Prologue(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + NV_OFFSETOF(KernelSMDebuggerSession, __nvoc_base_GpuResource.__nvoc_base_RmResource)), pCallContext, pParams);
 }
 
 // ksmdbgssnControl_Epilogue: virtual inherited (rmres) base (gpures)

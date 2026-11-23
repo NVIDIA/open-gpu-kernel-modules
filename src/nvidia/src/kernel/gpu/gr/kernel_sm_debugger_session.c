@@ -28,6 +28,7 @@
 #include "kernel/core/locks.h"
 #include "kernel/gpu/gr/kernel_sm_debugger_session.h"
 #include "kernel/gpu/gr/kernel_graphics_object.h"
+#include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/subdevice/subdevice.h"
 #include "kernel/gpu/device/device.h"
@@ -511,6 +512,111 @@ ksmdbgssnFreeCallback_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
 
     _ksmdbgssnCleanup(pKernelSMDebuggerSession, pGpu, NV_TRUE);
+}
+
+#if 1
+static NV_STATUS
+_ksmdbgssnCheckTargetChannelAccess
+(
+    KernelSMDebuggerSession *pKernelSMDebuggerSession,
+    CALL_CONTEXT           *pCallContext,
+    NvHandle                hTargetChannel
+)
+{
+    RsClient *pAppClient;
+    KernelChannel *pTargetChannel;
+    KernelChannel *pSessionChannel;
+    KernelGraphicsContext *pTargetContext;
+    KernelGraphicsContext *pSessionContext;
+    RsIndexIter childIt;
+    RS_ACCESS_MASK debugAccessMask;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
+
+    if ((hTargetChannel == NV01_NULL_OBJECT) ||
+        (hTargetChannel == pKernelSMDebuggerSession->hChannel))
+    {
+        return NV_OK;
+    }
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        serverGetClientUnderLock(&g_resServ, pKernelSMDebuggerSession->hChannelClient, &pAppClient));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        CliGetKernelChannel(pAppClient, hTargetChannel, &pTargetChannel));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        CliGetKernelChannel(pAppClient, pKernelSMDebuggerSession->hChannel, &pSessionChannel));
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        (GPU_RES_GET_GPU(pTargetChannel) == pGpu) &&
+        (GPU_RES_GET_DEVICE(pTargetChannel) == GPU_RES_GET_DEVICE(pSessionChannel)) &&
+        (kchannelGetEngineType(pTargetChannel) == kchannelGetEngineType(pSessionChannel)),
+        NV_ERR_INVALID_OBJECT_PARENT);
+
+    // CPU RM authorizes the target before forwarding to physical RM or the vGPU host.
+    if (RMCFG_FEATURE_PLATFORM_GSP || hypervisorIsVgxHyper())
+        return NV_OK;
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        kgrctxFromKernelChannel(pTargetChannel, &pTargetContext));
+    pSessionContext = kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject);
+    // Duplicated context objects share the same graphics state.
+    if ((pSessionContext != NULL) &&
+        (kgrctxGetShared(pGpu, pTargetContext) == kgrctxGetShared(pGpu, pSessionContext)))
+        return NV_OK;
+
+    RS_ACCESS_MASK_CLEAR(&debugAccessMask);
+    RS_ACCESS_MASK_ADD(&debugAccessMask, RS_ACCESS_DEBUG);
+    if (rsAccessCheckRights(RES_GET_REF(pTargetChannel), pCallContext->pClient, &debugAccessMask) == NV_OK)
+        return NV_OK;
+
+    // Debug rights may be shared on a compute object rather than its parent channel.
+    childIt = indexRefIterAll(&RES_GET_REF(pTargetChannel)->childRefMap);
+    while (indexRefIterNext(&childIt))
+    {
+        if ((dynamicCast((*childIt.pValue)->pResource, KernelGraphicsObject) != NULL) &&
+            (rsAccessCheckRights(*childIt.pValue, pCallContext->pClient, &debugAccessMask) == NV_OK))
+        {
+            return NV_OK;
+        }
+    }
+
+    return NV_ERR_INSUFFICIENT_PERMISSIONS;
+}
+#endif
+
+NV_STATUS
+ksmdbgssnControl_Prologue_IMPL
+(
+    KernelSMDebuggerSession         *pKernelSMDebuggerSession,
+    CALL_CONTEXT                   *pCallContext,
+    RS_RES_CONTROL_PARAMS_INTERNAL *pParams
+)
+{
+#if 1
+    NvHandle hTargetChannel = NV01_NULL_OBJECT;
+
+    switch (pParams->cmd)
+    {
+        case NV83DE_CTRL_CMD_DEBUG_READ_SINGLE_SM_ERROR_STATE:
+            hTargetChannel = ((NV83DE_CTRL_DEBUG_READ_SINGLE_SM_ERROR_STATE_PARAMS *)pParams->pParams)->hTargetChannel;
+            break;
+        case NV83DE_CTRL_CMD_DEBUG_READ_ALL_SM_ERROR_STATES:
+            hTargetChannel = ((NV83DE_CTRL_DEBUG_READ_ALL_SM_ERROR_STATES_PARAMS *)pParams->pParams)->hTargetChannel;
+            break;
+        case NV83DE_CTRL_CMD_DEBUG_CLEAR_SINGLE_SM_ERROR_STATE:
+            hTargetChannel = ((NV83DE_CTRL_DEBUG_CLEAR_SINGLE_SM_ERROR_STATE_PARAMS *)pParams->pParams)->hTargetChannel;
+            break;
+        case NV83DE_CTRL_CMD_DEBUG_CLEAR_ALL_SM_ERROR_STATES:
+            hTargetChannel = ((NV83DE_CTRL_DEBUG_CLEAR_ALL_SM_ERROR_STATES_PARAMS *)pParams->pParams)->hTargetChannel;
+            break;
+        default:
+            break;
+    }
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        _ksmdbgssnCheckTargetChannelAccess(pKernelSMDebuggerSession, pCallContext, hTargetChannel));
+#endif
+
+    return rmresControl_Prologue_IMPL(staticCast(pKernelSMDebuggerSession, RmResource), pCallContext, pParams);
 }
 
 NV_STATUS
