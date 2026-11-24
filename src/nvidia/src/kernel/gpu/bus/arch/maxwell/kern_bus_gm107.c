@@ -1208,9 +1208,19 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
         //
         // To support 512MB page sizes, we need to align the BAR1 offset to 512MB.
         // This up to (but not including) 512MB of BAR1 space will still be allocatable in
-        // the dynamic region
+        // the dynamic region. When BAR1 equals physical VRAM size (e.g. 8/16/32 GiB ReBAR),
+        // fall back to 2MB alignment if 512MB padding would exceed the BAR1 aperture or
+        // leave insufficient dynamic BAR1 headroom.
         //
-        NvU64 bar1Offset = NV_ALIGN_UP(consoleSize + pKernelBus->p2pPcie.writeMailboxTotalSize, RM_PAGE_SIZE_512M);
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        NvU64 lowReserved = consoleSize + pKernelBus->p2pPcie.writeMailboxTotalSize;
+        NvU64 bar1VASizeAligned = RM_ALIGN_DOWN(pKernelBus->bar1[gfid].mappableLength, RM_PAGE_SIZE_2M);
+        NvU64 bar1MapSize = RM_ALIGN_DOWN(memmgrGetClientFbAddrSpaceSize(pGpu, pMemoryManager),
+                                          RM_PAGE_SIZE_2M);
+        NvU64 bar1Offset512M = NV_ALIGN_UP(lowReserved, RM_PAGE_SIZE_512M);
+        NvU64 bar1Offset = ((bar1Offset512M + bar1MapSize + (64 * RM_PAGE_SIZE_2M)) <= bar1VASizeAligned) ?
+                           bar1Offset512M : NV_ALIGN_UP(lowReserved, RM_PAGE_SIZE_2M);
+
         // Enable the static BAR1 mapping for the BAR1 P2P
         NV_ASSERT_OK_OR_GOTO(rmStatus,
                              kbusEnableStaticBar1Mapping_HAL(pGpu, pKernelBus, gfid, bar1Offset),

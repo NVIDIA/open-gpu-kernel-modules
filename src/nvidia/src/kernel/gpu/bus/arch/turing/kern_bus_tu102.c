@@ -429,8 +429,9 @@ kbusIsStaticBar1Supported_TU102
                 NvU64 bar1MapSize =
                     RM_ALIGN_DOWN(memmgrGetClientFbAddrSpaceSize(pGpu, pMemoryManager),
                                   RM_PAGE_SIZE_2M);
+                NvU64 minOffset = NV_ALIGN_UP(consoleSize + mailboxSize, RM_PAGE_SIZE_2M);
 
-                if (bar1VASizeAligned < bar1MapSize)
+                if (bar1VASizeAligned < (minOffset + bar1MapSize))
                 {
                     NV_PRINTF(LEVEL_ERROR, "BAR1 size %lld is not large enough to map FB size"
                                            "%lld to force static BAR1\n",
@@ -472,14 +473,14 @@ kbusIsStaticBar1Supported_TU102
                 NvU64 requiredAutoBar1Size = fbSizeAligned;
                 NvU64 mmioPrivSize = 16 * RM_PAGE_SIZE;
                 NvU64 doorbellSize = 16 * RM_PAGE_SIZE;
+                NvU64 dynOverhead;
 
                 kfifoGetUserdSizeAlign_HAL(pKernelFifo, &userdSize, NULL);
 
                 userdSize *= numChannels;
+                dynOverhead = (NvU64)userdSize + mmioPrivSize + doorbellSize;
 
-                requiredAutoBar1Size += userdSize;
-                requiredAutoBar1Size += mmioPrivSize;
-                requiredAutoBar1Size += doorbellSize;
+                requiredAutoBar1Size += dynOverhead;
                 requiredAutoBar1Size += consoleSize;
                 requiredAutoBar1Size += mailboxSize;
 
@@ -501,10 +502,32 @@ kbusIsStaticBar1Supported_TU102
                     NV_PRINTF(LEVEL_INFO, "Enabling static BAR1 automatically!\n");
                     return NV_OK;
                 }
-                else
+
+                //
+                // On GPUs whose physical VRAM size is already a power of two (e.g. 8 GiB,
+                // 16 GiB, or 32 GiB ReBAR configurations), PCIe BAR1 size equals total FB
+                // address space, while kbusEnableStaticBar1Mapping_TU102 only maps the
+                // client-visible FB region (excluding the GSP-RM carveout) using 2 MiB
+                // (RM_PAGE_SIZE_HUGE) pages. Fall back to 2 MiB offset alignment when
+                // client-visible FB plus dynamic BAR1 reserve (128 MiB + channel overhead) fits.
+                //
                 {
-                    return NV_ERR_NOT_SUPPORTED;
+                    NvU64 bar1MapSize =
+                        RM_ALIGN_DOWN(memmgrGetClientFbAddrSpaceSize(pGpu, pMemoryManager),
+                                      RM_PAGE_SIZE_2M);
+                    NvU64 compactOffset =
+                        NV_ALIGN_UP(consoleSize + mailboxSize, RM_PAGE_SIZE_2M);
+                    NvU64 compactRequired =
+                        compactOffset + bar1MapSize + dynOverhead + (64 * RM_PAGE_SIZE_2M);
+
+                    if ((bar1MapSize != 0) && (bar1VASizeAligned >= compactRequired))
+                    {
+                        NV_PRINTF(LEVEL_INFO, "Enabling 2MB-aligned static BAR1 automatically!\n");
+                        return NV_OK;
+                    }
                 }
+
+                return NV_ERR_NOT_SUPPORTED;
             }
         default:
             return NV_ERR_INVALID_REGISTRY_KEY;
@@ -745,6 +768,10 @@ _kbusUpdateStaticBar1VAMapping_TU102
     pVAS = pKernelBus->bar1[gfid].pVAS;
     addressTranslation = VAS_ADDRESS_TRANSLATION(pVAS);
     pageSize = memdescGetPageSize(pMemDesc, addressTranslation);
+    if (!NV_IS_ALIGNED64(pKernelBus->bar1[gfid].staticBar1.startOffset, pageSize))
+    {
+        pageSize = pKernelBus->staticBar1DefaultPageSize;
+    }
     mapSize  = memdescGetSize(pMemDesc);
 
     NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(
