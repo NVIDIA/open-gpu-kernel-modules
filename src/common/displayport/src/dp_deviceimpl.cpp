@@ -2956,9 +2956,16 @@ bool DeviceImpl::setDscEnable(bool enable)
         }
         else
         {
+            //
+            // Do not trust the read when enabling: a sink that is still leaving a
+            // low-power state can report DSC decompression as enabled when it is
+            // not (an Odyssey G8 returns 0x07 here right after a DPMS wake).
+            // Rewriting the same value is harmless per spec, so write it anyway.
+            //
+            dscEnableByte = FLD_SET_DRF(_DPCD14, _DSC_ENABLE, _DECOMPRESSION, _YES, dscEnableByte);
             NvU64 packedAddr = (this->devDoingDscDecompression->getTopologyAddress()).pack();
-            DP_PRINTF(DP_NOTICE, "DP-DEV> DSC decompression is already enabled on device - " DP_ADDR_FMT,
-                      DP_ADDR_ARGS(packedAddr));
+            DP_PRINTF(DP_NOTICE, "DP-DEV> DSC decompression reported as already enabled on device - " DP_ADDR_FMT
+                      ", writing it again", DP_ADDR_ARGS(packedAddr));
             DP_USED(packedAddr);
         }
     }
@@ -3003,7 +3010,8 @@ bool DeviceImpl::setDscEnable(bool enable)
         }
     }
 
-    if (enable != bCurrDscEnable)
+    // Always write when enabling (see above); when disabling, only if currently enabled.
+    if (enable || bCurrDscEnable)
     {
         dscEnableStatus = this->devDoingDscDecompression->setDpcdData(NV_DPCD14_DSC_ENABLE,
                               &dscEnableByte, sizeof dscEnableByte, &size, &nakReason);
