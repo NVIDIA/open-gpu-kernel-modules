@@ -3511,6 +3511,27 @@ void ConnectorImpl::fireEventsInternal()
             bMitigateZombie = false;
             DP_PRINTF(DP_WARNING, "DPCONN> Zombie? :  %d %p", dev->shadow.zombie ? 1 : 0, dev);
             sink->notifyZombieStateChange(dev, dev->shadow.zombie);
+
+            //
+            // A sink that comes back from a long HPD pulse (for example a monitor
+            // that resets itself shortly after leaving standby) loses the DSC
+            // decompression enable written during notifyAttachBegin(). The group is
+            // revived here without a new attach, so restore DSC on the sink for an
+            // attached DSC head; otherwise the sink receives a compressed stream it
+            // does not decode and shows no picture.
+            //
+            if (!dev->shadow.zombie && dev->activeGroup &&
+                dev->activeGroup->isHeadAttached() &&
+                !dev->activeGroup->headInFirmware &&
+                dev->activeGroup->lastModesetInfo.bEnableDsc)
+            {
+                DP_PRINTF(DP_NOTICE, "DPCONN> Sink revived on DSC head %u, re-enabling DSC decompression",
+                          dev->activeGroup->headIndex);
+                if (!setDeviceDscState(dev, true))
+                {
+                    DP_PRINTF(DP_ERROR, "DPCONN> Failed to re-enable DSC on revived sink");
+                }
+            }
         }
 
         if (dev->isPendingHDCPCapDone())
