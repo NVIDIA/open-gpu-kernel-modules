@@ -1294,6 +1294,9 @@ AuxRetry::status DPCDHALImpl::setIgnoreMSATimingParamters(bool msaTimingParamIgn
 
     NvU8 downspreadCtrl = 0;
 
+    // Remember the request so it can be restored after a later link training.
+    bMsaTimingParIgnoreEnRequested = msaTimingParamIgnoreEn;
+
     if (caps.revisionMajor <= 0)
         DP_ASSERT(0 && "Something is wrong, revision major should be > 0");
 

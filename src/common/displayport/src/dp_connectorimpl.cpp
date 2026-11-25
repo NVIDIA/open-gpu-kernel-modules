@@ -4201,6 +4201,17 @@ bool ConnectorImpl::needToEnableFEC(const DpPreModesetParams &params)
 
 void ConnectorImpl::dpPreModeset(const DpPreModesetParams &params)
 {
+    //
+    // The modeset replaces the stream configuration, so don't let a later
+    // link training restore Adaptive-Sync for the old one.  NVKMS requests
+    // it again after the modeset if the new mode uses VRR.  This is done
+    // before the early return below.
+    //
+    if (params.headMask != 0)
+    {
+        hal->clearIgnoreMSATimingParametersRequest();
+    }
+
     if(!connectorActive || (bIsDiscoveryDetectActive || !isDiscoveryDetectComplete))
     {
         DP_ASSERT(0 && "DPCONN> dpPreModeset called when connector is not active or when detection is in progress!");
@@ -7352,6 +7363,14 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
     }
 
     //
+    // Whether a usable link was trained, possibly at a fallback configuration
+    // that the comparison below reports as a failure.  Forced configurations
+    // aren't trained.
+    //
+    bool bLinkTrained = result && !force && (lConfig.lanes != 0) &&
+                        (activeLinkConfig.lanes != 0);
+
+    //
     // Do not compare bEnableFEC here. In DDS case FEC might be requested but
     // not performed in RM.
     //
@@ -7368,6 +7387,27 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
     {
         // update PSR link cache on successful LT
         this->psrLinkConfig = activeLinkConfig;
+    }
+
+    //
+    // Link training rewrites DOWNSPREAD_CTRL (DPCD 0x107) and clears
+    // MSA_TIMING_PAR_IGNORE_EN.  When a link is retrained outside of a
+    // modeset (e.g. assessLink() from notifyLongPulseHotplugSST() after the
+    // sink wakes from a low power state, or a link-loss retrain), nothing
+    // re-enables Adaptive-Sync afterwards, so the sink stays in fixed-timing
+    // mode and loses sync as soon as VRR varies the refresh rate.  Restore
+    // the bit if Adaptive-Sync was requested for this SST sink and the sink
+    // supports it (a failed capability re-read leaves the DPCD revision at 0
+    // and the old capabilities cached).  This also covers a fallback
+    // configuration, which 'result' reports as a failure although callers
+    // such as link-loss recovery may keep using it.
+    //
+    if (bLinkTrained && !activeLinkConfig.multistream &&
+        hal->getIgnoreMSATimingParametersRequested() &&
+        hal->isAtLeastVersion(1, 0) &&
+        hal->getMsaTimingparIgnored())
+    {
+        hal->setIgnoreMSATimingParamters(true);
     }
 
     //

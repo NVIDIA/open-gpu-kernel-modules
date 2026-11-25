@@ -224,6 +224,8 @@ namespace DisplayPort
                                            NvU8 activeLaneCount) = 0;
 
         virtual AuxRetry::status setIgnoreMSATimingParamters(bool msaTimingParamIgnoreEn) = 0;
+        virtual bool getIgnoreMSATimingParametersRequested() = 0;
+        virtual void clearIgnoreMSATimingParametersRequest() = 0;
         virtual AuxRetry::status setLinkQualLaneSet(unsigned lane, LinkQualityPatternType linkQualPattern) = 0;
         virtual AuxRetry::status setLinkQualPatternSet(LinkQualityPatternType linkQualPattern, unsigned laneCount = 0) = 0;
         virtual AuxRetry::status setLinkQualPatternSet(DP2xPatternInfo& patternInfo, unsigned laneCount = 0) = 0;
@@ -610,6 +612,7 @@ namespace DisplayPort
         Timer    * timer;
         bool      dpcdOffline;
         bool      bGrantsPostLtRequest;
+        bool      bMsaTimingParIgnoreEnRequested;
         bool      pc2Disabled;
         bool      uprequestEnable;
         bool      upstreamIsSource;
@@ -819,7 +822,8 @@ namespace DisplayPort
 
         public:
         DPCDHALImpl(AuxBus * bus, Timer * timer)
-        : bus(bus), timer(timer), bGrantsPostLtRequest(false), uprequestEnable(false),
+        : bus(bus), timer(timer), bGrantsPostLtRequest(false),
+          bMsaTimingParIgnoreEnRequested(false), uprequestEnable(false),
           upstreamIsSource(false), bMultistream(false), bGpuFECSupported(false),
           bBypassILREdpRevCheck(false), overrideDpcdMaxLinkRate(0),
           overrideDpcdRev(0), gpuDPSupportedVersions(0),
@@ -1088,6 +1092,14 @@ namespace DisplayPort
                                              NvU8 *preEmphasisSet);
 
         virtual AuxRetry::status setIgnoreMSATimingParamters(bool msaTimingParamIgnoreEn);
+        virtual bool getIgnoreMSATimingParametersRequested()
+        {
+            return bMsaTimingParIgnoreEnRequested;
+        }
+        virtual void clearIgnoreMSATimingParametersRequest()
+        {
+            bMsaTimingParIgnoreEnRequested = false;
+        }
 
         virtual AuxRetry::status setLinkQualPatternSet(LinkQualityPatternType linkQualPattern, unsigned laneCount);
         virtual AuxRetry::status setLinkQualPatternSet(DP2xPatternInfo& patternInfo, unsigned laneCount);
