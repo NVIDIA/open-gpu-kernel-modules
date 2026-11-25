@@ -122,6 +122,27 @@ MODULE_PARM_DESC(force_frl_rate,
 static int force_frl_rate = 0;
 module_param_named(force_frl_rate, force_frl_rate, int, 0444);
 
+MODULE_PARM_DESC(frl_train_backoff_ms,
+                  "Delay in milliseconds to wait before retrying HDMI FRL link "
+                  "training after a failure (0 = no delay, the default). Some "
+                  "sinks take up to a couple of seconds after retraining for "
+                  "their SCDC to become ready; without a delay the stock retry "
+                  "window (a few milliseconds) is far too short. The delay is "
+                  "applied between training attempts while the display lock is "
+                  "held, so it adds at most (attempts - 1) * delay of "
+                  "latency to a wake.");
+static unsigned int frl_train_backoff_ms = 0;
+module_param_named(frl_train_backoff_ms, frl_train_backoff_ms, uint, 0444);
+
+MODULE_PARM_DESC(frl_caps_retention,
+                  "When a fresh HDMI FRL link assessment fails (for example "
+                  "during display sleep/wake) and the EDID is unchanged, keep "
+                  "the last successfully assessed FRL link caps in the "
+                  "connector mode list instead of dropping FRL-capable modes "
+                  "(defaults to false).");
+static bool frl_caps_retention = false;
+module_param_named(frl_caps_retention, frl_caps_retention, bool, 0444);
+
 MODULE_PARM_DESC(conceal_vrr_caps,
                  "Conceal all display VRR capabilities");
 static bool conceal_vrr_caps = false;
@@ -221,6 +242,16 @@ enum NvKmsFrlRateForce nvkms_force_frl_rate(void)
     }
 
     return NVKMS_FRL_RATE_FORCE_NONE;
+}
+
+NvU32 nvkms_frl_train_backoff_ms(void)
+{
+    return frl_train_backoff_ms;
+}
+
+NvBool nvkms_frl_caps_retention(void)
+{
+    return frl_caps_retention;
 }
 
 NvBool nvkms_conceal_vrr_caps(void)

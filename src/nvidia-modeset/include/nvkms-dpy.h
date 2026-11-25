@@ -31,6 +31,18 @@ extern "C" {
 #endif
 
 void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo);
+
+/*!
+ * Restore the last-known-good FRL caps (captured in nvDpyProbeMaxPixelClock
+ * before they are zeroed) into pDpyEvo when the current FRL caps have been
+ * reset, so FRL-capable modes remain in the connector mode list.
+ *
+ * Gated on the raw EDID bytes being unchanged, since the retained sink caps
+ * were derived from the parsed EDID.
+ *
+ * Returns TRUE if the caps were restored, FALSE otherwise.
+ */
+NvBool nvDpyFrlRestoreLastGoodCaps(NVDpyEvoPtr pDpyEvo, const char *reason);
 void nvDpySetValidSyncsEvo(const NVDpyEvoRec *pDpyEvo,
                            struct NvKmsModeValidationValidSyncs *pValidSyncs);
 NVDpyEvoPtr nvAllocDpyEvo(NVDispEvoPtr pDispEvo,

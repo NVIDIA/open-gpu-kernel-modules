@@ -77,7 +77,8 @@
 
 
 #define NVKMS_USER_SPACE_DISALLOWED_EVENTS_MASK \
-     (1 << NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED)
+     ((1 << NVKMS_EVENT_TYPE_DPY_CP_TOPOLOGY_CHANGED) | \
+      (1 << NVKMS_EVENT_TYPE_DPY_LINK_RETRAIN_REQUIRED))
 
 /*
  * When the NVKMS device file is opened, the per-open structure could
@@ -6386,6 +6387,13 @@ static void SendDpyEventEvo(const NVDpyEvoRec *pDpyEvo,
             continue;
         }
 
+        // *_LINK_RETRAIN_REQUIRED is a contract with kernel space clients
+        // (nv-drm) only.
+        if ((eventType == NVKMS_EVENT_TYPE_DPY_LINK_RETRAIN_REQUIRED) &&
+            (pOpen->clientType == NVKMS_CLIENT_USER_SPACE)) {
+            continue;
+        }
+
         event.eventType = eventType;
 
         switch (eventType) {
@@ -6410,6 +6418,11 @@ static void SendDpyEventEvo(const NVDpyEvoRec *pDpyEvo,
             } else {
                 nvGetContentProtectionTopology(pDpyEvo->pConnectorEvo, pDpyEvo->pConnectorEvo->cpTopology);
             }
+            break;
+
+        case NVKMS_EVENT_TYPE_DPY_LINK_RETRAIN_REQUIRED:
+            event.u.dpyLinkRetrainRequired.deviceHandle = deviceHandle;
+            event.u.dpyLinkRetrainRequired.dpyId = pDpyEvo->id;
             break;
 
         case NVKMS_EVENT_TYPE_DYNAMIC_DPY_CONNECTED:
