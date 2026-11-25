@@ -42,6 +42,23 @@
 
 #define NV_DRM_SEMAPHORE_SURFACE_FENCE_MAX_TIMEOUT_MS 5000
 
+/*
+ * dma_fence_init() takes the fence's initial flags as a sixth argument on
+ * newer kernels. Passing 0 keeps the behaviour of the 5-argument form.
+ */
+static inline void nv_dma_fence_init(struct dma_fence *fence,
+                                     const struct dma_fence_ops *ops,
+                                     spinlock_t *lock,
+                                     u64 context,
+                                     u64 seqno)
+{
+#if defined(NV_DMA_FENCE_INIT_HAS_FLAGS_ARG)
+    dma_fence_init(fence, ops, lock, context, seqno, 0);
+#else
+    dma_fence_init(fence, ops, lock, context, seqno);
+#endif
+}
+
 struct nv_drm_fence_context;
 
 struct nv_drm_fence_context_ops {
@@ -371,9 +388,9 @@ static struct dma_fence *__nv_drm_prime_fence_context_create_fence(
 
     spin_lock_init(&nv_fence->lock);
 
-    dma_fence_init(&nv_fence->base, &nv_drm_gem_prime_fence_ops,
-                   &nv_fence->lock, nv_prime_fence_context->base.context,
-                   seqno);
+    nv_dma_fence_init(&nv_fence->base, &nv_drm_gem_prime_fence_ops,
+                      &nv_fence->lock, nv_prime_fence_context->base.context,
+                      seqno);
 
     /* The context maintains a reference to any pending fences. */
     dma_fence_get(&nv_fence->base);
@@ -1461,9 +1478,9 @@ static struct dma_fence *__nv_drm_semsurf_fence_ctx_create_fence(
 #endif
 
     /* Initializes the fence with one reference (for the caller) */
-    dma_fence_init(fence, &nv_drm_semsurf_fence_ops,
-                   &nv_fence->lock,
-                   ctx->base.context, wait_value);
+    nv_dma_fence_init(fence, &nv_drm_semsurf_fence_ops,
+                      &nv_fence->lock,
+                      ctx->base.context, wait_value);
 
     __nv_drm_semsurf_ctx_add_pending(ctx, nv_fence, timeout_value_ms);
 

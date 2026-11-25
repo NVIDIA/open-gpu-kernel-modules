@@ -244,6 +244,7 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_shmem_kernel_file_s
 NV_CONFTEST_TYPE_COMPILE_TESTS += vmf_insert_pfn_prot
 NV_CONFTEST_TYPE_COMPILE_TESTS += sysfs_slab_unlink
 NV_CONFTEST_TYPE_COMPILE_TESTS += proc_ops
+NV_CONFTEST_TYPE_COMPILE_TESTS += proc_ops_has_proc_write_buf
 NV_CONFTEST_TYPE_COMPILE_TESTS += vmalloc_has_pgprot_t_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += pgprot_encrypted
 NV_CONFTEST_TYPE_COMPILE_TESTS += mm_has_mmap_lock

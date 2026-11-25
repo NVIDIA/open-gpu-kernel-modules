@@ -333,7 +333,7 @@ nv_procfs_open_registry(
         return retval;
     }
 
-    retval = single_open(file, nv_procfs_read_registry, nvpp);
+    retval = nv_procfs_single_open(file, nv_procfs_read_registry, nvpp);
     if (retval < 0)
     {
         nv_procfs_close_file(nvpp);
@@ -343,7 +343,7 @@ nv_procfs_open_registry(
     retval = nv_down_read_interruptible(&nv_system_pm_lock);
     if (retval < 0)
     {
-        single_release(inode, file);
+        nv_procfs_single_release(inode, file);
         nv_procfs_close_file(nvpp);
     }
 
@@ -434,7 +434,7 @@ nv_procfs_close_registry(
 done:
     up_read(&nv_system_pm_lock);
 
-    single_release(inode, file);
+    nv_procfs_single_release(inode, file);
 
     nv_procfs_close_file(nvpp);
 
@@ -509,7 +509,7 @@ nv_procfs_read_registry(
 static ssize_t
 nv_procfs_write_file(
     struct file   *file,
-    const char __user *buffer,
+    NV_PROC_WRITE_BUF buffer,
     size_t count,
     loff_t *pos
 )
@@ -542,7 +542,7 @@ nv_procfs_write_file(
 
     proc_buffer = &((char *)nvpp->data)[nvpp->off];
 
-    if (copy_from_user(proc_buffer, buffer, count))
+    if (nv_procfs_copy_from_write_buf(proc_buffer, buffer, count))
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to copy in proc data!\n");
         status = -EFAULT;
@@ -552,7 +552,10 @@ nv_procfs_write_file(
         nvpp->off += count;
     }
 
-    *pos = nvpp->off;
+    if (pos != NULL)
+    {
+        *pos = nvpp->off;
+    }
 
 done:
     up(&nvpp->sp_lock);
@@ -563,9 +566,9 @@ done:
 static nv_proc_ops_t nv_procfs_registry_fops = {
      NV_PROC_OPS_SET_OWNER()
     .NV_PROC_OPS_OPEN    = nv_procfs_open_registry,
-    .NV_PROC_OPS_READ    = seq_read,
+    NV_PROC_OPS_SEQ_SHOW(nv_procfs_read_registry)
     .NV_PROC_OPS_WRITE   = nv_procfs_write_file,
-    .NV_PROC_OPS_LSEEK   = seq_lseek,
+    NV_PROC_OPS_WRITE_SIZE(NV_PROC_WRITE_BUFFER_SIZE - 1)
     .NV_PROC_OPS_RELEASE = nv_procfs_close_registry,
 };
 
@@ -583,7 +586,7 @@ nv_procfs_show_suspend_depth(
 static ssize_t
 nv_procfs_write_suspend_depth(
     struct file *file,
-    const char __user *buf,
+    NV_PROC_WRITE_BUF buf,
     size_t count,
     loff_t *pos
 )
@@ -601,7 +604,7 @@ nv_procfs_write_suspend_depth(
         return -EINVAL;
     }
 
-    if (copy_from_user(kbuf, buf, count))
+    if (nv_procfs_copy_from_write_buf(kbuf, buf, count))
     {
         return -EFAULT;
     }
@@ -636,16 +639,15 @@ nv_procfs_open_suspend_depth(
     struct file *file
 )
 {
-    return single_open(file, nv_procfs_show_suspend_depth, NULL);
+    return nv_procfs_single_open(file, nv_procfs_show_suspend_depth, NULL);
 }
 
 static nv_proc_ops_t nv_procfs_suspend_depth_fops = {
      NV_PROC_OPS_SET_OWNER()
     .NV_PROC_OPS_OPEN    = nv_procfs_open_suspend_depth,
-    .NV_PROC_OPS_READ    = seq_read,
+    NV_PROC_OPS_SEQ_SHOW(nv_procfs_show_suspend_depth)
     .NV_PROC_OPS_WRITE   = nv_procfs_write_suspend_depth,
-    .NV_PROC_OPS_LSEEK   = seq_lseek,
-    .NV_PROC_OPS_RELEASE = single_release
+    NV_PROC_OPS_SEQ_RELEASE
 };
 
 static int
@@ -661,7 +663,7 @@ nv_procfs_show_suspend(
 static ssize_t
 nv_procfs_write_suspend(
     struct file *file,
-    const char __user *buf,
+    NV_PROC_WRITE_BUF buf,
     size_t count,
     loff_t *pos
 )
@@ -681,7 +683,7 @@ nv_procfs_write_suspend(
         return -EINVAL;
     }
 
-    if (copy_from_user(kbuf, buf, count))
+    if (nv_procfs_copy_from_write_buf(kbuf, buf, count))
     {
         return -EFAULT;
     }
@@ -724,16 +726,15 @@ nv_procfs_open_suspend(
     struct file *file
 )
 {
-    return single_open(file, nv_procfs_show_suspend, NULL);
+    return nv_procfs_single_open(file, nv_procfs_show_suspend, NULL);
 }
 
 static nv_proc_ops_t nv_procfs_suspend_fops = {
      NV_PROC_OPS_SET_OWNER()
     .NV_PROC_OPS_OPEN    = nv_procfs_open_suspend,
-    .NV_PROC_OPS_READ    = seq_read,
+    NV_PROC_OPS_SEQ_SHOW(nv_procfs_show_suspend)
     .NV_PROC_OPS_WRITE   = nv_procfs_write_suspend,
-    .NV_PROC_OPS_LSEEK   = seq_lseek,
-    .NV_PROC_OPS_RELEASE = single_release
+    NV_PROC_OPS_SEQ_RELEASE
 };
 
 #endif
@@ -780,7 +781,7 @@ nv_procfs_open_exercise_error_forwarding(
         return retval;
     }
 
-    retval = single_open(file, nv_procfs_show_exercise_error_forwarding, nvpp);
+    retval = nv_procfs_single_open(file, nv_procfs_show_exercise_error_forwarding, nvpp);
     if (retval < 0)
     {
         nv_procfs_close_file(nvpp);
@@ -790,7 +791,7 @@ nv_procfs_open_exercise_error_forwarding(
     retval = nv_down_read_interruptible(&nv_system_pm_lock);
     if (retval < 0)
     {
-        single_release(inode, file);
+        nv_procfs_single_release(inode, file);
         nv_procfs_close_file(nvpp);
     }
 
@@ -832,7 +833,7 @@ nv_procfs_close_exercise_error_forwarding(
 done:
     up_read(&nv_system_pm_lock);
 
-    single_release(inode, file);
+    nv_procfs_single_release(inode, file);
 
     nv_procfs_close_file(nvpp);
 
@@ -842,7 +843,9 @@ done:
 static nv_proc_ops_t nv_procfs_exercise_error_forwarding_fops = {
      NV_PROC_OPS_SET_OWNER()
     .NV_PROC_OPS_OPEN    = nv_procfs_open_exercise_error_forwarding,
+    NV_PROC_OPS_SEQ_PRIVATE(nv_procfs_show_exercise_error_forwarding)
     .NV_PROC_OPS_WRITE   = nv_procfs_write_file,
+    NV_PROC_OPS_WRITE_SIZE(NV_PROC_WRITE_BUFFER_SIZE - 1)
     .NV_PROC_OPS_RELEASE = nv_procfs_close_exercise_error_forwarding,
 };
 
@@ -885,7 +888,7 @@ nv_procfs_open_unbind_lock(
         return retval;
     }
 
-    retval = single_open(file, nv_procfs_read_unbind_lock, nvpp);
+    retval = nv_procfs_single_open(file, nv_procfs_read_unbind_lock, nvpp);
     if (retval < 0)
     {
         nv_procfs_close_file(nvpp);
@@ -895,7 +898,7 @@ nv_procfs_open_unbind_lock(
     retval = nv_down_read_interruptible(&nv_system_pm_lock);
     if (retval < 0)
     {
-        single_release(inode, file);
+        nv_procfs_single_release(inode, file);
         nv_procfs_close_file(nvpp);
     }
 
@@ -959,7 +962,7 @@ nv_procfs_close_unbind_lock(
 done:
     up_read(&nv_system_pm_lock);
 
-    single_release(inode, file);
+    nv_procfs_single_release(inode, file);
 
     nv_procfs_close_file(nvpp);
 
@@ -969,9 +972,9 @@ done:
 static nv_proc_ops_t nv_procfs_unbind_lock_fops = {
     NV_PROC_OPS_SET_OWNER()
     .NV_PROC_OPS_OPEN    = nv_procfs_open_unbind_lock,
-    .NV_PROC_OPS_READ    = seq_read,
+    NV_PROC_OPS_SEQ_SHOW(nv_procfs_read_unbind_lock)
     .NV_PROC_OPS_WRITE   = nv_procfs_write_file,
-    .NV_PROC_OPS_LSEEK   = seq_lseek,
+    NV_PROC_OPS_WRITE_SIZE(NV_PROC_WRITE_BUFFER_SIZE - 1)
     .NV_PROC_OPS_RELEASE = nv_procfs_close_unbind_lock,
 };
 
@@ -1121,7 +1124,7 @@ nv_procfs_open_offline_pages(
         return retval;
     }
 
-    retval = single_open(file, nv_procfs_read_offline_pages, nvpp);
+    retval = nv_procfs_single_open(file, nv_procfs_read_offline_pages, nvpp);
     if (retval < 0)
     {
         nv_procfs_close_file(nvpp);
@@ -1131,7 +1134,7 @@ nv_procfs_open_offline_pages(
     retval = nv_down_read_interruptible(&nv_system_pm_lock);
     if (retval < 0)
     {
-        single_release(inode, file);
+        nv_procfs_single_release(inode, file);
         nv_procfs_close_file(nvpp);
     }
 
@@ -1149,7 +1152,7 @@ nv_procfs_close_offline_pages(
 
     up_read(&nv_system_pm_lock);
 
-    single_release(inode, file);
+    nv_procfs_single_release(inode, file);
 
     nv_procfs_close_file(nvpp);
 
@@ -1206,7 +1209,7 @@ nv_procfs_open_numa_status(
         return retval;
     }
 
-    retval = single_open(file, nv_procfs_read_numa_status, nvpp);
+    retval = nv_procfs_single_open(file, nv_procfs_read_numa_status, nvpp);
     if (retval < 0)
     {
         nv_procfs_close_file(nvpp);
@@ -1216,7 +1219,7 @@ nv_procfs_open_numa_status(
     retval = nv_down_read_interruptible(&nv_system_pm_lock);
     if (retval < 0)
     {
-        single_release(inode, file);
+        nv_procfs_single_release(inode, file);
         nv_procfs_close_file(nvpp);
     }
 
@@ -1298,7 +1301,7 @@ done:
 
     up_read(&nv_system_pm_lock);
 
-    single_release(inode, file);
+    nv_procfs_single_release(inode, file);
 
     nv_procfs_close_file(nvpp);
 
@@ -1308,17 +1311,16 @@ done:
 static const nv_proc_ops_t nv_procfs_numa_status_fops = {
     NV_PROC_OPS_SET_OWNER()
     .NV_PROC_OPS_OPEN    = nv_procfs_open_numa_status,
-    .NV_PROC_OPS_READ    = seq_read,
+    NV_PROC_OPS_SEQ_SHOW(nv_procfs_read_numa_status)
     .NV_PROC_OPS_WRITE   = nv_procfs_write_file,
-    .NV_PROC_OPS_LSEEK   = seq_lseek,
+    NV_PROC_OPS_WRITE_SIZE(NV_PROC_WRITE_BUFFER_SIZE - 1)
     .NV_PROC_OPS_RELEASE = nv_procfs_close_numa_status,
 };
 
 static const nv_proc_ops_t nv_procfs_offline_pages_fops = {
     NV_PROC_OPS_SET_OWNER()
     .NV_PROC_OPS_OPEN    = nv_procfs_open_offline_pages,
-    .NV_PROC_OPS_READ    = seq_read,
-    .NV_PROC_OPS_LSEEK   = seq_lseek,
+    NV_PROC_OPS_SEQ_SHOW(nv_procfs_read_offline_pages)
     .NV_PROC_OPS_RELEASE = nv_procfs_close_offline_pages,
 };
 

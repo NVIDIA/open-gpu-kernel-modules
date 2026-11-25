@@ -362,7 +362,7 @@ static void nv_cap_tables_init(void)
 }
 
 static ssize_t nv_cap_procfs_write(struct file *file,
-                                    const char __user *buffer,
+                                    NV_PROC_WRITE_BUF buffer,
                                     size_t count, loff_t *pos)
 {
     nv_cap_file_private_t *private = NULL;
@@ -394,7 +394,7 @@ static ssize_t nv_cap_procfs_write(struct file *file,
 
     proc_buffer = &private->buffer[private->offset];
 
-    if (copy_from_user(proc_buffer, buffer, count))
+    if (nv_procfs_copy_from_write_buf(proc_buffer, buffer, count))
     {
         nv_printf(NV_DBG_ERRORS, "nv-caps: failed to copy in proc data!\n");
         count = -EFAULT;
@@ -404,7 +404,10 @@ static ssize_t nv_cap_procfs_write(struct file *file,
     private->offset += count;
     proc_buffer[count] = '\0';
 
-    *pos = private->offset;
+    if (pos != NULL)
+    {
+        *pos = private->offset;
+    }
 
 done:
     up_read(&nv_system_pm_lock);
@@ -448,7 +451,7 @@ static int nv_cap_procfs_open(struct inode *inode, struct file *file)
     private->offset = 0;
     private->modify = cap->modify;
 
-    rc = single_open(file, nv_cap_procfs_read, private);
+    rc = nv_procfs_single_open(file, nv_cap_procfs_read, private);
     if (rc < 0)
     {
         NV_KFREE(private, sizeof(nv_cap_file_private_t));
@@ -470,7 +473,7 @@ static int nv_cap_procfs_release(struct inode *inode, struct file *file)
         private = s->private;
     }
 
-    single_release(inode, file);
+    nv_procfs_single_release(inode, file);
 
     if (private != NULL)
     {
@@ -487,11 +490,16 @@ static int nv_cap_procfs_release(struct inode *inode, struct file *file)
         NV_KFREE(private, sizeof(nv_cap_file_private_t));
     }
 
+#if !defined(NV_PROC_OPS_HAS_PROC_WRITE_BUF)
     /*
      * All open files using the proc entry will be invalidated
      * if the entry is removed.
+     *
+     * With NV_PROC_OPS_HAS_PROC_WRITE_BUF, procfs frees the seq_file in
+     * file->private_data after this returns, so it must be left alone.
      */
     file->private_data = NULL;
+#endif
 
     return 0;
 }
@@ -501,8 +509,7 @@ static nv_proc_ops_t g_nv_cap_procfs_fops = {
     .NV_PROC_OPS_OPEN    = nv_cap_procfs_open,
     .NV_PROC_OPS_RELEASE = nv_cap_procfs_release,
     .NV_PROC_OPS_WRITE   = nv_cap_procfs_write,
-    .NV_PROC_OPS_READ    = seq_read,
-    .NV_PROC_OPS_LSEEK   = seq_lseek,
+    NV_PROC_OPS_SEQ_SHOW(nv_cap_procfs_read)
 };
 
 /* forward declaration of g_nv_cap_drv_fops */
