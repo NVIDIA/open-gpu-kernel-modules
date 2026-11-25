@@ -2467,17 +2467,30 @@ _pfmreqhndlrCallPshareStatus
 
         if (pPfmreqhndlrData->PFMREQHNDLRACPIData.bSystemParamLimitUpdate)
         {
-            timeStamp = _pfmreqhndlrGetTimeStamp(pPlatformRequestHandler);
-            _pfmreqhndlrResetCounter(pPfmreqhndlrData, PFM_REQ_HNDLR_LIMIT(PFM_REQ_HNDLR_TGPU_SENSOR), timeStamp);
-            _pfmreqhndlrResetCounter(pPfmreqhndlrData, PFM_REQ_HNDLR_LIMIT(PFM_REQ_HNDLR_PPMD_SENSOR), timeStamp);
+            NvBool bTgpuSupported = pPfmreqhndlrData->PFMREQHNDLRSensorCache[PFM_REQ_HNDLR_LIMIT(PFM_REQ_HNDLR_TGPU_SENSOR)].bSupported;
+            NvBool bPpmdSupported = PFM_REQ_HNDLR_IS_ACPI_VERSION_SW_2X(pPlatformRequestHandler) &&
+                pPfmreqhndlrData->PFMREQHNDLRSensorCache[PFM_REQ_HNDLR_LIMIT(PFM_REQ_HNDLR_PPMD_SENSOR)].bSupported;
 
-            lclStatus = _pfmreqhndlrUpdateTgpuLimit(pPlatformRequestHandler, pGpu);
-            if ((NV_OK == status) && (NV_ERR_NOT_SUPPORTED != lclStatus))
+            timeStamp = _pfmreqhndlrGetTimeStamp(pPlatformRequestHandler);
+            if (bTgpuSupported)
             {
-                status = lclStatus;
+                _pfmreqhndlrResetCounter(pPfmreqhndlrData, PFM_REQ_HNDLR_LIMIT(PFM_REQ_HNDLR_TGPU_SENSOR), timeStamp);
+            }
+            if (bPpmdSupported)
+            {
+                _pfmreqhndlrResetCounter(pPfmreqhndlrData, PFM_REQ_HNDLR_LIMIT(PFM_REQ_HNDLR_PPMD_SENSOR), timeStamp);
             }
 
-            if (PFM_REQ_HNDLR_IS_ACPI_VERSION_SW_2X(pPlatformRequestHandler))
+            if (bTgpuSupported)
+            {
+                lclStatus = _pfmreqhndlrUpdateTgpuLimit(pPlatformRequestHandler, pGpu);
+                if ((NV_OK == status) && (NV_ERR_NOT_SUPPORTED != lclStatus))
+                {
+                    status = lclStatus;
+                }
+            }
+
+            if (bPpmdSupported)
             {
                 // Run time PPMD update from the system
                 lclStatus = _pfmreqhndlrUpdatePpmdLimit(pPlatformRequestHandler, pGpu, NV_FALSE);
