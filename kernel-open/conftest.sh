@@ -4561,6 +4561,26 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DMA_FENCE_OPS_HAS_USE_64BIT_SEQNO" "" "types"
         ;;
 
+        dma_fence_inline_lock)
+            #
+            # Determine if struct dma_fence has the inline_lock member.
+            #
+            # Added by commit 1f32f310a13c ("dma-buf: inline spinlock for
+            # fence protection v5") in v7.1, in the same series as commit
+            # 541c8f2468b9 ("dma-buf: detach fence ops on signal v3"), which
+            # has no API of its own to test for. nvidia-drm uses this to
+            # tell whether a signaled fence is detached from its ops.
+            #
+            CODE="
+            #include <linux/dma-fence.h>
+            int conftest_dma_fence_inline_lock(void)
+            {
+                return offsetof(struct dma_fence, inline_lock);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DMA_FENCE_HAS_INLINE_LOCK" "" "types"
+        ;;
+
         drm_fbdev_generic_setup)
             #
             # Determine whether drm_fbdev_generic_setup is present.
