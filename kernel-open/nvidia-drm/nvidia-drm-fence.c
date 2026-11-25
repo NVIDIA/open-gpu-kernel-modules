@@ -42,6 +42,30 @@
 
 #define NV_DRM_SEMAPHORE_SURFACE_FENCE_MAX_TIMEOUT_MS 5000
 
+/*
+ * Since Linux v7.1, commit 541c8f2468b9 ("dma-buf: detach fence ops on signal
+ * v3"), the kernel clears dma_fence::ops when a fence signals, unless the ops
+ * implement .release or .wait. A detached fence no longer needs the module
+ * that issued it. One whose ops implement either callback keeps pointing into
+ * the module, "and so it is necessary for the module providing the
+ * dma_fence_ops to stay loaded as long as the dma_fence exists"
+ * (include/linux/dma-fence.h).
+ *
+ * Nothing keeps nvidia-drm loaded for its fences: a signaled fence can stay
+ * referenced from a sync_file, or from a drm_syncobj of another device, after
+ * the last file on this device is closed. Unloading the module then leaves
+ * dma_fence_release() calling into freed memory. So on kernels that detach,
+ * the fence ops below implement neither callback: the kernel frees the fence
+ * with kfree_rcu() and waits with dma_fence_default_wait().
+ *
+ * The commit has no API of its own to test for; the inline fence lock, commit
+ * 1f32f310a13c ("dma-buf: inline spinlock for fence protection v5"), was
+ * merged with it.
+ */
+#if defined(NV_DMA_FENCE_HAS_INLINE_LOCK)
+#define NV_DRM_FENCE_DETACHES_ON_SIGNAL
+#endif
+
 struct nv_drm_fence_context;
 
 struct nv_drm_fence_context_ops {
@@ -84,8 +108,9 @@ struct nv_drm_prime_fence_context {
 };
 
 struct nv_drm_prime_fence {
-    struct list_head list_entry;
+    /* Must be first: without .release, the kernel frees the dma_fence. */
     struct dma_fence base;
+    struct list_head list_entry;
     spinlock_t lock;
 };
 
@@ -113,6 +138,7 @@ static bool nv_drm_gem_prime_fence_op_enable_signaling(struct dma_fence *fence)
     return true;
 }
 
+#if !defined(NV_DRM_FENCE_DETACHES_ON_SIGNAL)
 static void nv_drm_gem_prime_fence_op_release(struct dma_fence *fence)
 {
     struct nv_drm_prime_fence *nv_fence = to_nv_drm_prime_fence(fence);
@@ -137,13 +163,16 @@ nv_drm_gem_prime_fence_op_wait(struct dma_fence *fence,
                               (timeout == MAX_SCHEDULE_TIMEOUT) ?
                                   msecs_to_jiffies(96) : timeout);
 }
+#endif /* !NV_DRM_FENCE_DETACHES_ON_SIGNAL */
 
 static const struct dma_fence_ops nv_drm_gem_prime_fence_ops = {
     .get_driver_name = nv_drm_gem_fence_op_get_driver_name,
     .get_timeline_name = nv_drm_gem_prime_fence_op_get_timeline_name,
     .enable_signaling = nv_drm_gem_prime_fence_op_enable_signaling,
+#if !defined(NV_DRM_FENCE_DETACHES_ON_SIGNAL)
     .release = nv_drm_gem_prime_fence_op_release,
     .wait = nv_drm_gem_prime_fence_op_wait,
+#endif
 };
 
 static inline void
@@ -370,6 +399,9 @@ static struct dma_fence *__nv_drm_prime_fence_context_create_fence(
     INIT_LIST_HEAD(&nv_fence->list_entry);
 
     spin_lock_init(&nv_fence->lock);
+
+    /* Without .release, the kernel frees the fence through its dma_fence. */
+    BUILD_BUG_ON(offsetof(struct nv_drm_prime_fence, base) != 0);
 
     dma_fence_init(&nv_fence->base, &nv_drm_gem_prime_fence_ops,
                    &nv_fence->lock, nv_prime_fence_context->base.context,
@@ -1361,6 +1393,7 @@ __nv_drm_semsurf_fence_op_enable_signaling(struct dma_fence *fence)
     return true;
 }
 
+#if !defined(NV_DRM_FENCE_DETACHES_ON_SIGNAL)
 static void
 __nv_drm_semsurf_fence_op_release(struct dma_fence *fence)
 {
@@ -1369,13 +1402,16 @@ __nv_drm_semsurf_fence_op_release(struct dma_fence *fence)
 
     nv_drm_free(nv_fence);
 }
+#endif
 
 static const struct dma_fence_ops nv_drm_semsurf_fence_ops = {
     .get_driver_name = nv_drm_gem_fence_op_get_driver_name,
     .get_timeline_name = __nv_drm_semsurf_fence_op_get_timeline_name,
     .enable_signaling = __nv_drm_semsurf_fence_op_enable_signaling,
+#if !defined(NV_DRM_FENCE_DETACHES_ON_SIGNAL)
     .release = __nv_drm_semsurf_fence_op_release,
     .wait = dma_fence_default_wait,
+#endif
 #if defined(NV_DMA_FENCE_OPS_HAS_USE_64BIT_SEQNO)
     .use_64bit_seqno = true,
 #endif
@@ -1459,6 +1495,9 @@ static struct dma_fence *__nv_drm_semsurf_fence_ctx_create_fence(
 #if !defined(NV_DMA_FENCE_OPS_HAS_USE_64BIT_SEQNO)
     nv_fence->wait_value = wait_value;
 #endif
+
+    /* Without .release, the kernel frees the fence through its dma_fence. */
+    BUILD_BUG_ON(offsetof(struct nv_drm_semsurf_fence, base) != 0);
 
     /* Initializes the fence with one reference (for the caller) */
     dma_fence_init(fence, &nv_drm_semsurf_fence_ops,
