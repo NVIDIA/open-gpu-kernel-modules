@@ -55,6 +55,57 @@ static NvBool DpyOverrideReadEdid(NVDpyOverrideRec *dpy,
     return TRUE;
 }
 
+/*
+ * Returns the display override on the given GPU for the given display name, or
+ * NULL if there is none.
+ */
+static NVDpyOverrideRec *DpyOverrideFind(NvU32 gpuId, const char *name)
+{
+    NVDpyOverridePtr pDpyOverride;
+
+    FOR_ALL_DPY_OVERRIDES(pDpyOverride) {
+        if (DPY_OVERRIDE_MATCHES(pDpyOverride, gpuId, name)) {
+            return pDpyOverride;
+        }
+    }
+
+    return NULL;
+}
+
+/*
+ * Returns the display override on the given GPU for the given display name,
+ * creating an empty one if it doesn't exist yet.  Returns NULL if the creation
+ * failed.
+ */
+static NVDpyOverrideRec *DpyOverrideFindOrCreate(NvU32 gpuId, const char *name)
+{
+    NVDpyOverridePtr pDpyOverride;
+    size_t namelen, cpsz;
+
+    /* if such a display override already exists, let it be changed */
+    pDpyOverride = DpyOverrideFind(gpuId, name);
+    if (pDpyOverride != NULL) {
+        return pDpyOverride;
+    }
+
+    /* if such a display override doesn't exist, create a new one */
+    pDpyOverride = nvCalloc(1, sizeof(*pDpyOverride));
+    if (pDpyOverride == NULL) {
+        nvEvoLog(EVO_LOG_WARN, "Failed allocating data for display override");
+        return NULL;
+    }
+
+    nvListAdd(&pDpyOverride->entry, &dpyOverrideList);
+
+    namelen = nvkms_strlen(name);
+    cpsz = namelen > NVKMS_DPY_NAME_SIZE - 1 ? NVKMS_DPY_NAME_SIZE - 1
+                                             : namelen;
+
+    nvkms_memcpy(pDpyOverride->name, name, cpsz);
+    pDpyOverride->gpuId = gpuId;
+
+    return pDpyOverride;
+}
 
 /*
  * Creates a display override on the given GPU for the given display name.
@@ -76,35 +127,10 @@ NVDpyOverrideRec *nvCreateDpyOverride(NvU32 gpuId,
                                       const char *edid,
                                       size_t edidSize)
 {
-    NVDpyOverridePtr pDpyOverride;
-    size_t namelen, cpsz;
-    NvBool found = FALSE;
+    NVDpyOverridePtr pDpyOverride = DpyOverrideFindOrCreate(gpuId, name);
 
-    /* if such a display override already exists, let it be changed */
-    FOR_ALL_DPY_OVERRIDES(pDpyOverride) {
-        if (DPY_OVERRIDE_MATCHES(pDpyOverride, gpuId, name)) {
-
-            found = TRUE;
-            break;
-        }
-    }
-
-    /* if such a display override doesn't exist, create a new one */
-    if (!found) {
-        pDpyOverride = nvCalloc(1, sizeof(*pDpyOverride));
-        if (pDpyOverride == NULL) {
-            nvEvoLog(EVO_LOG_WARN, "Failed allocating data for display override");
-            return NULL;
-        }
-
-        nvListAdd(&pDpyOverride->entry, &dpyOverrideList);
-
-        namelen = nvkms_strlen(name);
-        cpsz = namelen > NVKMS_DPY_NAME_SIZE - 1 ? NVKMS_DPY_NAME_SIZE - 1
-                                                 : namelen;
-
-        nvkms_memcpy(pDpyOverride->name, name, cpsz);
-        pDpyOverride->gpuId = gpuId;
+    if (pDpyOverride == NULL) {
+        return NULL;
     }
 
     pDpyOverride->connected = connected;
@@ -116,6 +142,72 @@ NVDpyOverrideRec *nvCreateDpyOverride(NvU32 gpuId,
     }
 
     return pDpyOverride;
+}
+
+/*
+ * Sets the DisplayPort max link rate limit of the display override on the given
+ * GPU for the given display name.  The display override is created if it
+ * doesn't exist yet; an existing one keeps its other settings.
+ *
+ * \param[in]   gpuId       The ID of the GPU on which to limit the link rate,
+ *                          as returned in nvkms_enumerate_gpus()
+ * \param[in]   name        The name of the display to limit in
+ *                          PROTOCOL-Index format, e.g. DP-0.
+ * \param[in]   linkRate10M The limit in units of 10Mbps, or 0 for no limit.
+ *
+ * \return  TRUE if the limit was set, FALSE otherwise.
+ */
+NvBool nvSetDpyOverrideDpMaxLinkRate(NvU32 gpuId,
+                                     const char *name,
+                                     NvU32 linkRate10M)
+{
+    NVDpyOverridePtr pDpyOverride = DpyOverrideFindOrCreate(gpuId, name);
+
+    if (pDpyOverride == NULL) {
+        return FALSE;
+    }
+
+    pDpyOverride->dpMaxLinkRate10M = linkRate10M;
+
+    return TRUE;
+}
+
+/*
+ * Returns the DisplayPort max link rate limit for the connector of the
+ * pDpyEvo.  Unlike nvDpyEvoGetOverride(), this doesn't require the display
+ * override to have an EDID, and it also applies to DP MST displays: the limit
+ * is a property of the connector that all of them are attached to.
+ *
+ * \param[in]   pDpyEvo         The display to check for a limit.
+ *
+ * \return  The limit in units of 10Mbps, or 0 if there is none.
+ */
+NvU32 nvDpyEvoGetOverrideDpMaxLinkRate(const NVDpyEvoRec *pDpyEvo)
+{
+    NVDispEvoPtr pDispEvo;
+    NVSubDeviceEvoPtr pSubDevice;
+    NVDpyOverridePtr it;
+
+    if (pDpyEvo == NULL) {
+        return 0;
+    }
+
+    pDispEvo = pDpyEvo->pDispEvo;
+    pSubDevice = pDispEvo->pDevEvo->pSubDevices[pDispEvo->displayOwner];
+
+    /* A limit for this specific connector takes precedence... */
+    it = DpyOverrideFind(pSubDevice->gpuId, pDpyEvo->pConnectorEvo->name);
+    if ((it != NULL) && (it->dpMaxLinkRate10M != 0)) {
+        return it->dpMaxLinkRate10M;
+    }
+
+    /* ...over the limit for all connectors. */
+    it = DpyOverrideFind(NV_DPY_OVERRIDE_ALL_GPU_ID, NV_DPY_OVERRIDE_ALL_NAME);
+    if (it != NULL) {
+        return it->dpMaxLinkRate10M;
+    }
+
+    return 0;
 }
 
 /*
@@ -153,7 +245,9 @@ void nvLogDpyOverrides(NvU32 gpuId, NVEvoInfoStringPtr pInfoStr)
 {
     NVDpyOverridePtr pDpyOverride;
     FOR_ALL_DPY_OVERRIDES(pDpyOverride) {
-        if (pDpyOverride->gpuId == gpuId) {
+        /* The override for all displays applies to this GPU as well */
+        if ((pDpyOverride->gpuId == gpuId) ||
+            (pDpyOverride->gpuId == NV_DPY_OVERRIDE_ALL_GPU_ID)) {
             nvEvoLogInfoString(pInfoStr, "%s", pDpyOverride->name);
         }
     }
@@ -194,28 +288,30 @@ NVDpyOverridePtr nvDpyEvoGetOverride(const NVDpyEvoRec *pDpyEvo)
 
     pSubDevice = pDevEvo->pSubDevices[pDispEvo->displayOwner];
 
-    FOR_ALL_DPY_OVERRIDES(it) {
-        /* Ensure valid and enabled override */
-        if ((it->edid.length == 0) || (it->edid.buffer == NULL)) {
-            continue;
-        }
+    /*
+     * Both NVDpyOverrideRec.gpuId and NVSubDeviceEvoRec.gpuId ultimately
+     * derive from nvRmApiControl(NV2080_CTRL_CMD_GPU_GET_ID), so we can
+     * use them to match GPUs. Additionally, NVConnectorEvo.name is of the
+     * format TYPE-N, e.g. HDMI-0, but pDpyEvo.name may have additional
+     * qualifiers (e.g., an existing EDID-derived name).
+     *
+     * An override for this specific display takes precedence over the
+     * override for all displays.
+     */
+    it = DpyOverrideFind(pSubDevice->gpuId, pDpyEvo->pConnectorEvo->name);
 
-        /*
-         * Both NVDpyOverrideRec.gpuId and NVSubDeviceEvoRec.gpuId ultimately
-         * derive from nvRmApiControl(NV2080_CTRL_CMD_GPU_GET_ID), so we can
-         * use them to match GPUs. Additionally, NVConnectorEvo.name is of the
-         * format TYPE-N, e.g. HDMI-0, but pDpyEvo.name may have additional
-         * qualifiers (e.g., an existing EDID-derived name).
-         */
-        if (DPY_OVERRIDE_MATCHES(it, pSubDevice->gpuId, pDpyEvo->pConnectorEvo->name)) {
-
-            nvEvoLogDebug(EVO_LOG_INFO, "NVDpyOverrideRec found: %s\n",
-                          it->name);
-            return it;
-        }
+    /* Ensure valid and enabled override */
+    if ((it == NULL) || (it->edid.length == 0) || (it->edid.buffer == NULL)) {
+        it = DpyOverrideFind(NV_DPY_OVERRIDE_ALL_GPU_ID,
+                             NV_DPY_OVERRIDE_ALL_NAME);
     }
 
-    return NULL;
+    if ((it == NULL) || (it->edid.length == 0) || (it->edid.buffer == NULL)) {
+        return NULL;
+    }
+
+    nvEvoLogDebug(EVO_LOG_INFO, "NVDpyOverrideRec found: %s\n", it->name);
+    return it;
 }
 
 /*

@@ -343,6 +343,12 @@ namespace DisplayPort
         virtual NvU32 allocDisplayId() = 0;
         virtual bool freeDisplayId(NvU32 displayId) = 0;
         virtual bool queryGPUCapability() {return false;}
+        //
+        // Set an upper limit (in 10Mbps, 0 for no limit) for the max link rate
+        // supported by the GPU. Returns true if the limit changed, in which
+        // case the GPU capabilities need to be queried again.
+        //
+        virtual bool setMaxLinkRateLimit(NvU32 linkRate10M) {return false;}
         virtual bool isAvoidHBR3WAREnabled() = 0;
         virtual bool isPollingEnabledForDpMstDetection() = 0;
         virtual bool queryAndUpdateDfpParams() = 0;

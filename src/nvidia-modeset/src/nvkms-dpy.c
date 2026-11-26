@@ -3321,6 +3321,17 @@ NvBool nvDpyGetDynamicData(
     }
 
     /*
+     * Apply the DisplayPort max link rate limit set for the connector of this
+     * display, if any.  This needs to happen before the connection state is
+     * checked: when the limit takes effect for the first time, DPlib detects
+     * the display again with the limited link rate.
+     */
+    if (nvConnectorUsesDPLib(pConnectorEvo)) {
+        nvDPSetMaxLinkRateLimit(pConnectorEvo,
+                                nvDpyEvoGetOverrideDpMaxLinkRate(pDpyEvo));
+    }
+
+    /*
      * Check for the connection state of the dpy.
      *
      * For DP MST, we need to honor the current DPlib state; if a DP

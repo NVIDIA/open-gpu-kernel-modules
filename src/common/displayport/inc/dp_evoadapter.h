@@ -217,6 +217,13 @@ namespace DisplayPort
 
         bool _isDownspreadDisabledByRegkey;
 
+        //
+        // Upper limit for the GPU max link rate set by the client through
+        // setMaxLinkRateLimit(), in 10Mbps. Always a standard link rate;
+        // 0 means no limit.
+        //
+        NvU32 _maxLinkRateLimit;
+
     public:
         EvoMainLink(EvoInterface * provider, Timer * timer);
 
@@ -471,6 +478,7 @@ namespace DisplayPort
         bool freeDisplayId(NvU32 displayId);
         virtual bool queryAndUpdateDfpParams();
         virtual bool queryGPUCapability();
+        virtual bool setMaxLinkRateLimit(NvU32 linkRate10M);
 
         bool getEdpPowerData(bool *panelPowerOn, bool *dpcdPowerStateD0);
         virtual bool vrrRunEnablementStage(unsigned stage, NvU32 *status);

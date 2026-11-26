@@ -168,6 +168,26 @@ bool EvoMainLink2x::queryGPUCapability()
     gpuUhbrCaps         = dpParams.UHBRSupportedByGpu;
     bUseRgFlushSequence = dpParams.bUseRgFlushSequence;
 
+    // Drop the UHBR rates above the user configured max link rate limit.
+    if (_maxLinkRateLimit)
+    {
+        if (_maxLinkRateLimit < dp2LinkRate_20_0Gbps)
+        {
+            gpuUhbrCaps = FLD_SET_DRF(0073_CTRL_CMD_DP, _GET_CAPS_UHBR_SUPPORTED,
+                                      _UHBR20_0, _NO, gpuUhbrCaps);
+        }
+        if (_maxLinkRateLimit < dp2LinkRate_13_5Gbps)
+        {
+            gpuUhbrCaps = FLD_SET_DRF(0073_CTRL_CMD_DP, _GET_CAPS_UHBR_SUPPORTED,
+                                      _UHBR13_5, _NO, gpuUhbrCaps);
+        }
+        if (_maxLinkRateLimit < dp2LinkRate_10_0Gbps)
+        {
+            gpuUhbrCaps = FLD_SET_DRF(0073_CTRL_CMD_DP, _GET_CAPS_UHBR_SUPPORTED,
+                                      _UHBR10_0, _NO, gpuUhbrCaps);
+        }
+    }
+
     return true;
 }
 
