@@ -471,6 +471,7 @@ nvKmsKapiRegisterSemaphoreSurfaceCallback(
         }
         return NVKMS_KAPI_REG_WAITER_SUCCESS;
     case NVOS_STATUS_ERROR_ALREADY_SIGNALLED:
+        nvKmsKapiFree(cb);
         return NVKMS_KAPI_REG_WAITER_ALREADY_SIGNALLED;
     default:
         break;
