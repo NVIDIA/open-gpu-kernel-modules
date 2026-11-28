@@ -1596,8 +1596,8 @@ nv_drm_atomic_disable_connector(nv_drm_atomic_state_base_t *state,
     if (nv_connector->modeset_permission_crtc) {
         crtc_state = drm_atomic_get_crtc_state(
             state, &nv_connector->modeset_permission_crtc->base);
-        if (!crtc_state) {
-            return -EINVAL;
+        if (IS_ERR(crtc_state)) {
+            return PTR_ERR(crtc_state);
         }
 
         crtc_state->active = false;
@@ -1608,8 +1608,8 @@ nv_drm_atomic_disable_connector(nv_drm_atomic_state_base_t *state,
     }
 
     connector_state = drm_atomic_get_connector_state(state, &nv_connector->base);
-    if (!connector_state) {
-        return -EINVAL;
+    if (IS_ERR(connector_state)) {
+        return PTR_ERR(connector_state);
     }
 
     return drm_atomic_set_crtc_for_connector(connector_state, NULL);
@@ -2205,7 +2205,7 @@ void nv_drm_register_drm_device(const struct NvKmsKapiGpuInfo *gpu_info)
 
     dev = drm_dev_alloc(&nv_drm_driver, device);
 
-    if (dev == NULL) {
+    if (IS_ERR(dev)) {
         NV_DRM_DEV_LOG_ERR(nv_dev, "Failed to allocate device");
         goto failed_drm_alloc;
     }
