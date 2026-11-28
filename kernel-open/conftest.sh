@@ -2949,6 +2949,30 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PROC_OPS_PRESENT" "" "types"
         ;;
 
+        proc_ops_has_proc_write_buf)
+            #
+            # Determine if 'struct proc_ops' has the 'proc_show' and
+            # 'proc_write_buf' members.
+            #
+            # They came with the procfs rework in linux-next (first seen in
+            # next-20261120, based on v7.4-rc3), which also removed
+            # 'proc_read' and 'proc_write': procfs now
+            # owns the seq_file of an entry with ->proc_show() and copies
+            # written data into a kernel buffer before calling
+            # ->proc_write_buf().
+            #
+            CODE="
+            #include <linux/proc_fs.h>
+            #include <linux/stddef.h>
+
+            int conftest_proc_ops_has_proc_write_buf(void) {
+                return offsetof(struct proc_ops, proc_show) +
+                       offsetof(struct proc_ops, proc_write_buf);
+            }"
+
+            compile_check_conftest "$CODE" "NV_PROC_OPS_HAS_PROC_WRITE_BUF" "" "types"
+        ;;
+
         drm_crtc_state_has_async_flip)
             #
             # Determine if the 'drm_crtc_state' structure has a 'async_flip'
@@ -4536,6 +4560,29 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DMA_FENCE_CHAIN_ALLOC_PRESENT" "" "functions"
+        ;;
+
+        dma_fence_init_has_flags_arg)
+            #
+            # Determine if dma_fence_init() takes the fence's initial flags
+            # as a sixth argument.
+            #
+            # Added in linux-next (seen in next-20261120, based on
+            # v7.4-rc3), which also removed dma_fence_init64(): a 64-bit
+            # seqno is requested with
+            # BIT(DMA_FENCE_FLAG_SEQNO64_BIT) in that argument.
+            #
+            CODE="
+            #include <linux/dma-fence.h>
+            void conftest_dma_fence_init_has_flags_arg(
+                struct dma_fence *fence,
+                const struct dma_fence_ops *ops,
+                spinlock_t *lock)
+            {
+                dma_fence_init(fence, ops, lock, 0, 0, 0);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DMA_FENCE_INIT_HAS_FLAGS_ARG" "" "types"
         ;;
 
         fence_ops_use_64bit_seqno)

@@ -27,6 +27,8 @@
 
 #ifdef CONFIG_PROC_FS
 #include <linux/proc_fs.h>
+#include <linux/string.h>
+#include <linux/uaccess.h>
 #include <linux/seq_file.h>
 
 /*
@@ -47,10 +49,14 @@ typedef struct proc_ops nv_proc_ops_t;
 #define NV_PROC_OPS_SET_OWNER()
 
 #define NV_PROC_OPS_OPEN    proc_open
+#define NV_PROC_OPS_RELEASE proc_release
+#if defined(NV_PROC_OPS_HAS_PROC_WRITE_BUF)
+#define NV_PROC_OPS_WRITE   proc_write_buf
+#else
 #define NV_PROC_OPS_READ    proc_read
 #define NV_PROC_OPS_WRITE   proc_write
 #define NV_PROC_OPS_LSEEK   proc_lseek
-#define NV_PROC_OPS_RELEASE proc_release
+#endif
 #else
 typedef struct file_operations nv_proc_ops_t;
 
@@ -62,6 +68,86 @@ typedef struct file_operations nv_proc_ops_t;
 #define NV_PROC_OPS_LSEEK   llseek
 #define NV_PROC_OPS_RELEASE release
 #endif
+
+/*
+ * Helpers for seq_file based procfs entries.
+ *
+ * Without NV_PROC_OPS_HAS_PROC_WRITE_BUF, an entry's ->open() creates the
+ * seq_file with single_open(), reads and seeks go through seq_read() and
+ * seq_lseek(), ->release() frees the seq_file with single_release(), and
+ * write handlers copy the data in from userspace.
+ *
+ * With it, procfs owns the seq_file of an entry that has ->proc_show(): it
+ * creates the seq_file before calling ->proc_open(), reads and seeks
+ * through it itself, and frees it after ->proc_release(). ->proc_open()
+ * only attaches per-open data to the seq_file, ->proc_release() only frees
+ * that data, and ->proc_lseek() must not be set. Writes reach
+ * ->proc_write_buf() in a NUL-terminated kernel buffer of at most
+ * ->proc_write_size bytes (PAGE_SIZE - 1 if that is 0), and the position
+ * pointer is NULL for a stream.
+ *
+ *   NV_PROC_OPS_SEQ_SHOW(show)     read side of a readable seq_file entry
+ *   NV_PROC_OPS_SEQ_PRIVATE(show)  seq_file of a write-only entry that only
+ *                                  carries per-open data
+ *   NV_PROC_OPS_SEQ_RELEASE        ->release() of an entry whose ->open()
+ *                                  only calls nv_procfs_single_open()
+ *   NV_PROC_OPS_WRITE_SIZE(size)   largest single write an entry accepts
+ *   NV_PROC_WRITE_BUF              buffer type of a write handler
+ */
+#if defined(NV_PROC_OPS_HAS_PROC_WRITE_BUF)
+#define NV_PROC_OPS_SEQ_SHOW(show)      .proc_show = (show),
+#define NV_PROC_OPS_SEQ_PRIVATE(show)   .proc_show = (show),
+#define NV_PROC_OPS_SEQ_RELEASE
+#define NV_PROC_OPS_WRITE_SIZE(size)    .proc_write_size = (size),
+#define NV_PROC_WRITE_BUF               char *
+#else
+#define NV_PROC_OPS_SEQ_SHOW(show)      .NV_PROC_OPS_READ  = seq_read, \
+                                        .NV_PROC_OPS_LSEEK = seq_lseek,
+#define NV_PROC_OPS_SEQ_PRIVATE(show)
+#define NV_PROC_OPS_SEQ_RELEASE         .NV_PROC_OPS_RELEASE = single_release,
+#define NV_PROC_OPS_WRITE_SIZE(size)
+#define NV_PROC_WRITE_BUF               const char __user *
+#endif
+
+static inline int nv_procfs_single_open(
+    struct file *file,
+    int (*show)(struct seq_file *, void *),
+    void *data
+)
+{
+#if defined(NV_PROC_OPS_HAS_PROC_WRITE_BUF)
+    ((struct seq_file *)file->private_data)->private = data;
+    return 0;
+#else
+    return single_open(file, show, data);
+#endif
+}
+
+static inline int nv_procfs_single_release(
+    struct inode *inode,
+    struct file *file
+)
+{
+#if defined(NV_PROC_OPS_HAS_PROC_WRITE_BUF)
+    return 0;
+#else
+    return single_release(inode, file);
+#endif
+}
+
+static inline unsigned long nv_procfs_copy_from_write_buf(
+    void *to,
+    NV_PROC_WRITE_BUF from,
+    size_t count
+)
+{
+#if defined(NV_PROC_OPS_HAS_PROC_WRITE_BUF)
+    memcpy(to, from, count);
+    return 0;
+#else
+    return copy_from_user(to, from, count);
+#endif
+}
 
 #define NV_CREATE_PROC_FILE(filename,parent,__name,__data)               \
    ({                                                                    \
@@ -91,6 +177,42 @@ typedef struct file_operations nv_proc_ops_t;
 #define NV_PDE_DATA(inode) PDE_DATA(inode)
 #endif
 
+#if defined(NV_PROC_OPS_HAS_PROC_WRITE_BUF)
+/*
+ * procfs passes NV_PDE_DATA(inode) to ->proc_show() as the seq_file's
+ * private data, like single_open() did. The lock is taken around the show
+ * function instead of around the whole read.
+ */
+#define NV_DEFINE_SINGLE_PROCFS_FILE_HELPER(name, lock)                     \
+    static int nv_procfs_show_lock_##name(                                  \
+        struct seq_file *s,                                                 \
+        void *v                                                             \
+    )                                                                       \
+    {                                                                       \
+        int ret;                                                            \
+        ret = nv_down_read_interruptible(&lock);                            \
+        if (ret < 0)                                                        \
+        {                                                                   \
+            return ret;                                                     \
+        }                                                                   \
+        ret = nv_procfs_read_##name(s, v);                                  \
+        up_read(&lock);                                                     \
+        return ret;                                                         \
+    }
+
+#define NV_DEFINE_SINGLE_PROCFS_FILE_READ_ONLY(name, lock)                  \
+    NV_DEFINE_SINGLE_PROCFS_FILE_HELPER(name, lock)                         \
+                                                                            \
+    static const nv_proc_ops_t nv_procfs_##name##_fops = {                  \
+        .proc_show = nv_procfs_show_lock_##name,                            \
+    };
+
+#define NV_DEFINE_SINGLE_PROCFS_FILE_READ_ONLY_WITHOUT_LOCK(name)           \
+    static const nv_proc_ops_t nv_procfs_##name##_fops = {                  \
+        .proc_show = nv_procfs_read_##name,                                 \
+    };
+
+#else
 #define NV_DEFINE_SINGLE_PROCFS_FILE_HELPER(name, lock)                     \
     static ssize_t nv_procfs_read_lock_##name(                              \
         struct file *file,                                                  \
@@ -171,6 +293,8 @@ typedef struct file_operations nv_proc_ops_t;
         .NV_PROC_OPS_LSEEK   = seq_lseek,                                   \
         .NV_PROC_OPS_RELEASE = nv_procfs_release_##name,                    \
     };
+
+#endif
 
 #endif  /* CONFIG_PROC_FS */
 
