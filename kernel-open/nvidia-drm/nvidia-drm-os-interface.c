@@ -248,9 +248,9 @@ int nv_drm_create_sync_file(struct dma_fence *fence)
     /* sync_file_create() generates its own reference to the fence */
     sync = sync_file_create(fence);
 
-    if (IS_ERR(sync)) {
+    if (sync == NULL) {
         put_unused_fd(fd);
-        return PTR_ERR(sync);
+        return -ENOMEM;
     }
 
     fd_install(fd, sync->file);

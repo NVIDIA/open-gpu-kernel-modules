@@ -510,6 +510,7 @@ NvBool nvkms_syncpt_op(
         dma_fence_put(f);
 
         if (!file) {
+            put_unused_fd(fd);
             return NV_FALSE;
         }
 
